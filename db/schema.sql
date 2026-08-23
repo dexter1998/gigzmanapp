@@ -53,3 +53,72 @@ CREATE TABLE IF NOT EXISTS unlocks (
   -- UI-only premium flag for now (no real payment gateway yet — plan-confirmed decision)
   UNIQUE (lead_id, unlocked_by)
 );
+
+-- Onboarding, plan/credits, and partner program (Auth.js is JWT-only, no adapter/users table —
+-- email is the stable identity key here, same pattern as unlocked_by/requested_by above).
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  email TEXT PRIMARY KEY,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT false,
+  role TEXT,                               -- ceo_founder | agency_owner | freelancer |
+                                            -- business_owner | growth_manager | marketing_manager |
+                                            -- sales_manager | other
+  custom_role TEXT,                        -- set when role = 'other'
+  business_type TEXT,                      -- agency | freelancer
+  plan TEXT NOT NULL DEFAULT 'free',       -- free | starter | pro | business
+  credits INTEGER NOT NULL DEFAULT 20,
+  credits_limit INTEGER NOT NULL DEFAULT 20,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS agency_profiles (
+  email TEXT PRIMARY KEY REFERENCES user_profiles(email),
+  agency_name TEXT,
+  work_email TEXT,
+  website TEXT,
+  designation TEXT,
+  team_size TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS freelancer_profiles (
+  email TEXT PRIMARY KEY REFERENCES user_profiles(email),
+  business_name TEXT,
+  work_email TEXT,
+  website TEXT,
+  primary_service TEXT,
+  custom_service TEXT,
+  active_clients TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS partner_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  agency_name TEXT,
+  website TEXT,
+  linkedin TEXT,
+  country TEXT,
+  city TEXT,
+  services JSONB,                          -- array of selected service strings
+  other_service TEXT,
+  year_established TEXT,
+  team_size TEXT,
+  projects_closed_per_month TEXT,
+  monthly_revenue_range TEXT,
+  active_clients TEXT,
+  partnership_reason TEXT,
+  partnership_approach JSONB,              -- array of selected approach strings
+  estimated_client_introductions TEXT,
+  status TEXT NOT NULL DEFAULT 'submitted', -- draft | submitted | under_review | approved |
+                                             -- rejected | contacted
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_partner_applications_user ON partner_applications(user_email);

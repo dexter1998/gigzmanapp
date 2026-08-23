@@ -1,40 +1,32 @@
 import { auth, signOut } from "@/auth";
+import { sql } from "@/lib/db";
+import { CreditsIndicator } from "@/components/CreditsIndicator";
 
 export default async function ProfilePage() {
   const session = await auth();
   const email = session?.user?.email ?? "";
 
+  const [profile] = await sql`SELECT plan, credits, credits_limit FROM user_profiles WHERE email = ${email}`;
+  const [unlockCount] = await sql`SELECT COUNT(*)::int AS count FROM unlocks WHERE unlocked_by = ${email}`;
+
   return (
     <div style={{ padding: "32px 24px 120px", maxWidth: 1000, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>Account</h1>
-      <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4, marginBottom: 28 }}>{email}</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>Account</h1>
+          <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>{email}</p>
+        </div>
+        <CreditsIndicator />
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-        {/* Upgrade */}
-        <Card>
-          <CardHeader title="Upgrade" />
-          <PlanRow
-            icon="🚀"
-            title="Starter"
-            desc="For closers getting their first clients"
-            price="$19.99/mo"
-          />
-          <PlanRow
-            icon="✨"
-            title="Pro"
-            badge="Best value"
-            desc="For full-time sales pros"
-            price="$99.99/mo"
-          />
-        </Card>
-
         {/* Account */}
         <Card>
           <CardHeader title="Account" />
           <Row label="Email" value={email} />
-          <Row label="Plan" value="No plan" />
-          <Row label="Credits remaining" value="0" />
-          <Row label="Leads unlocked" value="0" />
+          <Row label="Plan" value={(profile?.plan ?? "free").replace(/^\w/, (c: string) => c.toUpperCase())} />
+          <Row label="Credits remaining" value={`${profile?.credits ?? 0} / ${profile?.credits_limit ?? 0}`} />
+          <Row label="Leads unlocked" value={String(unlockCount?.count ?? 0)} />
           <Row label="Billing" value="No subscription" last />
           <form
             action={async () => {
@@ -106,40 +98,6 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
     >
       <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>{value}</span>
-    </div>
-  );
-}
-
-function PlanRow({ icon, title, desc, price, badge }: { icon: string; title: string; desc: string; price: string; badge?: string }) {
-  return (
-    <div style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-sm)", padding: 14, marginBottom: 12, display: "flex", gap: 12 }}>
-      <span
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          background: "var(--g-green-mint)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 16,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </span>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--g-ink)" }}>{title}</span>
-          {badge && (
-            <span style={{ fontSize: 10, fontWeight: 700, background: "var(--g-amber-tint)", color: "#b45309", borderRadius: 999, padding: "2px 8px" }}>
-              {badge}
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>{desc}</div>
-      </div>
-      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)", whiteSpace: "nowrap" }}>{price}</span>
     </div>
   );
 }
