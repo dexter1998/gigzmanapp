@@ -1,6 +1,12 @@
-import { signIn } from "@/auth";
+"use client";
+
+import { useState } from "react";
+import { googleSignIn } from "./actions";
 
 export default function LoginPage() {
+  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const isSignup = tab === "signup";
+
   return (
     <div
       style={{
@@ -41,35 +47,23 @@ export default function LoginPage() {
               marginBottom: 24,
             }}
           >
-            <span
-              style={{
-                background: "var(--g-white)",
-                borderRadius: "var(--radius-pill)",
-                padding: "8px 20px",
-                fontSize: 13,
-                fontWeight: 700,
-                color: "var(--g-ink)",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              }}
-            >
+            <TabButton active={!isSignup} onClick={() => setTab("signin")}>
               Sign in
-            </span>
-            <span style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, color: "var(--g-gray-500)" }}>
+            </TabButton>
+            <TabButton active={isSignup} onClick={() => setTab("signup")}>
               Create account
-            </span>
+            </TabButton>
           </div>
 
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Sign in</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>
+            {isSignup ? "Create account" : "Sign in"}
+          </h1>
           <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 28 }} />
 
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/home" });
-            }}
-          >
+          <form action={googleSignIn}>
             <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginBottom: 20 }}>
-              gigzman uses Google Sign-In only — no separate password to manage.
+              gigzman uses Google Sign-In only — no separate password to manage. New here?
+              Continuing with Google creates your account automatically.
             </p>
 
             <button
@@ -92,7 +86,7 @@ export default function LoginPage() {
               }}
             >
               <GoogleGlyph />
-              Continue with Google
+              {isSignup ? "Sign up with Google" : "Continue with Google"}
             </button>
           </form>
 
@@ -112,12 +106,24 @@ export default function LoginPage() {
           }}
         >
           <h2 style={{ fontSize: 34, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>
-            Welcome
-            <br />
-            <span className="g-accent-italic">back.</span>
+            {isSignup ? (
+              <>
+                Start
+                <br />
+                <span className="g-accent-italic">finding.</span>
+              </>
+            ) : (
+              <>
+                Welcome
+                <br />
+                <span className="g-accent-italic">back.</span>
+              </>
+            )}
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", marginTop: 12, maxWidth: 260 }}>
-            Your leads are exactly where you left them.
+            {isSignup
+              ? "Businesses without a website, found for you automatically."
+              : "Your leads are exactly where you left them."}
           </p>
 
           <div
@@ -152,6 +158,28 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: active ? "var(--g-white)" : "transparent",
+        border: "none",
+        borderRadius: "var(--radius-pill)",
+        padding: "8px 20px",
+        fontSize: 13,
+        fontWeight: 700,
+        color: active ? "var(--g-ink)" : "var(--g-gray-500)",
+        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
