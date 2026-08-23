@@ -9,7 +9,7 @@ export function loadGoogleMaps(): Promise<void> {
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places,marker&v=weekly`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places,marker,geometry&v=weekly`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Failed to load Google Maps JS API"));

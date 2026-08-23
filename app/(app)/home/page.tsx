@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
-import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
+import { createPinOverlayClass, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 
 type Lead = {
@@ -26,6 +26,13 @@ const CATEGORIES = [
   "Roofing",
 ]; // confirmed live from Pindrop's own filter panel
 
+const SEARCH_CATEGORIES = ["All categories", ...CATEGORIES];
+
+// DLF Cyber City, Gurugram — default center when location access isn't granted, zoomed in to
+// match Pindrop's own default (building-level, not a whole-city view).
+const DEFAULT_CENTER = { lat: 28.495, lng: 77.089 };
+const DEFAULT_ZOOM = 18;
+
 function maskName(name: string) {
   const first = name.trim().split(/\s+/)[0] ?? name;
   const head = first.slice(0, 3);
@@ -36,12 +43,14 @@ export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, PinOverlayInstance>>(new Map());
+  const youMarkerRef = useRef<PinOverlayInstance | null>(null);
   const PinOverlayClassRef = useRef<ReturnType<typeof createPinOverlayClass> | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(true);
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [area, setArea] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState(SEARCH_CATEGORIES[0]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -54,15 +63,33 @@ export default function HomePage() {
       if (!mapDivRef.current || mapRef.current) return;
       PinOverlayClassRef.current = createPinOverlayClass();
       mapRef.current = new google.maps.Map(mapDivRef.current, {
-        center: { lat: 28.4595, lng: 77.0266 },
-        zoom: 14,
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        tilt: 45,
+        // Google's public demo Map ID — enables 3D/vector rendering immediately without needing
+        // our own registered Map ID first. TEMPORARY: a real gigzman Map ID (with a dark style
+        // configured in Cloud Console) should replace this — inline `styles`/MAP_STYLES only
+        // works on non-mapId (2D raster) maps, so POI-hiding + dark theme both need that real
+        // Map ID to work together with 3D. Swap this the moment one exists.
+        mapId: "DEMO_MAP_ID",
         disableDefaultUI: true,
-        zoomControl: false,
-        styles: MAP_STYLES,
+        zoomControl: true,
+        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
       });
       setMapReady(true);
     });
   }, []);
+
+  function placeYouMarker(lat: number, lng: number) {
+    if (!mapRef.current || !PinOverlayClassRef.current) return;
+    if (youMarkerRef.current) {
+      youMarkerRef.current.setMap(null);
+    }
+    const PinOverlay = PinOverlayClassRef.current;
+    const marker = new PinOverlay({ lat, lng }, "#2563eb", false, () => {});
+    marker.setMap(mapRef.current);
+    youMarkerRef.current = marker;
+  }
 
   function handleLocateMe() {
     if (!navigator.geolocation || !mapRef.current) return;
@@ -70,10 +97,32 @@ export default function HomePage() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         mapRef.current?.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        mapRef.current?.setZoom(15);
+        mapRef.current?.setZoom(DEFAULT_ZOOM);
+        placeYouMarker(pos.coords.latitude, pos.coords.longitude);
         setLocating(false);
       },
       () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  function resolveInitialLocation(useReal: boolean) {
+    setShowLocationModal(false);
+    if (!useReal || !navigator.geolocation) {
+      mapRef.current?.setCenter(DEFAULT_CENTER);
+      mapRef.current?.setZoom(DEFAULT_ZOOM);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        mapRef.current?.setZoom(DEFAULT_ZOOM);
+        placeYouMarker(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        mapRef.current?.setCenter(DEFAULT_CENTER);
+        mapRef.current?.setZoom(DEFAULT_ZOOM);
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }
@@ -102,7 +151,6 @@ export default function HomePage() {
         : leads;
     const visibleIds = new Set(visible.map((l) => l.id));
 
-    // Remove overlays for leads no longer visible (filtered out)
     for (const [id, overlay] of markersRef.current) {
       if (!visibleIds.has(id)) {
         overlay.setMap(null);
@@ -128,32 +176,38 @@ export default function HomePage() {
     }
   }, [leads, noWebsiteOnly, activeCategory, mapReady]);
 
+  /** Finds businesses in the CURRENT MAP VIEWPORT (center + radius derived from visible
+   * bounds) — matching Pindrop's actual "search this area" behavior, not a typed address
+   * query. If the search box has text, it's geocoded first to pan the map there, then the
+   * viewport search runs against the new position. */
   async function handleFind() {
-    if (!area.trim()) return;
+    if (!mapRef.current) return;
     setSearching(true);
     try {
-      const res = await fetch("/api/leads/find", {
+      if (area.trim()) {
+        const geoRes = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(area)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        );
+        const geoData = await geoRes.json();
+        const loc = geoData.results?.[0]?.geometry?.location;
+        if (loc) {
+          mapRef.current.setCenter({ lat: loc.lat, lng: loc.lng });
+          mapRef.current.setZoom(DEFAULT_ZOOM);
+        }
+      }
+
+      const center = mapRef.current.getCenter();
+      const bounds = mapRef.current.getBounds();
+      if (!center || !bounds) return;
+
+      const radius = google.maps.geometry.spherical.computeDistanceBetween(center, bounds.getNorthEast());
+
+      await fetch("/api/leads/find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ area, category }),
+        body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category }),
       });
-      const data = await res.json();
       await refreshLeads();
-
-      // Navigate the map to actually show the new results — without this, new pins can land
-      // far outside the current view with no visible feedback, looking like the search did
-      // nothing.
-      if (mapRef.current && data.leads?.length) {
-        const bounds = new google.maps.LatLngBounds();
-        let any = false;
-        for (const l of data.leads as Array<{ lat: number | null; lng: number | null }>) {
-          if (l.lat != null && l.lng != null) {
-            bounds.extend({ lat: l.lat, lng: l.lng });
-            any = true;
-          }
-        }
-        if (any) mapRef.current.fitBounds(bounds, 80);
-      }
     } finally {
       setSearching(false);
     }
@@ -162,6 +216,78 @@ export default function HomePage() {
   return (
     <div style={{ position: "relative", height: "100vh" }}>
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+
+      {showLocationModal && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(20,32,51,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 30,
+          }}
+        >
+          <div
+            style={{
+              width: 340,
+              background: "var(--g-white)",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-card)",
+              padding: 28,
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: "var(--g-green-mint)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+              }}
+            >
+              <CrosshairIcon />
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" }}>
+              Find businesses in your area
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px", lineHeight: 1.4 }}>
+              gigzman uses your location to show the businesses near you that still need a
+              website.
+            </p>
+            <button
+              type="button"
+              onClick={() => resolveInitialLocation(true)}
+              style={{
+                width: "100%",
+                padding: "12px 0",
+                borderRadius: "var(--radius-pill)",
+                border: "none",
+                background: "var(--g-green)",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                marginBottom: 12,
+              }}
+            >
+              Use my location
+            </button>
+            <button
+              type="button"
+              onClick={() => resolveInitialLocation(false)}
+              style={{ border: "none", background: "none", color: "var(--g-gray-500)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
+            >
+              Not now, I&apos;ll search by address
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Top toolbar */}
       <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -194,9 +320,19 @@ export default function HomePage() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={{ border: "none", outline: "none", fontSize: 12, color: "var(--g-gray-500)", background: "transparent", marginRight: 4 }}
+            style={{
+              border: "1px solid var(--g-green)",
+              outline: "none",
+              fontSize: 12,
+              fontWeight: 700,
+              color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
+              background: "var(--g-green-mint)",
+              borderRadius: "var(--radius-pill)",
+              padding: "6px 10px",
+              marginRight: 4,
+            }}
           >
-            {CATEGORIES.map((c) => (
+            {SEARCH_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -247,16 +383,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-
-      {/* Credits badge */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: -0,
-          display: "none",
-        }}
-      />
 
       {/* Pin popup card */}
       {selectedLead && (
@@ -348,7 +474,7 @@ export default function HomePage() {
             fontWeight: 600,
           }}
         >
-          Searching this area…
+          Finding {category === "All categories" ? "businesses" : category.toLowerCase()} in this area…
         </div>
       )}
     </div>
