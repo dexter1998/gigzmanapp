@@ -111,6 +111,7 @@ export default function HomePage() {
     if (!useReal || !navigator.geolocation) {
       mapRef.current?.setCenter(DEFAULT_CENTER);
       mapRef.current?.setZoom(DEFAULT_ZOOM);
+      // No real location — nothing to auto-search around yet, wait for an explicit search.
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -118,6 +119,10 @@ export default function HomePage() {
         mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         mapRef.current?.setZoom(DEFAULT_ZOOM);
         placeYouMarker(pos.coords.latitude, pos.coords.longitude);
+        // Real location granted — immediately search nearby instead of waiting for a manual
+        // click, matching "agar person location deta hai to uski location ke nearby
+        // businesses scrape marne hai".
+        void handleFind();
       },
       () => {
         mapRef.current?.setCenter(DEFAULT_CENTER);
@@ -202,12 +207,21 @@ export default function HomePage() {
 
       const radius = google.maps.geometry.spherical.computeDistanceBetween(center, bounds.getNorthEast());
 
-      await fetch("/api/leads/find", {
+      const res = await fetch("/api/leads/find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category }),
       });
+      const data = (await res.json()) as { leads?: Array<{ id: string }> };
       await refreshLeads();
+
+      // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
+      // grey to green/amber as each one resolves — the progressive-reveal effect that was
+      // missing entirely while leads just sat grey forever with no enrichment path at all.
+      for (const lead of data.leads ?? []) {
+        await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
+        await refreshLeads();
+      }
     } finally {
       setSearching(false);
     }

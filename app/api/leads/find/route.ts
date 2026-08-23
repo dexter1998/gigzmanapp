@@ -74,23 +74,28 @@ export async function POST(req: NextRequest) {
   const results = await Promise.all(categoriesToSearch.map((c) => searchCategory(c, lat, lng, radius)));
 
   const seen = new Set<string>();
-  const allLeads: Array<{ lat: number | null; lng: number | null }> = [];
+  const allLeads: Array<{ id: string; lat: number | null; lng: number | null }> = [];
 
   for (const result of results) {
     for (const place of result.places ?? []) {
       if (seen.has(place.id)) continue;
       seen.add(place.id);
 
-      await sql`
+      const [row] = await sql`
         INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website)
         VALUES (
           ${scan.id}, ${place.id}, ${place.displayName?.text ?? "Unknown"}, ${place.primaryType ?? result.category},
           ${place.formattedAddress ?? null}, ${place.location?.latitude ?? null}, ${place.location?.longitude ?? null},
           ${place.nationalPhoneNumber ?? null}, NULL
         )
-        ON CONFLICT (place_id) DO NOTHING
+        ON CONFLICT (place_id) DO UPDATE SET place_id = EXCLUDED.place_id
+        RETURNING id
       `;
-      allLeads.push({ lat: place.location?.latitude ?? null, lng: place.location?.longitude ?? null });
+      allLeads.push({
+        id: row.id,
+        lat: place.location?.latitude ?? null,
+        lng: place.location?.longitude ?? null,
+      });
     }
   }
 
