@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
-import { createPinOverlayClass, type PinOverlayInstance } from "@/lib/pin-overlay";
+import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 
 type Lead = {
@@ -65,16 +65,16 @@ export default function HomePage() {
       mapRef.current = new google.maps.Map(mapDivRef.current, {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
-        tilt: 45,
-        // Google's public demo Map ID — enables 3D/vector rendering immediately without needing
-        // our own registered Map ID first. TEMPORARY: a real gigzman Map ID (with a dark style
-        // configured in Cloud Console) should replace this — inline `styles`/MAP_STYLES only
-        // works on non-mapId (2D raster) maps, so POI-hiding + dark theme both need that real
-        // Map ID to work together with 3D. Swap this the moment one exists.
-        mapId: "DEMO_MAP_ID",
+        // No mapId here on purpose — inline `styles` (dark theme + hiding every default POI
+        // icon, so ONLY our own lead pins show) only works on non-mapId 2D maps. mapId is
+        // needed for 3D, but 3D and this inline styling are mutually exclusive on Google's
+        // platform; a real Map ID with a Cloud Console-configured dark/no-POI style is the only
+        // way to get both together, and we don't have one yet — this was traded off in favor
+        // of clean/dark, which was the more urgent ask.
         disableDefaultUI: true,
         zoomControl: true,
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+        styles: MAP_STYLES,
       });
       setMapReady(true);
     });

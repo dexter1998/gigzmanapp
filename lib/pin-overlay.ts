@@ -76,13 +76,24 @@ export function createPinOverlayClass() {
   return PinOverlay;
 }
 
-/** Muted, low-clutter basemap matching Pindrop's reference screenshots — hides default POI
- * icons/labels (restaurants, hospitals, banks etc.) and transit, keeps roads/geography minimal
- * so only our own lead pins stand out. */
+/** Dark, low-clutter basemap matching Pindrop's own dark dashboard screenshot — hides every
+ * default POI icon/label (restaurants, hospitals, banks, shops, schools, everything Google
+ * shows by default) and transit entirely, so the ONLY pins visible are our own lead markers
+ * and the "you are here" dot. This only works on non-mapId (2D raster) maps — mapId-based
+ * vector/3D maps ignore inline styles entirely, which is why 3D and this had to be traded off
+ * for now. */
 export const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+  { elementType: "geometry", stylers: [{ color: "#1a1f2b" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1f2b" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8a93a6" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
   { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f3efe6" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#cfe0e8" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2b3242" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3a4358" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#6b7385" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#3a4358" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f141d" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1a1f2b" }] },
 ];
