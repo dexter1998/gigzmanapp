@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
+import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 
 type Lead = {
@@ -34,12 +35,15 @@ function maskName(name: string) {
 export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
+  const markersRef = useRef<Map<string, PinOverlayInstance>>(new Map());
+  const PinOverlayClassRef = useRef<ReturnType<typeof createPinOverlayClass> | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [area, setArea] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -48,15 +52,31 @@ export default function HomePage() {
   useEffect(() => {
     loadGoogleMaps().then(() => {
       if (!mapDivRef.current || mapRef.current) return;
+      PinOverlayClassRef.current = createPinOverlayClass();
       mapRef.current = new google.maps.Map(mapDivRef.current, {
         center: { lat: 28.4595, lng: 77.0266 },
         zoom: 14,
-        mapId: "GIGZMAN_HOME_MAP",
         disableDefaultUI: true,
         zoomControl: false,
+        styles: MAP_STYLES,
       });
+      setMapReady(true);
     });
   }, []);
+
+  function handleLocateMe() {
+    if (!navigator.geolocation || !mapRef.current) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapRef.current?.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        mapRef.current?.setZoom(15);
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
 
   async function refreshLeads() {
     const res = await fetch("/api/leads");
@@ -69,7 +89,8 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !window.google?.maps?.marker) return;
+    if (!mapReady || !mapRef.current || !PinOverlayClassRef.current) return;
+    const PinOverlay = PinOverlayClassRef.current;
 
     const visible =
       noWebsiteOnly || activeCategory
@@ -79,41 +100,60 @@ export default function HomePage() {
               (!activeCategory || l.category?.toLowerCase() === activeCategory.toLowerCase())
           )
         : leads;
+    const visibleIds = new Set(visible.map((l) => l.id));
 
-    for (const lead of leads) {
-      const marker = markersRef.current.get(lead.id);
-      const shouldShow = visible.includes(lead);
-      if (marker) marker.map = shouldShow ? mapRef.current : null;
+    // Remove overlays for leads no longer visible (filtered out)
+    for (const [id, overlay] of markersRef.current) {
+      if (!visibleIds.has(id)) {
+        overlay.setMap(null);
+        markersRef.current.delete(id);
+      }
     }
 
     for (const lead of visible) {
       if (lead.lat == null || lead.lng == null) continue;
-      if (markersRef.current.has(lead.id)) continue;
 
       const color = lead.has_website === null ? "#c7cad1" : lead.has_website ? "#3aa65c" : "#fdba3f";
-      const pin = new google.maps.marker.PinElement({ background: color, borderColor: color, glyphColor: color });
+      const pulsing = lead.has_website === null;
 
-      const marker = new google.maps.marker.AdvancedMarkerElement({
-        map: mapRef.current,
-        position: { lat: lead.lat, lng: lead.lng },
-        content: pin.element,
-        title: lead.business_name,
-      });
-      marker.addListener("click", () => setSelectedLead(lead));
-      markersRef.current.set(lead.id, marker);
+      const existing = markersRef.current.get(lead.id);
+      if (existing) {
+        existing.setColor(color, pulsing);
+        continue;
+      }
+
+      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead));
+      overlay.setMap(mapRef.current);
+      markersRef.current.set(lead.id, overlay);
     }
-  }, [leads, noWebsiteOnly, activeCategory]);
+  }, [leads, noWebsiteOnly, activeCategory, mapReady]);
 
   async function handleFind() {
     if (!area.trim()) return;
     setSearching(true);
     try {
-      await fetch("/api/leads/find", {
+      const res = await fetch("/api/leads/find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ area, category }),
       });
+      const data = await res.json();
       await refreshLeads();
+
+      // Navigate the map to actually show the new results — without this, new pins can land
+      // far outside the current view with no visible feedback, looking like the search did
+      // nothing.
+      if (mapRef.current && data.leads?.length) {
+        const bounds = new google.maps.LatLngBounds();
+        let any = false;
+        for (const l of data.leads as Array<{ lat: number | null; lng: number | null }>) {
+          if (l.lat != null && l.lng != null) {
+            bounds.extend({ lat: l.lat, lng: l.lng });
+            any = true;
+          }
+        }
+        if (any) mapRef.current.fitBounds(bounds, 80);
+      }
     } finally {
       setSearching(false);
     }
@@ -125,7 +165,7 @@ export default function HomePage() {
 
       {/* Top toolbar */}
       <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", gap: 8, alignItems: "flex-start" }}>
-        <ToolbarButton>
+        <ToolbarButton onClick={handleLocateMe} active={locating}>
           <CrosshairIcon />
         </ToolbarButton>
         <ToolbarButton>

@@ -68,5 +68,9 @@ export async function POST(req: NextRequest) {
 
   await sql`UPDATE area_scans SET status = 'done', completed_at = now() WHERE id = ${scan.id}`;
 
-  return NextResponse.json({ scanId: scan.id, found: places.length });
+  return NextResponse.json({
+    scanId: scan.id,
+    found: places.length,
+    leads: places.map((p) => ({ lat: p.location?.latitude ?? null, lng: p.location?.longitude ?? null })),
+  });
 }
