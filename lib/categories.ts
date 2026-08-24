@@ -91,16 +91,26 @@ export const CATEGORY_SECTIONS: Record<string, string[]> = {
     "lodging", "mobile_home_park", "motel", "private_guest_room", "resort_hotel", "rv_park",
   ],
 
-  "Professional & Local Services": [
-    "aircraft_rental_service", "astrologer", "barber_shop", "beautician", "beauty_salon",
-    "body_art_service", "catering_service", "chauffeur_service", "child_care_agency",
-    "consultant", "courier_service", "electrician", "employment_agency", "florist",
-    "food_delivery", "foot_care", "hair_care", "hair_salon", "insurance_agency", "laundry",
-    "lawyer", "locksmith", "makeup_artist", "moving_company", "nail_salon", "painter",
-    "pet_boarding_service", "pet_care", "plumber", "psychic", "real_estate_agency",
-    "roofing_contractor", "service", "shipping_service", "storage", "summer_camp_organizer",
-    "tailor", "telecommunications_service_provider", "tour_agency", "travel_agency",
-    "veterinary_care",
+  // Split from the original combined "Professional & Local Services" — the higher-value B2B/
+  // professional side (lawyer, real estate, insurance, consultants) is a very different kind of
+  // lead than the personal-care/trade-services side below, and bundling them meant a single
+  // Nearby Search call couldn't be prioritized independently — barbershops are naturally dense
+  // in most areas and were crowding out everything else within the same batch.
+  "Professional Services": [
+    "aircraft_rental_service", "astrologer", "catering_service", "chauffeur_service",
+    "child_care_agency", "consultant", "courier_service", "employment_agency",
+    "insurance_agency", "lawyer", "moving_company", "psychic", "real_estate_agency",
+    "shipping_service", "storage", "summer_camp_organizer", "telecommunications_service_provider",
+    "tour_agency", "travel_agency", "veterinary_care",
+  ],
+
+  // Deliberately searched LAST (see SEARCH_ORDER) — personal-care/trade services (barbershops
+  // especially) are dense enough to dominate results if searched early.
+  "Personal Care & Local Services": [
+    "barber_shop", "beautician", "beauty_salon", "body_art_service", "electrician", "florist",
+    "food_delivery", "foot_care", "hair_care", "hair_salon", "laundry", "locksmith",
+    "makeup_artist", "nail_salon", "painter", "pet_boarding_service", "pet_care", "plumber",
+    "roofing_contractor", "service", "tailor",
   ],
 
   "Shopping & Retail": [
@@ -127,6 +137,30 @@ export const CATEGORY_SECTIONS: Record<string, string[]> = {
 };
 
 export const SECTION_NAMES = Object.keys(CATEGORY_SECTIONS);
+
+/** Explicit priority order for "All categories" — user-specified: hotels, finance/professional
+ * services, retail, food, education, automotive, transport, then everything else, with personal
+ * care/local trade services (barbershops etc., naturally the densest/most repetitive category)
+ * deliberately searched last instead of first. */
+export const SEARCH_ORDER: string[] = [
+  "Hotels & Accommodation",
+  "Finance",
+  "Professional Services",
+  "Shopping & Retail",
+  "Food & Drink",
+  "Education",
+  "Automotive",
+  "Transportation Services",
+  ...SECTION_NAMES.filter(
+    (s) =>
+      ![
+        "Hotels & Accommodation", "Finance", "Professional Services", "Shopping & Retail",
+        "Food & Drink", "Education", "Automotive", "Transportation Services",
+        "Personal Care & Local Services",
+      ].includes(s)
+  ),
+  "Personal Care & Local Services",
+];
 
 /** Reverse lookup — given a real place type Google returned, which section is it in? Used to
  * filter already-fetched leads by section without needing to store the section on each lead. */

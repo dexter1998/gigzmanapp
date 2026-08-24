@@ -31,52 +31,53 @@ type PlacesResult = {
     nationalPhoneNumber?: string;
     primaryType?: string;
   }>;
-  nextPageToken?: string;
 };
 
 function cacheKeyFor(lat: number, lng: number, section: string) {
   return `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}`;
 }
 
-async function fetchNearbyPage(types: string[], lat: number, lng: number, radius: number, pageToken?: string) {
+async function fetchNearbyBatch(types: string[], lat: number, lng: number, radius: number) {
   const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": process.env.GOOGLE_PLACES_API_KEY!,
+      // Nearby Search (New) has no pagination — its response only ever has a `places` array, no
+      // nextPageToken. Requesting that field (a leftover Text-Search-only assumption) made every
+      // single call here fail with INVALID_ARGUMENT, silently returning zero results — confirmed
+      // live via curl. That's the real reason results were never reaching the 50 cap: nothing was
+      // ever actually being fetched outside of cache hits.
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType,nextPageToken",
+        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType",
     },
     body: JSON.stringify({
       includedTypes: types,
       maxResultCount: 20,
-      pageToken,
+      // Nearby Search (New) defaults to POPULARITY ranking, not distance — confirmed live: a
+      // business 400m away was getting pushed out of the 20-result cap by more "prominent"
+      // places 2-4km out. DISTANCE ranking fixes that, matching what "nearby" actually means.
+      rankPreference: "DISTANCE",
       locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius, 50000) } },
     }),
   });
-  if (!res.ok) return { places: [] as PlacesResult["places"], nextPageToken: undefined };
+  if (!res.ok) return [] as NonNullable<PlacesResult["places"]>;
   const data = (await res.json()) as PlacesResult;
-  return { places: data.places ?? [], nextPageToken: data.nextPageToken };
+  return data.places ?? [];
 }
 
-/** Stops as soon as MAX_RESULTS_PER_SECTION is reached — no reason to keep paginating/batching
- * once there's enough to show. */
-async function searchSection(section: string, lat: number, lng: number, radius: number, fullDepth: boolean) {
+/** Stops as soon as MAX_RESULTS_PER_SECTION is reached — no reason to keep batching once there's
+ * enough to show. `fullDepth` no longer affects fetch depth (Nearby Search has no pagination to be
+ * shallow/deep about) — kept only as the pan-vs-explicit-search cache freshness signal it already
+ * is in area_scans. */
+async function searchSection(section: string, lat: number, lng: number, radius: number) {
   const types = CATEGORY_SECTIONS[section] ?? [];
   const batches = chunkTypes(types, 50);
-  const maxPages = fullDepth ? 3 : 1;
   const places: NonNullable<PlacesResult["places"]> = [];
 
   for (const batch of batches) {
     if (places.length >= MAX_RESULTS_PER_SECTION) break;
-    let pageToken: string | undefined;
-    for (let page = 0; page < maxPages; page++) {
-      const result = await fetchNearbyPage(batch, lat, lng, radius, pageToken);
-      places.push(...(result.places ?? []));
-      if (places.length >= MAX_RESULTS_PER_SECTION || !result.nextPageToken) break;
-      pageToken = result.nextPageToken;
-      await new Promise((r) => setTimeout(r, 2000));
-    }
+    places.push(...(await fetchNearbyBatch(batch, lat, lng, radius)));
   }
 
   return places.slice(0, MAX_RESULTS_PER_SECTION);
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       RETURNING id
     `;
 
-    const places = await searchSection(section, lat, lng, radius, fullDepth);
+    const places = await searchSection(section, lat, lng, radius);
     rows = [];
 
     for (const place of places) {

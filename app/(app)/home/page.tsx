@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
-import { SECTION_NAMES, TYPE_TO_SECTION } from "@/lib/categories";
+import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 
@@ -299,7 +299,7 @@ export default function HomePage() {
       const radius = Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS);
 
       const fullDepth = !opts?.fromMapMove;
-      const sectionsToRun = categoryRef.current === "All categories" ? SECTION_NAMES : [categoryRef.current];
+      const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
       // One section at a time, refreshing the map after each — this is what makes it feel like
       // it "keeps on finding leads" rather than everything appearing at once, and lets us stop
