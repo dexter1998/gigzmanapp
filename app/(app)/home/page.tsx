@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
-import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
+import { createPinOverlayClass, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 
 type Lead = {
@@ -46,7 +46,18 @@ export default function HomePage() {
   const youMarkerRef = useRef<PinOverlayInstance | null>(null);
   const PinOverlayClassRef = useRef<ReturnType<typeof createPinOverlayClass> | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  // Only ask once per browser — was re-showing on every visit to /home (e.g. switching to LMS
+  // and back), which felt broken rather than a one-time onboarding prompt. Starts true (same on
+  // server and client, avoiding a hydration mismatch) and is corrected client-side in the effect
+  // below — reading localStorage directly in useState's initializer caused exactly that mismatch
+  // (server has no `window`, so it always disagreed with the client's real first render).
   const [showLocationModal, setShowLocationModal] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem("gigzman_location_resolved") === "true") {
+      setShowLocationModal(false);
+    }
+  }, []);
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [area, setArea] = useState("");
@@ -65,19 +76,28 @@ export default function HomePage() {
       mapRef.current = new google.maps.Map(mapDivRef.current, {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
-        // No mapId here on purpose — inline `styles` (dark theme + hiding every default POI
-        // icon, so ONLY our own lead pins show) only works on non-mapId 2D maps. mapId is
-        // needed for 3D, but 3D and this inline styling are mutually exclusive on Google's
-        // platform; a real Map ID with a Cloud Console-configured dark/no-POI style is the only
-        // way to get both together, and we don't have one yet — this was traded off in favor
-        // of clean/dark, which was the more urgent ask.
+        tilt: 45,
+        // Back on for the Pindrop-style 3D look — real tradeoff, same as before: mapId-based
+        // vector/3D maps ignore inline `styles` entirely (that's a Google Maps platform rule,
+        // not a bug), so the dark theme + hidden-POI styling from MAP_STYLES doesn't apply here
+        // and default Google POI icons are back. Getting 3D AND dark/no-POI together needs a
+        // real Map ID configured in Cloud Console (Maps Platform → Map Management → create
+        // vector Map ID → Style editor → dark). Using the public demo ID until that exists.
+        mapId: "DEMO_MAP_ID",
         disableDefaultUI: true,
         zoomControl: true,
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-        styles: MAP_STYLES,
       });
       setMapReady(true);
+
+      // If the location prompt was already resolved on a prior visit, don't show it again —
+      // just silently re-attempt geolocation (browsers never re-prompt for permission once
+      // granted or denied, so this is invisible either way) and re-center/search there.
+      if (localStorage.getItem("gigzman_location_resolved") === "true" && navigator.geolocation) {
+        centerOnRealLocationAndSearch();
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function placeYouMarker(lat: number, lng: number) {
@@ -106,14 +126,7 @@ export default function HomePage() {
     );
   }
 
-  function resolveInitialLocation(useReal: boolean) {
-    setShowLocationModal(false);
-    if (!useReal || !navigator.geolocation) {
-      mapRef.current?.setCenter(DEFAULT_CENTER);
-      mapRef.current?.setZoom(DEFAULT_ZOOM);
-      // No real location — nothing to auto-search around yet, wait for an explicit search.
-      return;
-    }
+  function centerOnRealLocationAndSearch() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -130,6 +143,18 @@ export default function HomePage() {
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
+  }
+
+  function resolveInitialLocation(useReal: boolean) {
+    localStorage.setItem("gigzman_location_resolved", "true");
+    setShowLocationModal(false);
+    if (!useReal || !navigator.geolocation) {
+      mapRef.current?.setCenter(DEFAULT_CENTER);
+      mapRef.current?.setZoom(DEFAULT_ZOOM);
+      // No real location — nothing to auto-search around yet, wait for an explicit search.
+      return;
+    }
+    centerOnRealLocationAndSearch();
   }
 
   async function refreshLeads() {

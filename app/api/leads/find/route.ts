@@ -2,18 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 
-const CATEGORIES = [
-  "Barbershop",
-  "Hair salon",
-  "Nail salon",
-  "Spa",
-  "Plumbing",
-  "Electrician",
-  "Landscaping",
-  "Roofing",
-];
+// Real Google Place Types (Table A), confirmed live — one per category label shown in the UI.
+const CATEGORY_TYPE_MAP: Record<string, string> = {
+  Barbershop: "barber_shop",
+  "Hair salon": "hair_salon",
+  "Nail salon": "nail_salon",
+  Spa: "spa",
+  Plumbing: "plumber",
+  Electrician: "electrician",
+  Landscaping: "landscaping",
+  Roofing: "roofing_contractor",
+};
 
-type PlacesTextSearchResult = {
+type PlacesNearbyResult = {
   places?: Array<{
     id: string;
     displayName?: { text?: string };
@@ -24,8 +25,9 @@ type PlacesTextSearchResult = {
   }>;
 };
 
-async function searchCategory(category: string, lat: number, lng: number, radius: number) {
-  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+async function searchCategory(categoryLabel: string, lat: number, lng: number, radius: number) {
+  const placeType = CATEGORY_TYPE_MAP[categoryLabel];
+  const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -34,23 +36,26 @@ async function searchCategory(category: string, lat: number, lng: number, radius
         "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType",
     },
     body: JSON.stringify({
-      textQuery: category,
-      locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius, 50000) } },
+      includedTypes: placeType ? [placeType] : undefined,
+      maxResultCount: 20,
+      // locationRestriction (not locationBias) — a HARD limit to this circle. locationBias only
+      // nudges ranking and still returns distant matches, which is exactly why far-away results
+      // were showing up ahead of genuinely nearby ones.
+      locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius, 50000) } },
     }),
   });
-  if (!res.ok) return { category, places: [] as PlacesTextSearchResult["places"], error: await res.text() };
-  const data = (await res.json()) as PlacesTextSearchResult;
-  return { category, places: data.places ?? [], error: null as string | null };
+  if (!res.ok) return { category: categoryLabel, places: [] as PlacesNearbyResult["places"], error: await res.text() };
+  const data = (await res.json()) as PlacesNearbyResult;
+  return { category: categoryLabel, places: data.places ?? [], error: null as string | null };
 }
 
 /**
  * Viewport-driven discovery: the frontend sends the CURRENT MAP VIEWPORT (center + radius
- * derived from the visible bounds), not a typed address — matching Pindrop's actual "search
- * this area" behavior. When category is "all", fans out across every known category in
- * parallel and merges results (deduped by place_id via ON CONFLICT), since a single Places
- * Text Search query has no clean "any business type" mode. Leads are inserted with
- * has_website = NULL — enrichment is gosom's job on the EC2 worker (still pending), not
- * something this route runs.
+ * derived from the visible bounds). When category is "all", fans out across every known
+ * category in parallel via Nearby Search's `includedTypes` (a real, structured Google Place
+ * type per category — Text Search's free-text query was previously the reason results skewed
+ * toward whichever category's text happened to match best, e.g. "Barbershop"). Leads are
+ * inserted with has_website = NULL — resolved separately via /api/leads/[id]/enrich.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -62,7 +67,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "lat, lng, and radius are required" }, { status: 400 });
   }
 
-  const categoriesToSearch = !category || category === "All categories" ? CATEGORIES : [category];
+  const categoriesToSearch =
+    !category || category === "All categories" ? Object.keys(CATEGORY_TYPE_MAP) : [category];
   const areaLabel = `${lat.toFixed(4)},${lng.toFixed(4)} (${Math.round(radius)}m radius)`;
 
   const [scan] = await sql`
