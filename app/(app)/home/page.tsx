@@ -89,6 +89,13 @@ export default function HomePage() {
   // geolocation actually resolved a few seconds later (looked like a double-fire bug, but was
   // really two genuinely separate full loops).
   const initialLocationDecidedRef = useRef(false);
+  // Declining location still calls setCenter(DEFAULT_CENTER)/setZoom to lay out the map, and that
+  // programmatic move fires its own `idle` event just like a real user pan would — without this,
+  // every user who declines location got an automatic, unrequested "All categories" sweep against
+  // DLF Cyber City with zero interaction on their part (confirmed live: 10+ requests before any
+  // drag). Set right before that one setCenter call, consumed by the very next idle event only —
+  // every idle after that is a real pan/zoom and should auto-search normally.
+  const suppressNextIdleSearchRef = useRef(false);
 
   useEffect(() => {
     loadGoogleMaps().then(() => {
@@ -116,6 +123,10 @@ export default function HomePage() {
       // cache instead of re-paying Places API every time the map settles.
       mapRef.current.addListener("idle", () => {
         if (!initialLocationDecidedRef.current) return; // still waiting on the location modal/geolocation
+        if (suppressNextIdleSearchRef.current) {
+          suppressNextIdleSearchRef.current = false;
+          return;
+        }
         const now = Date.now();
         if (now - lastAutoSearchRef.current < 1500) return; // guards against rapid double-fires
         lastAutoSearchRef.current = now;
@@ -171,6 +182,10 @@ export default function HomePage() {
         void handleFind();
       },
       () => {
+        // Geolocation failed/denied at the browser level (e.g. a returning user whose permission
+        // was revoked) — same as declining in the modal, this falls back to DEFAULT_CENTER and
+        // must not auto-search a location nobody asked to see results for.
+        suppressNextIdleSearchRef.current = true;
         mapRef.current?.setCenter(DEFAULT_CENTER);
         mapRef.current?.setZoom(DEFAULT_ZOOM);
       },
@@ -183,9 +198,12 @@ export default function HomePage() {
     setShowLocationModal(false);
     initialLocationDecidedRef.current = true;
     if (!useReal || !navigator.geolocation) {
+      // No real location — nothing to auto-search around yet, wait for the user to actually pan
+      // or search. The setCenter below still fires its own `idle` event though, which must not
+      // be mistaken for a real pan (see suppressNextIdleSearchRef).
+      suppressNextIdleSearchRef.current = true;
       mapRef.current?.setCenter(DEFAULT_CENTER);
       mapRef.current?.setZoom(DEFAULT_ZOOM);
-      // No real location — nothing to auto-search around yet, wait for an explicit search.
       return;
     }
     centerOnRealLocationAndSearch();
