@@ -13,13 +13,20 @@ CREATE TABLE IF NOT EXISTS area_scans (
                                             -- repeat search of roughly the same area+category
                                             -- reuse existing leads instead of re-billing Places API
   status TEXT NOT NULL DEFAULT 'pending',  -- pending | discovering | enriching | done | failed
+  full_depth BOOLEAN NOT NULL DEFAULT true, -- false = pan-triggered, only fetched 1 Places API
+                                             -- page instead of 3 — a shallow scan can satisfy a
+                                             -- future shallow request but must never be reused to
+                                             -- answer a full-depth one, or real businesses beyond
+                                             -- page 1 silently stay hidden for the whole cache
+                                             -- freshness window
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ
 );
 
--- area_scans predates cache_key — CREATE TABLE IF NOT EXISTS above is a no-op once the table
--- already exists, so the new column needs its own explicit migration.
+-- area_scans predates cache_key/full_depth — CREATE TABLE IF NOT EXISTS above is a no-op once
+-- the table already exists, so new columns need their own explicit migration.
 ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS cache_key TEXT;
+ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS full_depth BOOLEAN NOT NULL DEFAULT true;
 
 CREATE INDEX IF NOT EXISTS idx_area_scans_cache_key ON area_scans(cache_key);
 

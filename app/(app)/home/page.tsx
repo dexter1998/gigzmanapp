@@ -259,7 +259,29 @@ export default function HomePage() {
       const bounds = mapRef.current.getBounds();
       if (!center || !bounds) return;
 
-      const radius = google.maps.geometry.spherical.computeDistanceBetween(center, bounds.getNorthEast());
+      // Nearby Search only accepts a circle, never a rectangle — using distance-to-corner (the
+      // previous approach) draws a circle that CIRCUMSCRIBES the visible viewport, so it always
+      // fetches real area beyond the screen edges too (wasted Places API calls for places the
+      // user can't even see yet). Using half the SHORTER visible dimension instead draws a
+      // circle inscribed within the viewport — it may miss a sliver near the far corners, but
+      // never fetches off-screen area, which is the actual complaint this fixes.
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      const { spherical } = google.maps.geometry;
+      const heightMeters = spherical.computeDistanceBetween(
+        new google.maps.LatLng(sw.lat(), center.lng()),
+        new google.maps.LatLng(ne.lat(), center.lng())
+      );
+      const widthMeters = spherical.computeDistanceBetween(
+        new google.maps.LatLng(center.lat(), sw.lng()),
+        new google.maps.LatLng(center.lat(), ne.lng())
+      );
+      // At the default zoom (18, building-level) the viewport-matched radius is only ~200-300m —
+      // far too tight to reach genuinely nearby but sparser categories (entertainment venues,
+      // real estate agencies) that a normal Google Maps user would still call "nearby". A floor
+      // keeps zooming in for pin density from also silently shrinking the search net to nothing.
+      const MIN_SEARCH_RADIUS_METERS = 1200;
+      const radius = Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS);
 
       const res = await fetch("/api/leads/find", {
         method: "POST",

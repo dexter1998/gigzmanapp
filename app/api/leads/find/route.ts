@@ -136,11 +136,16 @@ export async function POST(req: NextRequest) {
   async function processSection(section: string) {
     const cacheKey = cacheKeyFor(lat, lng, section);
 
+    // A shallow (1-page, pan-triggered) cache entry can answer a future shallow request, but
+    // must NEVER answer a full-depth one — otherwise a business sitting on page 2/3 stays
+    // invisible for the whole cache freshness window just because someone panned past that spot
+    // before ever clicking a full search there.
     const [cached] = await sql`
       SELECT id FROM area_scans
       WHERE cache_key = ${cacheKey} AND status = 'done'
         AND completed_at > now() - (${CACHE_FRESHNESS_DAYS} || ' days')::interval
-      ORDER BY completed_at DESC LIMIT 1
+        AND full_depth >= ${fullDepth}
+      ORDER BY full_depth DESC, completed_at DESC LIMIT 1
     `;
 
     if (cached) {
@@ -148,8 +153,8 @@ export async function POST(req: NextRequest) {
     }
 
     const [scan] = await sql`
-      INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, cache_key, status)
-      VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cacheKey}, 'discovering')
+      INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, cache_key, full_depth, status)
+      VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cacheKey}, ${fullDepth}, 'discovering')
       RETURNING id
     `;
 
