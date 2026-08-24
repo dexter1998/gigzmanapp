@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
+import { isExcludedType } from "@/lib/lead-quality";
+
+// Anti-abuse: a real discovery request (one that would actually call Places API) for the same
+// rounded area+category from the same user is throttled to once per this window — a user idling
+// on the map fires the `idle` listener on every tiny jiggle, and the per-cell cache alone only
+// stops re-billing for cells already confirmed exhausted, not the request-rate itself.
+const PER_AREA_COOLDOWN_SECONDS = 45;
+// A broader backstop above the per-area cooldown — catches erratic map interaction generally
+// (rapid pan-zoom-pan cycling across many different areas) rather than just the one-spot case.
+const SESSION_REQUEST_BUDGET = 40;
+const SESSION_WINDOW_MINUTES = 5;
 
 // Bounds every scan to roughly a "default zoom" neighborhood regardless of what radius the client
 // computes from its viewport — user report: zooming out toward city/state/country scale must not
@@ -41,6 +52,8 @@ type PlacesResult = {
     location?: { latitude?: number; longitude?: number };
     nationalPhoneNumber?: string;
     primaryType?: string;
+    rating?: number;
+    userRatingCount?: number;
   }>;
 };
 
@@ -58,7 +71,7 @@ async function fetchNearbyBatch(types: string[], cell: Cell) {
       // live via curl. Going past its flat 20-result cap now happens via quadrant subdivision
       // (see splitIntoQuadrants) instead of pagination, since the API genuinely has none.
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType",
+        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType,places.rating,places.userRatingCount",
     },
     body: JSON.stringify({
       includedTypes: types,
@@ -161,10 +174,30 @@ export async function POST(req: NextRequest) {
   const radius = Math.min(body.radius, MAX_SEARCH_RADIUS_METERS);
   const section: string = body.category;
   const userEmail = session.user.email;
+  const cooldownKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}`;
+
+  const [recentSameArea] = await sql`
+    SELECT id FROM area_scans
+    WHERE requested_by = ${userEmail} AND cache_key = ${cooldownKey}
+      AND created_at > now() - (${PER_AREA_COOLDOWN_SECONDS} || ' seconds')::interval
+    LIMIT 1
+  `;
+  if (recentSameArea) {
+    return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "area_cooldown" });
+  }
+
+  const [{ count: recentRequestCount }] = (await sql`
+    SELECT COUNT(*)::int AS count FROM area_scans
+    WHERE requested_by = ${userEmail}
+      AND created_at > now() - (${SESSION_WINDOW_MINUTES} || ' minutes')::interval
+  `) as [{ count: number }];
+  if (recentRequestCount >= SESSION_REQUEST_BUDGET) {
+    return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
+  }
 
   const [scan] = await sql`
-    INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, status)
-    VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, 'discovering')
+    INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, cache_key, status)
+    VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cooldownKey}, 'discovering')
     RETURNING id
   `;
 
@@ -177,14 +210,22 @@ export async function POST(req: NextRequest) {
     const result = await discoverBatch(batches[i], section, i, lat, lng, radius);
     hasMore = hasMore || result.hasMore;
     for (const place of result.places) {
+      // Dropped entirely, not just hidden client-side — confirmed via a live audit that ~20% of
+      // raw results are non-commercial (apartment/housing/association types Google occasionally
+      // assigns regardless of what was searched for), and a lead with no phone number isn't
+      // actually sellable to a customer of this product. Competitors are exempt from the phone
+      // requirement — they're a flag, not something meant to be contacted.
+      if (isExcludedType(place.primaryType)) continue;
       const name = place.displayName?.text ?? "Unknown";
       const isCompetitor = looksLikeCompetitor(name);
+      if (!isCompetitor && !place.nationalPhoneNumber) continue;
+
       const [row] = await sql`
-        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, is_competitor)
+        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, is_competitor, rating, review_count)
         VALUES (
           ${scan.id}, ${place.id}, ${name}, ${place.primaryType ?? section},
           ${place.formattedAddress ?? null}, ${place.location?.latitude ?? null}, ${place.location?.longitude ?? null},
-          ${place.nationalPhoneNumber ?? null}, NULL, ${isCompetitor}
+          ${place.nationalPhoneNumber ?? null}, NULL, ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
         )
         ON CONFLICT (place_id) DO UPDATE SET place_id = EXCLUDED.place_id
         RETURNING id, lat, lng, is_competitor

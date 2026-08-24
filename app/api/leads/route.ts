@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { maskName } from "@/lib/mask";
+import { heatScore } from "@/lib/lead-quality";
+import { TYPE_TO_SECTION } from "@/lib/categories";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT l.id, l.business_name, l.category, l.address, l.lat, l.lng, l.phone, l.email,
-           l.has_website, l.contacted, l.is_competitor, l.created_at,
+           l.has_website, l.contacted, l.is_competitor, l.created_at, l.rating, l.review_count,
            (u.id IS NOT NULL) AS is_unlocked
     FROM leads l
     LEFT JOIN unlocks u ON u.lead_id = l.id AND u.unlocked_by = ${userEmail}
@@ -41,6 +43,18 @@ export async function GET(req: NextRequest) {
       address: reveal ? r.address : null,
       phone: reveal ? r.phone : null,
       email: reveal ? r.email : null,
+      // Visible pre-unlock on purpose — it's meant to help decide whether a lead is worth the
+      // credit BEFORE spending it, not a reward for spending it.
+      heat_score: r.is_competitor
+        ? null
+        : heatScore({
+            rating: r.rating,
+            review_count: r.review_count,
+            has_website: r.has_website,
+            primary_type: r.category,
+            section: r.category ? (TYPE_TO_SECTION[r.category] ?? null) : null,
+            address: r.address,
+          }),
     };
   });
 

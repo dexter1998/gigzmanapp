@@ -46,11 +46,15 @@ CREATE TABLE IF NOT EXISTS leads (
   contacted BOOLEAN NOT NULL DEFAULT false,
   is_competitor BOOLEAN NOT NULL DEFAULT false, -- web/app/software dev shops — not a lead, shown
                                                  -- as a red/danger pin instead of grey/green/amber
+  rating REAL,                             -- Google rating (0-5), NULL if no reviews
+  review_count INTEGER,                    -- Google userRatingCount, NULL if no reviews
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- leads predates is_competitor — same reasoning as area_scans.cache_key above.
+-- leads predates is_competitor/rating/review_count — same reasoning as area_scans.cache_key above.
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS is_competitor BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS rating REAL;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS review_count INTEGER;
 
 CREATE INDEX IF NOT EXISTS idx_leads_area_scan ON leads(area_scan_id);
 CREATE INDEX IF NOT EXISTS idx_leads_has_website ON leads(has_website);

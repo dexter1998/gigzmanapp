@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
+import { HeatGauge } from "@/components/HeatGauge";
 
 type Lead = {
   id: string;
@@ -12,6 +13,7 @@ type Lead = {
   email: string | null;
   has_website: boolean | null;
   contacted: boolean;
+  heat_score: number | null;
 };
 
 export default function LmsPage() {
@@ -64,21 +66,31 @@ export default function LmsPage() {
           <div
             key={lead.id}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
               padding: "14px 16px",
               borderBottom: i === leads.length - 1 ? "none" : "1px solid var(--g-border)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</span>
-              <StatusPill hasWebsite={lead.has_website} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</span>
+                <StatusPill hasWebsite={lead.has_website} />
+              </div>
+              <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
+                {lead.category} · {lead.address ?? "No address found"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
+                {lead.phone ?? "No phone found"}
+                {lead.email ? ` · ${lead.email}` : ""}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
-              {lead.category} · {lead.address ?? "No address found"}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
-              {lead.phone ?? "No phone found"}
-              {lead.email ? ` · ${lead.email}` : ""}
-            </div>
+            {lead.heat_score !== null && (
+              <div style={{ flexShrink: 0 }}>
+                <HeatGauge score={lead.heat_score} size={72} />
+              </div>
+            )}
           </div>
         ))}
       </div>

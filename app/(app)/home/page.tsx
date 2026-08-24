@@ -6,6 +6,7 @@ import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/li
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
 import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
+import { HeatGauge } from "@/components/HeatGauge";
 
 type Lead = {
   id: string;
@@ -19,6 +20,7 @@ type Lead = {
   has_website: boolean | null;
   is_competitor: boolean;
   is_unlocked: boolean;
+  heat_score: number | null;
 };
 
 const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
@@ -52,6 +54,8 @@ export default function HomePage() {
   const [area, setArea] = useState("");
   const [category, setCategory] = useState(SEARCH_CATEGORIES[0]);
   const [searching, setSearching] = useState(false);
+  const [zoomTooLow, setZoomTooLow] = useState(false);
+  const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
@@ -122,6 +126,12 @@ export default function HomePage() {
       });
       setMapReady(true);
 
+      // Drives the zoom-dependent pin cap (see the pin-rendering effect) — re-caps immediately on
+      // zoom rather than waiting for the next search to complete and refresh `leads`.
+      mapRef.current.addListener("zoom_changed", () => {
+        setMapZoom(mapRef.current?.getZoom() ?? DEFAULT_ZOOM);
+      });
+
       // Auto-search whenever the user finishes panning/zooming — matches Pindrop's actual
       // behavior (search the CURRENT visible area, not just the original pinned location).
       // `idle` fires once movement settles, not continuously during a drag, so this is already
@@ -148,6 +158,16 @@ export default function HomePage() {
         centerOnRealLocationAndSearch();
       }
     });
+
+    // Navigating away (Home -> LMS/Profile) unmounts this page, but a still-running discovery
+    // loop is a plain async function with no idea the component is gone — it would keep firing
+    // /api/leads/find requests into the void. Bumping the generation here makes the loop's own
+    // "am I still the current search?" check (see handleFind) fail on its next iteration, so it
+    // stops issuing new requests instead of continuing to burn API calls for a screen nobody is
+    // looking at anymore.
+    return () => {
+      searchGenerationRef.current++;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -292,7 +312,7 @@ export default function HomePage() {
     if (!mapReady || !mapRef.current || !PinOverlayClassRef.current) return;
     const PinOverlay = PinOverlayClassRef.current;
 
-    const visible =
+    const filtered =
       noWebsiteOnly || activeCategory
         ? leads.filter(
             (l) =>
@@ -300,6 +320,26 @@ export default function HomePage() {
               (!activeCategory || (l.category && TYPE_TO_SECTION[l.category] === activeCategory))
           )
         : leads;
+
+    // Dense categories can return 1,000+ real matches in one radius (confirmed via a live audit)
+    // — rendering all of them at a zoomed-out view is an unreadable wall of pins. Cap how many
+    // render based on zoom, keeping the highest-scored (or competitor) ones when capped; zooming
+    // into a specific area raises the cap since there's less on screen to begin with.
+    const PIN_CAP_BY_ZOOM: Array<[minZoom: number, cap: number]> = [
+      [17, Infinity],
+      [15, 150],
+      [13, 60],
+    ];
+    const cap = PIN_CAP_BY_ZOOM.find(([minZoom]) => mapZoom >= minZoom)?.[1] ?? 40;
+    const visible =
+      filtered.length <= cap
+        ? filtered
+        : [...filtered]
+            .sort((a, b) => {
+              if (a.is_competitor !== b.is_competitor) return a.is_competitor ? -1 : 1;
+              return (b.heat_score ?? 0) - (a.heat_score ?? 0);
+            })
+            .slice(0, cap);
     const visibleIds = new Set(visible.map((l) => l.id));
 
     for (const [id, overlay] of markersRef.current) {
@@ -344,7 +384,7 @@ export default function HomePage() {
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
-  }, [leads, noWebsiteOnly, activeCategory, mapReady]);
+  }, [leads, noWebsiteOnly, activeCategory, mapReady, mapZoom]);
 
   /** Finds businesses in the CURRENT MAP VIEWPORT (center + radius derived from visible
    * bounds) — matching Pindrop's actual "search this area, this zoomed in" behavior. Called
@@ -369,6 +409,19 @@ export default function HomePage() {
           mapRef.current.setZoom(DEFAULT_ZOOM);
         }
       }
+
+      // City/state/country-scale zoom levels must not silently keep fetching just because the
+      // user panned while zoomed out that far — the radius clamp below already stops a single
+      // request from scanning a huge area, but at low zoom the visible viewport itself covers so
+      // much ground that even a repeatedly-reused small circle per pan adds up to scanning the
+      // whole region over time. Below this zoom, discovery just doesn't fire at all.
+      const ZOOM_FLOOR = 13;
+      const currentZoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
+      if (currentZoom < ZOOM_FLOOR) {
+        setZoomTooLow(true);
+        return;
+      }
+      setZoomTooLow(false);
 
       const center = mapRef.current.getCenter();
       const bounds = mapRef.current.getBounds();
@@ -687,6 +740,11 @@ export default function HomePage() {
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-amber-core)" }} />
                 No website found
               </div>
+              {selectedLead.heat_score !== null && (
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 6 }}>
+                  <HeatGauge score={selectedLead.heat_score} size={140} />
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <div style={{ paddingTop: 2 }}>
                   <LockIcon />
@@ -748,6 +806,25 @@ export default function HomePage() {
           }}
         >
           Finding {category === "All categories" ? "businesses" : category.toLowerCase()} in this area…
+        </div>
+      )}
+
+      {zoomTooLow && !searching && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 96,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--g-ink)",
+            color: "#fff",
+            padding: "8px 16px",
+            borderRadius: "var(--radius-pill)",
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          Zoom in to search this area
         </div>
       )}
     </div>
