@@ -10,9 +10,12 @@ const MAX_SEARCH_RADIUS_METERS = 3000;
 // Recursion floor for quadrant subdivision — below this, a capped cell is treated as exhausted
 // anyway rather than subdividing into circles too small to mean anything.
 const MIN_CELL_RADIUS_METERS = 150;
-// Per-request budget of grid cells actually queried for one batch — bounds a single HTTP call's
-// latency/cost; any cells left over roll into pending_cells for the next visit to that area.
-const CELLS_PER_REQUEST_BUDGET = 8;
+// Exactly one grid cell processed per batch per request — keeps each POST fast (one Places API
+// call per type-batch) so the frontend can refresh pins after every request instead of a whole
+// section's grid finishing silently in one long call. How many requests a section needs to fully
+// resolve naturally scales with how many cells the current zoom/area produced (denser or
+// wider-zoomed areas subdivide into more cells, so they take more, smaller round-trips).
+const CELLS_PER_REQUEST_BUDGET = 1;
 
 // Not a real Google Place Type (there's no "software company" type) — checked opportunistically
 // against whatever the normal section search already returned, not via a separate dedicated
@@ -112,7 +115,7 @@ async function discoverBatch(
     SELECT is_exhausted, pending_cells FROM area_type_scans WHERE cache_key = ${cacheKey}
   `;
 
-  if (existing?.is_exhausted) return [];
+  if (existing?.is_exhausted) return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false };
 
   const cellsToQuery: Cell[] =
     existing?.pending_cells?.length ? existing.pending_cells : [{ lat, lng, radius }];
@@ -142,7 +145,7 @@ async function discoverBatch(
       updated_at = now()
   `;
 
-  return places;
+  return { places, hasMore: !isExhausted };
 }
 
 export async function POST(req: NextRequest) {
@@ -168,10 +171,12 @@ export async function POST(req: NextRequest) {
   const types = CATEGORY_SECTIONS[section] ?? [];
   const batches = chunkTypes(types, 50);
   const rows: Array<{ id: string; lat: number | null; lng: number | null; is_competitor: boolean }> = [];
+  let hasMore = false;
 
   for (let i = 0; i < batches.length; i++) {
-    const places = await discoverBatch(batches[i], section, i, lat, lng, radius);
-    for (const place of places) {
+    const result = await discoverBatch(batches[i], section, i, lat, lng, radius);
+    hasMore = hasMore || result.hasMore;
+    for (const place of result.places) {
       const name = place.displayName?.text ?? "Unknown";
       const isCompetitor = looksLikeCompetitor(name);
       const [row] = await sql`
@@ -190,5 +195,5 @@ export async function POST(req: NextRequest) {
 
   await sql`UPDATE area_scans SET status = 'done', completed_at = now() WHERE id = ${scan.id}`;
 
-  return NextResponse.json({ found: rows.length, leads: rows });
+  return NextResponse.json({ found: rows.length, leads: rows, hasMore });
 }

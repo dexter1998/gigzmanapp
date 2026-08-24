@@ -189,6 +189,17 @@ export default function HomePage() {
     setLeads(data.leads ?? []);
   }
 
+  /** Runs has_website checks for a batch of newly discovered leads without blocking the grid
+   * discovery loop that kicked it off — deliberately not awaited by the caller. Pins for these
+   * leads already show grey (pending) from the discovery refreshLeads() call; this queues the
+   * website check one at a time and flips each pin to green/amber as its own check resolves. */
+  async function enrichLeadsInBackground(newLeads: Array<{ id: string }>) {
+    for (const lead of newLeads) {
+      await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
+      await refreshLeads();
+    }
+  }
+
   useEffect(() => {
     refreshLeads();
   }, []);
@@ -306,28 +317,30 @@ export default function HomePage() {
 
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
-      // One section at a time, refreshing the map after each — this is what makes it feel like it
-      // "keeps on finding leads" rather than everything appearing at once. No early-stop cap: each
-      // section runs to exhaustion (or as far as this request's grid-search budget reaches — see
-      // /api/leads/find), since the goal is listing every real business per category, not just
-      // enough to fill the screen.
+      // Each request now does exactly one grid cell's worth of discovery per type-batch (see
+      // /api/leads/find) and reports `hasMore` — so a section is drained in a tight loop of small,
+      // fast requests instead of one long call that silently does a whole section's grid search
+      // before the frontend hears back. Pins for newly found leads render (grey/pending) right
+      // after EACH request. Website-check enrichment for those leads is fired off in the
+      // background (not awaited here) so it never blocks moving on to the next grid cell — it
+      // queues up and flips pins from grey to green/amber as each one resolves independently.
       for (const section of sectionsToRun) {
-        const res = await fetch("/api/leads/find", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
-        });
-        const data = (await res.json()) as { leads?: Array<{ id: string; is_competitor: boolean }> };
-        await refreshLeads();
-
-        const newLeads = data.leads ?? [];
-
-        // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
-        // grey to green/amber as each one resolves. Competitors skip this — has_website isn't a
-        // relevant signal for them.
-        for (const lead of newLeads.filter((l) => !l.is_competitor)) {
-          await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
+        let hasMore = true;
+        while (hasMore) {
+          const res = await fetch("/api/leads/find", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
+          });
+          const data = (await res.json()) as {
+            leads?: Array<{ id: string; is_competitor: boolean }>;
+            hasMore?: boolean;
+          };
+          hasMore = data.hasMore ?? false;
           await refreshLeads();
+
+          const newLeads = (data.leads ?? []).filter((l) => !l.is_competitor);
+          if (newLeads.length) void enrichLeadsInBackground(newLeads);
         }
       }
     } finally {
