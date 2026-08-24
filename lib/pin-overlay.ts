@@ -19,8 +19,20 @@ export function createPinOverlayClass() {
     private glow: boolean;
     private glyph?: string;
     private onClick: () => void;
+    private onHoverStart?: () => void;
+    private onHoverEnd?: () => void;
+    private lastPoint: { x: number; y: number } | null = null;
 
-    constructor(position: google.maps.LatLngLiteral, color: string, pulsing: boolean, onClick: () => void, glow = false, glyph?: string) {
+    constructor(
+      position: google.maps.LatLngLiteral,
+      color: string,
+      pulsing: boolean,
+      onClick: () => void,
+      glow = false,
+      glyph?: string,
+      onHoverStart?: () => void,
+      onHoverEnd?: () => void
+    ) {
       super();
       this.position = new google.maps.LatLng(position.lat, position.lng);
       this.color = color;
@@ -28,6 +40,26 @@ export function createPinOverlayClass() {
       this.glow = glow;
       this.glyph = glyph;
       this.onClick = onClick;
+      this.onHoverStart = onHoverStart;
+      this.onHoverEnd = onHoverEnd;
+    }
+
+    /** Screen pixel position relative to the map's CONTAINER div — for positioning a popup card
+     * that lives outside the map's overlay panes (a sibling React element in the same relatively-
+     * positioned parent as the map container), not for the pin's own rendering. Deliberately uses
+     * fromLatLngToContainerPixel, not fromLatLngToDivPixel (used by draw() below): the latter
+     * returns coordinates in the overlay PANE's own space, which can be offset from the visible
+     * container — the pin itself renders correctly regardless since the browser handles the
+     * pane's own positioning, but a separate element positioned using those same raw numbers ends
+     * up wrong (confirmed live: draw()'s numbers put a test pin's card near (0,0) despite the pin
+     * itself rendering mid-screen). Recomputed on every call, not cached — a pin whose map
+     * viewport hasn't moved since it was added may only ever get one internal draw() call. */
+    getScreenPosition() {
+      const projection = this.getProjection();
+      if (!projection) return this.lastPoint;
+      const point = projection.fromLatLngToContainerPixel(this.position);
+      if (!point) return this.lastPoint;
+      return { x: point.x, y: point.y };
     }
 
     private shadow() {
@@ -37,6 +69,7 @@ export function createPinOverlayClass() {
 
     onAdd() {
       const div = document.createElement("div");
+      div.setAttribute("data-testid", "g-pin");
       div.style.position = "absolute";
       div.style.width = "18px";
       div.style.height = "18px";
@@ -59,6 +92,8 @@ export function createPinOverlayClass() {
       }
       if (this.pulsing) div.classList.add("g-pin-pulse");
       div.addEventListener("click", () => this.onClick());
+      if (this.onHoverStart) div.addEventListener("mouseenter", () => this.onHoverStart?.());
+      if (this.onHoverEnd) div.addEventListener("mouseleave", () => this.onHoverEnd?.());
       this.div = div;
 
       const panes = this.getPanes();
@@ -71,6 +106,7 @@ export function createPinOverlayClass() {
       if (!projection) return;
       const point = projection.fromLatLngToDivPixel(this.position);
       if (!point) return;
+      this.lastPoint = { x: point.x, y: point.y };
       this.div.style.left = `${point.x}px`;
       this.div.style.top = `${point.y}px`;
     }

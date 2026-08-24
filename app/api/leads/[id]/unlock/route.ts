@@ -2,22 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 
-// Manual unlock: one lead id in the URL. Bulk unlock: POST { ids: string[] } to this same
-// lead's route is awkward for bulk, so bulk uses /api/leads/unlock-bulk instead — kept this one
-// simple for the single-lead case (matches the plan: same unlock action, different selection count).
+/**
+ * "Add to leads" — costs 1 credit, reveals full contact/address detail for this lead in the LMS
+ * (see /api/leads GET, which nulls those fields out server-side until a matching `unlocks` row
+ * exists). Credits only ever go down here; they go up via /api/user/plan on an "upgrade".
+ */
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const userEmail = session.user.email;
 
-  await sql`
+  let [profile] = await sql`SELECT credits FROM user_profiles WHERE email = ${userEmail}`;
+  if (!profile) {
+    [profile] = await sql`
+      INSERT INTO user_profiles (email) VALUES (${userEmail})
+      ON CONFLICT (email) DO NOTHING
+      RETURNING credits
+    `;
+  }
+  const credits = profile?.credits ?? 0;
+
+  const [alreadyUnlocked] = await sql`
+    SELECT id FROM unlocks WHERE lead_id = ${id} AND unlocked_by = ${userEmail}
+  `;
+  if (alreadyUnlocked) return NextResponse.json({ unlocked: true, alreadyUnlocked: true, credits });
+
+  if (credits <= 0) {
+    return NextResponse.json({ error: "insufficient_credits", credits }, { status: 402 });
+  }
+
+  const [inserted] = await sql`
     INSERT INTO unlocks (lead_id, unlocked_by)
-    VALUES (${id}, ${session.user.email})
+    VALUES (${id}, ${userEmail})
     ON CONFLICT (lead_id, unlocked_by) DO NOTHING
+    RETURNING id
   `;
 
-  // UI-only premium flag for now (plan-confirmed, no real payment gateway yet) — real enrichment
-  // data source is still an open item, not wired here.
-  return NextResponse.json({ unlocked: true });
+  if (!inserted) return NextResponse.json({ unlocked: true, alreadyUnlocked: true, credits });
+
+  const [updated] = await sql`
+    UPDATE user_profiles SET credits = credits - 1, updated_at = now()
+    WHERE email = ${userEmail}
+    RETURNING credits
+  `;
+
+  return NextResponse.json({ unlocked: true, alreadyUnlocked: false, credits: updated.credits });
 }

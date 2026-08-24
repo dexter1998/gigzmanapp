@@ -18,6 +18,17 @@ export function CreditsIndicator() {
 
   useEffect(() => {
     load();
+    // Other parts of the app (e.g. "Add to leads" on the map card) spend a credit through their
+    // own API call, not through this component — they signal a refresh via this event instead of
+    // needing a shared store/context just for one number.
+    const onCreditsChanged = () => load();
+    const onOpenPlans = () => setOpen(true);
+    window.addEventListener("gigzman:credits-changed", onCreditsChanged);
+    window.addEventListener("gigzman:open-plans", onOpenPlans);
+    return () => {
+      window.removeEventListener("gigzman:credits-changed", onCreditsChanged);
+      window.removeEventListener("gigzman:open-plans", onOpenPlans);
+    };
   }, []);
 
   if (!profile) return null;

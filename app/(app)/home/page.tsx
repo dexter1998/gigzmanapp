@@ -14,8 +14,11 @@ type Lead = {
   address: string | null;
   lat: number | null;
   lng: number | null;
+  phone: string | null;
+  email: string | null;
   has_website: boolean | null;
   is_competitor: boolean;
+  is_unlocked: boolean;
 };
 
 const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
@@ -24,12 +27,6 @@ const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
 // match Pindrop's own default (building-level, not a whole-city view).
 const DEFAULT_CENTER = { lat: 28.495, lng: 77.089 };
 const DEFAULT_ZOOM = 17;
-
-function maskName(name: string) {
-  const first = name.trim().split(/\s+/)[0] ?? name;
-  const head = first.slice(0, 3);
-  return `${head}${"•".repeat(Math.max(3, first.length - 3))}`;
-}
 
 export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -59,7 +56,17 @@ export default function HomePage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  // Derived (see below), not its own state — a separately-held Lead snapshot would go stale the
+  // moment refreshLeads() updates the underlying data (has_website resolving, is_unlocked
+  // flipping after "Add to leads"), so the open card always reads through to current `leads`.
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  // The hovered/clicked pin's own screen pixel position (from PinOverlay.getScreenPosition()),
+  // so the popup card renders directly above THAT pin instead of a fixed spot on screen.
+  const [cardPosition, setCardPosition] = useState<{ x: number; y: number } | null>(null);
+  const [addingLead, setAddingLead] = useState(false);
+  // Lets the card survive the gap between leaving the pin and entering the card itself (hover
+  // intent) — mouseleave on the pin schedules a hide, cancelled if the card is entered in time.
+  const hideCardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Ref mirrors of state that the map's `idle` listener needs to read — the listener is attached
   // once at map creation, so it would otherwise only ever see the state values from that first
@@ -230,6 +237,57 @@ export default function HomePage() {
     refreshLeads();
   }, []);
 
+  const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) ?? null) : null;
+
+  function showLeadCard(lead: Lead, overlay: PinOverlayInstance) {
+    if (hideCardTimeoutRef.current) {
+      clearTimeout(hideCardTimeoutRef.current);
+      hideCardTimeoutRef.current = null;
+    }
+    setSelectedLeadId(lead.id);
+    setCardPosition(overlay.getScreenPosition());
+    // Self-heals a lead stuck on "Checking..." forever — the background enrichment queue can fail
+    // silently (rate limits, a transient Places error) with no retry; looking at the lead again
+    // is a natural, cheap moment to retry instead of leaving it stuck.
+    if (!lead.is_competitor && lead.has_website === null) {
+      fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" })
+        .then(() => refreshLeads())
+        .catch(() => {});
+    }
+  }
+
+  function scheduleHideCard() {
+    hideCardTimeoutRef.current = setTimeout(() => {
+      setSelectedLeadId(null);
+      setCardPosition(null);
+    }, 250);
+  }
+
+  function cancelHideCard() {
+    if (hideCardTimeoutRef.current) {
+      clearTimeout(hideCardTimeoutRef.current);
+      hideCardTimeoutRef.current = null;
+    }
+  }
+
+  async function handleAddToLeads(lead: Lead) {
+    setAddingLead(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: "POST" });
+      if (res.status === 402) {
+        window.dispatchEvent(new Event("gigzman:open-plans"));
+        return;
+      }
+      const data = (await res.json()) as { unlocked?: boolean };
+      if (data.unlocked) {
+        window.dispatchEvent(new Event("gigzman:credits-changed"));
+        await refreshLeads();
+      }
+    } finally {
+      setAddingLead(false);
+    }
+  }
+
   useEffect(() => {
     if (!mapReady || !mapRef.current || !PinOverlayClassRef.current) return;
     const PinOverlay = PinOverlayClassRef.current;
@@ -273,7 +331,16 @@ export default function HomePage() {
         continue;
       }
 
-      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead), glow, glyph);
+      const overlay: PinOverlayInstance = new PinOverlay(
+        { lat: lead.lat, lng: lead.lng },
+        color,
+        pulsing,
+        () => showLeadCard(lead, overlay),
+        glow,
+        glyph,
+        () => showLeadCard(lead, overlay),
+        () => scheduleHideCard()
+      );
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
@@ -556,31 +623,40 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Pin popup card */}
-      {selectedLead && (
+      {/* Pin popup card — positioned directly above the hovered/clicked pin's own screen
+          position (see PinOverlay.getScreenPosition()), not a fixed spot on screen. The
+          translate(-100%) on Y is percentage-of-own-height, so it sits correctly above the pin
+          regardless of the card's actual rendered height (varies by state/content). Clamped so
+          it can't render above the toolbar near the top edge. */}
+      {selectedLead && cardPosition && (
         <div
+          onMouseEnter={cancelHideCard}
+          onMouseLeave={scheduleHideCard}
           style={{
             position: "absolute",
-            top: 76,
-            left: "50%",
-            transform: "translateX(-50%)",
+            left: cardPosition.x,
+            top: Math.max(cardPosition.y, 220),
+            transform: "translate(-50%, calc(-100% - 16px))",
             width: 300,
             background: "linear-gradient(180deg, #fffaf0, var(--g-amber-tint))",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
             padding: 20,
+            zIndex: 20,
           }}
         >
           <button
             type="button"
-            onClick={() => setSelectedLead(null)}
+            onClick={() => {
+              cancelHideCard();
+              setSelectedLeadId(null);
+              setCardPosition(null);
+            }}
             style={{ position: "absolute", top: 12, right: 12, border: "none", background: "none", cursor: "pointer", color: "var(--g-gray-500)", fontSize: 14 }}
           >
             ✕
           </button>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--g-ink)" }}>
-            {selectedLead.has_website === false ? maskName(selectedLead.business_name) : selectedLead.business_name}
-          </div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--g-ink)" }}>{selectedLead.business_name}</div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", marginTop: 2 }}>
             {selectedLead.category ?? "Business"}
           </div>
@@ -591,7 +667,21 @@ export default function HomePage() {
               Competitor — not a lead
             </div>
           )}
-          {!selectedLead.is_competitor && selectedLead.has_website === false && (
+
+          {!selectedLead.is_competitor && selectedLead.is_unlocked && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)" }}>
+                <CheckIcon /> Added to your leads
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--g-ink-soft)", lineHeight: 1.5 }}>
+                {selectedLead.phone ?? "No phone found"}
+                {selectedLead.email ? <><br />{selectedLead.email}</> : null}
+                {selectedLead.address ? <><br />{selectedLead.address}</> : null}
+              </div>
+            </div>
+          )}
+
+          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === false && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, fontWeight: 700, color: "#b45309" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-amber-core)" }} />
@@ -602,13 +692,16 @@ export default function HomePage() {
                   <LockIcon />
                 </div>
                 <p style={{ fontSize: 12.5, color: "var(--g-ink-soft)", margin: 0, lineHeight: 1.4 }}>
-                  A prime lead with no website. Unlock full details in the LMS.
+                  A prime lead with no website. Add it to unlock full contact details.
                 </p>
               </div>
-              <a
-                href="/lms"
+              <button
+                type="button"
+                disabled={addingLead}
+                onClick={() => handleAddToLeads(selectedLead)}
                 style={{
                   marginTop: 14,
+                  width: "100%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -619,19 +712,21 @@ export default function HomePage() {
                   padding: "11px 0",
                   fontSize: 13.5,
                   fontWeight: 700,
-                  textDecoration: "none",
+                  border: "none",
+                  cursor: addingLead ? "default" : "pointer",
+                  opacity: addingLead ? 0.7 : 1,
                 }}
               >
-                Get contact details <ArrowRightIcon />
-              </a>
+                {addingLead ? "Adding…" : "Add to leads"} <ArrowRightIcon />
+              </button>
             </>
           )}
-          {!selectedLead.is_competitor && selectedLead.has_website === true && (
+          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === true && (
             <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>
               This business already has a website.
             </div>
           )}
-          {!selectedLead.is_competitor && selectedLead.has_website === null && (
+          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === null && (
             <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>Checking…</div>
           )}
         </div>
