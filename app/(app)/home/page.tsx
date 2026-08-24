@@ -24,7 +24,6 @@ const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
 // match Pindrop's own default (building-level, not a whole-city view).
 const DEFAULT_CENTER = { lat: 28.495, lng: 77.089 };
 const DEFAULT_ZOOM = 17;
-const MAX_RESULTS_PER_AREA = 50; // total non-competitor leads per search, not per section
 
 function maskName(name: string) {
   const first = name.trim().split(/\s+/)[0] ?? name;
@@ -296,29 +295,32 @@ export default function HomePage() {
       // real estate agencies) that a normal Google Maps user would still call "nearby". A floor
       // keeps zooming in for pin density from also silently shrinking the search net to nothing.
       const MIN_SEARCH_RADIUS_METERS = 1200;
-      const radius = Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS);
+      // MAX mirrors the server-side clamp in /api/leads/find — panning/zooming out must not
+      // balloon the scanned area toward city/state/country scale, it stays bounded to roughly a
+      // "default zoom" neighborhood regardless of viewport size.
+      const MAX_SEARCH_RADIUS_METERS = 3000;
+      const radius = Math.min(
+        Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS),
+        MAX_SEARCH_RADIUS_METERS
+      );
 
-      const fullDepth = !opts?.fromMapMove;
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
-      // One section at a time, refreshing the map after each — this is what makes it feel like
-      // it "keeps on finding leads" rather than everything appearing at once, and lets us stop
-      // as soon as there's enough instead of always exhausting every section. Capped on TOTAL
-      // results for the area, not on how many API calls/pages it took to get there.
-      let found = 0;
+      // One section at a time, refreshing the map after each — this is what makes it feel like it
+      // "keeps on finding leads" rather than everything appearing at once. No early-stop cap: each
+      // section runs to exhaustion (or as far as this request's grid-search budget reaches — see
+      // /api/leads/find), since the goal is listing every real business per category, not just
+      // enough to fill the screen.
       for (const section of sectionsToRun) {
-        if (found >= MAX_RESULTS_PER_AREA) break;
-
         const res = await fetch("/api/leads/find", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section, fullDepth }),
+          body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
         });
         const data = (await res.json()) as { leads?: Array<{ id: string; is_competitor: boolean }> };
         await refreshLeads();
 
         const newLeads = data.leads ?? [];
-        found += newLeads.filter((l) => !l.is_competitor).length;
 
         // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
         // grey to green/amber as each one resolves. Competitors skip this — has_website isn't a

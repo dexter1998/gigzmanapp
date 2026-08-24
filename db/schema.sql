@@ -55,6 +55,30 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS is_competitor BOOLEAN NOT NULL DEFAUL
 CREATE INDEX IF NOT EXISTS idx_leads_area_scan ON leads(area_scan_id);
 CREATE INDEX IF NOT EXISTS idx_leads_has_website ON leads(has_website);
 
+-- Per (area cell, section, type-batch) grid-search progress, replacing area_scans' role as the
+-- fetch-skip cache for /api/leads/find. Nearby Search (New) hard-caps at 20 results per call with
+-- no pagination — the only way past that ceiling is to split a capped call's circle into 4 smaller
+-- quadrant circles and query those individually. is_exhausted permanently caches a cell once every
+-- sub-circle has returned under 20 (nothing left to find); pending_cells persists the still-capped
+-- sub-circles so a later visit continues subdividing instead of re-querying what's already known
+-- (the earlier bug's actual cost waste, per user report: "22 businesses already fetched" should
+-- mean the next run goes for the batch after those 22, not re-fetch the same ones).
+CREATE TABLE IF NOT EXISTS area_type_scans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cache_key TEXT NOT NULL,          -- "<lat_r>_<lng_r>_<section>_<batchIndex>"
+  section TEXT NOT NULL,
+  batch_index INTEGER NOT NULL,
+  center_lat DOUBLE PRECISION NOT NULL,
+  center_lng DOUBLE PRECISION NOT NULL,
+  is_exhausted BOOLEAN NOT NULL DEFAULT false,
+  pending_cells JSONB NOT NULL DEFAULT '[]',  -- [{lat,lng,radius}, ...] still-capped sub-circles
+  result_count INTEGER NOT NULL DEFAULT 0,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_area_type_scans_cache_key ON area_type_scans(cache_key);
+
 CREATE TABLE IF NOT EXISTS lead_enrichment (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lead_id UUID NOT NULL REFERENCES leads(id),
