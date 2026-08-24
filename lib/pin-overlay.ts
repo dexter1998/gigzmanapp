@@ -17,14 +17,16 @@ export function createPinOverlayClass() {
     private color: string;
     private pulsing: boolean;
     private glow: boolean;
+    private glyph?: string;
     private onClick: () => void;
 
-    constructor(position: google.maps.LatLngLiteral, color: string, pulsing: boolean, onClick: () => void, glow = false) {
+    constructor(position: google.maps.LatLngLiteral, color: string, pulsing: boolean, onClick: () => void, glow = false, glyph?: string) {
       super();
       this.position = new google.maps.LatLng(position.lat, position.lng);
       this.color = color;
       this.pulsing = pulsing;
       this.glow = glow;
+      this.glyph = glyph;
       this.onClick = onClick;
     }
 
@@ -45,6 +47,16 @@ export function createPinOverlayClass() {
       div.style.border = "2px solid #fff";
       div.style.boxShadow = this.shadow();
       div.style.cursor = "pointer";
+      if (this.glyph) {
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontSize = "11px";
+        div.style.lineHeight = "1";
+        div.style.color = "#fff";
+        div.style.fontWeight = "800";
+        div.textContent = this.glyph;
+      }
       if (this.pulsing) div.classList.add("g-pin-pulse");
       div.addEventListener("click", () => this.onClick());
       this.div = div;

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
-import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, MoonIcon } from "@/components/icons";
+import { SECTION_NAMES, TYPE_TO_SECTION } from "@/lib/categories";
+import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 
 type Lead = {
@@ -14,29 +15,10 @@ type Lead = {
   lat: number | null;
   lng: number | null;
   has_website: boolean | null;
+  is_competitor: boolean;
 };
 
-// Curated for "would realistically buy a website" — matches CATEGORY_TYPE_MAP in the find route.
-const CATEGORIES = [
-  "Barbershop",
-  "Hair salon",
-  "Nail salon",
-  "Spa",
-  "Plumbing",
-  "Electrician",
-  "Landscaping",
-  "Roofing",
-  "Lawyer",
-  "CA / Accounting",
-  "Real Estate",
-  "Dentist",
-  "Gym",
-  "Insurance",
-  "Travel Agency",
-  "Photographer",
-];
-
-const SEARCH_CATEGORIES = ["All categories", ...CATEGORIES];
+const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
 
 // DLF Cyber City, Gurugram — default center when location access isn't granted, zoomed in to
 // match Pindrop's own default (building-level, not a whole-city view).
@@ -78,61 +60,51 @@ export default function HomePage() {
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  // Real tradeoff, not a bug: Google Maps won't combine mapId-based 3D with inline dark/no-POI
-  // styling (that requires a Cloud Console-configured Map ID we don't have yet). So the toggle
-  // is honestly between two different real modes: 3D with Google's default POI icons showing,
-  // or flat 2D fully dark with everything but our own pins hidden. Defaults to 3D since that's
-  // been the repeated ask, matching Pindrop's richer look.
-  const [nightMode, setNightMode] = useState(false);
-  // Forces React to fully unmount/remount the map's DOM node on toggle (not just clear its
-  // contents) — Google Maps' WebGL context from the previous instance doesn't reliably release
-  // just by clearing innerHTML, which left the map visibly undersized (a real rendering bug, not
-  // a CSS one — the container's own measured size was always correct) after toggling once.
-  const [mapMountKey, setMapMountKey] = useState(0);
-  const pendingRebuildRef = useRef<{ dark: boolean; center: google.maps.LatLngLiteral; zoom: number } | null>(null);
-  const hasMountedRef = useRef(false);
 
-  function buildMap(dark: boolean, center: google.maps.LatLngLiteral, zoom: number) {
-    if (!mapDivRef.current) return;
-    const options: google.maps.MapOptions = dark
-      ? { center, zoom, tilt: 0, disableDefaultUI: true, zoomControl: true, zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER }, styles: MAP_STYLES }
-      : { center, zoom, tilt: 45, mapId: "DEMO_MAP_ID", disableDefaultUI: true, zoomControl: true, zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER } };
-    mapRef.current = new google.maps.Map(mapDivRef.current, options);
-
-    // Re-attach existing pin overlays (and the you-marker) to the freshly created map instance.
-    for (const overlay of markersRef.current.values()) overlay.setMap(mapRef.current);
-    youMarkerRef.current?.setMap(mapRef.current);
-  }
-
-  function toggleNightMode() {
-    if (!mapRef.current) return;
-    const center = mapRef.current.getCenter();
-    const zoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
-    const next = !nightMode;
-    pendingRebuildRef.current = { dark: next, center: center ? { lat: center.lat(), lng: center.lng() } : DEFAULT_CENTER, zoom };
-    setNightMode(next);
-    mapRef.current = null; // the old instance's div is about to be discarded
-    setMapMountKey((k) => k + 1);
-  }
-
-  // Runs after mapMountKey changes and React has mounted the fresh div — rebuilds the map there.
-  // Skipped on the very first mount (mapMountKey start at 0), which the effect below handles.
+  // Ref mirrors of state that the map's `idle` listener needs to read — the listener is attached
+  // once at map creation, so it would otherwise only ever see the state values from that first
+  // render (a classic stale-closure trap).
+  const categoryRef = useRef(category);
   useEffect(() => {
-    if (!hasMountedRef.current) return;
-    const pending = pendingRebuildRef.current;
-    if (!pending || !mapDivRef.current) return;
-    buildMap(pending.dark, pending.center, pending.zoom);
-    setMapReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapMountKey]);
+    categoryRef.current = category;
+  }, [category]);
+  const areaRef = useRef(area);
+  useEffect(() => {
+    areaRef.current = area;
+  }, [area]);
+
+  const lastAutoSearchRef = useRef(0);
 
   useEffect(() => {
     loadGoogleMaps().then(() => {
       if (!mapDivRef.current || mapRef.current) return;
-      hasMountedRef.current = true;
       PinOverlayClassRef.current = createPinOverlayClass();
-      buildMap(nightMode, DEFAULT_CENTER, DEFAULT_ZOOM);
+      mapRef.current = new google.maps.Map(mapDivRef.current, {
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        // Dark, clean, no default POI icons — the only look now (no light/3D toggle). mapId is
+        // deliberately not used: it would enable 3D, but Google Maps ignores inline `styles`
+        // (this dark/no-POI theme) on any mapId-based map, and a clean map showing only our own
+        // pins mattered more than 3D once that tradeoff was made explicit.
+        disableDefaultUI: true,
+        zoomControl: true,
+        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+        styles: MAP_STYLES,
+      });
       setMapReady(true);
+
+      // Auto-search whenever the user finishes panning/zooming — matches Pindrop's actual
+      // behavior (search the CURRENT visible area, not just the original pinned location).
+      // `idle` fires once movement settles, not continuously during a drag, so this is already
+      // naturally debounced by Google Maps itself. Safe to call this liberally because the
+      // discovery route caches per area+category — repeat visits to the same spot reuse the
+      // cache instead of re-paying Places API every time the map settles.
+      mapRef.current.addListener("idle", () => {
+        const now = Date.now();
+        if (now - lastAutoSearchRef.current < 1500) return; // guards against rapid double-fires
+        lastAutoSearchRef.current = now;
+        void handleFind({ fromMapMove: true });
+      });
 
       // If the location prompt was already resolved on a prior visit, don't show it again —
       // just silently re-attempt geolocation (browsers never re-prompt for permission once
@@ -220,7 +192,7 @@ export default function HomePage() {
         ? leads.filter(
             (l) =>
               (!noWebsiteOnly || l.has_website === false) &&
-              (!activeCategory || l.category?.toLowerCase() === activeCategory.toLowerCase())
+              (!activeCategory || (l.category && TYPE_TO_SECTION[l.category] === activeCategory))
           )
         : leads;
     const visibleIds = new Set(visible.map((l) => l.id));
@@ -235,9 +207,18 @@ export default function HomePage() {
     for (const lead of visible) {
       if (lead.lat == null || lead.lng == null) continue;
 
-      const color = lead.has_website === null ? "#c7cad1" : lead.has_website ? "#3aa65c" : "#fdba3f";
-      const pulsing = lead.has_website === null;
-      const glow = !pulsing; // resolved pins (green/amber) glow, like Pindrop's; checking ones just pulse
+      // Competitors (web/app/software dev shops) are never leads — flagged red with a danger
+      // glyph instead of going through the grey/green/amber has_website flow at all.
+      const color = lead.is_competitor
+        ? "#dc2626"
+        : lead.has_website === null
+          ? "#c7cad1"
+          : lead.has_website
+            ? "#3aa65c"
+            : "#fdba3f";
+      const pulsing = !lead.is_competitor && lead.has_website === null;
+      const glow = !pulsing; // resolved pins (green/amber/red) glow, like Pindrop's; checking ones just pulse
+      const glyph = lead.is_competitor ? "!" : undefined;
 
       const existing = markersRef.current.get(lead.id);
       if (existing) {
@@ -245,23 +226,26 @@ export default function HomePage() {
         continue;
       }
 
-      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead), glow);
+      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead), glow, glyph);
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
   }, [leads, noWebsiteOnly, activeCategory, mapReady]);
 
   /** Finds businesses in the CURRENT MAP VIEWPORT (center + radius derived from visible
-   * bounds) — matching Pindrop's actual "search this area" behavior, not a typed address
-   * query. If the search box has text, it's geocoded first to pan the map there, then the
-   * viewport search runs against the new position. */
-  async function handleFind() {
+   * bounds) — matching Pindrop's actual "search this area, this zoomed in" behavior. Called
+   * both on explicit search and automatically whenever the map's `idle` event fires (see the
+   * mount effect). `fromMapMove` skips the address-geocoding step (there's nothing typed to
+   * geocode when the trigger was a pan/zoom, not a search-box submit) and reads category/area
+   * from refs instead of closed-over state, since the idle listener is attached once at mount. */
+  async function handleFind(opts?: { fromMapMove?: boolean }) {
     if (!mapRef.current) return;
     setSearching(true);
     try {
-      if (area.trim()) {
+      const currentArea = opts?.fromMapMove ? "" : areaRef.current;
+      if (currentArea.trim()) {
         const geoRes = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(area)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(currentArea)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
         );
         const geoData = await geoRes.json();
         const loc = geoData.results?.[0]?.geometry?.location;
@@ -280,15 +264,25 @@ export default function HomePage() {
       const res = await fetch("/api/leads/find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category }),
+        body: JSON.stringify({
+          lat: center.lat(),
+          lng: center.lng(),
+          radius,
+          category: categoryRef.current,
+          // Pan/zoom-triggered searches only fetch 1 page per batch instead of 3 — an "All
+          // categories" scan across every section needs to stay fast enough to run on every
+          // `idle` event without timing out. Explicit search clicks still go full depth.
+          fullDepth: !opts?.fromMapMove,
+        }),
       });
-      const data = (await res.json()) as { leads?: Array<{ id: string }> };
+      const data = (await res.json()) as { leads?: Array<{ id: string; is_competitor: boolean }> };
       await refreshLeads();
 
       // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
       // grey to green/amber as each one resolves — the progressive-reveal effect that was
       // missing entirely while leads just sat grey forever with no enrichment path at all.
-      for (const lead of data.leads ?? []) {
+      // Competitors skip this entirely — has_website isn't a relevant signal for them.
+      for (const lead of (data.leads ?? []).filter((l) => !l.is_competitor)) {
         await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
         await refreshLeads();
       }
@@ -299,7 +293,7 @@ export default function HomePage() {
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
-      <div key={mapMountKey} ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 
       {showLocationModal && (
         <div
@@ -381,100 +375,97 @@ export default function HomePage() {
       {/* Top toolbar — capped width + centered, was stretching edge-to-edge before */}
       <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", width: "100%", maxWidth: 760 }}>
-        <ToolbarButton onClick={handleLocateMe} active={locating}>
-          <CrosshairIcon />
-        </ToolbarButton>
-        <ToolbarButton onClick={toggleNightMode} active={nightMode}>
-          <MoonIcon filled={nightMode} />
-        </ToolbarButton>
-        <ToolbarButton>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>?</span>
-        </ToolbarButton>
-
-        <div
-          style={{
-            flex: 1,
-            background: "var(--g-white)",
-            borderRadius: "var(--radius-pill)",
-            boxShadow: "var(--shadow-toolbar)",
-            display: "flex",
-            alignItems: "center",
-            padding: "0 6px 0 16px",
-            height: 44,
-          }}
-        >
-          <input
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleFind()}
-            placeholder="Search a business, address, or city"
-            style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "var(--g-ink)", background: "transparent" }}
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{
-              border: "1px solid var(--g-green)",
-              outline: "none",
-              fontSize: 12,
-              fontWeight: 700,
-              color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
-              background: "var(--g-green-mint)",
-              borderRadius: "var(--radius-pill)",
-              padding: "6px 10px",
-              marginRight: 4,
-            }}
-          >
-            {SEARCH_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <ToolbarButton onClick={handleFind}>
-          <SearchIcon />
-        </ToolbarButton>
-
-        <div style={{ position: "relative" }}>
-          <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>
-            <FilterIcon />
+          <ToolbarButton onClick={handleLocateMe} active={locating}>
+            <CrosshairIcon />
+          </ToolbarButton>
+          <ToolbarButton>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>?</span>
           </ToolbarButton>
 
-          {filterOpen && (
-            <div
+          <div
+            style={{
+              flex: 1,
+              background: "var(--g-white)",
+              borderRadius: "var(--radius-pill)",
+              boxShadow: "var(--shadow-toolbar)",
+              display: "flex",
+              alignItems: "center",
+              padding: "0 6px 0 16px",
+              height: 44,
+            }}
+          >
+            <input
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleFind()}
+              placeholder="Search a business, address, or city"
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "var(--g-ink)", background: "transparent" }}
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
               style={{
-                position: "absolute",
-                top: 52,
-                right: 0,
-                width: 220,
-                background: "var(--g-white)",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-card)",
-                padding: "8px 0",
-                maxHeight: 340,
-                overflowY: "auto",
+                border: "1px solid var(--g-green)",
+                outline: "none",
+                fontSize: 12,
+                fontWeight: 700,
+                color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
+                background: "var(--g-green-mint)",
+                borderRadius: "var(--radius-pill)",
+                padding: "6px 10px",
+                marginRight: 4,
               }}
             >
-              <FilterRow
-                label="No website only"
-                checked={noWebsiteOnly}
-                onClick={() => setNoWebsiteOnly((v) => !v)}
-              />
-              <div style={{ height: 1, background: "var(--g-border)", margin: "4px 0" }} />
-              <FilterRow
-                label="All businesses"
-                checked={!activeCategory}
-                bold
-                onClick={() => setActiveCategory(null)}
-              />
-              {CATEGORIES.map((c) => (
-                <FilterRow key={c} label={c} checked={activeCategory === c} onClick={() => setActiveCategory(c)} />
+              {SEARCH_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
-            </div>
-          )}
-        </div>
+            </select>
+          </div>
+
+          <ToolbarButton onClick={() => handleFind()}>
+            <SearchIcon />
+          </ToolbarButton>
+
+          <div style={{ position: "relative" }}>
+            <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>
+              <FilterIcon />
+            </ToolbarButton>
+
+            {filterOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 52,
+                  right: 0,
+                  width: 220,
+                  background: "var(--g-white)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-card)",
+                  padding: "8px 0",
+                  maxHeight: 340,
+                  overflowY: "auto",
+                }}
+              >
+                <FilterRow
+                  label="No website only"
+                  checked={noWebsiteOnly}
+                  onClick={() => setNoWebsiteOnly((v) => !v)}
+                />
+                <div style={{ height: 1, background: "var(--g-border)", margin: "4px 0" }} />
+                <FilterRow
+                  label="All businesses"
+                  checked={!activeCategory}
+                  bold
+                  onClick={() => setActiveCategory(null)}
+                />
+                {SECTION_NAMES.map((c) => (
+                  <FilterRow key={c} label={c} checked={activeCategory === c} onClick={() => setActiveCategory(c)} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -507,7 +498,13 @@ export default function HomePage() {
             {selectedLead.category ?? "Business"}
           </div>
 
-          {selectedLead.has_website === false && (
+          {selectedLead.is_competitor && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, fontWeight: 700, color: "#dc2626" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
+              Competitor — not a lead
+            </div>
+          )}
+          {!selectedLead.is_competitor && selectedLead.has_website === false && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, fontWeight: 700, color: "#b45309" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-amber-core)" }} />
@@ -542,12 +539,12 @@ export default function HomePage() {
               </a>
             </>
           )}
-          {selectedLead.has_website === true && (
+          {!selectedLead.is_competitor && selectedLead.has_website === true && (
             <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>
               This business already has a website.
             </div>
           )}
-          {selectedLead.has_website === null && (
+          {!selectedLead.is_competitor && selectedLead.has_website === null && (
             <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>Checking…</div>
           )}
         </div>

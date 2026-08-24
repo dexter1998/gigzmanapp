@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT id, business_name, category, address, lat, lng, phone, email,
-           has_website, contacted, created_at
+           has_website, contacted, is_competitor, created_at
     FROM leads
     WHERE 1=1
       ${hasWebsite === "true" ? sql`AND has_website = true` : sql``}
