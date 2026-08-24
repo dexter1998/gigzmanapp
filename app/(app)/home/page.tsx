@@ -74,7 +74,15 @@ export default function HomePage() {
   }, [area]);
 
   const lastAutoSearchRef = useRef(0);
-  const searchInFlightRef = useRef(false);
+  // Incremented on every handleFind call — a run checks this against the value it captured at
+  // start and bails the moment it's no longer current, instead of a flat in-flight block. A pan to
+  // a new area (or the real-location search resolving after an initial default-center race) must
+  // immediately take over from whatever search was previously running, not queue behind it or get
+  // silently blocked by it — matching "jaise jaise drag karta hoon, grids badhti jaati hain,
+  // fetching hoti hai": the currently visible area always wins. Nothing already found is lost when
+  // a run is cancelled mid-sweep — area_type_scans persists exactly which grid cells are still
+  // pending, so revisiting that area later resumes instead of restarting.
+  const searchGenerationRef = useRef(0);
   // The map's very first `idle` event fires the instant it finishes loading at DEFAULT_CENTER —
   // before the location modal is even answered. Without this gate, that fired a full wasted
   // "All categories" search loop against a throwaway location, then a second real one once
@@ -261,10 +269,7 @@ export default function HomePage() {
    * from refs instead of closed-over state, since the idle listener is attached once at mount. */
   async function handleFind(opts?: { fromMapMove?: boolean }) {
     if (!mapRef.current) return;
-    // The explicit call from granting location and the map's own `idle` event (fired by that
-    // same setCenter) can otherwise race and run two full section loops concurrently.
-    if (searchInFlightRef.current) return;
-    searchInFlightRef.current = true;
+    const myGeneration = ++searchGenerationRef.current;
     setSearching(true);
     try {
       const currentArea = opts?.fromMapMove ? "" : areaRef.current;
@@ -327,6 +332,10 @@ export default function HomePage() {
       for (const section of sectionsToRun) {
         let hasMore = true;
         while (hasMore) {
+          // A newer handleFind (a pan, or the real-location search finally resolving) has taken
+          // over — stop working toward this now-stale area immediately rather than finishing it.
+          if (searchGenerationRef.current !== myGeneration) return;
+
           const res = await fetch("/api/leads/find", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -344,8 +353,10 @@ export default function HomePage() {
         }
       }
     } finally {
-      setSearching(false);
-      searchInFlightRef.current = false;
+      // Only the run that's still current should clear the indicator — an older, superseded run
+      // finishing its early-return must not hide "Finding businesses..." out from under whatever
+      // newer search took over.
+      if (searchGenerationRef.current === myGeneration) setSearching(false);
     }
   }
 
