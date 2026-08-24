@@ -23,7 +23,8 @@ const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
 // DLF Cyber City, Gurugram — default center when location access isn't granted, zoomed in to
 // match Pindrop's own default (building-level, not a whole-city view).
 const DEFAULT_CENTER = { lat: 28.495, lng: 77.089 };
-const DEFAULT_ZOOM = 18;
+const DEFAULT_ZOOM = 17;
+const MAX_RESULTS_PER_AREA = 50; // total non-competitor leads per search, not per section
 
 function maskName(name: string) {
   const first = name.trim().split(/\s+/)[0] ?? name;
@@ -74,6 +75,13 @@ export default function HomePage() {
   }, [area]);
 
   const lastAutoSearchRef = useRef(0);
+  const searchInFlightRef = useRef(false);
+  // The map's very first `idle` event fires the instant it finishes loading at DEFAULT_CENTER —
+  // before the location modal is even answered. Without this gate, that fired a full wasted
+  // "All categories" search loop against a throwaway location, then a second real one once
+  // geolocation actually resolved a few seconds later (looked like a double-fire bug, but was
+  // really two genuinely separate full loops).
+  const initialLocationDecidedRef = useRef(false);
 
   useEffect(() => {
     loadGoogleMaps().then(() => {
@@ -100,6 +108,7 @@ export default function HomePage() {
       // discovery route caches per area+category — repeat visits to the same spot reuse the
       // cache instead of re-paying Places API every time the map settles.
       mapRef.current.addListener("idle", () => {
+        if (!initialLocationDecidedRef.current) return; // still waiting on the location modal/geolocation
         const now = Date.now();
         if (now - lastAutoSearchRef.current < 1500) return; // guards against rapid double-fires
         lastAutoSearchRef.current = now;
@@ -110,6 +119,7 @@ export default function HomePage() {
       // just silently re-attempt geolocation (browsers never re-prompt for permission once
       // granted or denied, so this is invisible either way) and re-center/search there.
       if (localStorage.getItem("gigzman_location_resolved") === "true" && navigator.geolocation) {
+        initialLocationDecidedRef.current = true;
         centerOnRealLocationAndSearch();
       }
     });
@@ -164,6 +174,7 @@ export default function HomePage() {
   function resolveInitialLocation(useReal: boolean) {
     localStorage.setItem("gigzman_location_resolved", "true");
     setShowLocationModal(false);
+    initialLocationDecidedRef.current = true;
     if (!useReal || !navigator.geolocation) {
       mapRef.current?.setCenter(DEFAULT_CENTER);
       mapRef.current?.setZoom(DEFAULT_ZOOM);
@@ -240,6 +251,10 @@ export default function HomePage() {
    * from refs instead of closed-over state, since the idle listener is attached once at mount. */
   async function handleFind(opts?: { fromMapMove?: boolean }) {
     if (!mapRef.current) return;
+    // The explicit call from granting location and the map's own `idle` event (fired by that
+    // same setCenter) can otherwise race and run two full section loops concurrently.
+    if (searchInFlightRef.current) return;
+    searchInFlightRef.current = true;
     setSearching(true);
     try {
       const currentArea = opts?.fromMapMove ? "" : areaRef.current;
@@ -283,33 +298,39 @@ export default function HomePage() {
       const MIN_SEARCH_RADIUS_METERS = 1200;
       const radius = Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS);
 
-      const res = await fetch("/api/leads/find", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat: center.lat(),
-          lng: center.lng(),
-          radius,
-          category: categoryRef.current,
-          // Pan/zoom-triggered searches only fetch 1 page per batch instead of 3 — an "All
-          // categories" scan across every section needs to stay fast enough to run on every
-          // `idle` event without timing out. Explicit search clicks still go full depth.
-          fullDepth: !opts?.fromMapMove,
-        }),
-      });
-      const data = (await res.json()) as { leads?: Array<{ id: string; is_competitor: boolean }> };
-      await refreshLeads();
+      const fullDepth = !opts?.fromMapMove;
+      const sectionsToRun = categoryRef.current === "All categories" ? SECTION_NAMES : [categoryRef.current];
 
-      // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
-      // grey to green/amber as each one resolves — the progressive-reveal effect that was
-      // missing entirely while leads just sat grey forever with no enrichment path at all.
-      // Competitors skip this entirely — has_website isn't a relevant signal for them.
-      for (const lead of (data.leads ?? []).filter((l) => !l.is_competitor)) {
-        await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
+      // One section at a time, refreshing the map after each — this is what makes it feel like
+      // it "keeps on finding leads" rather than everything appearing at once, and lets us stop
+      // as soon as there's enough instead of always exhausting every section. Capped on TOTAL
+      // results for the area, not on how many API calls/pages it took to get there.
+      let found = 0;
+      for (const section of sectionsToRun) {
+        if (found >= MAX_RESULTS_PER_AREA) break;
+
+        const res = await fetch("/api/leads/find", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section, fullDepth }),
+        });
+        const data = (await res.json()) as { leads?: Array<{ id: string; is_competitor: boolean }> };
         await refreshLeads();
+
+        const newLeads = data.leads ?? [];
+        found += newLeads.filter((l) => !l.is_competitor).length;
+
+        // Resolve has_website one lead at a time (not all at once) so pins visibly flip from
+        // grey to green/amber as each one resolves. Competitors skip this — has_website isn't a
+        // relevant signal for them.
+        for (const lead of newLeads.filter((l) => !l.is_competitor)) {
+          await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
+          await refreshLeads();
+        }
       }
     } finally {
       setSearching(false);
+      searchInFlightRef.current = false;
     }
   }
 
