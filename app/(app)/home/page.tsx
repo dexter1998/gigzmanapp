@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
-import { createPinOverlayClass, type PinOverlayInstance } from "@/lib/pin-overlay";
-import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
+import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
+import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, MoonIcon } from "@/components/icons";
+import { CreditsIndicator } from "@/components/CreditsIndicator";
 
 type Lead = {
   id: string;
@@ -15,6 +16,7 @@ type Lead = {
   has_website: boolean | null;
 };
 
+// Curated for "would realistically buy a website" — matches CATEGORY_TYPE_MAP in the find route.
 const CATEGORIES = [
   "Barbershop",
   "Hair salon",
@@ -24,7 +26,15 @@ const CATEGORIES = [
   "Electrician",
   "Landscaping",
   "Roofing",
-]; // confirmed live from Pindrop's own filter panel
+  "Lawyer",
+  "CA / Accounting",
+  "Real Estate",
+  "Dentist",
+  "Gym",
+  "Insurance",
+  "Travel Agency",
+  "Photographer",
+];
 
 const SEARCH_CATEGORIES = ["All categories", ...CATEGORIES];
 
@@ -68,26 +78,60 @@ export default function HomePage() {
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  // Real tradeoff, not a bug: Google Maps won't combine mapId-based 3D with inline dark/no-POI
+  // styling (that requires a Cloud Console-configured Map ID we don't have yet). So the toggle
+  // is honestly between two different real modes: 3D with Google's default POI icons showing,
+  // or flat 2D fully dark with everything but our own pins hidden. Defaults to 3D since that's
+  // been the repeated ask, matching Pindrop's richer look.
+  const [nightMode, setNightMode] = useState(false);
+  // Forces React to fully unmount/remount the map's DOM node on toggle (not just clear its
+  // contents) — Google Maps' WebGL context from the previous instance doesn't reliably release
+  // just by clearing innerHTML, which left the map visibly undersized (a real rendering bug, not
+  // a CSS one — the container's own measured size was always correct) after toggling once.
+  const [mapMountKey, setMapMountKey] = useState(0);
+  const pendingRebuildRef = useRef<{ dark: boolean; center: google.maps.LatLngLiteral; zoom: number } | null>(null);
+  const hasMountedRef = useRef(false);
+
+  function buildMap(dark: boolean, center: google.maps.LatLngLiteral, zoom: number) {
+    if (!mapDivRef.current) return;
+    const options: google.maps.MapOptions = dark
+      ? { center, zoom, tilt: 0, disableDefaultUI: true, zoomControl: true, zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER }, styles: MAP_STYLES }
+      : { center, zoom, tilt: 45, mapId: "DEMO_MAP_ID", disableDefaultUI: true, zoomControl: true, zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER } };
+    mapRef.current = new google.maps.Map(mapDivRef.current, options);
+
+    // Re-attach existing pin overlays (and the you-marker) to the freshly created map instance.
+    for (const overlay of markersRef.current.values()) overlay.setMap(mapRef.current);
+    youMarkerRef.current?.setMap(mapRef.current);
+  }
+
+  function toggleNightMode() {
+    if (!mapRef.current) return;
+    const center = mapRef.current.getCenter();
+    const zoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
+    const next = !nightMode;
+    pendingRebuildRef.current = { dark: next, center: center ? { lat: center.lat(), lng: center.lng() } : DEFAULT_CENTER, zoom };
+    setNightMode(next);
+    mapRef.current = null; // the old instance's div is about to be discarded
+    setMapMountKey((k) => k + 1);
+  }
+
+  // Runs after mapMountKey changes and React has mounted the fresh div — rebuilds the map there.
+  // Skipped on the very first mount (mapMountKey start at 0), which the effect below handles.
+  useEffect(() => {
+    if (!hasMountedRef.current) return;
+    const pending = pendingRebuildRef.current;
+    if (!pending || !mapDivRef.current) return;
+    buildMap(pending.dark, pending.center, pending.zoom);
+    setMapReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapMountKey]);
 
   useEffect(() => {
     loadGoogleMaps().then(() => {
       if (!mapDivRef.current || mapRef.current) return;
+      hasMountedRef.current = true;
       PinOverlayClassRef.current = createPinOverlayClass();
-      mapRef.current = new google.maps.Map(mapDivRef.current, {
-        center: DEFAULT_CENTER,
-        zoom: DEFAULT_ZOOM,
-        tilt: 45,
-        // Back on for the Pindrop-style 3D look — real tradeoff, same as before: mapId-based
-        // vector/3D maps ignore inline `styles` entirely (that's a Google Maps platform rule,
-        // not a bug), so the dark theme + hidden-POI styling from MAP_STYLES doesn't apply here
-        // and default Google POI icons are back. Getting 3D AND dark/no-POI together needs a
-        // real Map ID configured in Cloud Console (Maps Platform → Map Management → create
-        // vector Map ID → Style editor → dark). Using the public demo ID until that exists.
-        mapId: "DEMO_MAP_ID",
-        disableDefaultUI: true,
-        zoomControl: true,
-        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-      });
+      buildMap(nightMode, DEFAULT_CENTER, DEFAULT_ZOOM);
       setMapReady(true);
 
       // If the location prompt was already resolved on a prior visit, don't show it again —
@@ -193,14 +237,15 @@ export default function HomePage() {
 
       const color = lead.has_website === null ? "#c7cad1" : lead.has_website ? "#3aa65c" : "#fdba3f";
       const pulsing = lead.has_website === null;
+      const glow = !pulsing; // resolved pins (green/amber) glow, like Pindrop's; checking ones just pulse
 
       const existing = markersRef.current.get(lead.id);
       if (existing) {
-        existing.setColor(color, pulsing);
+        existing.setColor(color, pulsing, glow);
         continue;
       }
 
-      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead));
+      const overlay = new PinOverlay({ lat: lead.lat, lng: lead.lng }, color, pulsing, () => setSelectedLead(lead), glow);
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
@@ -254,7 +299,7 @@ export default function HomePage() {
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
-      <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+      <div key={mapMountKey} ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 
       {showLocationModal && (
         <div
@@ -328,10 +373,19 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Top toolbar */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", gap: 8, alignItems: "flex-start" }}>
+      {/* Credits badge — top-right, matching Pindrop's own map header */}
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 5 }}>
+        <CreditsIndicator />
+      </div>
+
+      {/* Top toolbar — capped width + centered, was stretching edge-to-edge before */}
+      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", width: "100%", maxWidth: 760 }}>
         <ToolbarButton onClick={handleLocateMe} active={locating}>
           <CrosshairIcon />
+        </ToolbarButton>
+        <ToolbarButton onClick={toggleNightMode} active={nightMode}>
+          <MoonIcon filled={nightMode} />
         </ToolbarButton>
         <ToolbarButton>
           <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>?</span>
@@ -421,6 +475,7 @@ export default function HomePage() {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Pin popup card */}
@@ -483,7 +538,7 @@ export default function HomePage() {
                   textDecoration: "none",
                 }}
               >
-                Manage in LMS <ArrowRightIcon />
+                Get contact details <ArrowRightIcon />
               </a>
             </>
           )}

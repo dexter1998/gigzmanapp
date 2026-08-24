@@ -16,14 +16,21 @@ export function createPinOverlayClass() {
     private position: google.maps.LatLng;
     private color: string;
     private pulsing: boolean;
+    private glow: boolean;
     private onClick: () => void;
 
-    constructor(position: google.maps.LatLngLiteral, color: string, pulsing: boolean, onClick: () => void) {
+    constructor(position: google.maps.LatLngLiteral, color: string, pulsing: boolean, onClick: () => void, glow = false) {
       super();
       this.position = new google.maps.LatLng(position.lat, position.lng);
       this.color = color;
       this.pulsing = pulsing;
+      this.glow = glow;
       this.onClick = onClick;
+    }
+
+    private shadow() {
+      const base = "0 1px 4px rgba(0,0,0,0.35)";
+      return this.glow ? `${base}, 0 0 10px 3px ${this.color}99` : base;
     }
 
     onAdd() {
@@ -36,7 +43,7 @@ export function createPinOverlayClass() {
       div.style.borderRadius = "50%";
       div.style.background = this.color;
       div.style.border = "2px solid #fff";
-      div.style.boxShadow = "0 1px 4px rgba(0,0,0,0.35)";
+      div.style.boxShadow = this.shadow();
       div.style.cursor = "pointer";
       if (this.pulsing) div.classList.add("g-pin-pulse");
       div.addEventListener("click", () => this.onClick());
@@ -63,11 +70,13 @@ export function createPinOverlayClass() {
       }
     }
 
-    setColor(color: string, pulsing: boolean) {
+    setColor(color: string, pulsing: boolean, glow = false) {
       this.color = color;
       this.pulsing = pulsing;
+      this.glow = glow;
       if (this.div) {
         this.div.style.background = color;
+        this.div.style.boxShadow = this.shadow();
         this.div.classList.toggle("g-pin-pulse", pulsing);
       }
     }

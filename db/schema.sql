@@ -6,13 +6,22 @@ CREATE TABLE IF NOT EXISTS area_scans (
   area_label TEXT NOT NULL,                -- e.g. "Sadar Bazar, Gurugram"
   center_lat DOUBLE PRECISION,
   center_lng DOUBLE PRECISION,
-  category TEXT,                           -- barbershop, hair_salon, nail_salon, spa, plumbing,
-                                            -- electrician, landscaping, roofing, ... (confirmed
-                                            -- list from Pindrop's own filter panel)
+  category TEXT,                           -- one real Google Place Type per scan (barber_shop,
+                                            -- plumber, lawyer, accounting, ... — see
+                                            -- CATEGORY_TYPE_MAP in the find route)
+  cache_key TEXT,                          -- "<lat_rounded>_<lng_rounded>_<category>" — lets a
+                                            -- repeat search of roughly the same area+category
+                                            -- reuse existing leads instead of re-billing Places API
   status TEXT NOT NULL DEFAULT 'pending',  -- pending | discovering | enriching | done | failed
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ
 );
+
+-- area_scans predates cache_key — CREATE TABLE IF NOT EXISTS above is a no-op once the table
+-- already exists, so the new column needs its own explicit migration.
+ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS cache_key TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_area_scans_cache_key ON area_scans(cache_key);
 
 CREATE TABLE IF NOT EXISTS leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

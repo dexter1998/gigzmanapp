@@ -48,3 +48,11 @@ export function ArrowRightIcon() {
     </svg>
   );
 }
+
+export function MoonIcon({ filled = false }: { filled?: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "var(--g-ink)" : "none"} stroke="var(--g-ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" />
+    </svg>
+  );
+}
