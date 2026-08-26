@@ -40,8 +40,13 @@ export function HeatGauge({ score, size = 120 }: { score: number; size?: number 
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
+        {/* This arc only ever sweeps from 180° down to somewhere in [0°,180°] — by construction
+            that's never more than a half-circle, so the large-arc-flag is always 0. It was
+            wired to `clamped > 50 ? 1 : 0` before, which flipped it to the WRONG (long-way-
+            around) arc for every score above 50 — that's what was drawing over the score text
+            and never actually filling the gauge correctly past halfway. */}
         <path
-          d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${clamped > 50 ? 1 : 0} 1 ${end.x} ${end.y}`}
+          d={`M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`}
           fill="none"
           stroke={`url(#${gaugeId})`}
           strokeWidth={strokeWidth}

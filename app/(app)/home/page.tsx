@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
-import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
+import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
 import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
@@ -165,6 +165,13 @@ export default function HomePage() {
   const dotsSpawnedAtRef = useRef(0);
   const dotsClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [zoomTooLow, setZoomTooLow] = useState(false);
+  // A real, user-visible state, not a silent no-op — SESSION_REQUEST_BUDGET is account-wide (not
+  // per-area), so hitting it from active exploring meant every later search, anywhere, including
+  // the user's own real location, was silently returning zero results with no indication why.
+  // Confirmed against real production activity: an account made 40 requests in ~2 minutes, then
+  // reported "not a single result, even at my own location" for the next several minutes — that
+  // window lines up exactly with the 5-minute budget this was silently enforcing.
+  const [sessionThrottled, setSessionThrottled] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
   // integration (a later phase). Submitting just surfaces a message, no backend call.
@@ -267,6 +274,11 @@ export default function HomePage() {
 
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
+      // Optimistic reset — re-set immediately below if this attempt is still inside the
+      // throttle window, but a fresh attempt deserves a fresh chance rather than an indefinitely
+      // stuck warning from a previous one.
+      setSessionThrottled(false);
+
       // Fresh decorative "still looking" dots for this search — real map overlays scattered
       // around the tiles being searched, purely cosmetic (not real business locations). They
       // disappear the moment the first real result of this search lands, or the search ends.
@@ -293,9 +305,16 @@ export default function HomePage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
             });
-            const data = (await res.json()) as { found?: number; hasMore?: boolean };
+            const data = (await res.json()) as { found?: number; hasMore?: boolean; throttled?: string };
             hasMore = data.hasMore ?? false;
             if ((data.found ?? 0) > 0) clearDecorativeDotsAfterMinDuration();
+            if (data.throttled === "session_budget") {
+              // Every remaining request this search would make is going to get throttled the
+              // same way — stop immediately instead of burning through the rest of the tiles/
+              // categories for nothing.
+              setSessionThrottled(true);
+              return;
+            }
             await refreshLeads();
           }
         }
@@ -930,7 +949,7 @@ export default function HomePage() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
-                {selectedLead.category ?? "Business"}
+                {formatCategory(selectedLead.category) ?? "Business"}
               </div>
               <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 3 }}>
                 {selectedLead.address ?? "Add to leads to see the address"}
@@ -1100,6 +1119,27 @@ export default function HomePage() {
         </div>
       )}
 
+      {sessionThrottled && !searching && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 172,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--g-amber-tint)",
+            color: "#b45309",
+            padding: "9px 18px",
+            borderRadius: "var(--radius-pill)",
+            fontSize: 12.5,
+            fontWeight: 700,
+            boxShadow: "var(--shadow-toolbar)",
+            zIndex: 25,
+          }}
+        >
+          Search paused — too many searches in a short time. Try again in a few minutes.
+        </div>
+      )}
+
       {/* Floating chat panel — visual placeholder for the future LLM/multi-service phase.
           Establishes the target layout now so later phases only need to wire in behavior. */}
       <div
@@ -1109,7 +1149,7 @@ export default function HomePage() {
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",
-          maxWidth: 600,
+          maxWidth: "96vw",
           padding: "0 16px",
           display: "flex",
           flexDirection: "column",
@@ -1126,6 +1166,7 @@ export default function HomePage() {
           }}
           style={{
             width: "100%",
+            maxWidth: 600,
             background: "var(--g-white)",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
@@ -1169,7 +1210,10 @@ export default function HomePage() {
             later be ranked by ICP instead of picked at random — clicking one just fills the
             input, same "no backend yet" placeholder as the chat box itself. */}
         {!chatDraft && chatSuggestions.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+          // One row, wider than the chat box if it has to be — wrapping to a second row read as
+          // broken/cramped, and there's open space on either side of the (narrower) chat box to
+          // use. overflowX is a safety net for a very small viewport, not the normal case.
+          <div style={{ display: "flex", flexWrap: "nowrap", gap: 8, maxWidth: "100%", overflowX: "auto", paddingBottom: 2 }}>
             {chatSuggestions.map((s) => (
               <button
                 key={s}
@@ -1185,6 +1229,8 @@ export default function HomePage() {
                   color: "var(--g-ink)",
                   cursor: "pointer",
                   boxShadow: "var(--shadow-toolbar)",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 {s}

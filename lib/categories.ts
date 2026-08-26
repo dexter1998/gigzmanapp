@@ -175,3 +175,14 @@ export function chunkTypes(types: string[], size = 50): string[][] {
   for (let i = 0; i < types.length; i += size) chunks.push(types.slice(i, i + size));
   return chunks;
 }
+
+/** A lead's `category` is stored as the raw Google place type (e.g. "car_repair") — this turns
+ * that into a readable label ("Car Repair") for display, rather than showing the underscored
+ * API slug directly. */
+export function formatCategory(rawType: string | null): string | null {
+  if (!rawType) return rawType;
+  return rawType
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

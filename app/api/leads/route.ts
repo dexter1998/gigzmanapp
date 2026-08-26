@@ -33,9 +33,11 @@ export async function GET(req: NextRequest) {
   // Real protection, not cosmetic — an unpurchased lead's identity/contact info must not be
   // recoverable from the raw response even if a client happened to skip the masked display value.
   // Competitors are exempt: there's nothing to sell on a competitor, showing who they are is the
-  // whole point of flagging them.
+  // whole point of flagging them. A business that already has a website is exempt for the same
+  // reason — it was never actually sellable as a lead, so there's nothing being protected by
+  // hiding its name either.
   const leads = rows.map((r) => {
-    const reveal = r.is_unlocked || r.is_competitor;
+    const reveal = r.is_unlocked || r.is_competitor || r.has_website === true;
     return {
       ...r,
       business_name: reveal ? r.business_name : maskName(r.business_name),

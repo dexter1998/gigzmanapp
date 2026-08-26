@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
+import { formatCategory } from "@/lib/categories";
 
 type Lead = {
   id: string;
@@ -79,7 +80,7 @@ export default function LmsPage() {
                 <StatusPill hasWebsite={lead.has_website} />
               </div>
               <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
-                {lead.category} · {lead.address ?? "No address found"}
+                {formatCategory(lead.category)} · {lead.address ?? "No address found"}
               </div>
               <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
                 {lead.phone ?? "No phone found"}
