@@ -77,9 +77,19 @@ CREATE TABLE IF NOT EXISTS area_type_scans (
   is_exhausted BOOLEAN NOT NULL DEFAULT false,
   pending_cells JSONB NOT NULL DEFAULT '[]',  -- [{lat,lng,radius}, ...] still-capped sub-circles
   result_count INTEGER NOT NULL DEFAULT 0,
+  top_level_count INTEGER,          -- raw place count from this batch's very first (unsubdivided)
+                                     -- call — the baseline a later staleness probe compares
+                                     -- against, never overwritten after being set once
+  last_verified_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- bumped on real work AND on a probe that
+                                                        -- found nothing changed (not just real work)
   completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- area_type_scans predates top_level_count/last_verified_at (added for the staleness-probe
+-- refresh model) — same reasoning as the other ALTER TABLE migrations in this file.
+ALTER TABLE area_type_scans ADD COLUMN IF NOT EXISTS top_level_count INTEGER;
+ALTER TABLE area_type_scans ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_area_type_scans_cache_key ON area_type_scans(cache_key);
 

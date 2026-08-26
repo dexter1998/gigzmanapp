@@ -118,12 +118,17 @@ function cacheKeyFor(lat: number, lng: number, section: string, batchIndex: numb
   return `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}_${batchIndex}`;
 }
 
+// Past this age, an exhausted batch is no longer trusted blindly — the next visit spends exactly
+// ONE cheap call (the staleness probe below) to check whether anything actually changed, instead
+// of either staying silent forever or paying for a full re-scan on a timer regardless of need.
+const STALENESS_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
+
 /**
  * Grid-search discovery for one type-batch, resumable across requests via area_type_scans.
- * Permanently skips a batch once exhausted (every sub-cell returned under 20 — nothing left to
- * find, no freshness expiry). Otherwise picks up exactly where the last visit left off
- * (pending_cells), so a repeat visit fetches the NEXT slice of businesses instead of re-billing
- * the API for ones already stored — the actual cost waste the old design had.
+ * Skips a batch once exhausted for as long as it's still fresh (no freshness expiry within the
+ * TTL). Otherwise picks up exactly where the last visit left off (pending_cells), so a repeat
+ * visit fetches the NEXT slice of businesses instead of re-billing the API for ones already
+ * stored — the actual cost waste the old design had.
  */
 async function discoverBatch(
   types: string[],
@@ -135,10 +140,38 @@ async function discoverBatch(
 ) {
   const cacheKey = cacheKeyFor(lat, lng, section, batchIndex);
   const [existing] = await sql`
-    SELECT is_exhausted, pending_cells FROM area_type_scans WHERE cache_key = ${cacheKey}
+    SELECT is_exhausted, pending_cells, top_level_count, last_verified_at
+    FROM area_type_scans WHERE cache_key = ${cacheKey}
   `;
 
-  if (existing?.is_exhausted) return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false };
+  if (existing?.is_exhausted) {
+    const staleMs = Date.now() - new Date(existing.last_verified_at).getTime();
+    if (staleMs < STALENESS_TTL_MS) {
+      return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false };
+    }
+
+    // Stale — spend exactly one call at the original top-level cell and compare its count
+    // against the baseline from when this batch was last actually discovered. Same count is
+    // treated as "nothing changed" (cheap: 1 call, not a full re-scan); a different count means
+    // something real changed, so this batch is reset to non-exhausted and rediscovered from
+    // scratch via the normal subdivision path on the next visit — no separate diffing logic
+    // needed, it's the same mechanism a first-ever scan already uses.
+    const probe = await fetchNearbyBatch(types, { lat, lng, radius });
+    const unchanged = probe.length === existing.top_level_count;
+
+    await sql`
+      UPDATE area_type_scans SET
+        is_exhausted = ${unchanged},
+        pending_cells = ${unchanged ? sql.json([]) : sql.json([{ lat, lng, radius }])},
+        top_level_count = ${probe.length},
+        last_verified_at = now(),
+        result_count = result_count + ${unchanged ? 0 : probe.length},
+        updated_at = now()
+      WHERE cache_key = ${cacheKey}
+    `;
+
+    return { places: unchanged ? [] : probe, hasMore: !unchanged };
+  }
 
   const cellsToQuery: Cell[] =
     existing?.pending_cells?.length ? existing.pending_cells : [{ lat, lng, radius }];
@@ -147,10 +180,14 @@ async function discoverBatch(
   const leftover = cellsToQuery.slice(CELLS_PER_REQUEST_BUDGET);
   const nextPending: Cell[] = [...leftover];
   const places: NonNullable<PlacesResult["places"]> = [];
+  let topLevelCount: number | null = existing?.top_level_count ?? null;
 
   for (const cell of thisRun) {
     const result = await fetchNearbyBatch(types, cell);
     places.push(...result);
+    if (cell.lat === lat && cell.lng === lng && cell.radius === radius) {
+      topLevelCount = result.length;
+    }
     if (result.length >= 20 && cell.radius > MIN_CELL_RADIUS_METERS) {
       nextPending.push(...splitIntoQuadrants(cell));
     }
@@ -159,12 +196,14 @@ async function discoverBatch(
 
   const isExhausted = nextPending.length === 0;
   await sql`
-    INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count)
-    VALUES (${cacheKey}, ${section}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length})
+    INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count, top_level_count, last_verified_at)
+    VALUES (${cacheKey}, ${section}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length}, ${topLevelCount}, now())
     ON CONFLICT (cache_key) DO UPDATE SET
       is_exhausted = EXCLUDED.is_exhausted,
       pending_cells = EXCLUDED.pending_cells,
       result_count = area_type_scans.result_count + EXCLUDED.result_count,
+      top_level_count = COALESCE(EXCLUDED.top_level_count, area_type_scans.top_level_count),
+      last_verified_at = now(),
       updated_at = now()
   `;
 
