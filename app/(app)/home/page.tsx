@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
-import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon } from "@/components/icons";
+import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
 
@@ -21,6 +21,8 @@ type Lead = {
   is_competitor: boolean;
   is_unlocked: boolean;
   heat_score: number | null;
+  rating: number | null;
+  review_count: number | null;
 };
 
 const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
@@ -44,7 +46,9 @@ const TILE_RADIUS_METERS = 800;
 // Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
 // centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
 // farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
-// for the whole visible region at once.
+// for the whole visible region at once. (A 3x3/9-tile version was tried and reverted — it was
+// meant to cut latency, but it only ever changes API cost/coverage, not how fast a single tile
+// resolves, so it wasn't worth the ~2x worst-case cost.)
 const MAX_TILES_PER_SEARCH = 4;
 
 type SearchTile = { lat: number; lng: number };
@@ -84,6 +88,43 @@ function randomNearbyPoint(center: SearchTile, maxMeters: number): SearchTile {
   const dLng = (dist * Math.sin(angle)) / (111320 * Math.cos((center.lat * Math.PI) / 180));
   return { lat: center.lat + dLat, lng: center.lng + dLng };
 }
+
+type Signal = { label: string; tone: "danger" | "warning" | "success" | "info" };
+
+/** Short, honest chips summarizing why a lead is (or isn't) worth a credit — matches Pindrop's
+ * own "Top Signals" row, but every chip here is derived from a real field this app actually
+ * has (has_website/rating/review_count/heat_score), not invented activity we don't track (no
+ * "Recent Enquiry"/"Social Active" — there's no data behind those). Capped at 3, most important
+ * first, same as the reference. */
+function topSignals(lead: Lead): Signal[] {
+  const signals: Signal[] = [];
+  if (lead.has_website === false) signals.push({ label: "No Website", tone: "danger" });
+  else if (lead.has_website === true) signals.push({ label: "Website Found", tone: "success" });
+
+  if (lead.heat_score !== null) {
+    if (lead.heat_score >= 70) signals.push({ label: "High Potential", tone: "success" });
+    else if (lead.heat_score < 35) signals.push({ label: "Low Potential", tone: "warning" });
+  }
+
+  if (lead.rating !== null) {
+    if (lead.rating >= 4.5) signals.push({ label: "Excellent Rating", tone: "success" });
+    else if (lead.rating >= 4) signals.push({ label: "High Rating", tone: "success" });
+    else if (lead.rating < 3.5) signals.push({ label: "Low Rating", tone: "warning" });
+  }
+
+  if (lead.review_count !== null && lead.review_count >= 50) {
+    signals.push({ label: "Well Reviewed", tone: "info" });
+  }
+
+  return signals.slice(0, 3);
+}
+
+const SIGNAL_TONE_COLORS: Record<Signal["tone"], { bg: string; text: string }> = {
+  danger: { bg: "var(--g-amber-tint)", text: "#b45309" },
+  warning: { bg: "var(--g-amber-tint-2)", text: "#b45309" },
+  success: { bg: "var(--g-green-mint)", text: "var(--g-green-text)" },
+  info: { bg: "var(--g-gray-100)", text: "var(--g-gray-500)" },
+};
 
 export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -131,7 +172,9 @@ export default function HomePage() {
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [mapKeyOpen, setMapKeyOpen] = useState(false);
-  const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
+  const [websiteFilter, setWebsiteFilter] = useState<"any" | "no_website" | "has_website">("any");
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [minHeatScore, setMinHeatScore] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   // Derived (see below), not its own state — a separately-held Lead snapshot would go stale the
   // moment refreshLeads() updates the underlying data (has_website resolving, is_unlocked
@@ -466,14 +509,14 @@ export default function HomePage() {
     if (!mapReady || !mapRef.current || !PinOverlayClassRef.current) return;
     const PinOverlay = PinOverlayClassRef.current;
 
-    const filtered =
-      noWebsiteOnly || activeCategory
-        ? leads.filter(
-            (l) =>
-              (!noWebsiteOnly || l.has_website === false) &&
-              (!activeCategory || (l.category && TYPE_TO_SECTION[l.category] === activeCategory))
-          )
-        : leads;
+    const filtered = leads.filter((l) => {
+      if (websiteFilter === "no_website" && l.has_website !== false) return false;
+      if (websiteFilter === "has_website" && l.has_website !== true) return false;
+      if (minRating !== null && (l.rating === null || l.rating < minRating)) return false;
+      if (minHeatScore !== null && (l.heat_score === null || l.heat_score < minHeatScore)) return false;
+      if (activeCategory && (!l.category || TYPE_TO_SECTION[l.category] !== activeCategory)) return false;
+      return true;
+    });
 
     // Dense categories can return 1,000+ real matches in one radius (confirmed via a live audit)
     // — rendering all of them at a zoomed-out view is an unreadable wall of pins. Cap how many
@@ -518,20 +561,10 @@ export default function HomePage() {
       const pulsing = !lead.is_competitor && lead.has_website === null;
       const glow = !pulsing; // resolved pins (green/amber/red) glow, like Pindrop's; checking ones just pulse
       const glyph = lead.is_competitor ? "!" : undefined;
-      // Matches Pindrop's own map labels: a resolved has-website pin shows its full name (nothing
-      // further to act on); a no-website pin shows a short truncated name — it's the "still an
-      // opportunity" state there are many more of, so a glance shouldn't linger on each one.
-      const label =
-        lead.is_competitor || lead.has_website === null
-          ? undefined
-          : lead.has_website
-            ? { text: lead.business_name, muted: false }
-            : { text: `${lead.business_name.slice(0, 3)}····`, muted: true };
 
       const existing = markersRef.current.get(lead.id);
       if (existing) {
         existing.setColor(color, pulsing, glow);
-        existing.setLabel(label);
         continue;
       }
 
@@ -543,13 +576,43 @@ export default function HomePage() {
         glow,
         glyph,
         () => showLeadCard(lead, overlay),
-        () => scheduleHideCard(),
-        label
+        () => scheduleHideCard()
       );
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
-  }, [leads, noWebsiteOnly, activeCategory, mapReady, mapZoom]);
+
+    // Labels are decided by on-screen crowding, not by has_website — matching Pindrop's own map
+    // (confirmed live against its reference screenshots): a pin with room around it shows its
+    // full name, one packed in with neighbors shows a short truncated name instead, so nothing
+    // overlaps. A fixed PIXEL threshold naturally does the "based on zoom" behavior asked for
+    // without any explicit zoom branching — the same pins spread out (more room, more full
+    // names) at higher zoom and pack in (more truncation) at lower zoom for free. Runs one frame
+    // after the create/update loop above so every overlay's draw() has actually positioned it —
+    // a brand new overlay's getScreenPosition() has nothing to fall back on before that.
+    requestAnimationFrame(() => {
+      const MIN_LABEL_SPACING_PX = 70;
+      const positioned = visible
+        .map((lead) => {
+          if (lead.lat == null || lead.lng == null || lead.is_competitor || lead.has_website === null) return null;
+          const overlay = markersRef.current.get(lead.id);
+          const pos = overlay?.getScreenPosition();
+          return overlay && pos ? { lead, overlay, pos } : null;
+        })
+        .filter((x): x is { lead: Lead; overlay: PinOverlayInstance; pos: { x: number; y: number } } => x !== null);
+
+      for (const item of positioned) {
+        const crowded = positioned.some(
+          (other) =>
+            other !== item && Math.hypot(other.pos.x - item.pos.x, other.pos.y - item.pos.y) < MIN_LABEL_SPACING_PX
+        );
+        const muted = item.lead.has_website === false;
+        item.overlay.setLabel(
+          crowded ? { text: `${item.lead.business_name.slice(0, 3)}····`, muted } : { text: item.lead.business_name, muted }
+        );
+      }
+    });
+  }, [leads, websiteFilter, minRating, minHeatScore, activeCategory, mapReady, mapZoom]);
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
@@ -698,21 +761,33 @@ export default function HomePage() {
                 position: "absolute",
                 top: 52,
                 right: 0,
-                width: 220,
+                width: 240,
                 background: "var(--g-white)",
                 borderRadius: "var(--radius-md)",
                 boxShadow: "var(--shadow-card)",
                 padding: "8px 0",
-                maxHeight: 340,
+                maxHeight: 420,
                 overflowY: "auto",
               }}
             >
-              <FilterRow
-                label="No website only"
-                checked={noWebsiteOnly}
-                onClick={() => setNoWebsiteOnly((v) => !v)}
-              />
-              <div style={{ height: 1, background: "var(--g-border)", margin: "4px 0" }} />
+              <FilterSectionLabel>Website</FilterSectionLabel>
+              <FilterRow label="Any" checked={websiteFilter === "any"} onClick={() => setWebsiteFilter("any")} />
+              <FilterRow label="No website" checked={websiteFilter === "no_website"} onClick={() => setWebsiteFilter("no_website")} />
+              <FilterRow label="Has website" checked={websiteFilter === "has_website"} onClick={() => setWebsiteFilter("has_website")} />
+
+              <FilterSectionLabel>Min rating</FilterSectionLabel>
+              <FilterRow label="Any" checked={minRating === null} onClick={() => setMinRating(null)} />
+              {[3.5, 4, 4.5].map((r) => (
+                <FilterRow key={r} label={`${r}+ stars`} checked={minRating === r} onClick={() => setMinRating(r)} />
+              ))}
+
+              <FilterSectionLabel>Min heat score</FilterSectionLabel>
+              <FilterRow label="Any" checked={minHeatScore === null} onClick={() => setMinHeatScore(null)} />
+              {[50, 70, 85].map((h) => (
+                <FilterRow key={h} label={`${h}+`} checked={minHeatScore === h} onClick={() => setMinHeatScore(h)} />
+              ))}
+
+              <FilterSectionLabel>Category</FilterSectionLabel>
               <FilterRow
                 label="All businesses"
                 checked={!activeCategory}
@@ -744,11 +819,17 @@ export default function HomePage() {
           onMouseLeave={scheduleHideCard}
           style={{
             position: "absolute",
-            left: cardPosition.x,
-            top: Math.max(cardPosition.y, 220),
+            // Clamped so the card (340px wide, centered on the pin) can't run off either
+            // viewport edge — confirmed live: a pin near the right edge was clipping the card's
+            // whole right half, cutting off Top Signals and the Add to leads button.
+            left: Math.min(Math.max(cardPosition.x, 190), window.innerWidth - 190),
+            // The redesigned card (heat gauge + signals + button) runs noticeably taller than
+            // the old one — 260 was tuned for that shorter card and was still clipping the top
+            // of this one for a pin near the top of the viewport.
+            top: Math.max(cardPosition.y, 370),
             transform: "translate(-50%, calc(-100% - 16px))",
-            width: 300,
-            background: "linear-gradient(180deg, #fffaf0, var(--g-amber-tint))",
+            width: 340,
+            background: "var(--g-white)",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
             padding: 20,
@@ -762,87 +843,155 @@ export default function HomePage() {
               setSelectedLeadId(null);
               setCardPosition(null);
             }}
-            style={{ position: "absolute", top: 12, right: 12, border: "none", background: "none", cursor: "pointer", display: "flex" }}
+            style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", cursor: "pointer", display: "flex" }}
           >
             <XIcon />
           </button>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--g-ink)" }}>{selectedLead.business_name}</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", marginTop: 2 }}>
-            {selectedLead.category ?? "Business"}
+
+          {/* Icon badge + name/category/location — same shape as Pindrop's card header, colored
+              by has_website (our own palette, not their per-category rainbow). */}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", paddingRight: 20 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: selectedLead.is_competitor
+                  ? "#fee2e2"
+                  : selectedLead.has_website === false
+                    ? "var(--g-amber-tint)"
+                    : selectedLead.has_website === true
+                      ? "var(--g-green-mint)"
+                      : "var(--g-gray-100)",
+              }}
+            >
+              <BuildingIcon
+                color={
+                  selectedLead.is_competitor
+                    ? "#dc2626"
+                    : selectedLead.has_website === false
+                      ? "#b45309"
+                      : selectedLead.has_website === true
+                        ? "var(--g-green-text)"
+                        : "var(--g-gray-500)"
+                }
+              />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
+                {selectedLead.category ?? "Business"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 3 }}>
+                {selectedLead.address ?? "Add to leads to see the address"}
+              </div>
+            </div>
           </div>
 
           {selectedLead.is_competitor && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, fontWeight: 700, color: "#dc2626" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 12.5, fontWeight: 700, color: "#dc2626" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
               Competitor — not a lead
             </div>
           )}
 
+          {!selectedLead.is_competitor && (
+            <>
+              {/* Heat gauge + website status/rating, side by side — matches Pindrop's card body. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16 }}>
+                <HeatGauge score={selectedLead.heat_score ?? 0} size={104} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)" }}>
+                    <GlobeIcon color={selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)"} size={14} />
+                    {selectedLead.has_website === false
+                      ? "No website found"
+                      : selectedLead.has_website === true
+                        ? "Has a website"
+                        : "Checking…"}
+                  </div>
+                  {selectedLead.rating !== null && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)", marginTop: 8 }}>
+                      <StarIcon />
+                      {selectedLead.rating.toFixed(1)}
+                      <span style={{ fontWeight: 500, color: "var(--g-gray-500)" }}>
+                        ({selectedLead.review_count ?? 0})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Top Signals — derived from real fields only (has_website/heat_score/rating/
+                  review_count), no invented activity data. */}
+              {topSignals(selectedLead).length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+                    Top Signals
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {topSignals(selectedLead).map((s) => (
+                      <span
+                        key={s.label}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "4px 10px",
+                          borderRadius: "var(--radius-pill)",
+                          background: SIGNAL_TONE_COLORS[s.tone].bg,
+                          color: SIGNAL_TONE_COLORS[s.tone].text,
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
           {!selectedLead.is_competitor && selectedLead.is_unlocked && (
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)" }}>
                 <CheckIcon /> Added to your leads
               </div>
               <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--g-ink-soft)", lineHeight: 1.5 }}>
                 {selectedLead.phone ?? "No phone found"}
                 {selectedLead.email ? <><br />{selectedLead.email}</> : null}
-                {selectedLead.address ? <><br />{selectedLead.address}</> : null}
               </div>
             </div>
           )}
 
-          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === false && (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, fontWeight: 700, color: "#b45309" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-amber-core)" }} />
-                No website found
-              </div>
-              {selectedLead.heat_score !== null && (
-                <div style={{ display: "flex", justifyContent: "center", marginTop: 6 }}>
-                  <HeatGauge score={selectedLead.heat_score} size={140} />
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <div style={{ paddingTop: 2 }}>
-                  <LockIcon />
-                </div>
-                <p style={{ fontSize: 12.5, color: "var(--g-ink-soft)", margin: 0, lineHeight: 1.4 }}>
-                  A prime lead with no website. Add it to unlock full contact details.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={addingLead}
-                onClick={() => handleAddToLeads(selectedLead)}
-                style={{
-                  marginTop: 14,
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  background: "var(--g-green)",
-                  color: "#fff",
-                  borderRadius: "var(--radius-pill)",
-                  padding: "11px 0",
-                  fontSize: 13.5,
-                  fontWeight: 700,
-                  border: "none",
-                  cursor: addingLead ? "default" : "pointer",
-                  opacity: addingLead ? 0.7 : 1,
-                }}
-              >
-                {addingLead ? "Adding…" : "Add to leads"} <ArrowRightIcon />
-              </button>
-            </>
-          )}
-          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === true && (
-            <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>
-              This business already has a website.
-            </div>
-          )}
-          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website === null && (
-            <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--g-gray-500)" }}>Checking…</div>
+          {!selectedLead.is_competitor && !selectedLead.is_unlocked && selectedLead.has_website !== null && (
+            <button
+              type="button"
+              disabled={addingLead}
+              onClick={() => handleAddToLeads(selectedLead)}
+              style={{
+                marginTop: 16,
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                background: selectedLead.has_website === false ? "var(--g-green)" : "var(--g-white)",
+                color: selectedLead.has_website === false ? "#fff" : "var(--g-ink)",
+                border: selectedLead.has_website === false ? "none" : "1px solid var(--g-border)",
+                borderRadius: "var(--radius-pill)",
+                padding: "11px 0",
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: addingLead ? "default" : "pointer",
+                opacity: addingLead ? 0.7 : 1,
+              }}
+            >
+              {selectedLead.has_website === false && <LockIcon />}
+              {addingLead ? "Adding…" : "Add to leads"} <ArrowRightIcon />
+            </button>
           )}
         </div>
       )}
@@ -851,7 +1000,10 @@ export default function HomePage() {
         <div
           style={{
             position: "absolute",
-            bottom: 96,
+            // Clears the chat panel's suggestion badges below it (badges + gap + form can run
+            // ~125px tall off a bottom:24 anchor) — confirmed live the two were overlapping at
+            // the old bottom:96.
+            bottom: 172,
             left: "50%",
             transform: "translateX(-50%)",
             width: 320,
@@ -882,7 +1034,7 @@ export default function HomePage() {
         <div
           style={{
             position: "absolute",
-            bottom: 96,
+            bottom: 172,
             left: "50%",
             transform: "translateX(-50%)",
             background: "var(--g-ink)",
@@ -902,12 +1054,16 @@ export default function HomePage() {
       <div
         style={{
           position: "absolute",
-          bottom: 20,
+          bottom: 24,
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",
-          maxWidth: 560,
+          maxWidth: 600,
           padding: "0 16px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 12,
         }}
       >
         <form
@@ -918,29 +1074,30 @@ export default function HomePage() {
             setChatDraft("");
           }}
           style={{
+            width: "100%",
             background: "var(--g-white)",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
-            padding: 14,
+            padding: 20,
           }}
         >
           {chatComingSoon && (
-            <div style={{ fontSize: 12, color: "var(--g-gray-500)", padding: "0 4px 10px" }}>
+            <div style={{ fontSize: 12, color: "var(--g-gray-500)", padding: "0 2px 12px" }}>
               Chat is coming soon — this will decide which sources to pull leads from.
             </div>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <input
               value={chatDraft}
               onChange={(e) => setChatDraft(e.target.value)}
               placeholder="Ask anything about leads, companies, or markets…"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "var(--g-ink)", background: "transparent", padding: "6px 8px" }}
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "var(--g-ink)", background: "transparent", padding: "8px 10px" }}
             />
             <button
               type="submit"
               style={{
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
                 border: "none",
                 background: "var(--g-green)",
@@ -961,7 +1118,7 @@ export default function HomePage() {
             later be ranked by ICP instead of picked at random — clicking one just fills the
             input, same "no backend yet" placeholder as the chat box itself. */}
         {!chatDraft && chatSuggestions.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, justifyContent: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
             {chatSuggestions.map((s) => (
               <button
                 key={s}
@@ -971,8 +1128,8 @@ export default function HomePage() {
                   border: "1px solid var(--g-border)",
                   background: "var(--g-white)",
                   borderRadius: "var(--radius-pill)",
-                  padding: "7px 14px",
-                  fontSize: 12,
+                  padding: "9px 16px",
+                  fontSize: 12.5,
                   fontWeight: 600,
                   color: "var(--g-ink)",
                   cursor: "pointer",
@@ -1062,6 +1219,14 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+function FilterSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px 4px" }}>
+      {children}
+    </div>
   );
 }
 
