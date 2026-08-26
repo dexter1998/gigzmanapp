@@ -13,7 +13,7 @@ export default async function ProfilePage() {
     <div style={{ padding: "32px 24px 120px", maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>Account</h1>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Account</h1>
           <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>{email}</p>
         </div>
         <CreditsIndicator />
@@ -55,7 +55,7 @@ export default async function ProfilePage() {
         <Card>
           <CardHeader title="Support" />
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-            Have an idea or hit a snag? Tell us and help shape gigzman.
+            Have an idea or hit a snag? Tell us and help shape Mantis AI.
           </p>
           <a href="mailto:support@gigzmanapp.com" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
             Send feedback

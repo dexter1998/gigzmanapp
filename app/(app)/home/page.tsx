@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
-import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon } from "@/components/icons";
+import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
 
@@ -56,6 +56,10 @@ export default function HomePage() {
   const [searching, setSearching] = useState(false);
   const [zoomTooLow, setZoomTooLow] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
+  // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
+  // integration (a later phase). Submitting just surfaces a message, no backend call.
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatComingSoon, setChatComingSoon] = useState(false);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
@@ -516,11 +520,11 @@ export default function HomePage() {
             >
               <CrosshairIcon />
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" }}>
               Find businesses in your area
             </h2>
             <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px", lineHeight: 1.4 }}>
-              gigzman uses your location to show the businesses near you that still need a
+              Mantis uses your location to show the businesses near you that still need a
               website.
             </p>
             <button
@@ -552,19 +556,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Credits badge — top-right, matching Pindrop's own map header */}
-      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 5 }}>
-        <CreditsIndicator />
-      </div>
-
-      {/* Top toolbar — capped width + centered, was stretching edge-to-edge before */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "center" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", width: "100%", maxWidth: 760 }}>
+      {/* Top bar — one row: locate + search + filters on the left, bell + credits on the
+          right, matching the target layout's single unified top bar instead of two
+          separately-positioned pieces. Every control's underlying state/handler is
+          unchanged — this is a chrome-only restyle. */}
+      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flex: 1, maxWidth: 620 }}>
           <ToolbarButton onClick={handleLocateMe} active={locating}>
             <CrosshairIcon />
-          </ToolbarButton>
-          <ToolbarButton>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>?</span>
           </ToolbarButton>
 
           <div
@@ -652,6 +651,14 @@ export default function HomePage() {
             )}
           </div>
         </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+          {/* Non-functional placeholder — no notification system exists yet */}
+          <ToolbarButton>
+            <BellIcon />
+          </ToolbarButton>
+          <CreditsIndicator />
+        </div>
       </div>
 
       {/* Pin popup card — positioned directly above the hovered/clicked pin's own screen
@@ -683,9 +690,9 @@ export default function HomePage() {
               setSelectedLeadId(null);
               setCardPosition(null);
             }}
-            style={{ position: "absolute", top: 12, right: 12, border: "none", background: "none", cursor: "pointer", color: "var(--g-gray-500)", fontSize: 14 }}
+            style={{ position: "absolute", top: 12, right: 12, border: "none", background: "none", cursor: "pointer", display: "flex" }}
           >
-            ✕
+            <XIcon />
           </button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--g-ink)" }}>{selectedLead.business_name}</div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", marginTop: 2 }}>
@@ -805,6 +812,67 @@ export default function HomePage() {
           Zoom in to search this area
         </div>
       )}
+
+      {/* Floating chat panel — visual placeholder for the future LLM/multi-service phase.
+          Establishes the target layout now so later phases only need to wire in behavior. */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 560,
+          padding: "0 16px",
+        }}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!chatDraft.trim()) return;
+            setChatComingSoon(true);
+            setChatDraft("");
+          }}
+          style={{
+            background: "var(--g-white)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-card)",
+            padding: 14,
+          }}
+        >
+          {chatComingSoon && (
+            <div style={{ fontSize: 12, color: "var(--g-gray-500)", padding: "0 4px 10px" }}>
+              Chat is coming soon — this will decide which sources to pull leads from.
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              value={chatDraft}
+              onChange={(e) => setChatDraft(e.target.value)}
+              placeholder="Ask anything about leads, companies, or markets…"
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "var(--g-ink)", background: "transparent", padding: "6px 8px" }}
+            />
+            <button
+              type="submit"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "none",
+                background: "var(--g-green)",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <ArrowRightIcon />
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -33,8 +33,8 @@ export default function LoginPage() {
       >
         {/* Left — auth form */}
         <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--g-green)", marginBottom: 32 }}>
-            gigzman
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, color: "var(--g-green)", marginBottom: 32 }}>
+            Mantis AI
           </div>
 
           <div
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
           <form action={googleSignIn}>
             <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginBottom: 20 }}>
-              gigzman uses Google Sign-In only — no separate password to manage. New here?
+              Mantis uses Google Sign-In only — no separate password to manage. New here?
               Continuing with Google creates your account automatically.
             </p>
 

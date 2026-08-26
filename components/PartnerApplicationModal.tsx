@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { XIcon, CheckIcon } from "./icons";
 
 const SERVICES = [
   "Website Development",
@@ -19,7 +20,7 @@ const SERVICES = [
 const TEAM_SIZES = ["Solo", "2–5", "6–10", "11–25", "26–50", "51–100", "100+"];
 const PROJECTS_PER_MONTH = ["1–5", "6–10", "11–25", "26–50", "50+"];
 const REVENUE_RANGES = ["Under ₹1 lakh", "₹1–5 lakh", "₹5–10 lakh", "₹10–25 lakh", "₹25–50 lakh", "₹50 lakh+", "Prefer not to say"];
-const APPROACHES = ["Offer it as part of our services", "Resell gigzman", "Use it internally for client delivery", "Refer clients", "Not sure yet"];
+const APPROACHES = ["Offer it as part of our services", "Resell Mantis AI", "Use it internally for client delivery", "Refer clients", "Not sure yet"];
 const CLIENT_INTROS = ["1–5", "6–10", "11–25", "26–50", "50+"];
 
 export function PartnerApplicationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -79,17 +80,17 @@ export function PartnerApplicationModal({ open, onClose }: { open: boolean; onCl
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <button type="button" onClick={onClose} style={closeBtnStyle}>
-          ✕
+          <XIcon />
         </button>
 
         {done ? (
           <div style={{ textAlign: "center", padding: "24px 8px" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--g-green-mint)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 22 }}>
-              ✓
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--g-green-mint)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <CheckIcon size={22} />
             </div>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" }}>Application received</h2>
             <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
-              Thanks for your interest in partnering with gigzman. We&apos;ll review your application and get in touch with you.
+              Thanks for your interest in partnering with Mantis AI. We&apos;ll review your application and get in touch with you.
             </p>
             <button type="button" onClick={onClose} style={primaryBtnStyle}>
               Done
@@ -99,7 +100,7 @@ export function PartnerApplicationModal({ open, onClose }: { open: boolean; onCl
           <>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Partner with us</h2>
             <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
-              Bring gigzman to your clients. Qualified agency partners can get free portal access.
+              Bring Mantis AI to your clients. Qualified agency partners can get free portal access.
             </p>
 
             <div style={{ maxHeight: "60vh", overflowY: "auto", paddingRight: 4 }}>
@@ -158,9 +159,9 @@ export function PartnerApplicationModal({ open, onClose }: { open: boolean; onCl
               <Field label="Active clients (optional)" value={activeClients} onChange={setActiveClients} />
 
               <SectionTitle>Partnership fit</SectionTitle>
-              <label style={labelStyle}>Why do you want to partner with gigzman?</label>
+              <label style={labelStyle}>Why do you want to partner with Mantis AI?</label>
               <textarea value={partnershipReason} onChange={(e) => setPartnershipReason(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
-              <label style={{ ...labelStyle, marginTop: 12 }}>How would you introduce gigzman to clients?</label>
+              <label style={{ ...labelStyle, marginTop: 12 }}>How would you introduce Mantis to clients?</label>
               <ChipGroup options={APPROACHES} selected={partnershipApproach} onToggle={(v) => toggle(partnershipApproach, setPartnershipApproach, v)} />
               <label style={{ ...labelStyle, marginTop: 12 }}>Estimated clients you could introduce / month</label>
               <select value={estimatedClientIntroductions} onChange={(e) => setEstimatedClientIntroductions(e.target.value)} style={inputStyle}>
@@ -256,8 +257,7 @@ const closeBtnStyle: React.CSSProperties = {
   border: "none",
   background: "none",
   cursor: "pointer",
-  color: "var(--g-gray-500)",
-  fontSize: 14,
+  display: "flex",
 };
 
 const labelStyle: React.CSSProperties = { display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", marginBottom: 5 };

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PLANS } from "./plans-config";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
+import { XIcon } from "./icons";
 
 export function PlansModal({
   open,
@@ -39,7 +40,7 @@ export function PlansModal({
       <div style={overlayStyle} onClick={onClose}>
         <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={onClose} style={closeBtnStyle}>
-            ✕
+            <XIcon />
           </button>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Plans</h2>
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -116,7 +117,7 @@ export function PlansModal({
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>Partner with us</div>
                 <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2 }}>
-                  Get free gigzman portal access. Bring gigzman to your clients as a qualified agency partner.
+                  Get free Mantis AI portal access. Bring Mantis to your clients as a qualified agency partner.
                 </div>
               </div>
               <button
@@ -176,6 +177,5 @@ const closeBtnStyle: React.CSSProperties = {
   border: "none",
   background: "none",
   cursor: "pointer",
-  color: "var(--g-gray-500)",
-  fontSize: 14,
+  display: "flex",
 };

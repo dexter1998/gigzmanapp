@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BuildingIcon, UserIcon } from "@/components/icons";
 
 type WorkMode = "company" | "independent";
 
@@ -72,20 +73,20 @@ export default function OnboardingPage() {
         <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 32 }}>
           {step === 1 && (
             <>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
                 This helps us shape your workspace around how you actually operate.
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <WorkModeCard
-                  icon="🏢"
+                  icon={<BuildingIcon />}
                   title="For my company"
                   desc="Find opportunities for my team."
                   onClick={() => selectWorkMode("company")}
                 />
                 <WorkModeCard
-                  icon="✦"
+                  icon={<UserIcon />}
                   title="Independently"
                   desc="Find opportunities for myself or my clients."
                   onClick={() => selectWorkMode("independent")}
@@ -96,7 +97,7 @@ export default function OnboardingPage() {
 
           {step === 2 && workMode === "company" && (
             <>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Let&apos;s set up your workspace</h1>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Let&apos;s set up your workspace</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
                 Just the basics for now — you can fill in the rest later.
               </p>
@@ -117,7 +118,7 @@ export default function OnboardingPage() {
 
           {step === 2 && workMode === "independent" && (
             <>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Almost there</h1>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Almost there</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
                 Just the basics for now — you can fill in the rest later.
               </p>
@@ -141,7 +142,7 @@ export default function OnboardingPage() {
   );
 }
 
-function WorkModeCard({ icon, title, desc, onClick }: { icon: string; title: string; desc: string; onClick: () => void }) {
+function WorkModeCard({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -158,7 +159,20 @@ function WorkModeCard({ icon, title, desc, onClick }: { icon: string; title: str
         cursor: "pointer",
       }}
     >
-      <span style={{ fontSize: 20, lineHeight: 1 }}>{icon}</span>
+      <span
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: "var(--radius-sm)",
+          background: "var(--g-green-mint)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </span>
       <span>
         <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 2 }}>{title}</span>
         <span style={{ display: "block", fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.4 }}>{desc}</span>

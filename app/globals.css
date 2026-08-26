@@ -39,6 +39,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-jakarta);
+  --font-display-serif: var(--font-display);
 }
 
 body {

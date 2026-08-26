@@ -40,7 +40,7 @@ export default function LmsPage() {
   return (
     <div style={{ padding: "28px 20px 120px", maxWidth: 720, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>LMS</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>LMS</h1>
         <CreditsIndicator />
       </div>
 
