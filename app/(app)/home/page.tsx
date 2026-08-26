@@ -162,6 +162,8 @@ export default function HomePage() {
   // dots weren't real. Anchoring them to actual lat/lng through the same overlay class real pins
   // use makes them pan and zoom identically — only their grey, unclickable look sets them apart.
   const decorativeDotOverlaysRef = useRef<PinOverlayInstance[]>([]);
+  const dotsSpawnedAtRef = useRef(0);
+  const dotsClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [zoomTooLow, setZoomTooLow] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
@@ -175,7 +177,6 @@ export default function HomePage() {
   const [websiteFilter, setWebsiteFilter] = useState<"any" | "no_website" | "has_website">("any");
   const [minRating, setMinRating] = useState<number | null>(null);
   const [minHeatScore, setMinHeatScore] = useState<number | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   // Derived (see below), not its own state — a separately-held Lead snapshot would go stale the
   // moment refreshLeads() updates the underlying data (has_website resolving, is_unlocked
   // flipping after "Add to leads"), so the open card always reads through to current `leads`.
@@ -187,6 +188,7 @@ export default function HomePage() {
   // Lets the card survive the gap between leaving the pin and entering the card itself (hover
   // intent) — mouseleave on the pin schedules a hide, cancelled if the card is entered in time.
   const hideCardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const labelPassTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Ref mirrors of state that the map's `idle` listener needs to read — the listener is attached
   // once at map creation, so it would otherwise only ever see the state values from that first
@@ -293,7 +295,7 @@ export default function HomePage() {
             });
             const data = (await res.json()) as { found?: number; hasMore?: boolean };
             hasMore = data.hasMore ?? false;
-            if ((data.found ?? 0) > 0) clearDecorativeDots();
+            if ((data.found ?? 0) > 0) clearDecorativeDotsAfterMinDuration();
             await refreshLeads();
           }
         }
@@ -397,12 +399,36 @@ export default function HomePage() {
   }, []);
 
   function clearDecorativeDots() {
+    if (dotsClearTimeoutRef.current) {
+      clearTimeout(dotsClearTimeoutRef.current);
+      dotsClearTimeoutRef.current = null;
+    }
     for (const dot of decorativeDotOverlaysRef.current) dot.setMap(null);
     decorativeDotOverlaysRef.current = [];
   }
 
+  // A well-cached area can return its first real result within a couple hundred ms — fast enough
+  // that the decorative dots (meant to read as "still looking") were clearing before a user could
+  // register them at all, which just looked broken rather than fast. This keeps them up for at
+  // least MIN_DOT_VISIBLE_MS from when they were spawned, delaying the actual clear rather than
+  // skipping it.
+  const MIN_DOT_VISIBLE_MS = 500;
+  function clearDecorativeDotsAfterMinDuration() {
+    const elapsed = Date.now() - dotsSpawnedAtRef.current;
+    if (elapsed >= MIN_DOT_VISIBLE_MS || decorativeDotOverlaysRef.current.length === 0) {
+      clearDecorativeDots();
+      return;
+    }
+    if (dotsClearTimeoutRef.current) clearTimeout(dotsClearTimeoutRef.current);
+    dotsClearTimeoutRef.current = setTimeout(() => {
+      dotsClearTimeoutRef.current = null;
+      clearDecorativeDots();
+    }, MIN_DOT_VISIBLE_MS - elapsed);
+  }
+
   function spawnDecorativeDots(tiles: SearchTile[]) {
     if (!mapRef.current || !PinOverlayClassRef.current) return;
+    dotsSpawnedAtRef.current = Date.now();
     const PinOverlay = PinOverlayClassRef.current;
     for (const tile of tiles) {
       for (let i = 0; i < 3; i++) {
@@ -514,7 +540,7 @@ export default function HomePage() {
       if (websiteFilter === "has_website" && l.has_website !== true) return false;
       if (minRating !== null && (l.rating === null || l.rating < minRating)) return false;
       if (minHeatScore !== null && (l.heat_score === null || l.heat_score < minHeatScore)) return false;
-      if (activeCategory && (!l.category || TYPE_TO_SECTION[l.category] !== activeCategory)) return false;
+      if (category !== "All categories" && (!l.category || TYPE_TO_SECTION[l.category] !== category)) return false;
       return true;
     });
 
@@ -522,19 +548,37 @@ export default function HomePage() {
     // — rendering all of them at a zoomed-out view is an unreadable wall of pins. Cap how many
     // render based on zoom, keeping the highest-scored (or competitor) ones when capped; zooming
     // into a specific area raises the cap since there's less on screen to begin with.
+    // No tier is uncapped, even at close zoom — /api/leads returns every lead this account has
+    // ever found across every area it's searched (no viewport bound), so an account with a long
+    // history could otherwise push thousands of overlays through both the create/update loop and
+    // the label-crowding pass below on every single search tick, regardless of how many are
+    // anywhere near what's on screen. Confirmed live: this pushed a real slowdown once the
+    // account's lead count grew past a few hundred.
     const PIN_CAP_BY_ZOOM: Array<[minZoom: number, cap: number]> = [
-      [17, Infinity],
+      [17, 300],
       [15, 150],
       [13, 60],
     ];
     const cap = PIN_CAP_BY_ZOOM.find(([minZoom]) => mapZoom >= minZoom)?.[1] ?? 40;
+    // Proximity to the current map view, not heat_score, decides who survives the cap — /api/
+    // leads returns every lead this account has ever found, account-wide, with no geographic
+    // bound, so sorting purely by heat_score let a high-scoring lead from a city tested weeks ago
+    // crowd out real, cached leads sitting right near where the user actually is now (confirmed
+    // live against production data — a real lead 150-500m from the search center was missing
+    // from a capped view while unrelated leads from elsewhere still rendered).
+    const mapCenter = mapRef.current.getCenter();
     const visible =
       filtered.length <= cap
         ? filtered
         : [...filtered]
             .sort((a, b) => {
-              if (a.is_competitor !== b.is_competitor) return a.is_competitor ? -1 : 1;
-              return (b.heat_score ?? 0) - (a.heat_score ?? 0);
+              if (a.lat == null || a.lng == null) return 1;
+              if (b.lat == null || b.lng == null) return -1;
+              if (!mapCenter) return 0;
+              const { spherical } = google.maps.geometry;
+              const distA = spherical.computeDistanceBetween(mapCenter, new google.maps.LatLng(a.lat, a.lng));
+              const distB = spherical.computeDistanceBetween(mapCenter, new google.maps.LatLng(b.lat, b.lng));
+              return distA - distB;
             })
             .slice(0, cap);
     const visibleIds = new Set(visible.map((l) => l.id));
@@ -587,32 +631,42 @@ export default function HomePage() {
     // full name, one packed in with neighbors shows a short truncated name instead, so nothing
     // overlaps. A fixed PIXEL threshold naturally does the "based on zoom" behavior asked for
     // without any explicit zoom branching — the same pins spread out (more room, more full
-    // names) at higher zoom and pack in (more truncation) at lower zoom for free. Runs one frame
-    // after the create/update loop above so every overlay's draw() has actually positioned it —
-    // a brand new overlay's getScreenPosition() has nothing to fall back on before that.
-    requestAnimationFrame(() => {
-      const MIN_LABEL_SPACING_PX = 70;
-      const positioned = visible
-        .map((lead) => {
-          if (lead.lat == null || lead.lng == null || lead.is_competitor || lead.has_website === null) return null;
-          const overlay = markersRef.current.get(lead.id);
-          const pos = overlay?.getScreenPosition();
-          return overlay && pos ? { lead, overlay, pos } : null;
-        })
-        .filter((x): x is { lead: Lead; overlay: PinOverlayInstance; pos: { x: number; y: number } } => x !== null);
+    // names) at higher zoom and pack in (more truncation) at lower zoom for free.
+    //
+    // This is an O(n²) pass, and `leads` changes on every single request inside an active
+    // search's per-tile loop (dozens of times in one search) — running it on every one of those
+    // was real, measurable main-thread work stacking up (confirmed live: it was the actual cause
+    // behind "fetching feels slow" and dropped frames during a search, not the network requests
+    // themselves). Debounced to run once ~250ms after leads/filters actually stop changing,
+    // instead of on every intermediate update.
+    if (labelPassTimeoutRef.current) clearTimeout(labelPassTimeoutRef.current);
+    labelPassTimeoutRef.current = setTimeout(() => {
+      // One frame after the timeout so every overlay's draw() has actually positioned it — a
+      // brand new overlay's getScreenPosition() has nothing to fall back on before that.
+      requestAnimationFrame(() => {
+        const MIN_LABEL_SPACING_PX = 70;
+        const positioned = visible
+          .map((lead) => {
+            if (lead.lat == null || lead.lng == null || lead.is_competitor || lead.has_website === null) return null;
+            const overlay = markersRef.current.get(lead.id);
+            const pos = overlay?.getScreenPosition();
+            return overlay && pos ? { lead, overlay, pos } : null;
+          })
+          .filter((x): x is { lead: Lead; overlay: PinOverlayInstance; pos: { x: number; y: number } } => x !== null);
 
-      for (const item of positioned) {
-        const crowded = positioned.some(
-          (other) =>
-            other !== item && Math.hypot(other.pos.x - item.pos.x, other.pos.y - item.pos.y) < MIN_LABEL_SPACING_PX
-        );
-        const muted = item.lead.has_website === false;
-        item.overlay.setLabel(
-          crowded ? { text: `${item.lead.business_name.slice(0, 3)}····`, muted } : { text: item.lead.business_name, muted }
-        );
-      }
-    });
-  }, [leads, websiteFilter, minRating, minHeatScore, activeCategory, mapReady, mapZoom]);
+        for (const item of positioned) {
+          const crowded = positioned.some(
+            (other) =>
+              other !== item && Math.hypot(other.pos.x - item.pos.x, other.pos.y - item.pos.y) < MIN_LABEL_SPACING_PX
+          );
+          const muted = item.lead.has_website === false;
+          item.overlay.setLabel(
+            crowded ? { text: `${item.lead.business_name.slice(0, 3)}····`, muted } : { text: item.lead.business_name, muted }
+          );
+        }
+      });
+    }, 250);
+  }, [leads, websiteFilter, minRating, minHeatScore, category, mapReady, mapZoom]);
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
@@ -786,17 +840,9 @@ export default function HomePage() {
               {[50, 70, 85].map((h) => (
                 <FilterRow key={h} label={`${h}+`} checked={minHeatScore === h} onClick={() => setMinHeatScore(h)} />
               ))}
-
-              <FilterSectionLabel>Category</FilterSectionLabel>
-              <FilterRow
-                label="All businesses"
-                checked={!activeCategory}
-                bold
-                onClick={() => setActiveCategory(null)}
-              />
-              {SECTION_NAMES.map((c) => (
-                <FilterRow key={c} label={c} checked={activeCategory === c} onClick={() => setActiveCategory(c)} />
-              ))}
+              {/* Category is controlled by the category dropdown itself now, not a second,
+                  separately-settable list in here — one control for what gets searched AND
+                  shown instead of two that could disagree with each other. */}
             </div>
           )}
         </div>
@@ -1000,9 +1046,12 @@ export default function HomePage() {
         <div
           style={{
             position: "absolute",
-            // Clears the chat panel's suggestion badges below it (badges + gap + form can run
-            // ~125px tall off a bottom:24 anchor) — confirmed live the two were overlapping at
-            // the old bottom:96.
+            // Position alone isn't reliable here — the chat panel's badge row wraps to a
+            // different number of lines depending on how the suggestions happen to fit, so any
+            // fixed offset can still land underneath it. zIndex makes sure this pill wins that
+            // stacking regardless (it's later in the DOM than the pill, so without an explicit
+            // zIndex it paints on top by default) — confirmed live the pill was rendering behind
+            // the chat panel.
             bottom: 172,
             left: "50%",
             transform: "translateX(-50%)",
@@ -1017,6 +1066,7 @@ export default function HomePage() {
             alignItems: "center",
             gap: 8,
             boxShadow: "var(--shadow-toolbar)",
+            zIndex: 25,
           }}
         >
           <span
@@ -1043,6 +1093,7 @@ export default function HomePage() {
             borderRadius: "var(--radius-pill)",
             fontSize: 12.5,
             fontWeight: 600,
+            zIndex: 25,
           }}
         >
           Zoom in to search this area

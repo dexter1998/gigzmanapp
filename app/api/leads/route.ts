@@ -39,7 +39,10 @@ export async function GET(req: NextRequest) {
     return {
       ...r,
       business_name: reveal ? r.business_name : maskName(r.business_name),
-      category: reveal || !r.category ? r.category : maskName(r.category),
+      // Category isn't identity — knowing "Coaching Center" doesn't let anyone recover which
+      // specific business this is, so there's nothing to protect by masking it, and showing it
+      // in full pre-unlock helps decide whether the lead is worth a credit at all.
+      category: r.category,
       address: reveal ? r.address : null,
       phone: reveal ? r.phone : null,
       email: reveal ? r.email : null,

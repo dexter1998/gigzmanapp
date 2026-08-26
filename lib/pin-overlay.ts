@@ -119,14 +119,9 @@ export function createPinOverlayClass() {
       labelDiv.style.left = "50%";
       labelDiv.style.transform = "translateX(-50%)";
       labelDiv.style.whiteSpace = "nowrap";
-      labelDiv.style.fontSize = "11px";
+      labelDiv.style.fontSize = "11.5px";
       labelDiv.style.fontWeight = "700";
       labelDiv.style.color = label.muted ? "#fdba3f" : "#f2f4f8";
-      // Pindrop's own map labels carry a black outline, not just a soft shadow — confirmed by
-      // eye against its reference screenshots. -webkit-text-stroke is the direct match; the
-      // shadow stays as a second layer of contrast for whichever glyphs the stroke alone leaves
-      // thin (its own rendering doesn't fully close on some fonts/sizes).
-      (labelDiv.style as CSSStyleDeclaration & { webkitTextStroke?: string }).webkitTextStroke = "0.6px #000";
       labelDiv.style.textShadow = "0 1px 2px rgba(0,0,0,0.85)";
       labelDiv.style.pointerEvents = "none";
       labelDiv.textContent = label.text;
