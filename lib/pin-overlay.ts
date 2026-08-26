@@ -22,6 +22,8 @@ export function createPinOverlayClass() {
     private onHoverStart?: () => void;
     private onHoverEnd?: () => void;
     private lastPoint: { x: number; y: number } | null = null;
+    private label?: { text: string; muted: boolean };
+    private labelDiv: HTMLDivElement | null = null;
 
     constructor(
       position: google.maps.LatLngLiteral,
@@ -31,7 +33,12 @@ export function createPinOverlayClass() {
       glow = false,
       glyph?: string,
       onHoverStart?: () => void,
-      onHoverEnd?: () => void
+      onHoverEnd?: () => void,
+      // The business name shown next to the pin, matching Pindrop's own map labels — `muted`
+      // (amber, no-website pins) gets a short truncated name since it's the "still an
+      // opportunity" state the user glances past many of; a resolved (green, has-website) pin
+      // gets its full name since there's nothing further to act on.
+      label?: { text: string; muted: boolean }
     ) {
       super();
       this.position = new google.maps.LatLng(position.lat, position.lng);
@@ -42,6 +49,7 @@ export function createPinOverlayClass() {
       this.onClick = onClick;
       this.onHoverStart = onHoverStart;
       this.onHoverEnd = onHoverEnd;
+      this.label = label;
     }
 
     /** Screen pixel position relative to the map's CONTAINER div — for positioning a popup card
@@ -95,9 +103,29 @@ export function createPinOverlayClass() {
       if (this.onHoverStart) div.addEventListener("mouseenter", () => this.onHoverStart?.());
       if (this.onHoverEnd) div.addEventListener("mouseleave", () => this.onHoverEnd?.());
       this.div = div;
+      if (this.label) {
+        this.labelDiv = this.buildLabelDiv(this.label);
+        div.appendChild(this.labelDiv);
+      }
 
       const panes = this.getPanes();
       panes?.overlayMouseTarget.appendChild(div);
+    }
+
+    private buildLabelDiv(label: { text: string; muted: boolean }) {
+      const labelDiv = document.createElement("div");
+      labelDiv.style.position = "absolute";
+      labelDiv.style.top = "22px";
+      labelDiv.style.left = "50%";
+      labelDiv.style.transform = "translateX(-50%)";
+      labelDiv.style.whiteSpace = "nowrap";
+      labelDiv.style.fontSize = "11px";
+      labelDiv.style.fontWeight = "700";
+      labelDiv.style.color = label.muted ? "#fdba3f" : "#f2f4f8";
+      labelDiv.style.textShadow = "0 1px 3px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8)";
+      labelDiv.style.pointerEvents = "none";
+      labelDiv.textContent = label.text;
+      return labelDiv;
     }
 
     draw() {
@@ -115,6 +143,7 @@ export function createPinOverlayClass() {
       if (this.div) {
         this.div.remove();
         this.div = null;
+        this.labelDiv = null;
       }
     }
 
@@ -127,6 +156,14 @@ export function createPinOverlayClass() {
         this.div.style.boxShadow = this.shadow();
         this.div.classList.toggle("g-pin-pulse", pulsing);
       }
+    }
+
+    setLabel(label?: { text: string; muted: boolean }) {
+      this.label = label;
+      if (!this.div) return;
+      this.labelDiv?.remove();
+      this.labelDiv = label ? this.buildLabelDiv(label) : null;
+      if (this.labelDiv) this.div.appendChild(this.labelDiv);
     }
   }
 

@@ -181,3 +181,14 @@ CREATE TABLE IF NOT EXISTS partner_applications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_partner_applications_user ON partner_applications(user_email);
+
+-- Example prompts shown under the chat box (chat itself is a Phase 1 placeholder — see
+-- app/(app)/home/page.tsx). icp_category is unused for now (every row shows as a general
+-- example); once real chat/ICP routing exists, it lets suggestions be ranked by what similar
+-- users actually search for instead of a flat random pick.
+CREATE TABLE IF NOT EXISTS chat_suggestions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  prompt_text TEXT NOT NULL,
+  icp_category TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

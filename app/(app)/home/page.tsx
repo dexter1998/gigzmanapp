@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION } from "@/lib/categories";
-import { CrosshairIcon, SearchIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon } from "@/components/icons";
+import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
 
@@ -106,7 +106,6 @@ export default function HomePage() {
   }, []);
 
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [area, setArea] = useState("");
   const [category, setCategory] = useState(SEARCH_CATEGORIES[0]);
   const [searching, setSearching] = useState(false);
   // Since has_website now resolves in the same call that discovers a business (see the
@@ -128,8 +127,10 @@ export default function HomePage() {
   // integration (a later phase). Submitting just surfaces a message, no backend call.
   const [chatDraft, setChatDraft] = useState("");
   const [chatComingSoon, setChatComingSoon] = useState(false);
+  const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [mapKeyOpen, setMapKeyOpen] = useState(false);
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   // Derived (see below), not its own state — a separately-held Lead snapshot would go stale the
@@ -151,10 +152,6 @@ export default function HomePage() {
   useEffect(() => {
     categoryRef.current = category;
   }, [category]);
-  const areaRef = useRef(area);
-  useEffect(() => {
-    areaRef.current = area;
-  }, [area]);
 
   const lastAutoSearchRef = useRef(0);
   // Incremented on every handleFind call — a run checks this against the value it captured at
@@ -179,6 +176,119 @@ export default function HomePage() {
   // drag). Set right before that one setCenter call, consumed by the very next idle event only —
   // every idle after that is a real pan/zoom and should auto-search normally.
   const suppressNextIdleSearchRef = useRef(false);
+
+  function placeYouMarker(lat: number, lng: number) {
+    if (!mapRef.current || !PinOverlayClassRef.current) return;
+    if (youMarkerRef.current) {
+      youMarkerRef.current.setMap(null);
+    }
+    const PinOverlay = PinOverlayClassRef.current;
+    const marker = new PinOverlay({ lat, lng }, "#2563eb", false, () => {});
+    marker.setMap(mapRef.current);
+    youMarkerRef.current = marker;
+  }
+
+  /** Finds businesses in the fixed grid tiles nearest to the CURRENT MAP CENTER (see
+   * nearestSearchTiles), nearest tile first. Called both on explicit search and automatically
+   * whenever the map's `idle` event fires (see the mount effect below), which reads category
+   * from a ref instead of closed-over state since that listener is attached once at mount.
+   * Declared here (above the mount effect) rather than further down with the other map helpers
+   * so the effect's own reference to it isn't a forward reference. */
+  async function handleFind() {
+    if (!mapRef.current) return;
+    const myGeneration = ++searchGenerationRef.current;
+    setSearching(true);
+    try {
+      // City/state/country-scale zoom levels must not silently keep fetching just because the
+      // user panned while zoomed out that far — the radius clamp below already stops a single
+      // request from scanning a huge area, but at low zoom the visible viewport itself covers so
+      // much ground that even a repeatedly-reused small circle per pan adds up to scanning the
+      // whole region over time. Below this zoom, discovery just doesn't fire at all.
+      const ZOOM_FLOOR = 13;
+      const currentZoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
+      if (currentZoom < ZOOM_FLOOR) {
+        setZoomTooLow(true);
+        return;
+      }
+      setZoomTooLow(false);
+
+      const center = mapRef.current.getCenter();
+      if (!center) return;
+
+      // Nearest-to-farthest grid tiles around wherever the map is actually centered — see
+      // nearestSearchTiles above for why this replaced a single circle centered on the raw,
+      // slightly-jittery map center.
+      const tiles = nearestSearchTiles(center, MAX_TILES_PER_SEARCH);
+
+      const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
+
+      // Fresh decorative "still looking" dots for this search — real map overlays scattered
+      // around the tiles being searched, purely cosmetic (not real business locations). They
+      // disappear the moment the first real result of this search lands, or the search ends.
+      clearDecorativeDots();
+      spawnDecorativeDots(tiles);
+
+      // Each request now does exactly one grid cell's worth of discovery per type-batch (see
+      // /api/leads/find) and reports `hasMore` — so a tile is drained in a tight loop of small,
+      // fast requests instead of one long call that silently does a whole tile's grid search
+      // before the frontend hears back. has_website is set directly from the Nearby Search
+      // response now (see /api/leads/find) — pins render already resolved (green/amber), no
+      // separate enrichment pass, no per-lead API cost.
+      for (const section of sectionsToRun) {
+        setCurrentSearchingSection(section);
+        for (const tile of tiles) {
+          let hasMore = true;
+          while (hasMore) {
+            // A newer handleFind (a pan, or the real-location search finally resolving) has taken
+            // over — stop working toward this now-stale area immediately rather than finishing it.
+            if (searchGenerationRef.current !== myGeneration) return;
+
+            const res = await fetch("/api/leads/find", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
+            });
+            const data = (await res.json()) as { found?: number; hasMore?: boolean };
+            hasMore = data.hasMore ?? false;
+            if ((data.found ?? 0) > 0) clearDecorativeDots();
+            await refreshLeads();
+          }
+        }
+      }
+    } finally {
+      // Only the run that's still current should clear the indicator — an older, superseded run
+      // finishing its early-return must not hide "Finding businesses..." out from under whatever
+      // newer search took over.
+      if (searchGenerationRef.current === myGeneration) {
+        setSearching(false);
+        setCurrentSearchingSection(null);
+        clearDecorativeDots();
+      }
+    }
+  }
+
+  function centerOnRealLocationAndSearch() {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        mapRef.current?.setZoom(DEFAULT_ZOOM);
+        placeYouMarker(pos.coords.latitude, pos.coords.longitude);
+        // Real location granted — immediately search nearby instead of waiting for a manual
+        // click, matching "agar person location deta hai to uski location ke nearby
+        // businesses scrape marne hai".
+        void handleFind();
+      },
+      () => {
+        // Geolocation failed/denied at the browser level (e.g. a returning user whose permission
+        // was revoked) — same as declining in the modal, this falls back to DEFAULT_CENTER and
+        // must not auto-search a location nobody asked to see results for.
+        suppressNextIdleSearchRef.current = true;
+        mapRef.current?.setCenter(DEFAULT_CENTER);
+        mapRef.current?.setZoom(DEFAULT_ZOOM);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
 
   useEffect(() => {
     loadGoogleMaps().then(() => {
@@ -219,7 +329,7 @@ export default function HomePage() {
         const now = Date.now();
         if (now - lastAutoSearchRef.current < 1500) return; // guards against rapid double-fires
         lastAutoSearchRef.current = now;
-        void handleFind({ fromMapMove: true });
+        void handleFind();
       });
 
       // If the location prompt was already resolved on a prior visit, don't show it again —
@@ -261,17 +371,6 @@ export default function HomePage() {
     }
   }
 
-  function placeYouMarker(lat: number, lng: number) {
-    if (!mapRef.current || !PinOverlayClassRef.current) return;
-    if (youMarkerRef.current) {
-      youMarkerRef.current.setMap(null);
-    }
-    const PinOverlay = PinOverlayClassRef.current;
-    const marker = new PinOverlay({ lat, lng }, "#2563eb", false, () => {});
-    marker.setMap(mapRef.current);
-    youMarkerRef.current = marker;
-  }
-
   function handleLocateMe() {
     if (!navigator.geolocation || !mapRef.current) return;
     setLocating(true);
@@ -283,29 +382,6 @@ export default function HomePage() {
         setLocating(false);
       },
       () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }
-
-  function centerOnRealLocationAndSearch() {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        mapRef.current?.setZoom(DEFAULT_ZOOM);
-        placeYouMarker(pos.coords.latitude, pos.coords.longitude);
-        // Real location granted — immediately search nearby instead of waiting for a manual
-        // click, matching "agar person location deta hai to uski location ke nearby
-        // businesses scrape marne hai".
-        void handleFind();
-      },
-      () => {
-        // Geolocation failed/denied at the browser level (e.g. a returning user whose permission
-        // was revoked) — same as declining in the modal, this falls back to DEFAULT_CENTER and
-        // must not auto-search a location nobody asked to see results for.
-        suppressNextIdleSearchRef.current = true;
-        mapRef.current?.setCenter(DEFAULT_CENTER);
-        mapRef.current?.setZoom(DEFAULT_ZOOM);
-      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }
@@ -334,6 +410,13 @@ export default function HomePage() {
 
   useEffect(() => {
     refreshLeads();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/chat-suggestions")
+      .then((res) => res.json())
+      .then((data: { suggestions?: string[] }) => setChatSuggestions(data.suggestions ?? []))
+      .catch(() => {});
   }, []);
 
   const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) ?? null) : null;
@@ -435,10 +518,20 @@ export default function HomePage() {
       const pulsing = !lead.is_competitor && lead.has_website === null;
       const glow = !pulsing; // resolved pins (green/amber/red) glow, like Pindrop's; checking ones just pulse
       const glyph = lead.is_competitor ? "!" : undefined;
+      // Matches Pindrop's own map labels: a resolved has-website pin shows its full name (nothing
+      // further to act on); a no-website pin shows a short truncated name — it's the "still an
+      // opportunity" state there are many more of, so a glance shouldn't linger on each one.
+      const label =
+        lead.is_competitor || lead.has_website === null
+          ? undefined
+          : lead.has_website
+            ? { text: lead.business_name, muted: false }
+            : { text: `${lead.business_name.slice(0, 3)}····`, muted: true };
 
       const existing = markersRef.current.get(lead.id);
       if (existing) {
         existing.setColor(color, pulsing, glow);
+        existing.setLabel(label);
         continue;
       }
 
@@ -450,104 +543,13 @@ export default function HomePage() {
         glow,
         glyph,
         () => showLeadCard(lead, overlay),
-        () => scheduleHideCard()
+        () => scheduleHideCard(),
+        label
       );
       overlay.setMap(mapRef.current);
       markersRef.current.set(lead.id, overlay);
     }
   }, [leads, noWebsiteOnly, activeCategory, mapReady, mapZoom]);
-
-  /** Finds businesses in the fixed grid tiles nearest to the CURRENT MAP CENTER (see
-   * nearestSearchTiles), nearest tile first. Called both on explicit search and automatically
-   * whenever the map's `idle` event fires (see the mount effect). `fromMapMove` skips the
-   * address-geocoding step (there's nothing typed to geocode when the trigger was a pan/zoom,
-   * not a search-box submit) and reads category/area from refs instead of closed-over state,
-   * since the idle listener is attached once at mount. */
-  async function handleFind(opts?: { fromMapMove?: boolean }) {
-    if (!mapRef.current) return;
-    const myGeneration = ++searchGenerationRef.current;
-    setSearching(true);
-    try {
-      const currentArea = opts?.fromMapMove ? "" : areaRef.current;
-      if (currentArea.trim()) {
-        const geoRes = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(currentArea)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-        );
-        const geoData = await geoRes.json();
-        const loc = geoData.results?.[0]?.geometry?.location;
-        if (loc) {
-          mapRef.current.setCenter({ lat: loc.lat, lng: loc.lng });
-          mapRef.current.setZoom(DEFAULT_ZOOM);
-        }
-      }
-
-      // City/state/country-scale zoom levels must not silently keep fetching just because the
-      // user panned while zoomed out that far — the radius clamp below already stops a single
-      // request from scanning a huge area, but at low zoom the visible viewport itself covers so
-      // much ground that even a repeatedly-reused small circle per pan adds up to scanning the
-      // whole region over time. Below this zoom, discovery just doesn't fire at all.
-      const ZOOM_FLOOR = 13;
-      const currentZoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
-      if (currentZoom < ZOOM_FLOOR) {
-        setZoomTooLow(true);
-        return;
-      }
-      setZoomTooLow(false);
-
-      const center = mapRef.current.getCenter();
-      if (!center) return;
-
-      // Nearest-to-farthest grid tiles around wherever the map is actually centered — see
-      // nearestSearchTiles above for why this replaced a single circle centered on the raw,
-      // slightly-jittery map center.
-      const tiles = nearestSearchTiles(center, MAX_TILES_PER_SEARCH);
-
-      const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
-
-      // Fresh decorative "still looking" dots for this search — real map overlays scattered
-      // around the tiles being searched, purely cosmetic (not real business locations). They
-      // disappear the moment the first real result of this search lands, or the search ends.
-      clearDecorativeDots();
-      spawnDecorativeDots(tiles);
-
-      // Each request now does exactly one grid cell's worth of discovery per type-batch (see
-      // /api/leads/find) and reports `hasMore` — so a tile is drained in a tight loop of small,
-      // fast requests instead of one long call that silently does a whole tile's grid search
-      // before the frontend hears back. has_website is set directly from the Nearby Search
-      // response now (see /api/leads/find) — pins render already resolved (green/amber), no
-      // separate enrichment pass, no per-lead API cost.
-      for (const section of sectionsToRun) {
-        setCurrentSearchingSection(section);
-        for (const tile of tiles) {
-          let hasMore = true;
-          while (hasMore) {
-            // A newer handleFind (a pan, or the real-location search finally resolving) has taken
-            // over — stop working toward this now-stale area immediately rather than finishing it.
-            if (searchGenerationRef.current !== myGeneration) return;
-
-            const res = await fetch("/api/leads/find", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
-            });
-            const data = (await res.json()) as { found?: number; hasMore?: boolean };
-            hasMore = data.hasMore ?? false;
-            if ((data.found ?? 0) > 0) clearDecorativeDots();
-            await refreshLeads();
-          }
-        }
-      }
-    } finally {
-      // Only the run that's still current should clear the indicator — an older, superseded run
-      // finishing its early-return must not hide "Finding businesses..." out from under whatever
-      // newer search took over.
-      if (searchGenerationRef.current === myGeneration) {
-        setSearching(false);
-        setCurrentSearchingSection(null);
-        clearDecorativeDots();
-      }
-    }
-  }
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
@@ -619,115 +621,116 @@ export default function HomePage() {
               onClick={() => resolveInitialLocation(false)}
               style={{ border: "none", background: "none", color: "var(--g-gray-500)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
             >
-              Not now, I&apos;ll search by address
+              Not now, I&apos;ll find it on the map
             </button>
           </div>
         </div>
       )}
 
-      {/* Top bar — one row: locate + search + filters on the left, bell + credits on the
-          right, matching the target layout's single unified top bar instead of two
-          separately-positioned pieces. Every control's underlying state/handler is
-          unchanged — this is a chrome-only restyle. */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flex: 1, maxWidth: 620 }}>
-          <ToolbarButton onClick={handleLocateMe} active={locating}>
-            <CrosshairIcon />
-          </ToolbarButton>
+      {/* Top bar — a single right-aligned row (locate, map key, search category, filter, bell,
+          credits). The address search bar that used to live center-left is gone — the floating
+          chat panel at the bottom is meant to take over "search this area" once it's wired to a
+          real backend, so a second, redundant search control up here had no benefit. */}
+      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "flex-end", alignItems: "flex-start", gap: 10 }}>
+        <ToolbarButton onClick={handleLocateMe} active={locating}>
+          <CrosshairIcon />
+        </ToolbarButton>
 
-          <div
-            style={{
-              flex: 1,
-              background: "var(--g-white)",
-              borderRadius: "var(--radius-pill)",
-              boxShadow: "var(--shadow-toolbar)",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 6px 0 16px",
-              height: 44,
-            }}
-          >
-            <input
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleFind()}
-              placeholder="Search a business, address, or city"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "var(--g-ink)", background: "transparent" }}
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+        <div style={{ position: "relative" }}>
+          <ToolbarButton onClick={() => setMapKeyOpen((v) => !v)} active={mapKeyOpen}>
+            <HelpIcon />
+          </ToolbarButton>
+          {mapKeyOpen && (
+            <div
               style={{
-                border: "1px solid var(--g-green)",
-                outline: "none",
-                fontSize: 12,
-                fontWeight: 700,
-                color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
-                background: "var(--g-green-mint)",
-                borderRadius: "var(--radius-pill)",
-                padding: "6px 10px",
-                marginRight: 4,
+                position: "absolute",
+                top: 52,
+                right: 0,
+                width: 240,
+                background: "var(--g-white)",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "var(--shadow-card)",
+                padding: 16,
               }}
             >
-              {SEARCH_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <ToolbarButton onClick={() => handleFind()}>
-            <SearchIcon />
-          </ToolbarButton>
-
-          <div style={{ position: "relative" }}>
-            <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>
-              <FilterIcon />
-            </ToolbarButton>
-
-            {filterOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 52,
-                  right: 0,
-                  width: 220,
-                  background: "var(--g-white)",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "var(--shadow-card)",
-                  padding: "8px 0",
-                  maxHeight: 340,
-                  overflowY: "auto",
-                }}
-              >
-                <FilterRow
-                  label="No website only"
-                  checked={noWebsiteOnly}
-                  onClick={() => setNoWebsiteOnly((v) => !v)}
-                />
-                <div style={{ height: 1, background: "var(--g-border)", margin: "4px 0" }} />
-                <FilterRow
-                  label="All businesses"
-                  checked={!activeCategory}
-                  bold
-                  onClick={() => setActiveCategory(null)}
-                />
-                {SECTION_NAMES.map((c) => (
-                  <FilterRow key={c} label={c} checked={activeCategory === c} onClick={() => setActiveCategory(c)} />
-                ))}
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--g-gray-500)", letterSpacing: "0.04em", marginBottom: 12 }}>
+                MAP KEY
               </div>
-            )}
-          </div>
+              <MapKeyRow color="#fdba3f" title="No website" description="A business with no site yet. Tap it to build one." />
+              <MapKeyRow color="#3aa65c" title="Website" description="This business already has a site." />
+              <MapKeyRow color="#2563eb" title="You" description="Your current location." />
+            </div>
+          )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          {/* Non-functional placeholder — no notification system exists yet */}
-          <ToolbarButton>
-            <BellIcon />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={{
+            border: "1px solid var(--g-green)",
+            outline: "none",
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
+            background: "var(--g-white)",
+            borderRadius: "var(--radius-pill)",
+            padding: "0 16px",
+            height: 44,
+            boxShadow: "var(--shadow-toolbar)",
+            cursor: "pointer",
+          }}
+        >
+          {SEARCH_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+
+        <div style={{ position: "relative" }}>
+          <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>
+            <FilterIcon />
           </ToolbarButton>
-          <CreditsIndicator />
+
+          {filterOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 52,
+                right: 0,
+                width: 220,
+                background: "var(--g-white)",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "var(--shadow-card)",
+                padding: "8px 0",
+                maxHeight: 340,
+                overflowY: "auto",
+              }}
+            >
+              <FilterRow
+                label="No website only"
+                checked={noWebsiteOnly}
+                onClick={() => setNoWebsiteOnly((v) => !v)}
+              />
+              <div style={{ height: 1, background: "var(--g-border)", margin: "4px 0" }} />
+              <FilterRow
+                label="All businesses"
+                checked={!activeCategory}
+                bold
+                onClick={() => setActiveCategory(null)}
+              />
+              {SECTION_NAMES.map((c) => (
+                <FilterRow key={c} label={c} checked={activeCategory === c} onClick={() => setActiveCategory(c)} />
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Non-functional placeholder — no notification system exists yet */}
+        <ToolbarButton>
+          <BellIcon />
+        </ToolbarButton>
+        <CreditsIndicator />
       </div>
 
       {/* Pin popup card — positioned directly above the hovered/clicked pin's own screen
@@ -953,6 +956,34 @@ export default function HomePage() {
             </button>
           </div>
         </form>
+
+        {/* Example prompts, pulled from chat_suggestions (see /api/chat-suggestions) so they can
+            later be ranked by ICP instead of picked at random — clicking one just fills the
+            input, same "no backend yet" placeholder as the chat box itself. */}
+        {!chatDraft && chatSuggestions.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, justifyContent: "center" }}>
+            {chatSuggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setChatDraft(s)}
+                style={{
+                  border: "1px solid var(--g-border)",
+                  background: "var(--g-white)",
+                  borderRadius: "var(--radius-pill)",
+                  padding: "7px 14px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--g-ink)",
+                  cursor: "pointer",
+                  boxShadow: "var(--shadow-toolbar)",
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -987,6 +1018,18 @@ function BlurSwapText({ text, color }: { text: string; color?: string }) {
     >
       {shown}
     </span>
+  );
+}
+
+function MapKeyRow({ color, title, description }: { color: string; title: string; description: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+      <div style={{ width: 12, height: 12, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>{title}</div>
+        <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", lineHeight: 1.4, marginTop: 1 }}>{description}</div>
+      </div>
+    </div>
   );
 }
 
