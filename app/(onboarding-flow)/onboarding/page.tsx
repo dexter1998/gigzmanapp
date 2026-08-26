@@ -1,51 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const ROLES = [
-  { value: "ceo_founder", label: "CEO / Founder" },
-  { value: "agency_owner", label: "Agency Owner" },
-  { value: "freelancer", label: "Freelancer" },
-  { value: "business_owner", label: "Business Owner" },
-  { value: "growth_manager", label: "Growth Manager" },
-  { value: "marketing_manager", label: "Marketing Manager" },
-  { value: "sales_manager", label: "Sales Manager" },
-  { value: "other", label: "Other" },
-];
-
-const SERVICES = ["Web Development", "Marketing", "SEO", "Design", "Lead Generation", "Consulting", "Other"];
-const TEAM_SIZES = ["1–5", "6–10", "11–25", "26–50", "51–100", "100+"];
-
-type BusinessType = "agency" | "freelancer";
+type WorkMode = "company" | "independent";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  const [role, setRole] = useState("");
-  const [customRole, setCustomRole] = useState("");
-  const [businessType, setBusinessType] = useState<BusinessType | null>(null);
-
-  const [agencyName, setAgencyName] = useState("");
-  const [workEmail, setWorkEmail] = useState("");
+  const [workMode, setWorkMode] = useState<WorkMode | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [personName, setPersonName] = useState("");
   const [website, setWebsite] = useState("");
-  const [designation, setDesignation] = useState("");
-  const [teamSize, setTeamSize] = useState("");
 
-  const [businessName, setBusinessName] = useState("");
-  const [primaryService, setPrimaryService] = useState(SERVICES[0]);
-  const [customService, setCustomService] = useState("");
-  const [activeClients, setActiveClients] = useState("");
+  const totalSteps = 2;
 
-  const totalSteps = 3;
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => {
+        if (s?.user?.name) setPersonName((prev) => prev || s.user.name);
+      })
+      .catch(() => {});
+  }, []);
 
-  const step1Valid = role && (role !== "other" || customRole.trim());
-  const step3Valid =
-    businessType === "agency"
-      ? agencyName.trim() && workEmail.trim() && designation.trim()
-      : businessName.trim() && workEmail.trim() && (primaryService !== "Other" || customService.trim());
+  function selectWorkMode(mode: WorkMode) {
+    setWorkMode(mode);
+    setStep(2);
+  }
+
+  const step2Valid = workMode === "company" ? companyName.trim().length > 0 : personName.trim().length > 0;
 
   async function handleFinish() {
     setSubmitting(true);
@@ -54,20 +40,13 @@ export default function OnboardingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          role,
-          customRole: role === "other" ? customRole : undefined,
-          businessType,
-          agency:
-            businessType === "agency"
-              ? { agencyName, workEmail, website, designation, teamSize }
-              : undefined,
-          freelancer:
-            businessType === "freelancer"
-              ? { businessName, workEmail, website, primaryService, customService, activeClients }
-              : undefined,
+          workMode,
+          companyName: workMode === "company" ? companyName : undefined,
+          personName: workMode === "independent" ? personName : undefined,
+          website: website || undefined,
         }),
       });
-      setStep(4);
+      router.push("/home");
     } finally {
       setSubmitting(false);
     }
@@ -76,189 +55,85 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--g-cream)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ width: "100%", maxWidth: 480 }}>
-        {step <= totalSteps && (
-          <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  background: i < step ? "var(--g-green)" : "var(--g-border)",
-                }}
-              />
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                background: i < step ? "var(--g-green)" : "var(--g-border)",
+              }}
+            />
+          ))}
+        </div>
 
         <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 32 }}>
           {step === 1 && (
             <>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Who are you?</h1>
-              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
-                Tell us a little about your role so we can personalize gigzman for you.
-              </p>
-
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="">Select your role</option>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-
-              {role === "other" && (
-                <input
-                  value={customRole}
-                  onChange={(e) => setCustomRole(e.target.value)}
-                  placeholder="What best describes you?"
-                  style={{ ...selectStyle, marginTop: 12 }}
-                />
-              )}
-
-              <button type="button" disabled={!step1Valid} onClick={() => setStep(2)} style={primaryBtn(!!step1Valid)}>
-                Continue →
-              </button>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>How do you work?</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
                 This helps us shape your workspace around how you actually operate.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-                <SelectCard
-                  title="Agency"
-                  desc="For teams or agencies working with multiple clients."
-                  selected={businessType === "agency"}
-                  onClick={() => setBusinessType("agency")}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <WorkModeCard
+                  icon="🏢"
+                  title="For my company"
+                  desc="Find opportunities for my team."
+                  onClick={() => selectWorkMode("company")}
                 />
-                <SelectCard
-                  title="Freelancer"
-                  desc="For independent professionals working with clients."
-                  selected={businessType === "freelancer"}
-                  onClick={() => setBusinessType("freelancer")}
+                <WorkModeCard
+                  icon="✦"
+                  title="Independently"
+                  desc="Find opportunities for myself or my clients."
+                  onClick={() => selectWorkMode("independent")}
                 />
               </div>
+            </>
+          )}
 
-              <div style={{ display: "flex", gap: 10 }}>
+          {step === 2 && workMode === "company" && (
+            <>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Let&apos;s set up your workspace</h1>
+              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
+                Just the basics for now — you can fill in the rest later.
+              </p>
+
+              <Field label="Company name" value={companyName} onChange={setCompanyName} required />
+              <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourcompany.com" />
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
                 <button type="button" onClick={() => setStep(1)} style={secondaryBtn}>
                   Back
                 </button>
-                <button type="button" disabled={!businessType} onClick={() => setStep(3)} style={primaryBtn(!!businessType)}>
-                  Continue →
-                </button>
-              </div>
-            </>
-          )}
-
-          {step === 3 && businessType === "agency" && (
-            <>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Tell us about your agency</h1>
-              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
-                This helps us personalize your workspace and future client workflows.
-              </p>
-
-              <Field label="Agency Name" value={agencyName} onChange={setAgencyName} required />
-              <Field label="Work Email" value={workEmail} onChange={setWorkEmail} required type="email" />
-              <Field label="Website / Agency Domain" value={website} onChange={setWebsite} />
-              <Field label="Your Designation" value={designation} onChange={setDesignation} required />
-
-              <label style={labelStyle}>Team size (optional)</label>
-              <select value={teamSize} onChange={(e) => setTeamSize(e.target.value)} style={selectStyle}>
-                <option value="">How many people are on your team?</option>
-                {TEAM_SIZES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-
-              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={() => setStep(2)} style={secondaryBtn}>
-                  Back
-                </button>
-                <button type="button" disabled={!step3Valid || submitting} onClick={handleFinish} style={primaryBtn(!!step3Valid && !submitting)}>
+                <button type="button" disabled={!step2Valid || submitting} onClick={handleFinish} style={primaryBtn(step2Valid && !submitting)}>
                   {submitting ? "Saving…" : "Continue →"}
                 </button>
               </div>
             </>
           )}
 
-          {step === 3 && businessType === "freelancer" && (
+          {step === 2 && workMode === "independent" && (
             <>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Tell us about your work</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>Almost there</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
-                A quick profile so gigzman fits how you actually work.
+                Just the basics for now — you can fill in the rest later.
               </p>
 
-              <Field label="Professional / Business Name" value={businessName} onChange={setBusinessName} required />
-              <Field label="Work Email" value={workEmail} onChange={setWorkEmail} required type="email" />
-              <Field label="Website or Portfolio" value={website} onChange={setWebsite} />
-
-              <label style={labelStyle}>Primary Service</label>
-              <select value={primaryService} onChange={(e) => setPrimaryService(e.target.value)} style={selectStyle}>
-                {SERVICES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              {primaryService === "Other" && (
-                <input
-                  value={customService}
-                  onChange={(e) => setCustomService(e.target.value)}
-                  placeholder="Describe your service"
-                  style={{ ...selectStyle, marginTop: 8 }}
-                />
-              )}
-
-              <label style={labelStyle}>Active clients (optional)</label>
-              <input value={activeClients} onChange={(e) => setActiveClients(e.target.value)} style={selectStyle} placeholder="e.g. 5" />
+              <Field label="Your name" value={personName} onChange={setPersonName} required />
+              <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourwebsite.com" />
 
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={() => setStep(2)} style={secondaryBtn}>
+                <button type="button" onClick={() => setStep(1)} style={secondaryBtn}>
                   Back
                 </button>
-                <button type="button" disabled={!step3Valid || submitting} onClick={handleFinish} style={primaryBtn(!!step3Valid && !submitting)}>
+                <button type="button" disabled={!step2Valid || submitting} onClick={handleFinish} style={primaryBtn(step2Valid && !submitting)}>
                   {submitting ? "Saving…" : "Continue →"}
                 </button>
               </div>
             </>
-          )}
-
-          {step === 4 && (
-            <div style={{ textAlign: "center", padding: "16px 0" }}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "50%",
-                  background: "var(--g-green-mint)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 16px",
-                  fontSize: 22,
-                }}
-              >
-                ✓
-              </div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" }}>You&apos;re all set.</h1>
-              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>Your gigzman workspace is ready.</p>
-              <button type="button" onClick={() => router.push("/home")} style={primaryBtn(true)}>
-                Go to Dashboard
-              </button>
-            </div>
           )}
         </div>
       </div>
@@ -266,22 +141,28 @@ export default function OnboardingPage() {
   );
 }
 
-function SelectCard({ title, desc, selected, onClick }: { title: string; desc: string; selected: boolean; onClick: () => void }) {
+function WorkModeCard({ icon, title, desc, onClick }: { icon: string; title: string; desc: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 14,
         textAlign: "left",
-        padding: 16,
+        padding: "18px 20px",
         borderRadius: "var(--radius-md)",
-        border: selected ? "2px solid var(--g-green)" : "1px solid var(--g-border)",
-        background: selected ? "var(--g-green-mint)" : "var(--g-white)",
+        border: "1px solid var(--g-border)",
+        background: "var(--g-white)",
         cursor: "pointer",
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)", marginBottom: 4 }}>{title}</div>
-      <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", lineHeight: 1.4 }}>{desc}</div>
+      <span style={{ fontSize: 20, lineHeight: 1 }}>{icon}</span>
+      <span>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 2 }}>{title}</span>
+        <span style={{ display: "block", fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.4 }}>{desc}</span>
+      </span>
     </button>
   );
 }
@@ -291,13 +172,13 @@ function Field({
   value,
   onChange,
   required,
-  type = "text",
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
-  type?: string;
+  placeholder?: string;
 }) {
   return (
     <div style={{ marginBottom: 14 }}>
@@ -305,14 +186,14 @@ function Field({
         {label}
         {required && <span style={{ color: "var(--g-amber)" }}> *</span>}
       </label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={selectStyle} />
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
     </div>
   );
 }
 
 const labelStyle: React.CSSProperties = { display: "block", fontSize: 12, fontWeight: 700, color: "var(--g-gray-500)", marginBottom: 6 };
 
-const selectStyle: React.CSSProperties = {
+const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "11px 14px",
   borderRadius: "var(--radius-sm)",
@@ -323,11 +204,14 @@ const selectStyle: React.CSSProperties = {
   outline: "none",
 };
 
+// Real horizontal padding always, not just when a sibling flex button happens to stretch this
+// one via flex:1 — that was the actual bug (padding: "12px 0" left this button visibly cramped
+// whenever it rendered alone, outside a flex row, since flex:1 does nothing without a flex
+// container to stretch within).
 function primaryBtn(enabled: boolean): React.CSSProperties {
   return {
     flex: 1,
-    marginTop: 20,
-    padding: "12px 0",
+    padding: "12px 24px",
     borderRadius: "var(--radius-pill)",
     border: "none",
     background: enabled ? "var(--g-green)" : "var(--g-gray-100)",
@@ -339,8 +223,7 @@ function primaryBtn(enabled: boolean): React.CSSProperties {
 }
 
 const secondaryBtn: React.CSSProperties = {
-  marginTop: 20,
-  padding: "12px 20px",
+  padding: "12px 24px",
   borderRadius: "var(--radius-pill)",
   border: "1px solid var(--g-border)",
   background: "var(--g-white)",
