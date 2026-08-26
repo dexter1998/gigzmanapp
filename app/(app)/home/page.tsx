@@ -30,6 +30,48 @@ const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
 const DEFAULT_CENTER = { lat: 28.495, lng: 77.089 };
 const DEFAULT_ZOOM = 17;
 
+// A fixed, absolutely-aligned grid — matches the backend's own cache-key rounding
+// (area_type_scans keys on lat.toFixed(2)/lng.toFixed(2)) exactly, so a tile's snapped center
+// always produces the identical cache key on every visit. Before this, the query center was
+// whatever the live map center happened to be at that instant — confirmed live, three
+// consecutive searches within meters of each other in Gurugram landed on three different cache
+// keys (28.48_76.99, 28.49_77.00, 28.49_76.99), so "already-scanned" ground kept re-firing real
+// Places API calls instead of hitting cache.
+const GRID_STEP_DEG = 0.01;
+// Covers one 0.01°-square tile (~1.1km per side near the equator) from its center with a little
+// overlap into its neighbors, so tiles don't leave gaps between them.
+const TILE_RADIUS_METERS = 800;
+// Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
+// centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
+// farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
+// for the whole visible region at once.
+const MAX_TILES_PER_SEARCH = 4;
+
+type SearchTile = { lat: number; lng: number };
+
+/** The grid tiles nearest to `center`, snapped to the fixed absolute grid, nearest-first — so a
+ * search fills in from wherever the user actually is outward, instead of surfacing whatever a
+ * single big circle's first API page happened to return regardless of distance. */
+function nearestSearchTiles(center: google.maps.LatLng, maxTiles: number): SearchTile[] {
+  const snap = (v: number) => Math.round(v / GRID_STEP_DEG) * GRID_STEP_DEG;
+  const centerLat = snap(center.lat());
+  const centerLng = snap(center.lng());
+  const candidates: SearchTile[] = [];
+  for (let dLat = -1; dLat <= 1; dLat++) {
+    for (let dLng = -1; dLng <= 1; dLng++) {
+      candidates.push({ lat: centerLat + dLat * GRID_STEP_DEG, lng: centerLng + dLng * GRID_STEP_DEG });
+    }
+  }
+  const { spherical } = google.maps.geometry;
+  return candidates
+    .sort(
+      (a, b) =>
+        spherical.computeDistanceBetween(center, new google.maps.LatLng(a.lat, a.lng)) -
+        spherical.computeDistanceBetween(center, new google.maps.LatLng(b.lat, b.lng))
+    )
+    .slice(0, maxTiles);
+}
+
 export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -380,12 +422,12 @@ export default function HomePage() {
     }
   }, [leads, noWebsiteOnly, activeCategory, mapReady, mapZoom]);
 
-  /** Finds businesses in the CURRENT MAP VIEWPORT (center + radius derived from visible
-   * bounds) — matching Pindrop's actual "search this area, this zoomed in" behavior. Called
-   * both on explicit search and automatically whenever the map's `idle` event fires (see the
-   * mount effect). `fromMapMove` skips the address-geocoding step (there's nothing typed to
-   * geocode when the trigger was a pan/zoom, not a search-box submit) and reads category/area
-   * from refs instead of closed-over state, since the idle listener is attached once at mount. */
+  /** Finds businesses in the fixed grid tiles nearest to the CURRENT MAP CENTER (see
+   * nearestSearchTiles), nearest tile first. Called both on explicit search and automatically
+   * whenever the map's `idle` event fires (see the mount effect). `fromMapMove` skips the
+   * address-geocoding step (there's nothing typed to geocode when the trigger was a pan/zoom,
+   * not a search-box submit) and reads category/area from refs instead of closed-over state,
+   * since the idle listener is attached once at mount. */
   async function handleFind(opts?: { fromMapMove?: boolean }) {
     if (!mapRef.current) return;
     const myGeneration = ++searchGenerationRef.current;
@@ -418,39 +460,12 @@ export default function HomePage() {
       setZoomTooLow(false);
 
       const center = mapRef.current.getCenter();
-      const bounds = mapRef.current.getBounds();
-      if (!center || !bounds) return;
+      if (!center) return;
 
-      // Nearby Search only accepts a circle, never a rectangle — using distance-to-corner (the
-      // previous approach) draws a circle that CIRCUMSCRIBES the visible viewport, so it always
-      // fetches real area beyond the screen edges too (wasted Places API calls for places the
-      // user can't even see yet). Using half the SHORTER visible dimension instead draws a
-      // circle inscribed within the viewport — it may miss a sliver near the far corners, but
-      // never fetches off-screen area, which is the actual complaint this fixes.
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
-      const { spherical } = google.maps.geometry;
-      const heightMeters = spherical.computeDistanceBetween(
-        new google.maps.LatLng(sw.lat(), center.lng()),
-        new google.maps.LatLng(ne.lat(), center.lng())
-      );
-      const widthMeters = spherical.computeDistanceBetween(
-        new google.maps.LatLng(center.lat(), sw.lng()),
-        new google.maps.LatLng(center.lat(), ne.lng())
-      );
-      // At the default zoom (18, building-level) the viewport-matched radius is only ~200-300m —
-      // far too tight to reach genuinely nearby but sparser categories (entertainment venues,
-      // real estate agencies) that a normal Google Maps user would still call "nearby". A floor
-      // keeps zooming in for pin density from also silently shrinking the search net to nothing.
-      const MIN_SEARCH_RADIUS_METERS = 1200;
-      // MAX mirrors the server-side clamp in /api/leads/find — panning/zooming out must not
-      // balloon the scanned area toward city/state/country scale, it stays bounded to roughly a
-      // "default zoom" neighborhood regardless of viewport size.
-      const MAX_SEARCH_RADIUS_METERS = 3000;
-      const radius = Math.min(
-        Math.max(Math.min(heightMeters, widthMeters) / 2, MIN_SEARCH_RADIUS_METERS),
-        MAX_SEARCH_RADIUS_METERS
-      );
+      // Nearest-to-farthest grid tiles around wherever the map is actually centered — see
+      // nearestSearchTiles above for why this replaced a single circle centered on the raw,
+      // slightly-jittery map center.
+      const tiles = nearestSearchTiles(center, MAX_TILES_PER_SEARCH);
 
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
@@ -467,28 +482,30 @@ export default function HomePage() {
       );
 
       // Each request now does exactly one grid cell's worth of discovery per type-batch (see
-      // /api/leads/find) and reports `hasMore` — so a section is drained in a tight loop of small,
-      // fast requests instead of one long call that silently does a whole section's grid search
+      // /api/leads/find) and reports `hasMore` — so a tile is drained in a tight loop of small,
+      // fast requests instead of one long call that silently does a whole tile's grid search
       // before the frontend hears back. has_website is set directly from the Nearby Search
       // response now (see /api/leads/find) — pins render already resolved (green/amber), no
       // separate enrichment pass, no per-lead API cost.
       for (const section of sectionsToRun) {
         setCurrentSearchingSection(section);
-        let hasMore = true;
-        while (hasMore) {
-          // A newer handleFind (a pan, or the real-location search finally resolving) has taken
-          // over — stop working toward this now-stale area immediately rather than finishing it.
-          if (searchGenerationRef.current !== myGeneration) return;
+        for (const tile of tiles) {
+          let hasMore = true;
+          while (hasMore) {
+            // A newer handleFind (a pan, or the real-location search finally resolving) has taken
+            // over — stop working toward this now-stale area immediately rather than finishing it.
+            if (searchGenerationRef.current !== myGeneration) return;
 
-          const res = await fetch("/api/leads/find", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
-          });
-          const data = (await res.json()) as { found?: number; hasMore?: boolean };
-          hasMore = data.hasMore ?? false;
-          if ((data.found ?? 0) > 0) setFoundAnyThisSearch(true);
-          await refreshLeads();
+            const res = await fetch("/api/leads/find", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
+            });
+            const data = (await res.json()) as { found?: number; hasMore?: boolean };
+            hasMore = data.hasMore ?? false;
+            if ((data.found ?? 0) > 0) setFoundAnyThisSearch(true);
+            await refreshLeads();
+          }
         }
       }
     } finally {
@@ -838,6 +855,7 @@ export default function HomePage() {
             bottom: 96,
             left: "50%",
             transform: "translateX(-50%)",
+            width: 320,
             background: "var(--g-green-mint)",
             color: "var(--g-green-text)",
             padding: "9px 18px",
@@ -854,9 +872,10 @@ export default function HomePage() {
             className="g-pin-pulse"
             style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-green)", flexShrink: 0 }}
           />
-          <TypewriterText
-            text={`Finding businesses in ${currentSearchingSection ?? "this area"}…`}
-          />
+          <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>Finding businesses in</span>
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <BlurSwapText text={currentSearchingSection ?? "this area"} color="var(--g-amber)" />
+          </span>
         </div>
       )}
 
@@ -943,23 +962,36 @@ export default function HomePage() {
   );
 }
 
-/** Reveals `text` character-by-character whenever it changes — used for the "Finding businesses
- * in [category]…" status so switching categories reads as an active retype, not an abrupt swap. */
-function TypewriterText({ text }: { text: string }) {
-  const [shown, setShown] = useState("");
+/** Blurs `text` out, swaps it, then blurs it back in whenever it changes — used for the "Finding
+ * businesses in [category]" status so switching categories reads as a deliberate transition
+ * rather than either an abrupt swap or a text box that keeps resizing to fit each name. */
+function BlurSwapText({ text, color }: { text: string; color?: string }) {
+  const [shown, setShown] = useState(text);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setShown("");
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setShown(text.slice(0, i));
-      if (i >= text.length) clearInterval(interval);
-    }, 16);
-    return () => clearInterval(interval);
-  }, [text]);
+    if (text === shown) return;
+    setVisible(false);
+    const timeout = setTimeout(() => {
+      setShown(text);
+      setVisible(true);
+    }, 180);
+    return () => clearTimeout(timeout);
+  }, [text, shown]);
 
-  return <span>{shown}</span>;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        color,
+        opacity: visible ? 1 : 0,
+        filter: visible ? "blur(0px)" : "blur(4px)",
+        transition: "opacity 0.18s ease, filter 0.18s ease",
+      }}
+    >
+      {shown}
+    </span>
+  );
 }
 
 function ToolbarButton({
