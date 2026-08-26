@@ -54,6 +54,15 @@ export default function HomePage() {
   const [area, setArea] = useState("");
   const [category, setCategory] = useState(SEARCH_CATEGORIES[0]);
   const [searching, setSearching] = useState(false);
+  // Since has_website now resolves in the same call that discovers a business (see the
+  // find/route.ts merge), there's no more real "found it, still checking" gap to show a grey
+  // pin during — so instead of reverting that cost cut, the perceived-activity signal moves to
+  // the frontend: which category is actually being searched right now, and a set of randomly
+  // placed decorative grey pulsing dots that stand in for "still looking" until the first real
+  // result of this search lands, at which point they fade out.
+  const [currentSearchingSection, setCurrentSearchingSection] = useState<string | null>(null);
+  const [foundAnyThisSearch, setFoundAnyThisSearch] = useState(true);
+  const [decorativeDots, setDecorativeDots] = useState<Array<{ id: number; top: string; left: string }>>([]);
   const [zoomTooLow, setZoomTooLow] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
@@ -445,14 +454,26 @@ export default function HomePage() {
 
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
+      // Fresh decorative "still looking" dots for this search — random screen positions within
+      // the current viewport, purely cosmetic (not real business locations). They disappear the
+      // moment the first real result of this search lands (see foundAnyThisSearch below).
+      setFoundAnyThisSearch(false);
+      setDecorativeDots(
+        Array.from({ length: 10 }, (_, i) => ({
+          id: i,
+          top: `${15 + Math.random() * 55}%`,
+          left: `${8 + Math.random() * 78}%`,
+        }))
+      );
+
       // Each request now does exactly one grid cell's worth of discovery per type-batch (see
       // /api/leads/find) and reports `hasMore` — so a section is drained in a tight loop of small,
       // fast requests instead of one long call that silently does a whole section's grid search
-      // before the frontend hears back. Pins for newly found leads render (grey/pending) right
-      // after EACH request. Website-check enrichment for those leads is fired off in the
-      // background (not awaited here) so it never blocks moving on to the next grid cell — it
-      // queues up and flips pins from grey to green/amber as each one resolves independently.
+      // before the frontend hears back. has_website is set directly from the Nearby Search
+      // response now (see /api/leads/find) — pins render already resolved (green/amber), no
+      // separate enrichment pass, no per-lead API cost.
       for (const section of sectionsToRun) {
+        setCurrentSearchingSection(section);
         let hasMore = true;
         while (hasMore) {
           // A newer handleFind (a pan, or the real-location search finally resolving) has taken
@@ -464,11 +485,9 @@ export default function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
           });
-          const data = (await res.json()) as { hasMore?: boolean };
+          const data = (await res.json()) as { found?: number; hasMore?: boolean };
           hasMore = data.hasMore ?? false;
-          // has_website is set directly from the Nearby Search response now (see /api/leads/find)
-          // — no separate per-lead enrichment pass needed, this refresh already has the real
-          // green/amber color for every newly-found lead.
+          if ((data.found ?? 0) > 0) setFoundAnyThisSearch(true);
           await refreshLeads();
         }
       }
@@ -476,7 +495,11 @@ export default function HomePage() {
       // Only the run that's still current should clear the indicator — an older, superseded run
       // finishing its early-return must not hide "Finding businesses..." out from under whatever
       // newer search took over.
-      if (searchGenerationRef.current === myGeneration) setSearching(false);
+      if (searchGenerationRef.current === myGeneration) {
+        setSearching(false);
+        setCurrentSearchingSection(null);
+        setFoundAnyThisSearch(true);
+      }
     }
   }
 
@@ -775,6 +798,39 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Decorative-only "still looking" dots — random screen positions, not real business
+          locations. Since has_website now resolves in the same call that finds a business (see
+          /api/leads/find), there's no genuine "found it, still checking" gap left to show a real
+          grey pin during; this stands in for that activity instead, purely on the frontend, and
+          fades out the instant a real result of this search lands. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          opacity: searching && !foundAnyThisSearch ? 1 : 0,
+          transition: "opacity 0.4s ease",
+        }}
+      >
+        {decorativeDots.map((dot) => (
+          <div
+            key={dot.id}
+            className="g-pin-pulse"
+            style={{
+              position: "absolute",
+              top: dot.top,
+              left: dot.left,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "#c7cad1",
+              border: "2px solid #fff",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+            }}
+          />
+        ))}
+      </div>
+
       {searching && (
         <div
           style={{
@@ -782,15 +838,25 @@ export default function HomePage() {
             bottom: 96,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "var(--g-ink)",
-            color: "#fff",
-            padding: "8px 16px",
+            background: "var(--g-green-mint)",
+            color: "var(--g-green-text)",
+            padding: "9px 18px",
             borderRadius: "var(--radius-pill)",
             fontSize: 12.5,
-            fontWeight: 600,
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            boxShadow: "var(--shadow-toolbar)",
           }}
         >
-          Finding {category === "All categories" ? "businesses" : category.toLowerCase()} in this area…
+          <span
+            className="g-pin-pulse"
+            style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-green)", flexShrink: 0 }}
+          />
+          <TypewriterText
+            text={`Finding businesses in ${currentSearchingSection ?? "this area"}…`}
+          />
         </div>
       )}
 
@@ -875,6 +941,25 @@ export default function HomePage() {
       </div>
     </div>
   );
+}
+
+/** Reveals `text` character-by-character whenever it changes — used for the "Finding businesses
+ * in [category]…" status so switching categories reads as an active retype, not an abrupt swap. */
+function TypewriterText({ text }: { text: string }) {
+  const [shown, setShown] = useState("");
+
+  useEffect(() => {
+    setShown("");
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setShown(text.slice(0, i));
+      if (i >= text.length) clearInterval(interval);
+    }, 16);
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return <span>{shown}</span>;
 }
 
 function ToolbarButton({
