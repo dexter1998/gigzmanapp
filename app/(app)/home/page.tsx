@@ -72,6 +72,19 @@ function nearestSearchTiles(center: google.maps.LatLng, maxTiles: number): Searc
     .slice(0, maxTiles);
 }
 
+const DECORATIVE_DOT_COLOR = "#c7cad1";
+
+/** A random point within `maxMeters` of `center` — used to scatter decorative "still looking"
+ * dots around a tile being searched. Real lat/lng (not a screen position), so the dots ride the
+ * map's own pan/zoom exactly like a real pin instead of visibly floating over it. */
+function randomNearbyPoint(center: SearchTile, maxMeters: number): SearchTile {
+  const angle = Math.random() * 2 * Math.PI;
+  const dist = Math.random() * maxMeters;
+  const dLat = (dist * Math.cos(angle)) / 111320;
+  const dLng = (dist * Math.sin(angle)) / (111320 * Math.cos((center.lat * Math.PI) / 180));
+  return { lat: center.lat + dLat, lng: center.lng + dLng };
+}
+
 export default function HomePage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -103,8 +116,12 @@ export default function HomePage() {
   // placed decorative grey pulsing dots that stand in for "still looking" until the first real
   // result of this search lands, at which point they fade out.
   const [currentSearchingSection, setCurrentSearchingSection] = useState<string | null>(null);
-  const [foundAnyThisSearch, setFoundAnyThisSearch] = useState(true);
-  const [decorativeDots, setDecorativeDots] = useState<Array<{ id: number; top: string; left: string }>>([]);
+  // Real map overlays (see PinOverlay), not a screen-position CSS layer — a fixed-to-viewport
+  // overlay visibly detaches from the map during a pan/zoom (confirmed live: it stayed glued to
+  // the screen while the map slid underneath it), which is exactly what gave away that these
+  // dots weren't real. Anchoring them to actual lat/lng through the same overlay class real pins
+  // use makes them pan and zoom identically — only their grey, unclickable look sets them apart.
+  const decorativeDotOverlaysRef = useRef<PinOverlayInstance[]>([]);
   const [zoomTooLow, setZoomTooLow] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
@@ -225,6 +242,24 @@ export default function HomePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function clearDecorativeDots() {
+    for (const dot of decorativeDotOverlaysRef.current) dot.setMap(null);
+    decorativeDotOverlaysRef.current = [];
+  }
+
+  function spawnDecorativeDots(tiles: SearchTile[]) {
+    if (!mapRef.current || !PinOverlayClassRef.current) return;
+    const PinOverlay = PinOverlayClassRef.current;
+    for (const tile of tiles) {
+      for (let i = 0; i < 3; i++) {
+        const pos = randomNearbyPoint(tile, TILE_RADIUS_METERS * 0.7);
+        const dot = new PinOverlay(pos, DECORATIVE_DOT_COLOR, true, () => {});
+        dot.setMap(mapRef.current);
+        decorativeDotOverlaysRef.current.push(dot);
+      }
+    }
+  }
 
   function placeYouMarker(lat: number, lng: number) {
     if (!mapRef.current || !PinOverlayClassRef.current) return;
@@ -469,17 +504,11 @@ export default function HomePage() {
 
       const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
 
-      // Fresh decorative "still looking" dots for this search — random screen positions within
-      // the current viewport, purely cosmetic (not real business locations). They disappear the
-      // moment the first real result of this search lands (see foundAnyThisSearch below).
-      setFoundAnyThisSearch(false);
-      setDecorativeDots(
-        Array.from({ length: 10 }, (_, i) => ({
-          id: i,
-          top: `${15 + Math.random() * 55}%`,
-          left: `${8 + Math.random() * 78}%`,
-        }))
-      );
+      // Fresh decorative "still looking" dots for this search — real map overlays scattered
+      // around the tiles being searched, purely cosmetic (not real business locations). They
+      // disappear the moment the first real result of this search lands, or the search ends.
+      clearDecorativeDots();
+      spawnDecorativeDots(tiles);
 
       // Each request now does exactly one grid cell's worth of discovery per type-batch (see
       // /api/leads/find) and reports `hasMore` — so a tile is drained in a tight loop of small,
@@ -503,7 +532,7 @@ export default function HomePage() {
             });
             const data = (await res.json()) as { found?: number; hasMore?: boolean };
             hasMore = data.hasMore ?? false;
-            if ((data.found ?? 0) > 0) setFoundAnyThisSearch(true);
+            if ((data.found ?? 0) > 0) clearDecorativeDots();
             await refreshLeads();
           }
         }
@@ -515,7 +544,7 @@ export default function HomePage() {
       if (searchGenerationRef.current === myGeneration) {
         setSearching(false);
         setCurrentSearchingSection(null);
-        setFoundAnyThisSearch(true);
+        clearDecorativeDots();
       }
     }
   }
@@ -814,39 +843,6 @@ export default function HomePage() {
           )}
         </div>
       )}
-
-      {/* Decorative-only "still looking" dots — random screen positions, not real business
-          locations. Since has_website now resolves in the same call that finds a business (see
-          /api/leads/find), there's no genuine "found it, still checking" gap left to show a real
-          grey pin during; this stands in for that activity instead, purely on the frontend, and
-          fades out the instant a real result of this search lands. */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          opacity: searching && !foundAnyThisSearch ? 1 : 0,
-          transition: "opacity 0.4s ease",
-        }}
-      >
-        {decorativeDots.map((dot) => (
-          <div
-            key={dot.id}
-            className="g-pin-pulse"
-            style={{
-              position: "absolute",
-              top: dot.top,
-              left: dot.left,
-              width: 14,
-              height: 14,
-              borderRadius: "50%",
-              background: "#c7cad1",
-              border: "2px solid #fff",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
-            }}
-          />
-        ))}
-      </div>
 
       {searching && (
         <div
