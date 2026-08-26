@@ -242,17 +242,6 @@ export default function HomePage() {
     setLeads(data.leads ?? []);
   }
 
-  /** Runs has_website checks for a batch of newly discovered leads without blocking the grid
-   * discovery loop that kicked it off — deliberately not awaited by the caller. Pins for these
-   * leads already show grey (pending) from the discovery refreshLeads() call; this queues the
-   * website check one at a time and flips each pin to green/amber as its own check resolves. */
-  async function enrichLeadsInBackground(newLeads: Array<{ id: string }>) {
-    for (const lead of newLeads) {
-      await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => {});
-      await refreshLeads();
-    }
-  }
-
   useEffect(() => {
     refreshLeads();
   }, []);
@@ -266,14 +255,6 @@ export default function HomePage() {
     }
     setSelectedLeadId(lead.id);
     setCardPosition(overlay.getScreenPosition());
-    // Self-heals a lead stuck on "Checking..." forever — the background enrichment queue can fail
-    // silently (rate limits, a transient Places error) with no retry; looking at the lead again
-    // is a natural, cheap moment to retry instead of leaving it stuck.
-    if (!lead.is_competitor && lead.has_website === null) {
-      fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" })
-        .then(() => refreshLeads())
-        .catch(() => {});
-    }
   }
 
   function scheduleHideCard() {
@@ -479,15 +460,12 @@ export default function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ lat: center.lat(), lng: center.lng(), radius, category: section }),
           });
-          const data = (await res.json()) as {
-            leads?: Array<{ id: string; is_competitor: boolean }>;
-            hasMore?: boolean;
-          };
+          const data = (await res.json()) as { hasMore?: boolean };
           hasMore = data.hasMore ?? false;
+          // has_website is set directly from the Nearby Search response now (see /api/leads/find)
+          // — no separate per-lead enrichment pass needed, this refresh already has the real
+          // green/amber color for every newly-found lead.
           await refreshLeads();
-
-          const newLeads = (data.leads ?? []).filter((l) => !l.is_competitor);
-          if (newLeads.length) void enrichLeadsInBackground(newLeads);
         }
       }
     } finally {

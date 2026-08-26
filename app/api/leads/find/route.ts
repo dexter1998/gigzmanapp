@@ -54,6 +54,7 @@ type PlacesResult = {
     primaryType?: string;
     rating?: number;
     userRatingCount?: number;
+    websiteUri?: string;
   }>;
 };
 
@@ -70,8 +71,17 @@ async function fetchNearbyBatch(types: string[], cell: Cell) {
       // single call here fail with INVALID_ARGUMENT, silently returning zero results — confirmed
       // live via curl. Going past its flat 20-result cap now happens via quadrant subdivision
       // (see splitIntoQuadrants) instead of pagination, since the API genuinely has none.
+      //
+      // websiteUri is included here rather than fetched separately per-lead (the old /enrich
+      // route) — confirmed against Google's own SKU tables that rating/userRatingCount/
+      // nationalPhoneNumber/websiteUri are ALL billed under the same "Nearby Search Enterprise"
+      // SKU ($35/1000 calls). Since this call already requests rating+userRatingCount+phone, it's
+      // already paying Enterprise-tier price; websiteUri rides along in that same tier for free.
+      // The old design paid an ADDITIONAL, separate Place Details Enterprise call ($20/1000) per
+      // lead just to learn one boolean — confirmed live (Speedomania's real website came back
+      // correctly in this same Nearby Search field mask) before removing the per-lead call.
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType,places.rating,places.userRatingCount",
+        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType,places.rating,places.userRatingCount,places.websiteUri",
     },
     body: JSON.stringify({
       includedTypes: types,
@@ -221,11 +231,11 @@ export async function POST(req: NextRequest) {
       if (!isCompetitor && !place.nationalPhoneNumber) continue;
 
       const [row] = await sql`
-        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, is_competitor, rating, review_count)
+        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, website_checked_at, is_competitor, rating, review_count)
         VALUES (
           ${scan.id}, ${place.id}, ${name}, ${place.primaryType ?? section},
           ${place.formattedAddress ?? null}, ${place.location?.latitude ?? null}, ${place.location?.longitude ?? null},
-          ${place.nationalPhoneNumber ?? null}, NULL, ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
+          ${place.nationalPhoneNumber ?? null}, ${Boolean(place.websiteUri)}, now(), ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
         )
         ON CONFLICT (place_id) DO UPDATE SET place_id = EXCLUDED.place_id
         RETURNING id, lat, lng, is_competitor
