@@ -33,11 +33,8 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
           padding: "20px 14px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px 22px" }}>
-          <Image src="/mantis-logo.png" alt="" width={26} height={26} style={{ objectFit: "contain" }} />
-          <span style={{ fontFamily: "var(--font-poppins)", fontWeight: 600, fontSize: 16, color: "var(--g-ink)", letterSpacing: "-0.01em" }}>
-            mantis
-          </span>
+        <div style={{ display: "flex", alignItems: "center", padding: "4px 8px 22px" }}>
+          <Image src="/mantis-logo-wordmark.png" alt="mantis" width={130} height={31} style={{ objectFit: "contain", height: "auto" }} priority />
         </div>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>

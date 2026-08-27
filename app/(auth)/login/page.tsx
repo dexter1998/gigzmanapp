@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { googleSignIn } from "./actions";
 
 export default function LoginPage() {
@@ -33,8 +34,8 @@ export default function LoginPage() {
       >
         {/* Left — auth form */}
         <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontFamily: "var(--font-poppins)", fontSize: 20, fontWeight: 600, color: "var(--g-green)", marginBottom: 32 }}>
-            mantis
+          <div style={{ marginBottom: 32 }}>
+            <Image src="/mantis-logo-wordmark.png" alt="mantis" width={150} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
           </div>
 
           <div
