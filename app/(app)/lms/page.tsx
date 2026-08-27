@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
+import { StarIcon } from "@/components/icons";
 import { formatCategory } from "@/lib/categories";
 
 type Lead = {
@@ -15,6 +16,8 @@ type Lead = {
   has_website: boolean | null;
   contacted: boolean;
   heat_score: number | null;
+  rating: number | null;
+  review_count: number | null;
 };
 
 export default function LmsPage() {
@@ -86,6 +89,12 @@ export default function LmsPage() {
                 {lead.phone ?? "No phone found"}
                 {lead.email ? ` · ${lead.email}` : ""}
               </div>
+              {lead.rating !== null && (
+                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
+                  <StarIcon size={11} />
+                  {lead.rating.toFixed(1)} ({lead.review_count ?? 0})
+                </div>
+              )}
             </div>
             {lead.heat_score !== null && (
               <div style={{ flexShrink: 0 }}>

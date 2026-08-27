@@ -1028,6 +1028,7 @@ export default function HomePage() {
                 {selectedLead.phone ?? "No phone found"}
                 {selectedLead.email ? <><br />{selectedLead.email}</> : null}
               </div>
+              <EnrichmentPanel leadId={selectedLead.id} />
             </div>
           )}
 
@@ -1246,6 +1247,110 @@ export default function HomePage() {
 /** Blurs `text` out, swaps it, then blurs it back in whenever it changes — used for the "Finding
  * businesses in [category]" status so switching categories reads as a deliberate transition
  * rather than either an abrupt swap or a text box that keeps resizing to fit each name. */
+type EnrichmentStatus = "not_started" | "pending" | "starting_instance" | "scraping" | "done" | "failed";
+type Enrichment = { status: EnrichmentStatus; website_url?: string | null; open_hours?: unknown; error?: string | null };
+
+const ENRICHMENT_STATUS_LABEL: Record<EnrichmentStatus, string> = {
+  not_started: "",
+  pending: "Starting…",
+  starting_instance: "Starting the scraper…",
+  scraping: "Fetching more details…",
+  done: "",
+  failed: "",
+};
+
+/** Website URL / hours for an unlocked lead, pulled from the self-hosted gosom scraper (Nearby
+ * Search's response doesn't include either). Polls /api/leads/[id]/enrich every few seconds
+ * while a job is in flight — a Vercel function can't stay alive for the full EC2-boot-plus-scrape
+ * duration this can take, so the job's state lives server-side and this just checks in on it. */
+function EnrichmentPanel({ leadId }: { leadId: string }) {
+  const [enrichment, setEnrichment] = useState<Enrichment | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    async function poll() {
+      const res = await fetch(`/api/leads/${leadId}/enrich`).catch(() => null);
+      const data = (await res?.json().catch(() => null)) as Enrichment | null;
+      if (cancelled || !data) return;
+      setEnrichment(data);
+      if (data.status === "pending" || data.status === "starting_instance" || data.status === "scraping") {
+        timeout = setTimeout(poll, 4000);
+      }
+    }
+    void poll();
+
+    return () => {
+      cancelled = true;
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [leadId]);
+
+  async function start() {
+    setEnrichment({ status: "pending" });
+    const res = await fetch(`/api/leads/${leadId}/enrich`, { method: "POST" }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as Enrichment | null;
+    if (data) setEnrichment(data);
+  }
+
+  if (!enrichment || enrichment.status === "not_started") {
+    return (
+      <button
+        type="button"
+        onClick={start}
+        style={{
+          marginTop: 10,
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--g-green-text)",
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+        }}
+      >
+        Get more details (website, hours) →
+      </button>
+    );
+  }
+
+  if (enrichment.status === "failed") {
+    return (
+      <div style={{ marginTop: 10, fontSize: 12, color: "var(--g-gray-500)" }}>
+        Couldn&apos;t fetch more details.{" "}
+        <button
+          type="button"
+          onClick={start}
+          style={{ fontWeight: 700, color: "var(--g-green-text)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (enrichment.status === "done") {
+    if (!enrichment.website_url) {
+      return <div style={{ marginTop: 10, fontSize: 12, color: "var(--g-gray-500)" }}>No additional details found.</div>;
+    }
+    return (
+      <div style={{ marginTop: 10, fontSize: 12.5 }}>
+        <a href={enrichment.website_url} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)", fontWeight: 700 }}>
+          {enrichment.website_url}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--g-gray-500)" }}>
+      <span className="g-pin-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--g-green)", flexShrink: 0 }} />
+      {ENRICHMENT_STATUS_LABEL[enrichment.status]}
+    </div>
+  );
+}
+
 function BlurSwapText({ text, color }: { text: string; color?: string }) {
   const [shown, setShown] = useState(text);
   const [visible, setVisible] = useState(true);

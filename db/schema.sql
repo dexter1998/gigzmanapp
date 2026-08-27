@@ -93,14 +93,22 @@ ALTER TABLE area_type_scans ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMPT
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_area_type_scans_cache_key ON area_type_scans(cache_key);
 
+-- Source is the self-hosted gosom (google-maps-scraper) EC2 instance — richer per-business data
+-- than Nearby Search's response gives (a real website URL string instead of just a has_website
+-- boolean, hours, popular times), fetched on-demand for a lead the user has already unlocked
+-- (not run in bulk during discovery). Only ever one row per lead — re-enriching overwrites it
+-- rather than accumulating history, since there's no use for stale enrichment snapshots yet.
 CREATE TABLE IF NOT EXISTS lead_enrichment (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id UUID NOT NULL REFERENCES leads(id),
-  social_links JSONB,
-  ad_spend_signals JSONB,
-  tech_stack JSONB,
-  -- source/provider intentionally not yet set — data source for this table is a real open item,
-  -- not chosen yet (see plan file)
+  lead_id UUID NOT NULL UNIQUE REFERENCES leads(id),
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | starting_instance | scraping | done | failed
+  website_url TEXT,
+  open_hours JSONB,
+  popular_times JSONB,
+  raw JSONB, -- the full gosom record for this business, for whatever isn't broken out above yet
+  error TEXT,
+  ssm_command_id TEXT, -- the in-flight SSM RunCommand id while status = 'scraping'
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   enriched_at TIMESTAMPTZ
 );
 
