@@ -11,7 +11,15 @@ import { isExcludedType } from "@/lib/lead-quality";
 const PER_AREA_COOLDOWN_SECONDS = 45;
 // A broader backstop above the per-area cooldown — catches erratic map interaction generally
 // (rapid pan-zoom-pan cycling across many different areas) rather than just the one-spot case.
-const SESSION_REQUEST_BUDGET = 40;
+// 40 was calibrated back when a search was ~1 request per category; the tile-based grid search
+// (up to 4 tiles x 9 categories, each tile+category needing its own request until exhausted) can
+// legitimately need 30-50+ requests for ONE "All categories" search of a genuinely new area —
+// confirmed live: normal use (3-4 location changes) was hitting this and going fully silent for
+// the rest of the window with no explanation. This counts total requests, not just ones that
+// actually bill Places API (area_scans gets a row per request regardless of whether the
+// underlying tile+category was a cache hit), so raising it doesn't scale real cost 1:1 the way
+// it looks like it would.
+const SESSION_REQUEST_BUDGET = 120;
 const SESSION_WINDOW_MINUTES = 5;
 
 // Bounds every scan to roughly a "default zoom" neighborhood regardless of what radius the client
