@@ -359,3 +359,33 @@ export function FacebookIcon({ color = "var(--g-ink)", size = 18 }: { color?: st
     </svg>
   );
 }
+
+// Chat composer icon set — matches the origami.chat reference composer's attach/link/mic
+// row (visual only for attach/link/mic, no behavior behind them yet).
+export function PaperclipIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5 12.5 20a4.5 4.5 0 0 1-6.36-6.36L14.5 5.28a3 3 0 0 1 4.24 4.24L10.4 18a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 14a5 5 0 0 0 7.07 0l2-2a5 5 0 0 0-7.07-7.07l-1 1" />
+      <path d="M14 10a5 5 0 0 0-7.07 0l-2 2a5 5 0 0 0 7.07 7.07l1-1" />
+    </svg>
+  );
+}
+
+export function MicIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3" />
+      <path d="M9 21h6" />
+    </svg>
+  );
+}

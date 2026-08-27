@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
 import { HomeIcon, ChatBubbleIcon, TableIcon, WhatsAppIcon, PartnerIcon, SettingsIcon } from "./icons";
+
+type ChatSummary = { id: string; title: string };
 
 const NAV_ITEMS = [
   { href: "/home", label: "Home", icon: HomeIcon },
@@ -16,6 +18,14 @@ const NAV_ITEMS = [
 export function AppSidebar({ name, email }: { name: string | null; email: string }) {
   const pathname = usePathname();
   const [partnerOpen, setPartnerOpen] = useState(false);
+  const [chats, setChats] = useState<ChatSummary[]>([]);
+
+  useEffect(() => {
+    fetch("/api/chats")
+      .then((r) => r.json())
+      .then((data: { chats?: ChatSummary[] }) => setChats(data.chats ?? []))
+      .catch(() => {});
+  }, [pathname]);
 
   return (
     <>
@@ -70,7 +80,36 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "0 10px 8px" }}>
             Your chats
           </div>
-          <div style={{ padding: "10px", fontSize: 12.5, color: "var(--g-gray-500)" }}>No chats yet</div>
+          {chats.length === 0 ? (
+            <div style={{ padding: "10px", fontSize: 12.5, color: "var(--g-gray-500)" }}>No chats yet</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {chats.map((c) => {
+                const active = pathname === `/chat/${c.id}`;
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/chat/${c.id}`}
+                    style={{
+                      display: "block",
+                      padding: "8px 10px",
+                      borderRadius: "var(--radius-sm)",
+                      textDecoration: "none",
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                      color: active ? "var(--g-green-text)" : "var(--g-ink-soft)",
+                      background: active ? "var(--g-green-mint)" : "transparent",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {c.title}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div style={{ flex: 1 }} />

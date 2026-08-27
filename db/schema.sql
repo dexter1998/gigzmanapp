@@ -200,3 +200,57 @@ CREATE TABLE IF NOT EXISTS chat_suggestions (
   icp_category TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Real chat (Phase 2). Fills the sidebar's already-built, already-empty "Your chats" slot.
+
+-- Marker for future industry-specific discovery branching — today there is exactly one
+-- vertical (web_dev_agency), hardcoded as the default, so this is deliberately NOT a
+-- signals/services registry yet. That machinery gets added when a second vertical
+-- actually exists, not speculatively now.
+CREATE TABLE IF NOT EXISTS icps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL UNIQUE,
+  vertical_key TEXT NOT NULL DEFAULT 'web_dev_agency',
+  offer TEXT, -- what the user sells; seeded from agency_profiles/freelancer_profiles
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS chats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT 'New chat', -- first ~6 words of the first user message
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chats_user_email ON chats(user_email, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chat_id UUID NOT NULL REFERENCES chats(id),
+  role TEXT NOT NULL, -- user | assistant
+  content TEXT NOT NULL,
+  intent JSONB, -- the validated ChatIntent (see lib/planner.ts) for assistant turns
+                -- that produced one — action/category/areaText/filters/reply etc.
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);
+
+-- Single-currency execution ledger (plan-confirmed decision — not fixed discover/
+-- qualify/contact tiers). Every credit-spending action, map or chat, writes one row
+-- here; UNIQUE(user_email, lead_id, reason) makes double-charging the same action on
+-- the same lead impossible even under a race. reason is intentionally free text, not a
+-- fixed enum, so a new execution type never needs a migration to start logging here.
+CREATE TABLE IF NOT EXISTS credit_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  lead_id UUID REFERENCES leads(id),
+  reason TEXT NOT NULL,
+  amount INTEGER NOT NULL, -- always negative (credits spent)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_ledger_dedup ON credit_ledger(user_email, lead_id, reason);
+CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_email, created_at DESC);

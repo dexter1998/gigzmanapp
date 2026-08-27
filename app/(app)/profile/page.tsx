@@ -10,16 +10,16 @@ export default async function ProfilePage() {
   const [unlockCount] = await sql`SELECT COUNT(*)::int AS count FROM unlocks WHERE unlocked_by = ${email}`;
 
   return (
-    <div style={{ padding: "32px 24px 120px", maxWidth: 1000, margin: "0 auto" }}>
+    <div style={{ padding: "32px 24px 120px", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Account</h1>
-          <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>{email}</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Settings</h1>
+          <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>Manage your account and preferences</p>
         </div>
         <CreditsIndicator />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {/* Account */}
         <Card>
           <CardHeader title="Account" />
@@ -72,8 +72,8 @@ function Card({ children }: { children: React.ReactNode }) {
       style={{
         background: "var(--g-white)",
         border: "1px solid var(--g-border)",
-        borderRadius: "var(--radius-md)",
-        padding: 20,
+        borderRadius: "var(--radius-lg)",
+        padding: 24,
       }}
     >
       {children}
@@ -106,9 +106,9 @@ const pillPrimary: React.CSSProperties = {
   width: "100%",
   marginTop: 4,
   padding: "11px 0",
-  borderRadius: "var(--radius-pill)",
+  borderRadius: "var(--radius-sm)",
   border: "none",
-  background: "var(--g-green)",
+  background: "var(--g-green-dark)",
   color: "#fff",
   fontSize: 13,
   fontWeight: 700,
@@ -118,7 +118,7 @@ const pillPrimary: React.CSSProperties = {
 const pillSecondary: React.CSSProperties = {
   width: "100%",
   padding: "11px 0",
-  borderRadius: "var(--radius-pill)",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--g-border)",
   background: "var(--g-white)",
   color: "var(--g-ink)",

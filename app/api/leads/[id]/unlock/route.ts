@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { creditCost } from "@/lib/credits/pricing";
 
 /**
  * "Add to leads" — costs 1 credit, reveals full contact/address detail for this lead in the LMS
@@ -46,6 +47,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     UPDATE user_profiles SET credits = credits - 1, updated_at = now()
     WHERE email = ${userEmail}
     RETURNING credits
+  `;
+
+  // Additive audit trail alongside the unlocks row above — doesn't change the response or
+  // any existing behavior. ON CONFLICT DO NOTHING backstops the same double-charge case the
+  // unlocks insert above already guards against.
+  const cost = creditCost("lead_unlock");
+  await sql`
+    INSERT INTO credit_ledger (user_email, lead_id, reason, amount)
+    VALUES (${userEmail}, ${id}, 'lead_unlock', ${-cost})
+    ON CONFLICT (user_email, lead_id, reason) DO NOTHING
   `;
 
   return NextResponse.json({ unlocked: true, alreadyUnlocked: false, credits: updated.credits });
