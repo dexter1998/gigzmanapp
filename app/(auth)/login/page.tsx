@@ -33,8 +33,8 @@ export default function LoginPage() {
       >
         {/* Left — auth form */}
         <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, color: "var(--g-green)", marginBottom: 32 }}>
-            Mantis AI
+          <div style={{ fontFamily: "var(--font-poppins)", fontSize: 20, fontWeight: 600, color: "var(--g-green)", marginBottom: 32 }}>
+            mantis
           </div>
 
           <div

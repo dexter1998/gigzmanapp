@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
@@ -33,25 +34,9 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px 22px" }}>
-          <div
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 8,
-              background: "var(--g-green)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            M
-          </div>
-          <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16, color: "var(--g-ink)", letterSpacing: "-0.01em" }}>
-            Mantis AI
+          <Image src="/mantis-logo.png" alt="" width={26} height={26} style={{ objectFit: "contain" }} />
+          <span style={{ fontFamily: "var(--font-poppins)", fontWeight: 600, fontSize: 16, color: "var(--g-ink)", letterSpacing: "-0.01em" }}>
+            mantis
           </span>
         </div>
 
