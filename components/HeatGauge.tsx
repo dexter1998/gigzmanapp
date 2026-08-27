@@ -30,7 +30,7 @@ export function HeatGauge({ score, size = 120 }: { score: number; size?: number 
           <linearGradient id={gaugeId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#d9564a" />
             <stop offset="55%" stopColor="var(--g-amber-core, #fdba3f)" />
-            <stop offset="100%" stopColor="var(--g-green, #22a35a)" />
+            <stop offset="100%" stopColor="var(--g-green, #7cb342)" />
           </linearGradient>
         </defs>
         <path

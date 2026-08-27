@@ -173,3 +173,189 @@ export function SettingsIcon({ color = "var(--g-ink)" }: { color?: string }) {
     </svg>
   );
 }
+
+// Landing page icon set — same 24x24 viewBox / 2px stroke convention as everything above, so the
+// marketing page never looks like it's borrowing from a different icon set than the app.
+export function ShieldIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+export function ClipboardIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="4" width="12" height="17" rx="2" />
+      <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h6M9 7h6" />
+    </svg>
+  );
+}
+
+export function DownloadIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v12m0 0-4-4m4 4 4-4" />
+      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
+export function ClockIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
+
+export function ZapIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+    </svg>
+  );
+}
+
+export function RadioIcon({ color = "var(--g-ink)", size = 20 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="2" />
+      <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13" />
+    </svg>
+  );
+}
+
+export function PinIcon({ color = "var(--g-ink)", size = 16 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12Z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon({ color = "var(--g-ink)", size = 14 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ color = "var(--g-ink)", size = 14 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ color = "var(--g-ink)", size = 16 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function MinusIcon({ color = "var(--g-ink)", size = 16 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function QuoteIcon({ color = "var(--g-green)", size = 28 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <path d="M9.5 6C6.5 7.2 5 9.4 5 12.3c0 2.3 1.4 3.7 3.2 3.7 1.6 0 2.8-1.2 2.8-2.8 0-1.5-1-2.6-2.4-2.7.3-1.4 1.5-2.6 3-3.2L9.5 6Zm9 0c-3 1.2-4.5 3.4-4.5 6.3 0 2.3 1.4 3.7 3.2 3.7 1.6 0 2.8-1.2 2.8-2.8 0-1.5-1-2.6-2.4-2.7.3-1.4 1.5-2.6 3-3.2L18.5 6Z" />
+    </svg>
+  );
+}
+
+export function MailIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 6 8.5 7 8.5-7" />
+    </svg>
+  );
+}
+
+export function PhoneIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6.6 10.8c1.4 2.7 3.6 4.9 6.3 6.3l2.1-2.1a1 1 0 0 1 1-.25c1.1.36 2.3.56 3.5.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.4.56 3.5a1 1 0 0 1-.25 1L6.6 10.8Z" />
+    </svg>
+  );
+}
+
+// Social/source marks — flat, single-color to match the icon set's own restraint rather than
+// each platform's real multicolor logo; recognizable by shape alone (LinkedIn "in", the bird-less
+// X wordmark, a play triangle for YouTube).
+export function LinkedInIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7.5 10v6.5M7.5 7.5h.01M11.5 16.5V13a2 2 0 0 1 4 0v3.5M11.5 10v6.5" />
+    </svg>
+  );
+}
+
+export function XSocialIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h4.2l4.1 5.6L16.8 4H20l-6.2 7.7L20.4 20H16.2l-4.5-6-5.4 6H3l6.7-8.2L4 4Z" />
+    </svg>
+  );
+}
+
+export function YouTubeIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="4" />
+      <path d="M10.5 9.5v5l4.5-2.5-4.5-2.5Z" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
+export function MapsPinIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s6.5-6.1 6.5-11A6.5 6.5 0 1 0 5.5 10c0 4.9 6.5 11 6.5 11Z" />
+      <circle cx="12" cy="10" r="2.2" />
+    </svg>
+  );
+}
+
+export function InstagramIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M17.5 6.5h.01" />
+    </svg>
+  );
+}
+
+export function FacebookIcon({ color = "var(--g-ink)", size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 8h-2a2 2 0 0 0-2 2v2H9v3h2v7h3v-7h2.5l.5-3H14v-1.5a.5.5 0 0 1 .5-.5H15V8Z" />
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+    </svg>
+  );
+}

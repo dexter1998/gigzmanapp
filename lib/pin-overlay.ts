@@ -191,3 +191,22 @@ export const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f141d" }] },
   { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1a1f2b" }] },
 ];
+
+/** Light, low-clutter basemap for the landing page's hero demo — same POI/transit decluttering
+ * as MAP_STYLES above, but tuned for the cream/white landing page rather than the app's own dark
+ * dashboard theme. */
+export const LIGHT_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#eceee9" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#f7f6f2" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#7a8073" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f2ede0" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#a3a89b" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#d8dcd0" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#dde5da" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#eceee9" }] },
+];

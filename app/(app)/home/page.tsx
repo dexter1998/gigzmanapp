@@ -619,7 +619,7 @@ export default function HomePage() {
         : lead.has_website === null
           ? "#c7cad1"
           : lead.has_website
-            ? "#3aa65c"
+            ? "#7cb342"
             : "#fdba3f";
       const pulsing = !lead.is_competitor && lead.has_website === null;
       const glow = !pulsing; // resolved pins (green/amber/red) glow, like Pindrop's; checking ones just pulse
@@ -793,7 +793,7 @@ export default function HomePage() {
                 MAP KEY
               </div>
               <MapKeyRow color="#fdba3f" title="No website" description="A business with no site yet. Tap it to build one." />
-              <MapKeyRow color="#3aa65c" title="Website" description="This business already has a site." />
+              <MapKeyRow color="var(--g-green)" title="Website" description="This business already has a site." />
               <MapKeyRow color="#2563eb" title="You" description="Your current location." />
             </div>
           )}
