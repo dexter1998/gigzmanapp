@@ -84,12 +84,22 @@ body {
 /* Landing page responsiveness — the page itself uses inline styles for layout (matching the
    rest of this app's convention), so only the handful of breakpoint-dependent behaviors that
    inline styles can't express live here. */
+
+/* Fixed-height boxed widget on desktop (row layout) — the sidebar's own lead list scrolls
+   internally instead of the whole map+sidebar frame growing taller as more leads load. */
+.landing-map-layout {
+  height: 460px;
+  overflow: hidden;
+}
+
 @media (max-width: 900px) {
   .landing-nav-links {
     display: none !important;
   }
   .landing-map-layout {
     flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   .landing-map-layout > div {
     max-width: 100% !important;

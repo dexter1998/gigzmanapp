@@ -85,7 +85,7 @@ export function LandingPricing() {
                   display: "block",
                   textAlign: "center",
                   padding: "12px 0",
-                  borderRadius: "var(--radius-pill)",
+                  borderRadius: "var(--radius-sm)",
                   fontSize: 13.5,
                   fontWeight: 700,
                   textDecoration: "none",

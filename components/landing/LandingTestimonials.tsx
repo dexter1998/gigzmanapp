@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ShieldCheckIcon, QuoteIcon } from "@/components/icons";
+import { OrigamiDecoration } from "./OrigamiDecoration";
 
 const TESTIMONIALS = [
   { quote: "Mantis AI helps us find the right local clients without the noise. Our pipeline has never been this consistent.", name: "Rohit Ahuja", title: "Founder, Digital Marketing Agency", location: "Gurugram, India", stat: "40+ qualified leads" },
@@ -14,14 +15,17 @@ const PARTNER_LOGOS = ["WPP", "dentsu", "iProspect", "WebFX", "groupM", "PUBLICI
 export function LandingTestimonials() {
   return (
     <section id="testimonials" style={{ position: "relative", padding: "80px 24px", textAlign: "center", overflow: "hidden" }}>
-      <Image
-        aria-hidden="true"
-        alt=""
-        src="/landing/mantis-crouch.png"
-        width={1254}
-        height={1254}
-        style={{ position: "absolute", top: 12, right: "max(2%, calc(50% - 620px))", width: 110, height: "auto", opacity: 0.9, zIndex: 0 }}
-      />
+      <div style={{ position: "absolute", top: 0, right: "max(0%, calc(50% - 660px))", width: 220, height: 200, zIndex: 0 }}>
+        <OrigamiDecoration variant="corner-right" opacity={0.6} />
+        <Image
+          aria-hidden="true"
+          alt=""
+          src="/landing/mantis-crouch.png"
+          width={1254}
+          height={1254}
+          style={{ position: "absolute", bottom: 30, right: 10, width: 170, height: "auto", zIndex: 1 }}
+        />
+      </div>
       <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-green)", color: "var(--g-green-text)", fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
           <ShieldCheckIcon size={14} color="var(--g-green-text)" /> Trusted by 1,000+ agencies

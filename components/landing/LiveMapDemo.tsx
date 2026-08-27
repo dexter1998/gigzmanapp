@@ -250,7 +250,7 @@ export function LiveMapDemo() {
                 justifyContent: "center",
                 gap: 8,
                 padding: "12px 0",
-                borderRadius: "var(--radius-pill)",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--g-green)",
                 background: "var(--g-green-mint)",
                 color: "var(--g-green-text)",

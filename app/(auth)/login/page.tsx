@@ -72,7 +72,7 @@ export default function LoginPage() {
               style={{
                 width: "100%",
                 padding: "13px 0",
-                borderRadius: "var(--radius-pill)",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--g-green)",
                 color: "#fff",

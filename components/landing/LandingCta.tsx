@@ -20,7 +20,7 @@ export function LandingCta() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
           <Link
             href="/login"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 26px", borderRadius: "var(--radius-pill)", background: "var(--g-green)", color: "#fff", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 26px", borderRadius: "var(--radius-sm)", background: "var(--g-green)", color: "#fff", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}
           >
             Get Free Access →
           </Link>
@@ -30,16 +30,16 @@ export function LandingCta() {
         </div>
       </div>
 
-      <div style={{ position: "relative", marginTop: 64, height: 240, background: "linear-gradient(180deg, transparent, var(--g-green-mint) 60%)" }}>
+      <div style={{ position: "relative", marginTop: 64, height: 320, background: "linear-gradient(180deg, transparent, var(--g-green-mint) 55%)" }}>
         <OrigamiDecoration variant="corner-left" opacity={0.7} />
         <OrigamiDecoration variant="corner-right" opacity={0.7} />
         <Image
           aria-hidden="true"
           alt=""
-          src="/landing/mantis-flying.png"
-          width={1368}
-          height={1149}
-          style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", width: 190, height: "auto", zIndex: 1 }}
+          src="/landing/mantis-standing.png"
+          width={1254}
+          height={1254}
+          style={{ position: "absolute", bottom: 0, right: "8%", width: 260, height: "auto", zIndex: 1 }}
         />
       </div>
     </section>

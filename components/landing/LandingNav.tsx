@@ -64,12 +64,13 @@ export function LandingNav() {
             href="/login"
             style={{
               padding: "9px 18px",
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--g-border)",
               fontSize: 13.5,
               fontWeight: 700,
               color: "var(--g-ink)",
               textDecoration: "none",
+              whiteSpace: "nowrap",
             }}
           >
             Log in
@@ -81,12 +82,13 @@ export function LandingNav() {
               alignItems: "center",
               gap: 6,
               padding: "9px 18px",
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--radius-sm)",
               background: "var(--g-ink)",
               color: "#fff",
               fontSize: 13.5,
               fontWeight: 700,
               textDecoration: "none",
+              whiteSpace: "nowrap",
             }}
           >
             Get Free Access →

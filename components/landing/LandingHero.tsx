@@ -59,7 +59,7 @@ export function LandingHero() {
             alignItems: "center",
             gap: 8,
             padding: "13px 26px",
-            borderRadius: "var(--radius-pill)",
+            borderRadius: "var(--radius-sm)",
             background: "var(--g-ink)",
             color: "#fff",
             fontSize: 14.5,

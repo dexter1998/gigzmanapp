@@ -37,13 +37,13 @@ export function LandingFooter() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
-          <form style={{ display: "flex", width: "100%", maxWidth: 340, background: "var(--g-white)", borderRadius: "var(--radius-pill)", padding: 4 }}>
+          <form style={{ display: "flex", width: "100%", maxWidth: 340, background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-sm)", padding: 4 }}>
             <input
               type="email"
               placeholder="Enter your email"
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", padding: "8px 14px", fontSize: 13, color: "var(--g-ink)" }}
             />
-            <button type="submit" style={{ width: 34, height: 34, borderRadius: "50%", border: "none", background: "var(--g-green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <button type="submit" style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "var(--g-green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <ArrowRightIcon />
             </button>
           </form>
