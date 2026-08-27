@@ -6,7 +6,10 @@ import { LiveMapDemo } from "./LiveMapDemo";
 export function LandingHero() {
   return (
     <section style={{ position: "relative", overflow: "hidden", padding: "72px 24px 96px" }}>
-      <OrigamiDecoration variant="scattered" opacity={0.6} />
+      <div style={{ position: "absolute", inset: 0, opacity: 0.4 }}>
+        <OrigamiDecoration variant="corner-left" opacity={1} width="46vw" />
+        <OrigamiDecoration variant="corner-right" opacity={1} width="46vw" />
+      </div>
       <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
         <div
           style={{
@@ -58,11 +61,11 @@ export function LandingHero() {
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            padding: "13px 26px",
+            padding: "15px 30px",
             borderRadius: "var(--radius-sm)",
             background: "var(--g-ink)",
             color: "#fff",
-            fontSize: 14.5,
+            fontSize: 16,
             fontWeight: 700,
             textDecoration: "none",
           }}
@@ -71,7 +74,7 @@ export function LandingHero() {
         </Link>
       </div>
 
-      <div style={{ maxWidth: 1180, margin: "56px auto 0", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 1240, margin: "56px auto 0", position: "relative", zIndex: 1 }}>
         <LiveMapDemo />
       </div>
     </section>

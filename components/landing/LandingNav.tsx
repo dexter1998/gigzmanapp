@@ -27,18 +27,18 @@ export function LandingNav() {
         style={{
           maxWidth: 1240,
           margin: "0 auto",
-          padding: "14px 24px",
+          padding: "18px 24px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 16,
+          gap: 20,
         }}
       >
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <Image src="/mantis-logo-wordmark.png" alt="Mantis AI" width={140} height={34} style={{ objectFit: "contain", height: "auto" }} priority />
+          <Image src="/mantis-logo-wordmark.png" alt="Mantis AI" width={148} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }} className="landing-nav-links">
+        <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="landing-nav-links">
           {NAV_LINKS.map((link) => (
             <a
               key={link.label}
@@ -47,26 +47,26 @@ export function LandingNav() {
                 display: "flex",
                 alignItems: "center",
                 gap: 4,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 600,
                 color: "var(--g-ink)",
                 textDecoration: "none",
               }}
             >
               {link.label}
-              {(link.label === "Product" || link.label === "Resources") && <ChevronDownIcon size={12} color="var(--g-gray-500)" />}
+              {(link.label === "Product" || link.label === "Resources") && <ChevronDownIcon size={13} color="var(--g-gray-500)" />}
             </a>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link
             href="/login"
             style={{
-              padding: "9px 18px",
+              padding: "11px 20px",
               borderRadius: "var(--radius-sm)",
               border: "1px solid var(--g-border)",
-              fontSize: 13.5,
+              fontSize: 14.5,
               fontWeight: 700,
               color: "var(--g-ink)",
               textDecoration: "none",
@@ -81,11 +81,11 @@ export function LandingNav() {
               display: "flex",
               alignItems: "center",
               gap: 6,
-              padding: "9px 18px",
+              padding: "11px 20px",
               borderRadius: "var(--radius-sm)",
               background: "var(--g-ink)",
               color: "#fff",
-              fontSize: 13.5,
+              fontSize: 14.5,
               fontWeight: 700,
               textDecoration: "none",
               whiteSpace: "nowrap",

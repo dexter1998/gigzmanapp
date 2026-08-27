@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PlusIcon, MinusIcon } from "@/components/icons";
+import { OrigamiDecoration } from "./OrigamiDecoration";
 
 const FAQS = [
   { q: "How does Mantis AI find leads?", a: "Mantis searches live web sources, business listings, websites and social profiles, then cross-checks results before adding them to your workspace." },
@@ -20,14 +21,15 @@ export function LandingFaq() {
   const right = FAQS.slice(4);
 
   return (
-    <section id="faq" style={{ position: "relative", padding: "80px 24px", textAlign: "center" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <h2 style={{ fontSize: "clamp(28px, 5vw, 46px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 10px" }}>
+    <section id="faq" style={{ position: "relative", padding: "96px 24px", textAlign: "center", overflow: "hidden" }}>
+      <OrigamiDecoration variant="corner-left" opacity={0.35} width="42vw" />
+      <div style={{ maxWidth: 1240, margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <h2 style={{ fontSize: "clamp(30px, 5vw, 50px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>
           Questions, <span style={{ color: "var(--g-green)" }}>answered.</span>
         </h2>
-        <p style={{ fontSize: 14.5, color: "var(--g-gray-500)", margin: "0 0 44px" }}>Everything agencies need to know before finding their next local client.</p>
+        <p style={{ fontSize: 16, color: "var(--g-gray-500)", margin: "0 0 52px" }}>Everything agencies need to know before finding their next local client.</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "0 40px", textAlign: "left" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: "0 64px", textAlign: "left" }}>
           <div>{left.map((f) => <FaqItem key={f.q} faq={f} index={FAQS.indexOf(f)} openIndex={openIndex} setOpenIndex={setOpenIndex} />)}</div>
           <div>{right.map((f) => <FaqItem key={f.q} faq={f} index={FAQS.indexOf(f)} openIndex={openIndex} setOpenIndex={setOpenIndex} />)}</div>
         </div>
@@ -67,7 +69,7 @@ function FaqItem({
 }) {
   const open = openIndex === index;
   return (
-    <div style={{ borderBottom: "1px solid var(--g-border)", padding: "18px 0" }}>
+    <div style={{ borderBottom: "1px solid var(--g-border)", padding: "26px 0" }}>
       <button
         type="button"
         onClick={() => setOpenIndex(open ? null : index)}
@@ -76,7 +78,7 @@ function FaqItem({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 16,
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -84,10 +86,10 @@ function FaqItem({
           padding: 0,
         }}
       >
-        <span style={{ fontSize: 15, fontWeight: 700, color: open ? "var(--g-green-text)" : "var(--g-ink)" }}>{faq.q}</span>
-        {open ? <MinusIcon color="var(--g-green-text)" /> : <PlusIcon color="var(--g-green)" />}
+        <span style={{ fontSize: 17, fontWeight: 700, color: open ? "var(--g-green-text)" : "var(--g-ink)" }}>{faq.q}</span>
+        {open ? <MinusIcon size={20} color="var(--g-green-text)" /> : <PlusIcon size={20} color="var(--g-green)" />}
       </button>
-      {open && <p style={{ fontSize: 13, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "12px 0 0" }}>{faq.a}</p>}
+      {open && <p style={{ fontSize: 14.5, color: "var(--g-gray-500)", lineHeight: 1.65, margin: "16px 0 0" }}>{faq.a}</p>}
     </div>
   );
 }

@@ -106,7 +106,7 @@ export function LiveMapDemo() {
 
     for (const lead of leads) {
       if (lead.lat == null || lead.lng == null) continue;
-      const color = lead.has_website ? "#7cb342" : "#fdba3f";
+      const color = "#a8d51e";
       if (markersRef.current.has(lead.id)) continue;
       const overlay: PinOverlayInstance = new PinOverlay(
         { lat: lead.lat, lng: lead.lng },
@@ -139,8 +139,8 @@ export function LiveMapDemo() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "14px 16px",
+          gap: 12,
+          padding: "18px 20px",
           borderBottom: "1px solid var(--g-border)",
           flexWrap: "wrap",
         }}
@@ -164,28 +164,28 @@ export function LiveMapDemo() {
 
       <div style={{ display: "flex", flexDirection: "row" }} className="landing-map-layout">
         {/* Map */}
-        <div style={{ position: "relative", flex: "1 1 62%", minHeight: 460 }}>
+        <div style={{ position: "relative", flex: "1 1 64%", minHeight: 540 }}>
           <div ref={mapDivRef} style={{ position: "absolute", inset: 0 }} />
         </div>
 
         {/* Leads sidebar */}
         <div
           style={{
-            flex: "1 1 38%",
-            maxWidth: 340,
+            flex: "1 1 36%",
+            maxWidth: 380,
             borderLeft: "1px solid var(--g-border)",
             display: "flex",
             flexDirection: "column",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 10px" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>Leads in this area</div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--g-green-text)", background: "var(--g-green-mint)", padding: "2px 9px", borderRadius: "var(--radius-pill)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
+            <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--g-ink)" }}>Leads in this area</div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--g-green-text)", background: "var(--g-green-mint)", padding: "3px 10px", borderRadius: "var(--radius-pill)" }}>
               {leads.length}
             </span>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 16px" }}>
             {selected ? (
               <LeadDetail lead={selected} onBack={() => setSelectedId(null)} />
             ) : visibleLeads.length === 0 ? (
@@ -199,9 +199,9 @@ export function LiveMapDemo() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 12,
                     width: "100%",
-                    padding: "10px 6px",
+                    padding: "13px 6px",
                     background: "none",
                     border: "none",
                     borderBottom: "1px solid var(--g-border)",
@@ -211,8 +211,8 @@ export function LiveMapDemo() {
                 >
                   <div
                     style={{
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       borderRadius: 10,
                       background: lead.has_website ? "var(--g-green-mint)" : "var(--g-amber-tint)",
                       display: "flex",
@@ -221,14 +221,14 @@ export function LiveMapDemo() {
                       flexShrink: 0,
                     }}
                   >
-                    <GlobeIcon size={18} color={lead.has_website ? "var(--g-green-text)" : "#b45309"} />
+                    <GlobeIcon size={19} color={lead.has_website ? "var(--g-green-text)" : "#b45309"} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--g-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {lead.business_name}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>{formatCategory(lead.category) ?? lead.section ?? "Business"}</div>
-                    <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                    <div style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{formatCategory(lead.category) ?? lead.section ?? "Business"}</div>
+                    <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
                       <span style={pillTag(lead.has_website === false)}>{lead.has_website === false ? "No Website" : "Has Website"}</span>
                       {lead.heat_score >= 60 && <span style={pillTag(false)}>High Intent</span>}
                     </div>
@@ -239,7 +239,7 @@ export function LiveMapDemo() {
             )}
           </div>
 
-          <div style={{ padding: 16, borderTop: "1px solid var(--g-border)" }}>
+          <div style={{ padding: 20, borderTop: "1px solid var(--g-border)" }}>
             <button
               type="button"
               onClick={goToSignup}
@@ -249,19 +249,19 @@ export function LiveMapDemo() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                padding: "12px 0",
+                padding: "14px 0",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--g-green)",
                 background: "var(--g-green-mint)",
                 color: "var(--g-green-text)",
-                fontSize: 13.5,
+                fontSize: 14.5,
                 fontWeight: 700,
                 cursor: "pointer",
               }}
             >
               <LockIcon /> Unlock Lead Details
             </button>
-            <div style={{ textAlign: "center", fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 8 }}>View contact, email, phone & more</div>
+            <div style={{ textAlign: "center", fontSize: 12, color: "var(--g-gray-500)", marginTop: 9 }}>View contact, email, phone & more</div>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { PinIcon, ChevronDownIcon, DownloadIcon } from "@/components/icons";
+import { OrigamiDecoration } from "./OrigamiDecoration";
 
 const ROWS = [
   { name: "Brewz Cafe", category: "Cafe", area: "Sector 56", status: "no_website", intent: 95, contact: "Arjun Mehta", followUp: "May 19", stage: "Qualified" },
@@ -17,31 +18,31 @@ const STAGE_TONE: Record<string, { bg: string; text: string }> = {
 
 export function LandingPipeline() {
   return (
-    <section style={{ position: "relative", padding: "80px 24px", textAlign: "center" }}>
+    <section style={{ position: "relative", padding: "96px 24px", textAlign: "center", overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-        <Image src="/mantis-logo-wordmark.png" alt="mantis" width={100} height={24} style={{ objectFit: "contain", height: "auto" }} />
+        <Image src="/mantis-logo-wordmark.png" alt="mantis" width={110} height={26} style={{ objectFit: "contain", height: "auto" }} />
       </div>
-      <h2 style={{ fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
+      <h2 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 14px", letterSpacing: "-0.01em" }}>
         Find. Enrich. Export. Close.
       </h2>
-      <p style={{ fontSize: 15, color: "var(--g-gray-500)", margin: "0 0 40px" }}>Turn fresh local opportunities into a managed sales pipeline.</p>
+      <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", margin: "0 0 48px" }}>Turn fresh local opportunities into a managed sales pipeline.</p>
 
-      <div style={{ maxWidth: 1080, margin: "0 auto", background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", overflow: "hidden", textAlign: "left" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: "1px solid var(--g-border)", flexWrap: "wrap" }}>
-          <span style={pill}><PinIcon size={13} color="var(--g-green-text)" /> Gurugram <ChevronDownIcon size={12} color="var(--g-gray-500)" /></span>
-          <span style={pillOutline}>All Categories <ChevronDownIcon size={12} color="var(--g-gray-500)" /></span>
-          <span style={pillOutline}>High Intent <ChevronDownIcon size={12} color="var(--g-gray-500)" /></span>
-          <span style={pillOutline}>Website Status <ChevronDownIcon size={12} color="var(--g-gray-500)" /></span>
-          <span style={{ ...pillOutline, marginLeft: "auto" }}><DownloadIcon size={13} /> Export CSV</span>
-          <span style={{ ...pill, background: "var(--g-green)", color: "#fff" }}>+ Add to Pipeline</span>
+      <div style={{ maxWidth: 1240, margin: "0 auto", position: "relative", background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", overflow: "hidden", textAlign: "left" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px", borderBottom: "1px solid var(--g-border)", flexWrap: "wrap" }}>
+          <span style={pill}><PinIcon size={14} color="var(--g-green-text)" /> Gurugram <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
+          <span style={pillOutline}>All Categories <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
+          <span style={pillOutline}>High Intent <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
+          <span style={pillOutline}>Website Status <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
+          <span style={{ ...pillOutline, marginLeft: "auto" }}><DownloadIcon size={14} /> Export CSV</span>
+          <span style={{ ...pill, background: "var(--g-green-dark)", color: "#fff", borderColor: "var(--g-green-dark)" }}>+ Add to Pipeline</span>
         </div>
 
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 780 }}>
             <thead>
-              <tr style={{ fontSize: 11, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase" }}>
+              <tr style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em" }}>
                 {["Business", "Area", "Website Status", "Intent Score", "Contact", "Follow-up", "Stage"].map((h) => (
-                  <th key={h} style={{ padding: "10px 16px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>{h}</th>
+                  <th key={h} style={{ padding: "14px 20px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -50,21 +51,21 @@ export function LandingPipeline() {
                 const tone = STAGE_TONE[row.stage];
                 return (
                   <tr key={row.name} style={{ borderBottom: "1px solid var(--g-border)" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>
+                    <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>
                       {row.name}
-                      <div style={{ fontSize: 11, fontWeight: 500, color: "var(--g-gray-500)" }}>{row.category}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: "var(--g-gray-500)" }}>{row.category}</div>
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>{row.area}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: "var(--radius-pill)", background: "var(--g-red-tint)", color: "var(--g-red-text)" }}>
+                    <td style={{ padding: "16px 20px", fontSize: 13.5, color: "var(--g-ink-soft)" }}>{row.area}</td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: "var(--radius-pill)", background: "var(--g-red-tint)", color: "var(--g-red-text)" }}>
                         {STATUS_LABEL[row.status]}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "var(--g-green-text)" }}>{row.intent}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>{row.contact}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>{row.followUp}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: "var(--radius-pill)", background: tone.bg, color: tone.text }}>{row.stage}</span>
+                    <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 700, color: "var(--g-green-text)" }}>{row.intent}</td>
+                    <td style={{ padding: "16px 20px", fontSize: 13.5, color: "var(--g-ink-soft)" }}>{row.contact}</td>
+                    <td style={{ padding: "16px 20px", fontSize: 13.5, color: "var(--g-ink-soft)" }}>{row.followUp}</td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: "var(--radius-pill)", background: tone.bg, color: tone.text }}>{row.stage}</span>
                     </td>
                   </tr>
                 );
@@ -73,11 +74,20 @@ export function LandingPipeline() {
           </table>
         </div>
 
-        <div style={{ display: "flex", gap: 20, padding: "12px 18px", fontSize: 12.5, fontWeight: 700, color: "var(--g-gray-500)" }}>
-          <span style={{ color: "var(--g-green-text)", borderBottom: "2px solid var(--g-green)", paddingBottom: 4 }}>All Leads (248)</span>
+        <div style={{ display: "flex", gap: 24, padding: "16px 22px", fontSize: 13.5, fontWeight: 700, color: "var(--g-gray-500)" }}>
+          <span style={{ color: "var(--g-green-text)", borderBottom: "2px solid var(--g-green)", paddingBottom: 5 }}>All Leads (248)</span>
           <span>Qualified (86)</span>
           <span>Contacted (64)</span>
           <span>Won (18)</span>
+        </div>
+      </div>
+
+      <div style={{ position: "relative", height: 0 }}>
+        <div style={{ position: "absolute", bottom: -20, right: "calc(50% - 640px)", width: 220, height: 130, zIndex: 0 }}>
+          <OrigamiDecoration variant="corner-right" opacity={0.5} width="100%" />
+        </div>
+        <div style={{ position: "absolute", bottom: -40, right: "calc(50% - 610px)", width: 130, zIndex: 1 }}>
+          <Image aria-hidden="true" alt="" src="/landing/mantis-crouch.png" width={1254} height={1254} style={{ width: "100%", height: "auto" }} />
         </div>
       </div>
     </section>

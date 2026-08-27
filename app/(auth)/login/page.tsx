@@ -74,7 +74,7 @@ export default function LoginPage() {
                 padding: "13px 0",
                 borderRadius: "var(--radius-sm)",
                 border: "none",
-                background: "var(--g-green)",
+                background: "var(--g-green-dark)",
                 color: "#fff",
                 fontSize: 14,
                 fontWeight: 700,

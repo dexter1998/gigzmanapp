@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors — sampled from the real Pindrop UI (ui inspiration/*.png) */
-  --g-cream: #f3efe6;
+  /* Colors — sampled from the real Pindrop UI (ui inspiration/*.png), background lightened per
+     the approved landing reference (clean off-white, not the earlier beige) — cascades to the
+     dashboard too since this is the shared, centralized token. */
+  --g-cream: #fcfcfa;
   --g-white: #ffffff;
-  --g-ink: #142033;
+  --g-ink: #101214;
   --g-ink-soft: #1c2b40;
-  --g-gray-500: #6b7280;
+  --g-gray-500: #667085;
   --g-gray-300: #d1d5db;
   --g-gray-100: #f0f1f3;
-  --g-border: #e6e4de;
+  --g-border: #e5e8e2;
 
   /* Brand green — the landing page (public/mantis reference PDF) is the source of truth for this
      palette now; the dashboard picks up the same tokens rather than keeping its own separate,
      more muted green. */
-  --g-green: #7cb342;
-  --g-green-dark: #5a8a2e;
+  --g-green: #a8d51e;
+  --g-green-dark: #648b1c;
   --g-green-darker: #3f6420;
-  --g-green-mint: #eef5e3;
-  --g-green-text: #4f7a25;
+  --g-green-mint: #f4f8e9;
+  --g-green-text: #4c6b16;
 
   --g-amber: #f5a623;
   --g-amber-core: #fdba3f;
@@ -88,8 +90,14 @@ body {
 /* Fixed-height boxed widget on desktop (row layout) — the sidebar's own lead list scrolls
    internally instead of the whole map+sidebar frame growing taller as more leads load. */
 .landing-map-layout {
-  height: 460px;
+  height: 540px;
   overflow: hidden;
+}
+
+@media (max-width: 1080px) {
+  .landing-capabilities-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 @media (max-width: 900px) {
@@ -106,6 +114,15 @@ body {
   }
   .landing-enrichment-grid {
     grid-template-columns: 1fr !important;
+  }
+  .landing-capabilities-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-websearch-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-testimonials-grid > * {
+    grid-column: span 12 !important;
   }
   .landing-footer-grid {
     grid-template-columns: repeat(2, 1fr) !important;
