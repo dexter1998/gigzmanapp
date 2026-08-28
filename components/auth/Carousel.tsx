@@ -14,8 +14,11 @@ const SLIDES = [
 
 const AUTOPLAY_MS = 7500; // 1.5x the original 5s
 
-// Fills the whole left panel edge-to-edge — object-fit: cover (not contain), no padding/inset,
-// dots overlaid on top of the image instead of taking their own row below it.
+// Fills the whole left panel edge-to-edge with zero cropping and zero gap — aspect-ratio is
+// locked to the slides' own real dimensions (1003x1568, identical across all 4), so the panel's
+// computed height always exactly matches what the images need, at any card width. object-fit:
+// cover is still set as a safety net (in case a future slide has a slightly different ratio),
+// but with a matching aspect-ratio it never actually needs to crop anything.
 export function AuthCarousel() {
   const [index, setIndex] = useState(0);
 
@@ -25,7 +28,7 @@ export function AuthCarousel() {
   }, []);
 
   return (
-    <div style={{ position: "absolute", inset: 0 }}>
+    <div style={{ position: "relative", width: "100%", aspectRatio: "1003 / 1568" }}>
       {SLIDES.map((src, i) => (
         <Image
           key={src}
