@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 // Each slide is a full, self-contained marketing image (already has its own headline/copy/
-// branding baked in). Only 3 of the intended 4 are in place — the 4th ("Reach the right
-// person" / Brewz Cafe) only existed as a landscape hero crop (1536x1024), which would look
-// letterboxed next to these portrait ones, so it's left out until a matching portrait crop is
-// available. Add "/auth/carousel-4.png" back here once it exists.
+// branding baked in) — all 4, matching portrait dimensions (1003x1568).
 const SLIDES = [
   "/auth/carousel-1.png",
   "/auth/carousel-2.png",
   "/auth/carousel-3.png",
+  "/auth/carousel-4.png",
 ];
 
 const AUTOPLAY_MS = 7500; // 1.5x the original 5s

@@ -97,22 +97,21 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        // Slightly darker than the card itself (both used to be --g-cream, so the card had no
-        // visible edge against the page) — this gives the card a real boundary to sit inside.
-        background: "var(--g-gray-300)",
+        background: "var(--g-cream)",
         padding: 24,
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 1350,
+          // 1.3x the original 900x620.
+          maxWidth: 1170,
           // A definite `height` (not minHeight) matters here — the left column's only child is
           // position:absolute (see AuthCarousel), which contributes nothing to a grid row's
           // auto-sizing, so minHeight alone left the row (and the image filling it) sized to
           // whatever the right panel's own content needed, showing empty background around/
           // below the image. A definite height lets both columns actually stretch to fill it.
-          height: 930,
+          height: 806,
           background: "var(--g-cream)",
           borderRadius: 28,
           boxShadow: "0 24px 64px rgba(20, 32, 51, 0.22)",
