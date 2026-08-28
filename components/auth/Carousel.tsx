@@ -16,6 +16,8 @@ const SLIDES = [
 
 const AUTOPLAY_MS = 5000;
 
+// Fills the whole left panel edge-to-edge — object-fit: cover (not contain), no padding/inset,
+// dots overlaid on top of the image instead of taking their own row below it.
 export function AuthCarousel() {
   const [index, setIndex] = useState(0);
 
@@ -25,21 +27,19 @@ export function AuthCarousel() {
   }, []);
 
   return (
-    <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "relative", flex: 1, borderRadius: "var(--radius-lg)", overflow: "hidden", background: "var(--g-white)" }}>
-        {SLIDES.map((src, i) => (
-          <Image
-            key={src}
-            src={src}
-            alt=""
-            fill
-            style={{ objectFit: "contain", opacity: i === index ? 1 : 0, transition: "opacity 400ms ease" }}
-            priority={i === 0}
-          />
-        ))}
-      </div>
+    <div style={{ position: "absolute", inset: 0 }}>
+      {SLIDES.map((src, i) => (
+        <Image
+          key={src}
+          src={src}
+          alt=""
+          fill
+          style={{ objectFit: "cover", opacity: i === index ? 1 : 0, transition: "opacity 400ms ease" }}
+          priority={i === 0}
+        />
+      ))}
 
-      <div style={{ display: "flex", gap: 6, alignSelf: "center", paddingTop: 12 }}>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 24, display: "flex", gap: 6, justifyContent: "center" }}>
         {SLIDES.map((_, i) => (
           <button
             key={i}
@@ -51,7 +51,8 @@ export function AuthCarousel() {
               height: 8,
               borderRadius: "var(--radius-pill)",
               border: "none",
-              background: i === index ? "var(--g-green-dark)" : "var(--g-border)",
+              background: i === index ? "var(--g-green-dark)" : "rgba(255,255,255,0.7)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
               cursor: "pointer",
               transition: "width 200ms",
               padding: 0,

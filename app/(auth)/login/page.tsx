@@ -6,11 +6,9 @@ import { googleSignIn, emailPasswordSignIn } from "./actions";
 import { AuthCarousel } from "@/components/auth/Carousel";
 
 type Tab = "signin" | "signup";
-type Mode = "google" | "email";
 
 export default function LoginPage() {
   const [tab, setTab] = useState<Tab>("signin");
-  const [mode, setMode] = useState<Mode>("google");
   const isSignup = tab === "signup";
 
   // Email + password
@@ -25,12 +23,6 @@ export default function LoginPage() {
 
   function switchTab(next: Tab) {
     setTab(next);
-    setError("");
-    setEmailStep("form");
-  }
-
-  function switchMode(next: Mode) {
-    setMode(next);
     setError("");
     setEmailStep("form");
   }
@@ -112,8 +104,8 @@ export default function LoginPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: 900,
-          minHeight: 620,
+          maxWidth: 1350,
+          minHeight: 930,
           background: "var(--g-cream)",
           borderRadius: 28,
           boxShadow: "var(--shadow-card)",
@@ -122,25 +114,17 @@ export default function LoginPage() {
           overflow: "hidden",
         }}
       >
-        {/* Left — carousel (each slide is a self-contained image with its own headline/copy,
-            so this panel stays a plain light ground rather than the earlier dark green gradient
-            that would clash with them) */}
-        <div
-          style={{
-            background: "var(--g-cream)",
-            padding: "32px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
+        {/* Left — carousel, edge-to-edge (no inset/padding so it fully fills the panel; the
+            outer card's own border-radius + overflow:hidden clips its left corners for us). */}
+        <div style={{ position: "relative" }}>
           <AuthCarousel />
         </div>
 
-        {/* Right — auth form. Google and email/password are the only two ways in — phone/OTP
-            was intentionally pulled back out as a primary login method (still asked for later,
-            post-signup, unverified — see the onboarding flow) rather than deleted outright. */}
-        <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column" }}>
-          <div style={{ marginBottom: 24 }}>
+        {/* Right — auth form. Email/password is the primary path (always visible, no mode
+            toggle needed to reach it) with Google underneath as the alternative — both
+            reachable in one glance instead of switching between them. */}
+        <div style={{ padding: "48px 56px", display: "flex", flexDirection: "column" }}>
+          <div style={{ marginBottom: 28 }}>
             <Image src="/mantis-logo-wordmark.png" alt="mantis" width={150} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
           </div>
 
@@ -151,7 +135,7 @@ export default function LoginPage() {
               borderRadius: "var(--radius-pill)",
               padding: 4,
               width: "fit-content",
-              marginBottom: 16,
+              marginBottom: 20,
             }}
           >
             <PillButton active={!isSignup} onClick={() => switchTab("signin")}>
@@ -162,55 +146,44 @@ export default function LoginPage() {
             </PillButton>
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
-            <ModeButton active={mode === "google"} onClick={() => switchMode("google")}>
-              Google
-            </ModeButton>
-            <ModeButton active={mode === "email"} onClick={() => switchMode("email")}>
-              Email
-            </ModeButton>
-          </div>
-
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>
             {isSignup ? "Create account" : "Sign in"}
           </h1>
-          <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 22 }} />
+          <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 26 }} />
 
-          {mode === "google" && (
-            <form action={googleSignIn}>
-              <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginBottom: 20 }}>
-                Continuing with Google creates your account automatically if you&apos;re new here.
-              </p>
-              <button type="submit" style={primaryBtn}>
-                <GoogleGlyph />
-                {isSignup ? "Sign up with Google" : "Continue with Google"}
-              </button>
-            </form>
-          )}
-
-          {mode === "email" && !isSignup && (
+          {(!isSignup || emailStep === "form") && (
             <div>
               <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
-              <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••" />
+              <Field
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                type="password"
+                placeholder={isSignup ? "At least 8 characters" : "••••••••"}
+              />
               {error && <ErrorText>{error}</ErrorText>}
-              <button type="button" disabled={busy || !email || !password} onClick={submitEmailSignin} style={primaryBtn}>
-                {busy ? "Signing in…" : "Sign in"}
-              </button>
+              {isSignup ? (
+                <button type="button" disabled={busy || !email || password.length < 8} onClick={submitEmailSignup} style={primaryBtn}>
+                  {busy ? "Sending code…" : "Create account"}
+                </button>
+              ) : (
+                <button type="button" disabled={busy || !email || !password} onClick={submitEmailSignin} style={primaryBtn}>
+                  {busy ? "Signing in…" : "Sign in"}
+                </button>
+              )}
+
+              <Divider />
+
+              <form action={googleSignIn}>
+                <button type="submit" style={googleBtn}>
+                  <GoogleGlyph />
+                  {isSignup ? "Sign up with Google" : "Continue with Google"}
+                </button>
+              </form>
             </div>
           )}
 
-          {mode === "email" && isSignup && emailStep === "form" && (
-            <div>
-              <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
-              <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="At least 8 characters" />
-              {error && <ErrorText>{error}</ErrorText>}
-              <button type="button" disabled={busy || !email || password.length < 8} onClick={submitEmailSignup} style={primaryBtn}>
-                {busy ? "Sending code…" : "Create account"}
-              </button>
-            </div>
-          )}
-
-          {mode === "email" && isSignup && emailStep === "verify" && (
+          {isSignup && emailStep === "verify" && (
             <div>
               <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
                 We sent a 6-digit code to <strong style={{ color: "var(--g-ink)" }}>{email}</strong>.
@@ -257,24 +230,13 @@ function PillButton({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-function ModeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Divider() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        background: active ? "var(--g-ink)" : "var(--g-white)",
-        border: "1px solid " + (active ? "var(--g-ink)" : "var(--g-border)"),
-        borderRadius: "var(--radius-sm)",
-        padding: "6px 14px",
-        fontSize: 12.5,
-        fontWeight: 700,
-        color: active ? "#fff" : "var(--g-ink-soft)",
-        cursor: "pointer",
-      }}
-    >
-      {children}
-    </button>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
+      <div style={{ flex: 1, height: 1, background: "var(--g-border)" }} />
+      <span style={{ fontSize: 11, color: "var(--g-gray-500)", fontWeight: 700 }}>OR</span>
+      <div style={{ flex: 1, height: 1, background: "var(--g-border)" }} />
+    </div>
   );
 }
 
@@ -329,6 +291,22 @@ const primaryBtn: React.CSSProperties = {
   fontWeight: 700,
   cursor: "pointer",
   boxShadow: "0 4px 14px rgba(58,166,92,0.35)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+};
+
+const googleBtn: React.CSSProperties = {
+  width: "100%",
+  padding: "13px 0",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--g-border)",
+  background: "var(--g-white)",
+  color: "var(--g-ink)",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
