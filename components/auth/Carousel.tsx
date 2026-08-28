@@ -14,7 +14,7 @@ const SLIDES = [
   "/auth/carousel-3.png",
 ];
 
-const AUTOPLAY_MS = 5000;
+const AUTOPLAY_MS = 7500; // 1.5x the original 5s
 
 // Fills the whole left panel edge-to-edge — object-fit: cover (not contain), no padding/inset,
 // dots overlaid on top of the image instead of taking their own row below it.

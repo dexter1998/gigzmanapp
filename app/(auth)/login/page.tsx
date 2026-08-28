@@ -97,7 +97,9 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--g-cream)",
+        // Slightly darker than the card itself (both used to be --g-cream, so the card had no
+        // visible edge against the page) — this gives the card a real boundary to sit inside.
+        background: "var(--g-gray-300)",
         padding: 24,
       }}
     >
@@ -108,7 +110,7 @@ export default function LoginPage() {
           minHeight: 930,
           background: "var(--g-cream)",
           borderRadius: 28,
-          boxShadow: "var(--shadow-card)",
+          boxShadow: "0 24px 64px rgba(20, 32, 51, 0.22)",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           overflow: "hidden",
