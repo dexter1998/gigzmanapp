@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatComposer } from "./ChatComposer";
+import { SparkleIcon } from "@/components/icons";
 
 export function ChatLanding({ name, suggestions }: { name: string | null; suggestions: string[] }) {
   const router = useRouter();
@@ -48,27 +49,38 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
       <ChatComposer onSubmit={startChat} disabled={sending} autoFocus />
 
       {suggestions.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 16 }}>
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => startChat(s)}
-              disabled={sending}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "var(--radius-pill)",
-                border: "1px solid var(--g-border)",
-                background: "var(--g-white)",
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: "var(--g-ink-soft)",
-                cursor: sending ? "default" : "pointer",
-              }}
-            >
-              {s}
-            </button>
-          ))}
+        <div
+          className="chat-suggestion-marquee"
+          style={{ marginTop: 20, overflow: "hidden", maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)" }}
+        >
+          <div className="chat-suggestion-track" style={{ display: "flex", gap: 8, width: "max-content" }}>
+            {[...suggestions, ...suggestions].map((s, i) => (
+              <button
+                key={`${s}-${i}`}
+                type="button"
+                onClick={() => startChat(s)}
+                disabled={sending}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-pill)",
+                  border: "none",
+                  background: "var(--g-gray-100)",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: "var(--g-ink-soft)",
+                  cursor: sending ? "default" : "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                <SparkleIcon size={12} color="var(--g-gray-500)" />
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { ChatLanding } from "@/components/chat/ChatLanding";
 
-const SUGGESTION_COUNT = 3;
+const SUGGESTION_COUNT = 10;
 
 export default async function ChatPage() {
   const session = await auth();

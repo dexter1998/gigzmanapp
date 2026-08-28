@@ -13,18 +13,36 @@ export default function OnboardingPage() {
 
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [companyName, setCompanyName] = useState("");
+  const [name, setName] = useState("");
   const [personName, setPersonName] = useState("");
   const [website, setWebsite] = useState("");
 
-  const totalSteps = 2;
+  // Optional add-a-mobile-number step — only shown when the account doesn't already have one on
+  // file. Saved unverified; OTP verification is deliberately skipped here for now (not offered
+  // at all, not even as an extra optional step) — a later phase can add it back on top of this
+  // same /api/user/phone save.
+  const [hasPhone, setHasPhone] = useState<boolean | null>(null); // null = still checking
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneBusy, setPhoneBusy] = useState(false);
+
+  const totalSteps = hasPhone === false ? 3 : 2;
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((s) => {
-        if (s?.user?.name) setPersonName((prev) => prev || s.user.name);
+        if (s?.user?.name) {
+          setName((prev) => prev || s.user.name);
+          setPersonName((prev) => prev || s.user.name);
+        }
       })
       .catch(() => {});
+
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => setHasPhone(Boolean(d?.profile?.phone)))
+      .catch(() => setHasPhone(true)); // fail closed — don't block finishing onboarding over this
   }, []);
 
   function selectWorkMode(mode: WorkMode) {
@@ -32,7 +50,10 @@ export default function OnboardingPage() {
     setStep(2);
   }
 
-  const step2Valid = workMode === "company" ? companyName.trim().length > 0 : personName.trim().length > 0;
+  const step2Valid =
+    workMode === "company"
+      ? companyName.trim().length > 0 && name.trim().length > 0
+      : personName.trim().length > 0;
 
   async function handleFinish() {
     setSubmitting(true);
@@ -42,14 +63,39 @@ export default function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workMode,
+          name: workMode === "company" ? name : personName,
           companyName: workMode === "company" ? companyName : undefined,
           personName: workMode === "independent" ? personName : undefined,
           website: website || undefined,
         }),
       });
-      router.push("/home");
+      if (hasPhone === false) {
+        setStep(3);
+      } else {
+        router.push("/home");
+      }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function saveMobileAndFinish() {
+    setPhoneError("");
+    setPhoneBusy(true);
+    try {
+      const res = await fetch("/api/user/phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPhoneError(data.error ?? "Couldn't save that number");
+        return;
+      }
+      router.push("/home");
+    } finally {
+      setPhoneBusy(false);
     }
   }
 
@@ -102,6 +148,7 @@ export default function OnboardingPage() {
                 Just the basics for now — you can fill in the rest later.
               </p>
 
+              <Field label="Your name" value={name} onChange={setName} required />
               <Field label="Company name" value={companyName} onChange={setCompanyName} required />
               <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourcompany.com" />
 
@@ -132,6 +179,32 @@ export default function OnboardingPage() {
                 </button>
                 <button type="button" disabled={!step2Valid || submitting} onClick={handleFinish} style={primaryBtn(step2Valid && !submitting)}>
                   {submitting ? "Saving…" : "Continue →"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Add a mobile number?</h1>
+              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
+                Optional — helps us reach you if you ever need account help. You can skip this.
+              </p>
+
+              <Field label="Mobile number" value={phoneInput} onChange={setPhoneInput} placeholder="10-digit mobile number" />
+              {phoneError && <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 10px" }}>{phoneError}</p>}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button type="button" onClick={() => router.push("/home")} style={secondaryBtn}>
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  disabled={phoneInput.trim().length < 10 || phoneBusy}
+                  onClick={saveMobileAndFinish}
+                  style={primaryBtn(phoneInput.trim().length >= 10 && !phoneBusy)}
+                >
+                  {phoneBusy ? "Saving…" : "Continue →"}
                 </button>
               </div>
             </>

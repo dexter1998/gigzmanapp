@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
-import { runChatIntent, type ChatIntent } from "@/lib/planner";
+import { runChatIntent, BedrockUnavailableError, type ChatIntent } from "@/lib/planner";
 import { geocodeText, reverseGeocode } from "@/lib/geocode";
 import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
 import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
-import { TYPE_TO_SECTION, CATEGORY_SECTIONS } from "@/lib/categories";
+import { TYPE_TO_SECTION, CATEGORY_SECTIONS, formatCategory } from "@/lib/categories";
 import { POST as findLeadsPost } from "@/app/api/leads/find/route";
 
 const DEFAULT_SEARCH_RADIUS_METERS = 1500;
@@ -22,6 +22,7 @@ type AssistantIntent = ChatIntent & {
     heat_score: number | null;
   }>;
   tookMs?: number; // real elapsed time for the Bedrock call, shown as "Mantis worked for Ns"
+  apiDown?: boolean; // a real third-party API failure happened this turn (not just an empty/ambiguous result)
 };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
@@ -40,14 +41,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   // "Reuse my last searched area" resolves here, before anything else touches `message` —
   // the rest of the pipeline never needs to know this turn started from a clarification tap
   // rather than typed text.
+  let turnApiDown = false;
   if (message === USE_LAST_MAP_AREA) {
     const [lastScan] = await sql`
       SELECT center_lat, center_lng FROM area_scans
       WHERE requested_by = ${userEmail} AND center_lat IS NOT NULL
       ORDER BY created_at DESC LIMIT 1
     `;
-    const resolved = lastScan ? await reverseGeocode(lastScan.center_lat, lastScan.center_lng) : null;
-    message = resolved ? `Search near ${resolved}` : "my last searched area";
+    const resolved = lastScan ? await reverseGeocode(lastScan.center_lat, lastScan.center_lng) : { value: null, apiDown: false };
+    turnApiDown = turnApiDown || resolved.apiDown;
+    message = resolved.value ? `Search near ${resolved.value}` : "my last searched area";
   }
 
   await sql`INSERT INTO chat_messages (chat_id, role, content) VALUES (${chatId}, 'user', ${message})`;
@@ -74,8 +77,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
     .reverse();
 
   const startedAt = Date.now();
-  const intent = await runChatIntent({ message, history: history.slice(0, -1) });
-  const result: AssistantIntent = { ...intent, tookMs: Date.now() - startedAt };
+  let intent: ChatIntent;
+  try {
+    intent = await runChatIntent({ message, history: history.slice(0, -1) });
+  } catch (err) {
+    if (!(err instanceof BedrockUnavailableError)) throw err;
+    intent = {
+      action: "needs_clarification",
+      category: null,
+      areaText: null,
+      noWebsiteOnly: false,
+      missingField: null,
+      reply: "I'm having trouble reaching my search engine right now — please try again in a few minutes.",
+      nextActions: [],
+    };
+    turnApiDown = true;
+  }
+  const result: AssistantIntent = { ...intent, tookMs: Date.now() - startedAt, apiDown: turnApiDown };
 
   if (intent.action === "search_leads" && !intent.category) {
     result.action = "needs_clarification";
@@ -88,7 +106,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
 
   let center: { lat: number; lng: number } | null = null;
   if (result.action === "search_leads" && intent.areaText) {
-    center = await geocodeText(intent.areaText);
+    const geocoded = await geocodeText(intent.areaText);
+    center = geocoded.value;
+    if (geocoded.apiDown) result.apiDown = true;
     if (!center) {
       result.action = "needs_clarification";
       result.missingField = "location";
@@ -117,17 +137,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   if (result.action === "search_leads" && center && intent.category) {
     // Reuses the map's own discovery route directly (same function, same throttles/cache/
     // dedup) rather than a parallel pipeline — chat is a natural-language front end onto
-    // the same data, not a second way of finding it. Its own result is best-effort/
+    // the same data, not a second way of finding it. Its own leads/hasMore are best-effort/
     // throttle-aware and discarded here on purpose: whether or not this call actually ran
     // live discovery (vs. being cooldown-throttled), the bounding-box read below always
     // shows whatever's already cached for this area+category, so a repeat/refinement
-    // query never silently comes back empty just because the live half was throttled.
+    // query never silently comes back empty just because the live half was throttled. Its
+    // `apiDown` flag is the one thing still read from it, since a real Places failure here
+    // should still surface the maintenance banner even though the leads themselves aren't used.
     const findReq = new NextRequest("http://internal/api/leads/find", {
       method: "POST",
       body: JSON.stringify({ lat: center.lat, lng: center.lng, radius: DEFAULT_SEARCH_RADIUS_METERS, category: intent.category }),
       headers: { "content-type": "application/json" },
     });
-    await findLeadsPost(findReq);
+    const findRes = await findLeadsPost(findReq);
+    const findData = await findRes.json().catch(() => null) as { apiDown?: boolean } | null;
+    if (findData?.apiDown) result.apiDown = true;
 
     const placeTypes = CATEGORY_SECTIONS[intent.category] ?? [];
     const latDelta = DEFAULT_SEARCH_RADIUS_METERS / 111320;
@@ -165,6 +189,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
             }),
       };
     });
+
+    // The model's own `reply` was generated before the search ran (it doesn't know the count
+    // yet), which is how a turn could end up showing only a stale "I'm searching for X…" line
+    // with nothing after it when zero results came back — replaced here with a deterministic,
+    // result-aware summary instead of relying on the model to narrate a search it hasn't seen
+    // the outcome of.
+    const areaLabel = intent.areaText ?? "this area";
+    const categoryLabel = (formatCategory(intent.category) ?? "businesses").toLowerCase();
+    result.reply =
+      result.leads.length > 0
+        ? `Found ${result.leads.length} ${categoryLabel} near ${areaLabel}${result.noWebsiteOnly ? " without a website" : ""}.`
+        : `No matching businesses found near ${areaLabel} yet — try a different area or category.`;
   }
 
   const [assistantMessage] = await sql`

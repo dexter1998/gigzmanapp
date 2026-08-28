@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 
 type OnboardingBody = {
   workMode: "company" | "independent";
+  name: string;
   companyName?: string;
   personName?: string;
   website?: string;
@@ -19,18 +20,19 @@ export async function POST(req: NextRequest) {
   const email = session.user.email;
 
   const body = (await req.json()) as OnboardingBody;
-  if (!body.workMode || (body.workMode === "company" ? !body.companyName : !body.personName)) {
-    return NextResponse.json({ error: "workMode and a name are required" }, { status: 400 });
+  if (!body.workMode || !body.name?.trim() || (body.workMode === "company" ? !body.companyName : !body.personName)) {
+    return NextResponse.json({ error: "workMode, name, and a company/person name are required" }, { status: 400 });
   }
 
   const businessType = body.workMode === "company" ? "agency" : "freelancer";
 
   await sql`
-    INSERT INTO user_profiles (email, onboarding_completed, business_type, updated_at)
-    VALUES (${email}, true, ${businessType}, now())
+    INSERT INTO user_profiles (email, onboarding_completed, business_type, name, updated_at)
+    VALUES (${email}, true, ${businessType}, ${body.name}, now())
     ON CONFLICT (email) DO UPDATE SET
       onboarding_completed = true,
       business_type = ${businessType},
+      name = ${body.name},
       updated_at = now()
   `;
 

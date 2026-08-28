@@ -7,12 +7,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
   if (!session?.user?.email) redirect("/login");
 
-  const [profile] = await sql`SELECT onboarding_completed FROM user_profiles WHERE email = ${session.user.email}`;
+  const [profile] = await sql`SELECT onboarding_completed, name FROM user_profiles WHERE email = ${session.user.email}`;
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: "var(--g-cream)" }}>
-      <AppSidebar name={session.user.name ?? null} email={session.user.email} />
+      <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} />
       <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
     </div>
   );

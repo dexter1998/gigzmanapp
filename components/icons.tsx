@@ -389,3 +389,36 @@ export function MicIcon({ color = "var(--g-ink)", size = 18 }: { color?: string;
     </svg>
   );
 }
+
+// Chat-turn feedback/suggestion icon set — same 24x24/2px-stroke convention as the rest.
+export function LightbulbIcon({ color = "var(--g-ink)", size = 16 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-3.6 10.8c.6.5.9 1.1.9 1.9v.3h5.4v-.3c0-.8.3-1.4.9-1.9A6 6 0 0 0 12 2Z" />
+    </svg>
+  );
+}
+
+export function ThumbsUpIcon({ color = "var(--g-gray-500)", size = 15, filled = false }: { color?: string; size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 22V11M2 13v7a2 2 0 0 0 2 2h13.4a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 19 11h-5.5l1-4.5a1.5 1.5 0 0 0-2.7-1.2L7 11" />
+    </svg>
+  );
+}
+
+export function ThumbsDownIcon({ color = "var(--g-gray-500)", size = 15, filled = false }: { color?: string; size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 2v11M22 11V4a2 2 0 0 0-2-2H6.6a2 2 0 0 0-2 1.6l-1.4 7A2 2 0 0 0 5 13h5.5l-1 4.5a1.5 1.5 0 0 0 2.7 1.2L17 13" />
+    </svg>
+  );
+}
+
+export function SparkleIcon({ color = "var(--g-ink)", size = 14 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
+    </svg>
+  );
+}

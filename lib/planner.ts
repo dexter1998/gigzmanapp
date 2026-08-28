@@ -1,6 +1,11 @@
 import { ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 import { bedrock, CHAT_MODEL_ID } from "@/lib/bedrock";
 import { SECTION_NAMES } from "@/lib/categories";
+import { recordApiFailure } from "@/lib/api-alerts";
+
+// Thrown instead of letting a Bedrock failure bubble up as a raw 500 — callers catch this
+// specifically to show the maintenance banner instead of a broken/crashed reply.
+export class BedrockUnavailableError extends Error {}
 
 export type ChatIntent = {
   action: "search_leads" | "answer_from_existing" | "needs_clarification";
@@ -9,6 +14,7 @@ export type ChatIntent = {
   noWebsiteOnly: boolean;
   missingField: "category" | "location" | "count" | null;
   reply: string;
+  nextActions: string[];
 };
 
 const TOOL_NAME = "emit_intent";
@@ -57,11 +63,19 @@ const INTENT_TOOL = {
           reply: {
             type: "string",
             description:
-              "Your own short, natural first-person reply shown directly to the user — never a repetition or paraphrase of their message. " +
+              "Your own short, natural reply shown directly to the user — never a repetition or paraphrase of their message, and avoid " +
+              "opening with 'I am'/'I'm' (a separate loading indicator already shows while a search runs, so don't narrate starting one). " +
               "Match the language/tone they wrote in (e.g. reply in Hindi/Hinglish if they wrote in Hindi/Hinglish).",
           },
+          nextActions: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "0-3 short (under 8 words) suggested next steps the user could take from here, phrased as actions " +
+              "(e.g. 'Search a nearby area too', 'Only show ones with no website'). Empty array if nothing useful to suggest.",
+          },
         },
-        required: ["action", "category", "areaText", "noWebsiteOnly", "missingField", "reply"],
+        required: ["action", "category", "areaText", "noWebsiteOnly", "missingField", "reply", "nextActions"],
       },
     },
   },
@@ -82,18 +96,24 @@ export async function runChatIntent(input: {
     { role: "user" as const, content: [{ text: input.message }] },
   ];
 
-  const response = await bedrock.send(
-    new ConverseCommand({
-      modelId: CHAT_MODEL_ID,
-      system: [{ text: SYSTEM_PROMPT }],
-      messages,
-      toolConfig: {
-        tools: [INTENT_TOOL],
-        toolChoice: { tool: { name: TOOL_NAME } },
-      },
-      inferenceConfig: { maxTokens: 500 },
-    })
-  );
+  let response;
+  try {
+    response = await bedrock.send(
+      new ConverseCommand({
+        modelId: CHAT_MODEL_ID,
+        system: [{ text: SYSTEM_PROMPT }],
+        messages,
+        toolConfig: {
+          tools: [INTENT_TOOL],
+          toolChoice: { tool: { name: TOOL_NAME } },
+        },
+        inferenceConfig: { maxTokens: 500 },
+      })
+    );
+  } catch (err) {
+    await recordApiFailure("bedrock", (err as Error).message, { model: CHAT_MODEL_ID });
+    throw new BedrockUnavailableError("Bedrock request failed");
+  }
 
   const toolUse = response.output?.message?.content?.find((c) => "toolUse" in c)?.toolUse;
   const raw = (toolUse?.input ?? {}) as Partial<ChatIntent>;
@@ -107,6 +127,10 @@ export async function runChatIntent(input: {
   const missingField: ChatIntent["missingField"] =
     raw.missingField === "category" || raw.missingField === "location" || raw.missingField === "count" ? raw.missingField : null;
 
+  const nextActions = Array.isArray(raw.nextActions)
+    ? raw.nextActions.filter((a): a is string => typeof a === "string" && a.trim().length > 0).slice(0, 3)
+    : [];
+
   return {
     action,
     category,
@@ -114,5 +138,6 @@ export async function runChatIntent(input: {
     noWebsiteOnly: raw.noWebsiteOnly === true,
     missingField,
     reply: typeof raw.reply === "string" && raw.reply.trim() ? raw.reply.trim() : "Let me look into that.",
+    nextActions,
   };
 }

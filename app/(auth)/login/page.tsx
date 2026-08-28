@@ -2,11 +2,101 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { googleSignIn } from "./actions";
+import { googleSignIn, emailPasswordSignIn } from "./actions";
+import { AuthCarousel } from "@/components/auth/Carousel";
+
+type Tab = "signin" | "signup";
+type Mode = "google" | "email";
 
 export default function LoginPage() {
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<Tab>("signin");
+  const [mode, setMode] = useState<Mode>("google");
   const isSignup = tab === "signup";
+
+  // Email + password
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailStep, setEmailStep] = useState<"form" | "verify">("form");
+  const [code, setCode] = useState("");
+  const [resent, setResent] = useState(false);
+
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function switchTab(next: Tab) {
+    setTab(next);
+    setError("");
+    setEmailStep("form");
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError("");
+    setEmailStep("form");
+  }
+
+  async function submitEmailSignup() {
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/signup/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Couldn't create that account");
+        return;
+      }
+      setEmailStep("verify");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitEmailSignin() {
+    setError("");
+    setBusy(true);
+    try {
+      const result = await emailPasswordSignIn(email, password);
+      if (result) setError(result);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyEmailCode() {
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Incorrect code");
+        return;
+      }
+      const result = await emailPasswordSignIn(email, password);
+      if (result) setError(result);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    setError("");
+    setResent(false);
+    await fetch("/api/auth/resend-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    setResent(true);
+  }
 
   return (
     <div
@@ -23,7 +113,7 @@ export default function LoginPage() {
         style={{
           width: "100%",
           maxWidth: 900,
-          minHeight: 560,
+          minHeight: 620,
           background: "var(--g-cream)",
           borderRadius: 28,
           boxShadow: "var(--shadow-card)",
@@ -32,9 +122,25 @@ export default function LoginPage() {
           overflow: "hidden",
         }}
       >
-        {/* Left — auth form */}
+        {/* Left — carousel (each slide is a self-contained image with its own headline/copy,
+            so this panel stays a plain light ground rather than the earlier dark green gradient
+            that would clash with them) */}
+        <div
+          style={{
+            background: "var(--g-cream)",
+            padding: "32px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <AuthCarousel />
+        </div>
+
+        {/* Right — auth form. Google and email/password are the only two ways in — phone/OTP
+            was intentionally pulled back out as a primary login method (still asked for later,
+            post-signup, unverified — see the onboarding flow) rather than deleted outright. */}
         <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column" }}>
-          <div style={{ marginBottom: 32 }}>
+          <div style={{ marginBottom: 24 }}>
             <Image src="/mantis-logo-wordmark.png" alt="mantis" width={150} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
           </div>
 
@@ -45,124 +151,91 @@ export default function LoginPage() {
               borderRadius: "var(--radius-pill)",
               padding: 4,
               width: "fit-content",
-              marginBottom: 24,
+              marginBottom: 16,
             }}
           >
-            <TabButton active={!isSignup} onClick={() => setTab("signin")}>
+            <PillButton active={!isSignup} onClick={() => switchTab("signin")}>
               Sign in
-            </TabButton>
-            <TabButton active={isSignup} onClick={() => setTab("signup")}>
+            </PillButton>
+            <PillButton active={isSignup} onClick={() => switchTab("signup")}>
               Create account
-            </TabButton>
+            </PillButton>
           </div>
 
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+            <ModeButton active={mode === "google"} onClick={() => switchMode("google")}>
+              Google
+            </ModeButton>
+            <ModeButton active={mode === "email"} onClick={() => switchMode("email")}>
+              Email
+            </ModeButton>
+          </div>
+
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 6px" }}>
             {isSignup ? "Create account" : "Sign in"}
           </h1>
-          <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 28 }} />
+          <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 22 }} />
 
-          <form action={googleSignIn}>
-            <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginBottom: 20 }}>
-              Mantis uses Google Sign-In only — no separate password to manage. New here?
-              Continuing with Google creates your account automatically.
-            </p>
+          {mode === "google" && (
+            <form action={googleSignIn}>
+              <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginBottom: 20 }}>
+                Continuing with Google creates your account automatically if you&apos;re new here.
+              </p>
+              <button type="submit" style={primaryBtn}>
+                <GoogleGlyph />
+                {isSignup ? "Sign up with Google" : "Continue with Google"}
+              </button>
+            </form>
+          )}
 
-            <button
-              type="submit"
-              style={{
-                width: "100%",
-                padding: "13px 0",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--g-green-dark)",
-                color: "#fff",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(58,166,92,0.35)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              <GoogleGlyph />
-              {isSignup ? "Sign up with Google" : "Continue with Google"}
-            </button>
-          </form>
+          {mode === "email" && !isSignup && (
+            <div>
+              <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
+              <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••" />
+              {error && <ErrorText>{error}</ErrorText>}
+              <button type="button" disabled={busy || !email || !password} onClick={submitEmailSignin} style={primaryBtn}>
+                {busy ? "Signing in…" : "Sign in"}
+              </button>
+            </div>
+          )}
+
+          {mode === "email" && isSignup && emailStep === "form" && (
+            <div>
+              <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
+              <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="At least 8 characters" />
+              {error && <ErrorText>{error}</ErrorText>}
+              <button type="button" disabled={busy || !email || password.length < 8} onClick={submitEmailSignup} style={primaryBtn}>
+                {busy ? "Sending code…" : "Create account"}
+              </button>
+            </div>
+          )}
+
+          {mode === "email" && isSignup && emailStep === "verify" && (
+            <div>
+              <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
+                We sent a 6-digit code to <strong style={{ color: "var(--g-ink)" }}>{email}</strong>.
+              </p>
+              <Field label="Verification code" value={code} onChange={setCode} placeholder="123456" />
+              {error && <ErrorText>{error}</ErrorText>}
+              <button type="button" disabled={busy || code.trim().length < 6} onClick={verifyEmailCode} style={primaryBtn}>
+                {busy ? "Verifying…" : "Verify & continue"}
+              </button>
+              <button type="button" onClick={resendCode} style={linkBtn}>
+                {resent ? "Code resent" : "Resend code"}
+              </button>
+            </div>
+          )}
 
           <p style={{ fontSize: 11, color: "var(--g-gray-500)", marginTop: "auto", paddingTop: 32 }}>
             By continuing you agree to our <u>Terms</u> and <u>Privacy Policy</u>.
           </p>
-        </div>
-
-        {/* Right — welcome panel */}
-        <div
-          style={{
-            background: "linear-gradient(160deg, var(--g-green-dark), var(--g-green-darker))",
-            padding: "40px 44px",
-            color: "#fff",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <h2 style={{ fontSize: 34, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>
-            {isSignup ? (
-              <>
-                Start
-                <br />
-                <span className="g-accent-italic">finding.</span>
-              </>
-            ) : (
-              <>
-                Welcome
-                <br />
-                <span className="g-accent-italic">back.</span>
-              </>
-            )}
-          </h2>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", marginTop: 12, maxWidth: 260 }}>
-            {isSignup
-              ? "Businesses without a website, found for you automatically."
-              : "Your leads are exactly where you left them."}
-          </p>
-
-          <div
-            style={{
-              marginTop: "auto",
-              alignSelf: "center",
-              background: "#fff",
-              borderRadius: 20,
-              width: 200,
-              padding: 16,
-              boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
-            }}
-          >
-            <div style={{ fontSize: 11, color: "var(--g-gray-500)", marginBottom: 10 }}>9:41</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>No website found</div>
-            <div style={{ fontSize: 11, color: "var(--g-gray-500)", marginBottom: 10 }}>Oak Street Barbers</div>
-            {["Discovering leads", "Checking websites"].map((step, i) => (
-              <div key={step} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-                <span
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    background: i === 0 ? "var(--g-green)" : "var(--g-gray-100)",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 11.5, color: "var(--g-ink)" }}>{step}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function PillButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -183,6 +256,96 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     </button>
   );
 }
+
+function ModeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: active ? "var(--g-ink)" : "var(--g-white)",
+        border: "1px solid " + (active ? "var(--g-ink)" : "var(--g-border)"),
+        borderRadius: "var(--radius-sm)",
+        padding: "6px 14px",
+        fontSize: 12.5,
+        fontWeight: 700,
+        color: active ? "#fff" : "var(--g-ink-soft)",
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--g-gray-500)", marginBottom: 6 }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: "100%",
+          padding: "11px 14px",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--g-border)",
+          fontSize: 13.5,
+          color: "var(--g-ink)",
+          background: "var(--g-white)",
+          outline: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function ErrorText({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 12px" }}>{children}</p>;
+}
+
+const primaryBtn: React.CSSProperties = {
+  width: "100%",
+  padding: "13px 0",
+  borderRadius: "var(--radius-sm)",
+  border: "none",
+  background: "var(--g-green-dark)",
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  boxShadow: "0 4px 14px rgba(58,166,92,0.35)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+};
+
+const linkBtn: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 0",
+  border: "none",
+  background: "none",
+  color: "var(--g-gray-500)",
+  fontSize: 12.5,
+  fontWeight: 700,
+  cursor: "pointer",
+  marginTop: 6,
+};
 
 function GoogleGlyph() {
   return (

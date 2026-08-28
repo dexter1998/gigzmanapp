@@ -9,6 +9,7 @@ import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION, formatCategory } from "@/
 import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
+import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 
 type Lead = {
   id: string;
@@ -175,6 +176,7 @@ export default function HomePage() {
   // reported "not a single result, even at my own location" for the next several minutes — that
   // window lines up exactly with the 5-minute budget this was silently enforcing.
   const [sessionThrottled, setSessionThrottled] = useState(false);
+  const [showMaintenance, setShowMaintenance] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
   const [startingChat, setStartingChat] = useState(false);
@@ -305,8 +307,9 @@ export default function HomePage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
             });
-            const data = (await res.json()) as { found?: number; hasMore?: boolean; throttled?: string };
+            const data = (await res.json()) as { found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean };
             hasMore = data.hasMore ?? false;
+            if (data.apiDown) setShowMaintenance(true);
             if ((data.found ?? 0) > 0) clearDecorativeDotsAfterMinDuration();
             if (data.throttled === "session_budget") {
               // Every remaining request this search would make is going to get throttled the
@@ -710,6 +713,8 @@ export default function HomePage() {
   return (
     <div style={{ position: "relative", height: "100vh" }}>
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+
+      {showMaintenance && <MaintenanceBanner onClose={() => setShowMaintenance(false)} />}
 
       {showLocationModal && (
         <div

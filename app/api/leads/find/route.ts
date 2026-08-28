@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
 import { isExcludedType } from "@/lib/lead-quality";
+import { recordApiFailure } from "@/lib/api-alerts";
 
 // Anti-abuse: a real discovery request (one that would actually call Places API) for the same
 // rounded area+category from the same user is throttled to once per this window — a user idling
@@ -68,7 +69,7 @@ type PlacesResult = {
 
 type Cell = { lat: number; lng: number; radius: number };
 
-async function fetchNearbyBatch(types: string[], cell: Cell) {
+async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ places: NonNullable<PlacesResult["places"]>; failed: boolean }> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
@@ -101,9 +102,18 @@ async function fetchNearbyBatch(types: string[], cell: Cell) {
       locationRestriction: { circle: { center: { latitude: cell.lat, longitude: cell.lng }, radius: cell.radius } },
     }),
   });
-  if (!res.ok) return [] as NonNullable<PlacesResult["places"]>;
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => "");
+    await recordApiFailure("google_places", `HTTP ${res.status} from Nearby Search`, {
+      status: res.status,
+      body: bodyText.slice(0, 500),
+      types,
+      cell,
+    });
+    return { places: [], failed: true };
+  }
   const data = (await res.json()) as PlacesResult;
-  return data.places ?? [];
+  return { places: data.places ?? [], failed: false };
 }
 
 /** Splits a capped circle into 4 overlapping quadrant sub-circles at half the radius — the
@@ -155,7 +165,7 @@ async function discoverBatch(
   if (existing?.is_exhausted) {
     const staleMs = Date.now() - new Date(existing.last_verified_at).getTime();
     if (staleMs < STALENESS_TTL_MS) {
-      return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false };
+      return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false, failed: false };
     }
 
     // Stale — spend exactly one call at the original top-level cell and compare its count
@@ -164,7 +174,7 @@ async function discoverBatch(
     // something real changed, so this batch is reset to non-exhausted and rediscovered from
     // scratch via the normal subdivision path on the next visit — no separate diffing logic
     // needed, it's the same mechanism a first-ever scan already uses.
-    const probe = await fetchNearbyBatch(types, { lat, lng, radius });
+    const { places: probe, failed: probeFailed } = await fetchNearbyBatch(types, { lat, lng, radius });
     const unchanged = probe.length === existing.top_level_count;
 
     await sql`
@@ -178,7 +188,7 @@ async function discoverBatch(
       WHERE cache_key = ${cacheKey}
     `;
 
-    return { places: unchanged ? [] : probe, hasMore: !unchanged };
+    return { places: unchanged ? [] : probe, hasMore: !unchanged, failed: probeFailed };
   }
 
   const cellsToQuery: Cell[] =
@@ -189,14 +199,16 @@ async function discoverBatch(
   const nextPending: Cell[] = [...leftover];
   const places: NonNullable<PlacesResult["places"]> = [];
   let topLevelCount: number | null = existing?.top_level_count ?? null;
+  let anyFailed = false;
 
   for (const cell of thisRun) {
     const result = await fetchNearbyBatch(types, cell);
-    places.push(...result);
+    anyFailed = anyFailed || result.failed;
+    places.push(...result.places);
     if (cell.lat === lat && cell.lng === lng && cell.radius === radius) {
-      topLevelCount = result.length;
+      topLevelCount = result.places.length;
     }
-    if (result.length >= 20 && cell.radius > MIN_CELL_RADIUS_METERS) {
+    if (result.places.length >= 20 && cell.radius > MIN_CELL_RADIUS_METERS) {
       nextPending.push(...splitIntoQuadrants(cell));
     }
     // else: this cell is exhausted (returned under 20, or too small to subdivide further) — drop it
@@ -215,7 +227,7 @@ async function discoverBatch(
       updated_at = now()
   `;
 
-  return { places, hasMore: !isExhausted };
+  return { places, hasMore: !isExhausted, failed: anyFailed };
 }
 
 export async function POST(req: NextRequest) {
@@ -262,10 +274,12 @@ export async function POST(req: NextRequest) {
   const batches = chunkTypes(types, 50);
   const rows: Array<{ id: string; lat: number | null; lng: number | null; is_competitor: boolean }> = [];
   let hasMore = false;
+  let apiDown = false;
 
   for (let i = 0; i < batches.length; i++) {
     const result = await discoverBatch(batches[i], section, i, lat, lng, radius);
     hasMore = hasMore || result.hasMore;
+    apiDown = apiDown || result.failed;
     for (const place of result.places) {
       // Dropped entirely, not just hidden client-side — confirmed via a live audit that ~20% of
       // raw results are non-commercial (apartment/housing/association types Google occasionally
@@ -293,5 +307,5 @@ export async function POST(req: NextRequest) {
 
   await sql`UPDATE area_scans SET status = 'done', completed_at = now() WHERE id = ${scan.id}`;
 
-  return NextResponse.json({ found: rows.length, leads: rows, hasMore });
+  return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown });
 }

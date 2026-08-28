@@ -139,6 +139,52 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Auth (multi-path signup: Google (existing) + email/password + phone/SMS-OTP). email
+-- stays the PRIMARY KEY / identity column referenced by every other table in this
+-- schema. A phone-only signup gets a deterministic synthetic placeholder instead of a
+-- migration to a UUID-keyed users table (see lib/synthetic-email.ts) — keeps every
+-- existing FK and every session.user.email-keyed route unchanged.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;        -- NULL for Google/phone-only accounts
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone TEXT;                -- E.164, e.g. "919999999999"
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_synthetic_email BOOLEAN NOT NULL DEFAULT false;
+-- ^ true only for phone-only signups whose "email" is the @phone.gigzmanapp.internal
+-- placeholder — lets the UI (AppSidebar, /profile) know never to display it as a real
+-- address.
+
+-- Postgres UNIQUE treats multiple NULLs as non-conflicting, so this allows unlimited
+-- phone-less rows while still forbidding two accounts from claiming the same number.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_phone ON user_profiles(phone);
+
+-- Email verification codes for signup/resend. Stores sha256(code), never plaintext —
+-- same posture as password_hash.
+CREATE TABLE IF NOT EXISTS email_verifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL REFERENCES user_profiles(email),
+  code_hash TEXT NOT NULL,
+  purpose TEXT NOT NULL DEFAULT 'signup',      -- signup | resend
+  attempt_count INTEGER NOT NULL DEFAULT 0,     -- hitting MAX_VERIFY_ATTEMPTS invalidates the row early
+  expires_at TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email, created_at DESC);
+
+-- Phone OTP codes are never stored here — MSG91's hosted OTP API owns that lifecycle
+-- (send + verify endpoints; this app only ever sees a yes/no). This table is
+-- rate-limit bookkeeping only, mirroring area_scans' row-timestamp cooldown pattern
+-- used by PER_AREA_COOLDOWN_SECONDS in app/api/leads/find/route.ts.
+CREATE TABLE IF NOT EXISTS phone_otp_sends (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_phone_otp_sends_phone ON phone_otp_sends(phone, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS agency_profiles (
   email TEXT PRIMARY KEY REFERENCES user_profiles(email),
   agency_name TEXT,
@@ -238,6 +284,10 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);
 
+-- Per-message thumbs up/down, captured for later model/prompt tuning — a single nullable
+-- column is enough (one rating per message, not a history of ratings).
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS feedback TEXT; -- 'up' | 'down' | NULL
+
 -- Single-currency execution ledger (plan-confirmed decision — not fixed discover/
 -- qualify/contact tiers). Every credit-spending action, map or chat, writes one row
 -- here; UNIQUE(user_email, lead_id, reason) makes double-charging the same action on
@@ -254,3 +304,19 @@ CREATE TABLE IF NOT EXISTS credit_ledger (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_ledger_dedup ON credit_ledger(user_email, lead_id, reason);
 CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_email, created_at DESC);
+
+-- External-API failure log — every real failure from a third-party call we depend on (Google
+-- Places/Geocoding, Bedrock, SES, Message Central, ...) gets a row here via lib/api-alerts.ts,
+-- for a future admin panel to surface as live alerts. resolved_at stays NULL until that panel
+-- (or a human) marks it handled; nothing in the app itself reads resolved_at today.
+CREATE TABLE IF NOT EXISTS api_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider TEXT NOT NULL,      -- 'google_places' | 'google_geocoding' | 'bedrock' | 'ses' | 'message_central'
+  message TEXT NOT NULL,
+  context JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_alerts_provider ON api_alerts(provider, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_api_alerts_open ON api_alerts(created_at DESC) WHERE resolved_at IS NULL;

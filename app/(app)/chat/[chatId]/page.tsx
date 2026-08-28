@@ -12,7 +12,7 @@ export default async function ChatThreadPage({ params }: { params: Promise<{ cha
   if (!chat) return notFound();
 
   const messages = await sql`
-    SELECT id, role, content, intent, created_at FROM chat_messages
+    SELECT id, role, content, intent, feedback, created_at FROM chat_messages
     WHERE chat_id = ${chatId}
     ORDER BY created_at ASC
   `;
@@ -22,8 +22,9 @@ export default async function ChatThreadPage({ params }: { params: Promise<{ cha
     role: m.role as "user" | "assistant",
     content: m.content as string,
     intent: m.intent as AssistantIntent | null,
+    feedback: m.feedback as "up" | "down" | null,
     created_at: (m.created_at as Date).toISOString(),
   }));
 
-  return <ChatThread chatId={chat.id} initialMessages={initialMessages} />;
+  return <ChatThread chatId={chat.id} title={chat.title as string} initialMessages={initialMessages} />;
 }
