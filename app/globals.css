@@ -137,3 +137,18 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Chat "thinking" indicator — a small pulsing dot next to the live elapsed-time label while
+   waiting on a response, matching the live-processing feel of the reference chat products. */
+@keyframes chat-thinking-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+.chat-thinking-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--g-green);
+  animation: chat-thinking-pulse 1s ease-in-out infinite;
+}

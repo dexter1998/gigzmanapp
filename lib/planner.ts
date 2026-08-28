@@ -39,7 +39,11 @@ const INTENT_TOOL = {
           },
           areaText: {
             type: ["string", "null"],
-            description: "The location the user mentioned, verbatim (e.g. 'Gurugram', 'Sector 56'), or null if not given.",
+            description:
+              "The location the user mentioned, normalized to a real, correctly-spelled place name a geocoder can resolve " +
+              "(e.g. 'gurgrm'/'ggn'/'grgn' -> 'Gurugram', 'blr' -> 'Bangalore') — fix obvious typos/abbreviations/short forms " +
+              "using your own knowledge of real places, don't pass them through as-is. Keep specific sub-areas when given " +
+              "(e.g. 'Sector 56, Gurugram'). Null if no location was given at all.",
           },
           noWebsiteOnly: {
             type: "boolean",

@@ -60,50 +60,57 @@ export default function LmsPage() {
       {leads.length === 0 && (
         <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 24, textAlign: "center" }}>
           <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: 0 }}>
-            No leads added yet. Go to Home, tap a pin, and add it to your leads.
+            No leads added yet. Go to Home or Chat and add one to your leads.
           </p>
         </div>
       )}
 
-      <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-        {leads.map((lead, i) => (
-          <div
-            key={lead.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "14px 16px",
-              borderBottom: i === leads.length - 1 ? "none" : "1px solid var(--g-border)",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</span>
-                <StatusPill hasWebsite={lead.has_website} />
-              </div>
-              <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
-                {formatCategory(lead.category)} · {lead.address ?? "No address found"}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
-                {lead.phone ?? "No phone found"}
-                {lead.email ? ` · ${lead.email}` : ""}
-              </div>
-              {lead.rating !== null && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
-                  <StarIcon size={11} />
-                  {lead.rating.toFixed(1)} ({lead.review_count ?? 0})
-                </div>
-              )}
-            </div>
-            {lead.heat_score !== null && (
-              <div style={{ flexShrink: 0 }}>
-                <HeatGauge score={lead.heat_score} size={72} />
-              </div>
-            )}
+      {leads.length > 0 && (
+        <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+              <thead>
+                <tr style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                  <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Business</th>
+                  <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Category</th>
+                  <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Contact</th>
+                  <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Rating</th>
+                  <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.map((lead) => (
+                  <tr key={lead.id} style={{ borderBottom: "1px solid var(--g-border)" }}>
+                    <td style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</span>
+                        <StatusPill hasWebsite={lead.has_website} />
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>{lead.address ?? "No address found"}</div>
+                    </td>
+                    <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>{formatCategory(lead.category)}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>
+                      {lead.phone ?? "No phone found"}
+                      {lead.email ? <div>{lead.email}</div> : null}
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>
+                      {lead.rating !== null ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "var(--g-ink-soft)" }}>
+                          <StarIcon size={11} />
+                          {lead.rating.toFixed(1)} ({lead.review_count ?? 0})
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>{lead.heat_score !== null && <HeatGauge score={lead.heat_score} size={44} />}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

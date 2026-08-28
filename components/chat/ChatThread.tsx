@@ -1,24 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { HeatGauge } from "@/components/HeatGauge";
+import { useEffect, useRef, useState } from "react";
 import { ChatComposer } from "./ChatComposer";
-
-type LeadSummary = {
-  id: string;
-  business_name: string;
-  category: string | null;
-  has_website: boolean | null;
-  heat_score: number | null;
-};
+import { ChatLeadsTable, type ChatLead } from "./ChatLeadsTable";
 
 export type AssistantIntent = {
   action: "search_leads" | "answer_from_existing" | "needs_clarification";
   reply: string;
   tookMs?: number;
-  clarification?: { question: string; options: { label: string; description: string }[] };
-  leads?: LeadSummary[];
+  clarification?: { question: string; options: { label: string; description: string; value?: string }[] };
+  leads?: ChatLead[];
 };
 
 type Message = {
@@ -32,25 +23,43 @@ type Message = {
 export function ChatThread({ chatId, initialMessages }: { chatId: string; initialMessages: Message[] }) {
   const [messages, setMessages] = useState(initialMessages);
   const [sending, setSending] = useState(false);
+  const [thinkingSec, setThinkingSec] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function send(message: string) {
+  // `sendValue` lets a clarification option show a friendly label in the thread while sending
+  // a sentinel the server resolves specially underneath (see USE_LAST_MAP_AREA) — defaults to
+  // the displayed text itself for normal typed messages.
+  async function send(displayText: string, sendValue?: string) {
     setSending(true);
+    setThinkingSec(0);
+    timerRef.current = setInterval(() => setThinkingSec((s) => s + 1), 1000);
     setMessages((prev) => [
       ...prev,
-      { id: `local-${Date.now()}`, role: "user", content: message, intent: null, created_at: new Date().toISOString() },
+      { id: `local-${Date.now()}`, role: "user", content: displayText, intent: null, created_at: new Date().toISOString() },
     ]);
     try {
       const res = await fetch(`/api/chats/${chatId}/messages`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: sendValue ?? displayText }),
       });
       const { message: assistantMessage } = (await res.json()) as { message: Message };
       setMessages((prev) => [...prev, assistantMessage]);
     } finally {
+      if (timerRef.current) clearInterval(timerRef.current);
       setSending(false);
     }
   }
+
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
+  // The pending clarification, if any, lives right above the composer — not buried in the
+  // scrolling thread — so it reads the same way a Claude-style question prompt does: anchored
+  // at the point of interaction, not just another message in the log.
+  const lastMessage = messages[messages.length - 1];
+  const pendingClarification = !sending && lastMessage?.role === "assistant" ? lastMessage.intent?.clarification : undefined;
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px 24px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -61,20 +70,52 @@ export function ChatThread({ chatId, initialMessages }: { chatId: string; initia
               {m.content}
             </div>
           ) : (
-            <AssistantTurn key={m.id} message={m} onPickOption={send} disabled={sending} />
+            <AssistantTurn key={m.id} message={m} />
           )
         )}
-        {sending && <div style={{ fontSize: 13, color: "var(--g-gray-500)" }}>Mantis is thinking…</div>}
+        {sending && (
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--g-gray-500)" }}>
+            <span className="chat-thinking-dot" />
+            Thinking for {thinkingSec}s…
+          </div>
+        )}
       </div>
 
       <div style={{ position: "sticky", bottom: 24 }}>
+        {pendingClarification && (
+          <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 16, marginBottom: 10 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", marginBottom: 10 }}>{pendingClarification.question}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {pendingClarification.options.map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  disabled={sending}
+                  onClick={() => send(opt.label, opt.value)}
+                  style={{
+                    textAlign: "left",
+                    padding: "9px 13px",
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--g-border)",
+                    background: "var(--g-cream)",
+                    cursor: sending ? "default" : "pointer",
+                    maxWidth: 220,
+                  }}
+                >
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)" }}>{opt.label}</div>
+                  <div style={{ fontSize: 11, color: "var(--g-gray-500)" }}>{opt.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <ChatComposer onSubmit={send} disabled={sending} placeholder="Ask a follow-up…" />
       </div>
     </div>
   );
 }
 
-function AssistantTurn({ message, onPickOption, disabled }: { message: Message; onPickOption: (text: string) => void; disabled: boolean }) {
+function AssistantTurn({ message }: { message: Message }) {
   const [expanded, setExpanded] = useState(true);
   const intent = message.intent;
 
@@ -94,52 +135,7 @@ function AssistantTurn({ message, onPickOption, disabled }: { message: Message; 
         <>
           <div style={{ fontSize: 14.5, color: "var(--g-ink)", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{message.content}</div>
 
-          {intent?.clarification && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-              {intent.clarification.options.map((opt) => (
-                <button
-                  key={opt.label}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => onPickOption(opt.label)}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--g-border)",
-                    background: "var(--g-white)",
-                    cursor: disabled ? "default" : "pointer",
-                  }}
-                >
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)" }}>{opt.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--g-gray-500)" }}>{opt.description}</div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {intent?.leads && intent.leads.length > 0 && (
-            <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-              {intent.leads.map((lead) => (
-                <Link
-                  key={lead.id}
-                  href="/home"
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: "1px solid var(--g-border)", textDecoration: "none" }}
-                >
-                  <HeatGauge score={lead.heat_score ?? 0} size={44} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {lead.business_name}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>{lead.category ?? "Business"}</div>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: "var(--radius-pill)", background: lead.has_website ? "var(--g-green-mint)" : "var(--g-amber-tint)", color: lead.has_website ? "var(--g-green-text)" : "#b45309" }}>
-                    {lead.has_website ? "Has website" : "No website"}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+          {intent?.leads && intent.leads.length > 0 && <ChatLeadsTable leads={intent.leads} />}
         </>
       )}
     </div>

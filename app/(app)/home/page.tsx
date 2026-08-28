@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { loadGoogleMaps } from "@/lib/google-maps";
+import { ChatComposer } from "@/components/chat/ChatComposer";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
 import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
@@ -127,6 +129,7 @@ const SIGNAL_TONE_COLORS: Record<Signal["tone"], { bg: string; text: string }> =
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, PinOverlayInstance>>(new Map());
@@ -173,11 +176,8 @@ export default function HomePage() {
   // window lines up exactly with the 5-minute budget this was silently enforcing.
   const [sessionThrottled, setSessionThrottled] = useState(false);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
-  // Visual placeholder only — establishes the target layout ahead of the real chat/LLM
-  // integration (a later phase). Submitting just surfaces a message, no backend call.
-  const [chatDraft, setChatDraft] = useState("");
-  const [chatComingSoon, setChatComingSoon] = useState(false);
   const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
+  const [startingChat, setStartingChat] = useState(false);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [mapKeyOpen, setMapKeyOpen] = useState(false);
@@ -529,6 +529,26 @@ export default function HomePage() {
     if (hideCardTimeoutRef.current) {
       clearTimeout(hideCardTimeoutRef.current);
       hideCardTimeoutRef.current = null;
+    }
+  }
+
+  async function startChat(message: string) {
+    setStartingChat(true);
+    try {
+      const createRes = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ firstMessage: message }),
+      });
+      const { chat } = (await createRes.json()) as { chat: { id: string } };
+      await fetch(`/api/chats/${chat.id}/messages`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      router.push(`/chat/${chat.id}`);
+    } catch {
+      setStartingChat(false);
     }
   }
 
@@ -1141,8 +1161,9 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating chat panel — visual placeholder for the future LLM/multi-service phase.
-          Establishes the target layout now so later phases only need to wire in behavior. */}
+      {/* Same shared chat composer as the chat pages — this is now a real entry point into
+          real chat, not a placeholder. Submitting creates a chat and jumps straight to its
+          thread, same flow as the chat landing page's own composer. */}
       <div
         style={{
           position: "absolute",
@@ -1158,59 +1179,14 @@ export default function HomePage() {
           gap: 12,
         }}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!chatDraft.trim()) return;
-            setChatComingSoon(true);
-            setChatDraft("");
-          }}
-          style={{
-            width: "100%",
-            maxWidth: 600,
-            background: "var(--g-white)",
-            borderRadius: "var(--radius-lg)",
-            boxShadow: "var(--shadow-card)",
-            padding: 20,
-          }}
-        >
-          {chatComingSoon && (
-            <div style={{ fontSize: 12, color: "var(--g-gray-500)", padding: "0 2px 12px" }}>
-              Chat is coming soon — this will decide which sources to pull leads from.
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input
-              value={chatDraft}
-              onChange={(e) => setChatDraft(e.target.value)}
-              placeholder="Ask anything about leads, companies, or markets…"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "var(--g-ink)", background: "transparent", padding: "8px 10px" }}
-            />
-            <button
-              type="submit"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                border: "none",
-                background: "var(--g-green)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              <ArrowRightIcon />
-            </button>
-          </div>
-        </form>
+        <div style={{ width: "100%", maxWidth: 600 }}>
+          <ChatComposer onSubmit={startChat} disabled={startingChat} placeholder="Ask anything about leads, companies, or markets…" />
+        </div>
 
         {/* Example prompts, pulled from chat_suggestions (see /api/chat-suggestions) so they can
-            later be ranked by ICP instead of picked at random — clicking one just fills the
-            input, same "no backend yet" placeholder as the chat box itself. */}
-        {!chatDraft && chatSuggestions.length > 0 && (
+            later be ranked by ICP instead of picked at random — clicking one starts a chat with
+            that prompt directly. */}
+        {chatSuggestions.length > 0 && (
           // One row, wider than the chat box if it has to be — wrapping to a second row read as
           // broken/cramped, and there's open space on either side of the (narrower) chat box to
           // use. overflowX is a safety net for a very small viewport, not the normal case.
@@ -1219,7 +1195,8 @@ export default function HomePage() {
               <button
                 key={s}
                 type="button"
-                onClick={() => setChatDraft(s)}
+                onClick={() => startChat(s)}
+                disabled={startingChat}
                 style={{
                   border: "1px solid var(--g-border)",
                   background: "var(--g-white)",
@@ -1228,7 +1205,7 @@ export default function HomePage() {
                   fontSize: 12.5,
                   fontWeight: 600,
                   color: "var(--g-ink)",
-                  cursor: "pointer",
+                  cursor: startingChat ? "default" : "pointer",
                   boxShadow: "var(--shadow-toolbar)",
                   whiteSpace: "nowrap",
                   flexShrink: 0,

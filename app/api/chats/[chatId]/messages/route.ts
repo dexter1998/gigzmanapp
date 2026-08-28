@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { runChatIntent, type ChatIntent } from "@/lib/planner";
-import { geocodeText } from "@/lib/geocode";
-import { CLARIFICATIONS } from "@/lib/chat-clarifications";
+import { geocodeText, reverseGeocode } from "@/lib/geocode";
+import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
 import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, CATEGORY_SECTIONS } from "@/lib/categories";
@@ -13,7 +13,7 @@ const DEFAULT_SEARCH_RADIUS_METERS = 1500;
 const HISTORY_LIMIT = 10;
 
 type AssistantIntent = ChatIntent & {
-  clarification?: { question: string; options: { label: string; description: string }[] };
+  clarification?: { question: string; options: { label: string; description: string; value?: string }[] };
   leads?: Array<{
     id: string;
     business_name: string;
@@ -34,8 +34,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   if (!chat) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const body = (await req.json()) as { message?: string };
-  const message = (body.message ?? "").trim();
+  let message = (body.message ?? "").trim();
   if (!message) return NextResponse.json({ error: "message is required" }, { status: 400 });
+
+  // "Reuse my last searched area" resolves here, before anything else touches `message` —
+  // the rest of the pipeline never needs to know this turn started from a clarification tap
+  // rather than typed text.
+  if (message === USE_LAST_MAP_AREA) {
+    const [lastScan] = await sql`
+      SELECT center_lat, center_lng FROM area_scans
+      WHERE requested_by = ${userEmail} AND center_lat IS NOT NULL
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    const resolved = lastScan ? await reverseGeocode(lastScan.center_lat, lastScan.center_lng) : null;
+    message = resolved ? `Search near ${resolved}` : "my last searched area";
+  }
 
   await sql`INSERT INTO chat_messages (chat_id, role, content) VALUES (${chatId}, 'user', ${message})`;
 
@@ -84,6 +97,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
 
   if (result.action === "needs_clarification" && result.missingField) {
     result.clarification = CLARIFICATIONS[result.missingField];
+
+    if (result.missingField === "location") {
+      const [lastScan] = await sql`
+        SELECT id FROM area_scans WHERE requested_by = ${userEmail} AND center_lat IS NOT NULL LIMIT 1
+      `;
+      if (lastScan) {
+        result.clarification = {
+          ...result.clarification,
+          options: [
+            { label: "My last searched area", description: "Reuse the location from your most recent map search", value: USE_LAST_MAP_AREA },
+            ...result.clarification.options,
+          ],
+        };
+      }
+    }
   }
 
   if (result.action === "search_leads" && center && intent.category) {
