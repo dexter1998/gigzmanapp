@@ -107,7 +107,12 @@ export default function LoginPage() {
         style={{
           width: "100%",
           maxWidth: 1350,
-          minHeight: 930,
+          // A definite `height` (not minHeight) matters here — the left column's only child is
+          // position:absolute (see AuthCarousel), which contributes nothing to a grid row's
+          // auto-sizing, so minHeight alone left the row (and the image filling it) sized to
+          // whatever the right panel's own content needed, showing empty background around/
+          // below the image. A definite height lets both columns actually stretch to fill it.
+          height: 930,
           background: "var(--g-cream)",
           borderRadius: 28,
           boxShadow: "0 24px 64px rgba(20, 32, 51, 0.22)",
