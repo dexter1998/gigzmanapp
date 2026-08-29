@@ -379,7 +379,7 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="only light">
 <meta name="supported-color-schemes" content="only light">
-<title>Partner invitation &middot; Mantis AI</title>
+<title>Partner access &middot; Mantis AI</title>
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
   :root{color-scheme:only light;supported-color-schemes:only light;}
@@ -470,10 +470,10 @@ export const PARTNERSHIP_HTML = `<!doctype html>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
    <img src="https://mantisai.in/email/v1/logo.png" width="180" height="39" alt="Mantis" style="display:block;border:0;width:180px;height:39px;max-width:100%;margin:0 auto;"></td></tr></table>
  <div style="line-height:14px;font-size:14px;height:14px;">&nbsp;</div>
- <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="dmc-60850b dmb-f7faef dmk-9fc725" style="background:#f7faef;border:1px solid #9fc725;border-radius:999px;padding:9px 19px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#60850b;white-space:nowrap;">Partner invitation</td></tr></table>
+ <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="dmc-60850b dmb-f7faef dmk-9fc725" style="background:#f7faef;border:1px solid #9fc725;border-radius:999px;padding:9px 19px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#60850b;white-space:nowrap;">Partner access</td></tr></table>
  <div style="line-height:16px;font-size:16px;height:16px;">&nbsp;</div>
- <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">Let&rsquo;s help you find more<br>local clients.</div>
- <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15.5px;line-height:1.5;color:#565b5d;font-weight:400;margin:0 0 20px;text-align:center;">Mantis AI is inviting selected web, tech and marketing<br>agencies to access our lead intelligence portal for free.</div>
+ <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">You&rsquo;ve used every credit<br>on your plan.</div>
+ <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15.5px;line-height:1.5;color:#565b5d;font-weight:400;margin:0 0 20px;text-align:center;">That means you&rsquo;re working Mantis harder than the plan was built for.<br>Partner access raises the ceiling &mdash; higher lead limits, priority support,<br>and a direct line to the team that builds it.</div>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
    <td width="180" valign="middle" class="stack" style="width:180px;"><img src="https://mantisai.in/email/v1/05-mantis.jpg" width="170" height="216" alt="Mantis AI mascot" style="display:block;border:0;width:170px;height:216px;max-width:100%;"></td>
    <td width="10" class="hide-sm" style="width:10px;">&nbsp;</td>
@@ -500,8 +500,8 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 <table class="dmk-dfe3d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe3d9;border-radius:13px;">
 <tr><td align="center" style="padding:16px 12px 15px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
  <img src="https://mantisai.in/email/v1/05-ben-1.png" width="34" height="34" alt="" style="display:block;border:0;width:34px;height:34px;max-width:100%;margin:0 auto 9px;">
- <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;line-height:1.3;">Free Partner Access</div>
- <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:7px;">Get full access to the Mantis AI portal at no cost.</div>
+ <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;line-height:1.3;">Higher lead limits</div>
+ <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:7px;">Room to keep working past what your plan allows.</div>
 </td></tr></table></td><td width="50%" valign="top" class="stack" style="width:50%;padding:5px;">
 <table class="dmk-dfe3d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe3d9;border-radius:13px;">
 <tr><td align="center" style="padding:16px 12px 15px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
@@ -528,16 +528,16 @@ export const PARTNERSHIP_HTML = `<!doctype html>
  <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;">Fill the short form</div>
  <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:6px;">Tell us about your agency in under 2 minutes.</div></td><td width="33%" valign="top" class="stack" style="width:33%;padding:0 6px;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
  <img src="https://mantisai.in/email/v1/05-n2.png" width="52" height="52" alt="" style="display:block;border:0;width:52px;height:52px;max-width:100%;margin:0 auto 10px;">
- <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;">Get portal access</div>
- <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:6px;">We&rsquo;ll review and activate your free partner access.</div></td><td width="33%" valign="top" class="stack" style="width:33%;padding:0 6px;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
+ <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;">Get partner access</div>
+ <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:6px;">We&rsquo;ll review and lift your limits.</div></td><td width="33%" valign="top" class="stack" style="width:33%;padding:0 6px;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
  <img src="https://mantisai.in/email/v1/05-n3.png" width="52" height="52" alt="" style="display:block;border:0;width:52px;height:52px;max-width:100%;margin:0 auto 10px;">
  <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;">Find and pitch clients</div>
  <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:6px;">Use insights to find, reach and win more local clients.</div></td></tr></table>
  <div style="line-height:22px;font-size:22px;height:22px;">&nbsp;</div>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
-<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{partnership_url}}" style="height:56px;v-text-anchor:middle;width:540px;" arcsize="20%" stroke="f" fillcolor="#111315"><w:anchorlock/><center class="dmc-ffffff" style="color:#ffffff;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;">Apply for Free Partner Access &rarr;</center></v:roundrect><![endif]-->
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{partnership_url}}" style="height:56px;v-text-anchor:middle;width:540px;" arcsize="20%" stroke="f" fillcolor="#111315"><w:anchorlock/><center class="dmc-ffffff" style="color:#ffffff;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;">Apply for Partner Access &rarr;</center></v:roundrect><![endif]-->
 <!--[if !mso]><!-- -->
-<a class="dmc-ffffff dmb-111315" href="{{partnership_url}}" style="background:#111315;border-radius:12px;color:#ffffff;display:block;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;line-height:1.2;text-align:center;padding:18px 26px;text-decoration:none;">Apply for Free Partner Access <span class="dmc-b7e51d" style="color:#b7e51d;">&rarr;</span></a>
+<a class="dmc-ffffff dmb-111315" href="{{partnership_url}}" style="background:#111315;border-radius:12px;color:#ffffff;display:block;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;line-height:1.2;text-align:center;padding:18px 26px;text-decoration:none;">Apply for Partner Access <span class="dmc-b7e51d" style="color:#b7e51d;">&rarr;</span></a>
 <!--<![endif]-->
 </td></tr></table>
  <div class="dmc-707677" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.5;color:#707677;font-weight:400;margin:0 0 0px;text-align:center;">Takes less than 2 minutes.</div>
