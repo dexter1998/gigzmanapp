@@ -209,7 +209,32 @@ export async function advanceAllInFlight(limit = 25) {
     ORDER BY e.requested_at ASC
     LIMIT ${limit}
   `) as Array<LeadForEnrichment & { lead_id: string }>;
+  return runTicks(rows);
+}
 
+/**
+ * The same tick, restricted to jobs on leads this user has unlocked.
+ *
+ * This is what actually keeps the queue moving day to day: Vercel's Hobby plan only permits a
+ * DAILY cron, which is useless for a queue, so the leads page calls this on its refresh interval
+ * instead. It advances every job the user has queued, not just whichever lead is on screen, so
+ * closing a row or moving around the page doesn't stall anything. Deliberately not wired into
+ * /api/leads itself — that endpoint is on the map's hot path and must not wait on AWS.
+ */
+export async function advanceInFlightForUser(userEmail: string, limit = 5) {
+  const rows = (await sql`
+    SELECT e.lead_id, l.id, l.place_id, l.business_name, l.category, l.lat, l.lng
+    FROM lead_enrichment e
+    JOIN leads l ON l.id = e.lead_id
+    JOIN unlocks u ON u.lead_id = l.id AND u.unlocked_by = ${userEmail}
+    WHERE e.status IN ('pending', 'starting_instance', 'scraping')
+    ORDER BY e.requested_at ASC
+    LIMIT ${limit}
+  `) as Array<LeadForEnrichment & { lead_id: string }>;
+  return runTicks(rows);
+}
+
+async function runTicks(rows: Array<LeadForEnrichment & { lead_id: string }>) {
   const results: Array<{ leadId: string; status: string }> = [];
   for (const row of rows) {
     try {

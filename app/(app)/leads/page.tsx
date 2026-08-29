@@ -47,15 +47,20 @@ export default function LeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [websiteFilter, categoryFilter]);
 
-  // While anything is queued, re-read the list periodically so finished jobs appear on their own.
-  // This only reads our own rows — the cron tick is what actually moves the jobs, so leaving the
-  // page doesn't stall them and coming back shows whatever finished meanwhile.
+  // While anything is queued, tick the jobs forward and re-read the list so finished ones appear
+  // on their own. The tick advances every job this user has queued, not just whichever row is on
+  // screen, so the queue keeps moving while this page is open regardless of what's being looked at.
   const anyQueued = leads.some(
     (l) => l.enrichment_status === "pending" || l.enrichment_status === "starting_instance" || l.enrichment_status === "scraping"
   );
   useEffect(() => {
     if (!anyQueued) return;
-    const t = setInterval(() => load(), 15000);
+    const tick = async () => {
+      await fetch("/api/leads/enrich-tick", { method: "POST" }).catch(() => null);
+      load();
+    };
+    void tick();
+    const t = setInterval(tick, 15000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anyQueued]);
