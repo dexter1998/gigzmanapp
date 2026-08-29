@@ -3,10 +3,10 @@ import Link from "next/link";
 import { ChevronRightIcon, ArrowRightIcon, LinkedInIcon, XSocialIcon, YouTubeIcon } from "@/components/icons";
 
 const COLUMNS = [
-  { title: "Product", links: [["Features", "#capabilities"], ["Lead Search", "#capabilities"], ["Enrichment", "#enrichment"], ["Lead Management", "#capabilities"]] },
+  { title: "Product", links: [["Features", "#capabilities"], ["Lead Search", "#capabilities"], ["Enrichment", "#enrichment"], ["Pricing", "/pricing"]] },
   { title: "Use Cases", links: [["Agencies", "#testimonials"], ["Freelancers", "#testimonials"], ["Consultants", "#testimonials"]] },
-  { title: "Resources", links: [["Help Center", "#faq"], ["Guides", "#faq"], ["API Docs", "#faq"]] },
-  { title: "Company", links: [["About", "/"], ["Partner Access", "/partner"], ["Contact", "mailto:support@gigzmanapp.com"]] },
+  { title: "Resources", links: [["Help Center", "#faq"], ["Guides", "#faq"], ["Email Preferences", "/preferences"]] },
+  { title: "Company", links: [["About", "/company"], ["Partner Access", "/partner"], ["Contact", "/contact"]] },
   { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]] },
 ] as const;
 

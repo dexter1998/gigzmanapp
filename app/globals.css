@@ -195,3 +195,40 @@ body {
 .chat-suggestion-marquee:hover .chat-suggestion-track {
   animation-play-state: paused;
 }
+
+/* ---- standalone marketing / legal pages ---------------------------------- */
+/* Long-form text styling lives here rather than inline on every heading and paragraph, so those
+   pages stay mostly content. Scoped to .marketing-prose so it can't leak into the product UI. */
+.marketing-prose h2 {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--g-ink);
+  margin: 38px 0 12px;
+}
+.marketing-prose h3 {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--g-ink);
+  margin: 24px 0 6px;
+}
+.marketing-prose p,
+.marketing-prose li {
+  font-size: 16px;
+  line-height: 1.72;
+  color: var(--g-ink-soft);
+}
+.marketing-prose p { margin: 0 0 14px; }
+.marketing-prose ul { margin: 0 0 16px; padding-left: 22px; }
+.marketing-prose li { margin-bottom: 8px; }
+.marketing-prose a { color: var(--g-green-text); text-decoration: underline; }
+.marketing-prose strong { color: var(--g-ink); font-weight: 700; }
+
+@media (max-width: 860px) {
+  .marketing-h1 { font-size: 34px !important; letter-spacing: -1px !important; }
+  .contact-grid { grid-template-columns: 1fr !important; }
+  .pricing-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 560px) {
+  .pricing-grid { grid-template-columns: 1fr !important; }
+}
