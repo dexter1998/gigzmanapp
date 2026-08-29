@@ -318,6 +318,19 @@ CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_email, c
 -- Places/Geocoding, Bedrock, SES, Message Central, ...) gets a row here via lib/api-alerts.ts,
 -- for a future admin panel to surface as live alerts. resolved_at stays NULL until that panel
 -- (or a human) marks it handled; nothing in the app itself reads resolved_at today.
+-- Opt-outs from non-transactional email. Every bulk message carries a List-Unsubscribe header
+-- pointing at /u/<signed token>, and Gmail/Yahoo bulk-sender rules require that to actually work,
+-- so this is checked before any marketing send. Transactional mail (OTP, password reset) is not
+-- covered by it -- an unsubscribe must never lock someone out of signing in.
+-- stream = 'all' is a blanket opt-out; a named stream opts out of just that one.
+CREATE TABLE IF NOT EXISTS email_unsubscribes (
+  email TEXT NOT NULL,
+  stream TEXT NOT NULL DEFAULT 'all',
+  source TEXT NOT NULL DEFAULT 'link',   -- link | one-click | manual | complaint
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (email, stream)
+);
+
 CREATE TABLE IF NOT EXISTS api_alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL,      -- 'google_places' | 'google_geocoding' | 'bedrock' | 'ses' | 'message_central'
