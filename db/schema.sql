@@ -335,6 +335,26 @@ CREATE TABLE IF NOT EXISTS email_unsubscribes (
   PRIMARY KEY (email, stream)
 );
 
+-- Every non-transactional email the app sends, one row per message. Two jobs:
+--   1. Idempotency. The lifecycle rules are evaluated on a schedule, so "has this person already
+--      had the day-5 nudge?" has to be answerable, or a daily tick re-sends the same mail daily.
+--   2. Attribution. campaign_id is carried in the message headers and in SES's own event tags, so
+--      opens/clicks/bounces reported back by SES land against the same identifier stored here.
+-- step_key is what makes a send unique: one row per (recipient, campaign, step).
+CREATE TABLE IF NOT EXISTS email_sends (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipient TEXT NOT NULL,
+  campaign_id TEXT NOT NULL,
+  step_key TEXT NOT NULL,          -- e.g. 'reactivation_d5', 'partnership_invite'
+  template TEXT NOT NULL,
+  stream TEXT NOT NULL,            -- transactional | lifecycle | customer_offer
+  lead_id UUID REFERENCES leads(id),
+  ses_message_id TEXT,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_sends_once ON email_sends(recipient, campaign_id, step_key);
+CREATE INDEX IF NOT EXISTS idx_email_sends_recipient ON email_sends(recipient, sent_at DESC);
+
 CREATE TABLE IF NOT EXISTS api_alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL,      -- 'google_places' | 'google_geocoding' | 'bedrock' | 'ses' | 'message_central'
