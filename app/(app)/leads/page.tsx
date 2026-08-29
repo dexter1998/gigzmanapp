@@ -26,6 +26,17 @@ export default function LeadsPage() {
     setActive((prev) => (prev ? rows.find((r) => r.id === prev.id) ?? prev : null));
   }
 
+  /** Queue a lead for background enrichment. The work continues server-side on the cron tick
+   *  whether or not this page stays open, so this only has to fire the request and reflect the
+   *  queued state. */
+  async function enrich(lead: Lead) {
+    setLeads((prev) =>
+      prev.map((l) => (l.id === lead.id ? { ...l, enrichment_status: "pending" } : l))
+    );
+    await fetch(`/api/leads/${lead.id}/enrich`, { method: "POST" }).catch(() => null);
+    load();
+  }
+
   useEffect(() => {
     load();
     // "Add to leads" happens on the Home map or in Chat, not here — refresh when credits change
@@ -35,6 +46,19 @@ export default function LeadsPage() {
     return () => window.removeEventListener("gigzman:credits-changed", onCreditsChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [websiteFilter, categoryFilter]);
+
+  // While anything is queued, re-read the list periodically so finished jobs appear on their own.
+  // This only reads our own rows — the cron tick is what actually moves the jobs, so leaving the
+  // page doesn't stall them and coming back shows whatever finished meanwhile.
+  const anyQueued = leads.some(
+    (l) => l.enrichment_status === "pending" || l.enrichment_status === "starting_instance" || l.enrichment_status === "scraping"
+  );
+  useEffect(() => {
+    if (!anyQueued) return;
+    const t = setInterval(() => load(), 15000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyQueued]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -149,6 +173,7 @@ export default function LeadsPage() {
             onToggleAll={toggleAll}
             activeId={active?.id ?? null}
             onActivate={setActive}
+            onEnrich={enrich}
           />
           <LeadDetailPanel lead={active} onUnlocked={load} />
         </div>

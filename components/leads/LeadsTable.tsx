@@ -17,6 +17,9 @@ export type Lead = {
   rating: number | null;
   review_count: number | null;
   is_unlocked: boolean;
+  /** Null until this lead has ever been queued for enrichment. */
+  enrichment_status?: "pending" | "starting_instance" | "scraping" | "done" | "failed" | null;
+  enrichment_website_url?: string | null;
 };
 
 export function LeadsTable({
@@ -26,6 +29,7 @@ export function LeadsTable({
   onToggleAll,
   activeId,
   onActivate,
+  onEnrich,
 }: {
   leads: Lead[];
   selected: Set<string>;
@@ -33,6 +37,8 @@ export function LeadsTable({
   onToggleAll: () => void;
   activeId: string | null;
   onActivate: (lead: Lead) => void;
+  /** Queues the lead for background enrichment. */
+  onEnrich?: (lead: Lead) => void;
 }) {
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
 
@@ -50,6 +56,7 @@ export function LeadsTable({
               <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Contact</th>
               <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Rating</th>
               <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Score</th>
+              <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Details</th>
             </tr>
           </thead>
           <tbody>
@@ -89,12 +96,75 @@ export function LeadsTable({
                   )}
                 </td>
                 <td style={{ padding: "12px 14px" }}>{lead.heat_score !== null && <HeatGauge score={lead.heat_score} size={44} />}</td>
+                <td style={{ padding: "12px 14px" }} onClick={(e) => e.stopPropagation()}>
+                  <DetailsCell lead={lead} onEnrich={onEnrich} />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+/**
+ * "More details" for a saved lead: queue it and get on with your day.
+ *
+ * Enrichment boots a scraper and can take a couple of minutes, so this deliberately doesn't
+ * pretend to be live. Queuing is the whole interaction — the job runs server-side on a cron tick
+ * whether or not this page stays open, the result is stored against the lead, and the row shows it
+ * whenever you next look. Locked leads don't get the option at all: enrichment only ever runs on a
+ * lead that's already been unlocked.
+ */
+function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) => void }) {
+  if (!lead.is_unlocked) {
+    return <span style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>Unlock first</span>;
+  }
+
+  const status = lead.enrichment_status ?? null;
+
+  if (status === "done") {
+    return lead.enrichment_website_url ? (
+      <a
+        href={lead.enrichment_website_url}
+        target="_blank"
+        rel="noreferrer"
+        style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-green-text)" }}
+      >
+        Website found
+      </a>
+    ) : (
+      <span style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>No extra details</span>
+    );
+  }
+
+  if (status === "pending" || status === "starting_instance" || status === "scraping") {
+    return (
+      <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "var(--g-gray-100)", color: "var(--g-gray-500)" }}>
+        In queue
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onEnrich?.(lead)}
+      style={{
+        fontSize: 11.5,
+        fontWeight: 700,
+        padding: "6px 12px",
+        borderRadius: "var(--radius-pill)",
+        border: "1px solid var(--g-border)",
+        background: "var(--g-white)",
+        color: "var(--g-ink)",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {status === "failed" ? "Retry details" : "More details"}
+    </button>
   );
 }
 

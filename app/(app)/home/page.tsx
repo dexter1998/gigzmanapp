@@ -54,6 +54,10 @@ const ZOOM_FLOOR = 13;
 // searched. Google's `idle` already waits for movement to settle, but it fires on every settle, so
 // a drag in stages fires several. Anything shorter than this reads as "still moving".
 const IDLE_SETTLE_MS = 600;
+// Gap between a lead pin and its card, and the height of the toolbar strip the card should stay
+// clear of. Below that line there isn't room to sit above the pin, so the card flips underneath it.
+const CARD_PIN_GAP = 16;
+const TOOLBAR_SAFE_TOP = 72;
 // Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
 // centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
 // farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
@@ -223,6 +227,10 @@ export default function HomePage() {
   // effect below needs to read it without re-running every time the selection changes.
   const [selectedLeadSnapshot, setSelectedLeadSnapshot] = useState<Lead | null>(null);
   const selectedLeadIdRef = useRef<string | null>(null);
+  // Measured so the card can decide whether it actually fits above its pin. Falls back to a
+  // typical height on the very first render, before there is anything to measure.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [cardHeight, setCardHeight] = useState(340);
   // The hovered/clicked pin's own screen pixel position (from PinOverlay.getScreenPosition()),
   // so the popup card renders directly above THAT pin instead of a fixed spot on screen.
   const [cardPosition, setCardPosition] = useState<{ x: number; y: number } | null>(null);
@@ -671,6 +679,15 @@ export default function HomePage() {
     ? (leads.find((l) => l.id === selectedLeadId) ?? selectedLeadSnapshot)
     : null;
 
+  // Keep the card clear of the toolbar strip along the top of the map as well as the pin itself.
+  const flipCardBelow = cardPosition ? cardPosition.y - cardHeight - CARD_PIN_GAP < TOOLBAR_SAFE_TOP : false;
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const h = cardRef.current.getBoundingClientRect().height;
+    if (h && Math.abs(h - cardHeight) > 8) setCardHeight(h);
+  }, [selectedLeadId, cardHeight]);
+
   function showLeadCard(lead: Lead, overlay: PinOverlayInstance) {
     if (hideCardTimeoutRef.current) {
       clearTimeout(hideCardTimeoutRef.current);
@@ -1071,6 +1088,7 @@ export default function HomePage() {
           it can't render above the toolbar near the top edge. */}
       {selectedLead && cardPosition && (
         <div
+          ref={cardRef}
           onMouseEnter={cancelHideCard}
           onMouseLeave={scheduleHideCard}
           style={{
@@ -1079,21 +1097,24 @@ export default function HomePage() {
             // viewport edge — confirmed live: a pin near the right edge was clipping the card's
             // whole right half, cutting off Top Signals and the Add to leads button.
             left: Math.min(Math.max(cardPosition.x, 190), window.innerWidth - 190),
-            // The redesigned card (heat gauge + signals + button) runs noticeably taller than
-            // the old one — 260 was tuned for that shorter card and was still clipping the top
-            // of this one for a pin near the top of the viewport.
-            top: Math.max(cardPosition.y, 370),
-            transform: "translate(-50%, calc(-100% - 16px))",
+            // Above the pin normally; below it when there isn't room above.
+            //
+            // This used to clamp `top` to a minimum instead, which for a pin near the top edge
+            // pushed the card DOWN over its own pin. That covered the pin the cursor was resting
+            // on, so the pin fired mouseleave, scheduleHideCard ran, the card disappeared, the pin
+            // was exposed again and the next flicker of mouse movement re-opened it -- the loop
+            // only ever seen near the top of the map, which is why it read as a clash with the
+            // toolbar. A card must never cover the pin it belongs to.
+            top: flipCardBelow ? cardPosition.y + CARD_PIN_GAP : cardPosition.y - CARD_PIN_GAP,
+            transform: flipCardBelow ? "translate(-50%, 0)" : "translate(-50%, -100%)",
             width: 340,
             background: "var(--g-white)",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
             padding: 20,
-            // Above the top toolbar (zIndex 30), not below it. At 20 the toolbar painted over the
-            // card's top edge and, being on top, also swallowed the pointer there: moving from the
-            // pin toward the card crossed the toolbar, so the card's own onMouseEnter never fired,
-            // scheduleHideCard from the pin's mouseleave ran, the card vanished, the pin re-entered
-            // -- the flicker. Clicks aimed at "Add to leads" in that strip hit the toolbar too.
+            // Above the toolbar rather than under it: the toolbar's container spans the full width
+            // of the map, so anywhere the card reaches the top strip it would otherwise be painted
+            // over and have its clicks -- "Add to leads" among them -- swallowed.
             zIndex: 40,
           }}
         >

@@ -33,9 +33,15 @@ export async function GET(req: NextRequest) {
   const rows = await sql`
     SELECT l.id, l.business_name, l.category, l.address, l.lat, l.lng, l.phone, l.email,
            l.has_website, l.contacted, l.is_competitor, l.created_at, l.rating, l.review_count,
-           (u.id IS NOT NULL) AS is_unlocked
+           (u.id IS NOT NULL) AS is_unlocked,
+           -- Enrichment rides along rather than being fetched per row: the leads table shows a
+           -- "More details" control for every saved lead, and one request per visible row just to
+           -- learn which of them are queued would be a request storm for information already here.
+           e.status AS enrichment_status,
+           e.website_url AS enrichment_website_url
     FROM leads l
     LEFT JOIN unlocks u ON u.lead_id = l.id AND u.unlocked_by = ${userEmail}
+    LEFT JOIN lead_enrichment e ON e.lead_id = l.id
     WHERE 1=1
       ${
         bounded
@@ -69,6 +75,10 @@ export async function GET(req: NextRequest) {
       address: reveal ? r.address : null,
       phone: reveal ? r.phone : null,
       email: reveal ? r.email : null,
+      // Enrichment only ever runs on an unlocked lead, so a row here already implies the unlock —
+      // but the scraped website is contact-grade information, so it follows the same rule as the
+      // rest rather than relying on that.
+      enrichment_website_url: reveal ? r.enrichment_website_url : null,
       // Visible pre-unlock on purpose — it's meant to help decide whether a lead is worth the
       // credit BEFORE spending it, not a reward for spending it.
       heat_score: r.is_competitor
