@@ -366,3 +366,80 @@ CREATE TABLE IF NOT EXISTS api_alerts (
 
 CREATE INDEX IF NOT EXISTS idx_api_alerts_provider ON api_alerts(provider, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_alerts_open ON api_alerts(created_at DESC) WHERE resolved_at IS NULL;
+
+-- ---------------------------------------------------------------------------------------------
+-- Programmatic SEO (public /leads pages). Everything here is additive and inert to the product:
+-- dropping the pSEO code leaves these columns and tables harmless. See lib/pseo/.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resolved from leads.address by lib/pseo/address.ts — no geocoding calls. NULL means the address
+-- didn't match the curated registry, which is the deliberate default: unmatched is excluded, never
+-- guessed. location_resolved_at is stamped even on failure so junk rows aren't retried forever.
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS city_slug TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS area_slug TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS location_resolved_at TIMESTAMPTZ;
+
+-- leads had no index on category at all; every pSEO aggregate groups by (place, has_website,
+-- category), so these are what keep the daily stats pass cheap as the table grows.
+CREATE INDEX IF NOT EXISTS idx_leads_pseo_city ON leads(city_slug, has_website, category);
+CREATE INDEX IF NOT EXISTS idx_leads_pseo_area ON leads(area_slug, has_website, category);
+CREATE INDEX IF NOT EXISTS idx_leads_unresolved ON leads(created_at) WHERE location_resolved_at IS NULL;
+
+-- The page registry: the single source of truth for what exists, what is indexed, what goes in the
+-- sitemap, and every statistic a page renders. A page is never "created" by deploying code.
+CREATE TABLE IF NOT EXISTS pseo_pages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  page_key TEXT NOT NULL,                    -- 'wd|gurgaon|city' | 'wd|gurgaon|area:dlf-phase-3'
+  page_type TEXT NOT NULL,                   -- root|service|city|area|category|area_index|category_index
+  service_slug TEXT NOT NULL,
+  city_slug TEXT,
+  area_slug TEXT,
+  category_slug TEXT,
+  status TEXT NOT NULL DEFAULT 'withheld',   -- published | noindex | withheld
+  qualifying_leads INT NOT NULL DEFAULT 0,
+  total_leads INT NOT NULL DEFAULT 0,
+  stats JSONB NOT NULL DEFAULT '{}',
+  content_hash TEXT,
+  rotation_epoch INT NOT NULL DEFAULT 0,
+  gate_pass_streak INT NOT NULL DEFAULT 0,   -- promotion needs two consecutive passes
+  stats_computed_at TIMESTAMPTZ,
+  last_material_change_at TIMESTAMPTZ,       -- bumped ONLY when content_hash changes, never by a
+                                             -- rotation or a cron run; this is what sitemap
+                                             -- lastmod and any dateModified report
+  first_published_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pseo_pages_key ON pseo_pages(page_key);
+CREATE INDEX IF NOT EXISTS idx_pseo_pages_status ON pseo_pages(status, qualifying_leads DESC);
+
+-- Daily snapshots. Without these the "what changed since last time" modules are impossible and the
+-- refresh cycle has nothing honest to say, so it starts recording from day one.
+CREATE TABLE IF NOT EXISTS pseo_stats_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  page_key TEXT NOT NULL,
+  captured_on DATE NOT NULL,
+  qualifying_leads INT NOT NULL,
+  total_leads INT NOT NULL,
+  stats JSONB NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pseo_history_once ON pseo_stats_history(page_key, captured_on);
+
+-- Places that have enough data to deserve a page but aren't in the registry yet. Detected
+-- automatically; approved by a human once, because slug choice is a search decision and the city
+-- slot of a Google address is as likely to hold a village or a US state code as a city.
+CREATE TABLE IF NOT EXISTS pseo_location_candidates (
+  token TEXT PRIMARY KEY,                    -- normalized address token
+  suggested_name TEXT NOT NULL,
+  suggested_slug TEXT NOT NULL,
+  lead_count INT NOT NULL DEFAULT 0,
+  qualifying_count INT NOT NULL DEFAULT 0,
+  centroid_lat DOUBLE PRECISION,
+  centroid_lng DOUBLE PRECISION,
+  exhausted_cells INT NOT NULL DEFAULT 0,
+  state TEXT,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  reviewed_at TIMESTAMPTZ,
+  decision TEXT                              -- 'registered' | 'rejected'; NULL = waiting
+);
+CREATE INDEX IF NOT EXISTS idx_pseo_candidates_pending ON pseo_location_candidates(qualifying_count DESC)
+  WHERE decision IS NULL;

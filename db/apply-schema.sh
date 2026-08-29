@@ -69,5 +69,18 @@ psql "$DB_URL" -A -F' | ' -c "
     FROM pg_indexes WHERE indexname = 'idx_area_scans_requester_recent'
   UNION ALL
   SELECT 'idx_leads_latlng', count(*) > 0
-    FROM pg_indexes WHERE indexname = 'idx_leads_latlng';
+    FROM pg_indexes WHERE indexname = 'idx_leads_latlng'
+  UNION ALL
+  SELECT 'leads.city_slug', count(*) > 0
+    FROM information_schema.columns
+   WHERE table_name = 'leads' AND column_name = 'city_slug'
+  UNION ALL
+  SELECT 'table pseo_pages', count(*) > 0
+    FROM information_schema.tables WHERE table_name = 'pseo_pages'
+  UNION ALL
+  SELECT 'table pseo_location_candidates', count(*) > 0
+    FROM information_schema.tables WHERE table_name = 'pseo_location_candidates'
+  UNION ALL
+  SELECT 'idx_leads_pseo_city', count(*) > 0
+    FROM pg_indexes WHERE indexname = 'idx_leads_pseo_city';
 "
