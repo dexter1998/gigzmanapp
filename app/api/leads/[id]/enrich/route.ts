@@ -43,23 +43,42 @@ async function assertUnlocked(leadId: string, userEmail: string) {
     | undefined;
 }
 
-/** The shell command run on the EC2 instance via SSM — one gosom search near the lead's own
- * coordinates, written as newline-delimited JSON to stdout, which this route then filters down
- * to the record matching this lead's place_id.
+/** The shell commands run on the EC2 instance via SSM — one gosom search near the lead's own
+ * coordinates, written as JSON to a results file that this route then reads back and filters
+ * down to the record matching this lead's place_id.
  *
- * NOT yet verified against the actual gosom CLI on the real instance (that smoke test predates
- * this route) — the exact flags below are gosom's documented interface, but this needs one real
- * live run against i-07303fa06c7451299 to confirm before trusting it in production. */
-function buildGosomCommand(lat: number, lng: number, category: string | null): string[] {
-  const query = category ? category.replace(/_/g, " ") : "business";
+ * Fixed after a real live run against i-07303fa06c7451299 (2026-08) surfaced two bugs in the
+ * original version, confirmed via `docker logs` and `GetCommandInvocation`:
+ * 1. SSM's `Parameters.commands` runs each array element as its OWN separate shell line, not as
+ *    fragments of one command — the old code split a single `docker run ...` invocation's flags
+ *    across 7 array elements, so only `docker run --rm gosom/google-maps-scraper:latest` (zero
+ *    flags) ever actually ran; every "-flag value" element after it executed as its own
+ *    (invalid) one-word command instead of extending the docker invocation.
+ * 2. `-input <(echo ...)` (bash process substitution) and `-o -` are not what gosom's CLI
+ *    actually expects — confirmed against the real gosom README: `-input` needs a real file
+ *    path, and the flag for an output file is `-results`, not `-o`. With no valid `-input`,
+ *    gosom fell through to its default behavior — its own web UI server (confirmed live: the
+ *    container's logs showed "visit http://localhost:8080" and it ran indefinitely, never
+ *    producing scrape output, exactly matching the "stuck at scraping forever" symptom this was
+ *    causing) — not a one-shot CLI scrape.
+ *
+ * Each array element below is now a real, complete, independent shell command in its own right:
+ * write the query to a real file, run gosom against it with a real `-results` file, print that
+ * file to stdout (so the existing StandardOutputContent-parsing code below needs no change),
+ * then clean up. `-exit-on-inactivity 3m` is gosom's own documented flag for actually
+ * terminating a CLI-mode run instead of idling. */
+function buildGosomCommand(lat: number, lng: number, businessName: string, leadId: string): string[] {
+  // The business's own name, not just its category — confirmed live that a category-only query
+  // ("restaurant") finds *a* nearby business matching the type, not necessarily this specific
+  // one; searching by name is what actually gets the right place_id back.
+  const query = businessName;
+  const queryFile = `/tmp/gosom-query-${leadId}.txt`;
+  const resultsFile = `/tmp/gosom-results-${leadId}.json`;
   return [
-    "docker run --rm gosom/google-maps-scraper:latest",
-    "-input <(echo " + JSON.stringify(query) + ")",
-    `-geo ${lat},${lng}`,
-    `-radius ${ENRICH_RADIUS_METERS}`,
-    "-depth 1",
-    "-json",
-    "-o -",
+    `echo ${JSON.stringify(query)} > ${queryFile}`,
+    `docker run --rm -v /tmp:/data gosom/google-maps-scraper:latest -input /data/${queryFile.split("/").pop()} -results /data/${resultsFile.split("/").pop()} -json -geo ${lat},${lng} -radius ${ENRICH_RADIUS_METERS} -depth 1 -exit-on-inactivity 3m`,
+    `cat ${resultsFile}`,
+    `rm -f ${queryFile} ${resultsFile}`,
   ];
 }
 
@@ -100,13 +119,16 @@ async function advance(leadId: string, lead: NonNullable<Awaited<ReturnType<type
       return { status: "failed", error: "lead has no coordinates" };
     }
     try {
-      const cmd = buildGosomCommand(lead.lat, lead.lng, lead.category);
+      const cmd = buildGosomCommand(lead.lat, lead.lng, lead.business_name, leadId);
       const send = await ssm.send(
         new SendCommandCommand({
           InstanceIds: [INSTANCE_ID],
           DocumentName: "AWS-RunShellScript",
           Parameters: { commands: cmd },
-          TimeoutSeconds: 300,
+          // gosom's own -exit-on-inactivity 3m plus real scrape/network time needs headroom
+          // beyond the old 300s — confirmed live that a real run's docker pull alone (first time
+          // only, cached after) can take a few minutes on top of that.
+          TimeoutSeconds: 480,
         })
       );
       const commandId = send.Command?.CommandId ?? null;
