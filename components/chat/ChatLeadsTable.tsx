@@ -13,9 +13,10 @@ export type ChatLead = {
   is_unlocked?: boolean;
 };
 
-/** Real table (not a compact list) for chat search results — selectable rows with a bulk
+/** Real table (not a compact list) for chat search results — selectable rows (plus a header
+ * "select all" checkbox, so a whole list doesn't need clicking one by one) with a bulk
  * "Add to leads" action that calls the same /api/leads/[id]/unlock route the map's own
- * "Add to leads" button uses, so a lead added from chat shows up in the LMS exactly the
+ * "Add to leads" button uses, so a lead added from chat shows up in Leads exactly the
  * same way one added from the map does. */
 export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -29,6 +30,15 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
       else next.add(id);
       return next;
     });
+  }
+
+  // Only the still-locked rows are selectable at all (an unlocked row shows a checkmark instead
+  // of a checkbox) — "select all" only ever needs to reach those, never the already-added ones.
+  const selectableIds = leads.filter((l) => !(l.is_unlocked || unlockedIds.has(l.id))).map((l) => l.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(selectableIds));
   }
 
   async function addSelected() {
@@ -62,7 +72,11 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
           <thead>
             <tr style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-              <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}></th>
+              <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
+                {selectableIds.length > 0 && (
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" style={{ cursor: "pointer" }} />
+                )}
+              </th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Business</th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Category</th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Website</th>

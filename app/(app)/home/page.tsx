@@ -137,7 +137,7 @@ export default function HomePage() {
   const youMarkerRef = useRef<PinOverlayInstance | null>(null);
   const PinOverlayClassRef = useRef<ReturnType<typeof createPinOverlayClass> | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  // Only ask once per browser — was re-showing on every visit to /home (e.g. switching to LMS
+  // Only ask once per browser — was re-showing on every visit to /home (e.g. switching to Leads
   // and back), which felt broken rather than a one-time onboarding prompt. Starts true (same on
   // server and client, avoiding a hydration mismatch) and is corrected client-side in the effect
   // below — reading localStorage directly in useState's initializer caused exactly that mismatch
@@ -408,7 +408,7 @@ export default function HomePage() {
       }
     });
 
-    // Navigating away (Home -> LMS/Profile) unmounts this page, but a still-running discovery
+    // Navigating away (Home -> Leads/Profile) unmounts this page, but a still-running discovery
     // loop is a plain async function with no idea the component is gone — it would keep firing
     // /api/leads/find requests into the void. Bumping the generation here makes the loop's own
     // "am I still the current search?" check (see handleFind) fail on its next iteration, so it

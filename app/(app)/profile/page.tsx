@@ -40,14 +40,14 @@ export default async function ProfilePage() {
           </form>
         </Card>
 
-        {/* LMS summary (replaces Pindrop's Payouts card — no builder marketplace here) */}
+        {/* Leads summary (replaces Pindrop's Payouts card — no builder marketplace here) */}
         <Card>
-          <CardHeader title="LMS" />
+          <CardHeader title="Leads" />
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
             Manage the leads you have found, filter by area or category, and unlock enrichment.
           </p>
-          <a href="/lms" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
-            Open LMS
+          <a href="/leads" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
+            Open Leads
           </a>
         </Card>
 
