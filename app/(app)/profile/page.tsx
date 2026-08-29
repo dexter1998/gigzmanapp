@@ -46,7 +46,7 @@ export default async function ProfilePage() {
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
             Manage the leads you have found, filter by area or category, and unlock enrichment.
           </p>
-          <a href="/leads" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
+          <a href="/my-leads" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
             Open Leads
           </a>
         </Card>

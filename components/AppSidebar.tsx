@@ -12,7 +12,7 @@ type ChatSummary = { id: string; title: string };
 const NAV_ITEMS = [
   { href: "/home", label: "Home", icon: HomeIcon },
   { href: "/chat", label: "Chat", icon: ChatBubbleIcon },
-  { href: "/leads", label: "Leads", icon: TableIcon },
+  { href: "/my-leads", label: "Leads", icon: TableIcon },
 ] as const;
 
 export function AppSidebar({ name, email }: { name: string | null; email: string }) {

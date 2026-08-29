@@ -14,8 +14,11 @@ export default function robots(): MetadataRoute.Robots {
           // indexed or fetched at all.
           "/u/",
           // Authenticated product surfaces — nothing here renders for a crawler anyway.
+          // Note /leads is NOT here: it is the public programmatic lead-market section. The
+          // authenticated lead table moved to /my-leads precisely so this prefix could be crawled —
+          // robots Disallow matches by prefix, so the two could never have coexisted.
           "/home",
-          "/leads",
+          "/my-leads",
           "/chat",
           "/lms",
           "/profile",

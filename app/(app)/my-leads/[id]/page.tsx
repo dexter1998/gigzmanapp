@@ -10,5 +10,5 @@ import { redirect } from "next/navigation";
  */
 export default async function LeadDeepLinkPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  redirect(`/leads?lead=${encodeURIComponent(id)}`);
+  redirect(`/my-leads?lead=${encodeURIComponent(id)}`);
 }

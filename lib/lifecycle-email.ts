@@ -96,7 +96,7 @@ async function nearbyOpportunities(user: Candidate, limit = 40) {
 }
 
 const links = () => ({
-  unlock_all_url: `${COMPANY.site}/leads`,
+  unlock_all_url: `${COMPANY.site}/my-leads`,
   preferences_url: `${COMPANY.site}/preferences`,
   manage_alerts_url: `${COMPANY.site}/preferences`,
   partnership_url: `${COMPANY.site}/partner`,
@@ -225,7 +225,7 @@ async function sendReactivation(
       lead_location: city,
       lead_rating: top.rating != null ? top.rating.toFixed(1) : "—",
       lead_reviews: String(top.review_count ?? 0),
-      unlock_lead_url: `${COMPANY.site}/leads/${top.id}`,
+      unlock_lead_url: `${COMPANY.site}/my-leads/${top.id}`,
     };
     const res = await sendBulkEmail({
       to: user.email,
@@ -250,7 +250,7 @@ async function sendReactivation(
     lead_count: String(count),
     // The card shows a handful; this is what's behind them.
     lead_count_more: String(Math.max(count - 4, 0)),
-    unlock_lead_url: `${COMPANY.site}/leads/${top.id}`,
+    unlock_lead_url: `${COMPANY.site}/my-leads/${top.id}`,
   };
   const res = await sendBulkEmail({
     to: user.email,
