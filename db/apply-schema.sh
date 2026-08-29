@@ -66,5 +66,8 @@ psql "$DB_URL" -A -F' | ' -c "
     FROM information_schema.tables WHERE table_name = 'email_unsubscribes'
   UNION ALL
   SELECT 'idx_area_scans_requester_recent', count(*) > 0
-    FROM pg_indexes WHERE indexname = 'idx_area_scans_requester_recent';
+    FROM pg_indexes WHERE indexname = 'idx_area_scans_requester_recent'
+  UNION ALL
+  SELECT 'idx_leads_latlng', count(*) > 0
+    FROM pg_indexes WHERE indexname = 'idx_leads_latlng';
 "

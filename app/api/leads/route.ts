@@ -15,6 +15,21 @@ export async function GET(req: NextRequest) {
   const unlockedOnly = params.get("unlocked") === "true";
   const userEmail = session.user.email;
 
+  // Viewport bounds. Without them this returns the newest 500 leads in the entire table, which is
+  // wrong for a map in two ways: an area scanned a while ago falls out of that window entirely, so
+  // panning back to it shows nothing even though every lead is already stored; and the map has to
+  // wait for discovery to run before it can draw anything at all. With bounds, the leads already
+  // in the database for wherever the user is looking come back in one indexed query, so a grid
+  // that has been scanned before renders immediately and discovery becomes a background top-up.
+  const nums = ["sw_lat", "sw_lng", "ne_lat", "ne_lng"].map((k) => {
+    const raw = params.get(k);
+    if (raw === null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  });
+  const bounded = nums.every((n) => n !== null);
+  const [swLat, swLng, neLat, neLng] = nums as [number, number, number, number];
+
   const rows = await sql`
     SELECT l.id, l.business_name, l.category, l.address, l.lat, l.lng, l.phone, l.email,
            l.has_website, l.contacted, l.is_competitor, l.created_at, l.rating, l.review_count,
@@ -22,6 +37,12 @@ export async function GET(req: NextRequest) {
     FROM leads l
     LEFT JOIN unlocks u ON u.lead_id = l.id AND u.unlocked_by = ${userEmail}
     WHERE 1=1
+      ${
+        bounded
+          ? sql`AND l.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
+                AND l.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}`
+          : sql``
+      }
       ${hasWebsite === "true" ? sql`AND l.has_website = true` : sql``}
       ${hasWebsite === "false" ? sql`AND l.has_website = false` : sql``}
       ${category ? sql`AND l.category = ${category}` : sql``}

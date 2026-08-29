@@ -46,6 +46,10 @@ const GRID_STEP_DEG = 0.01;
 // Covers one 0.01°-square tile (~1.1km per side near the equator) from its center with a little
 // overlap into its neighbors, so tiles don't leave gaps between them.
 const TILE_RADIUS_METERS = 800;
+// City/state/country-scale zoom levels don't discover, and don't draw stored leads either — at that
+// scale the viewport covers so much ground that the pins are noise rather than a map of anything.
+// Module scope because both the discovery path and the instant stored-lead read gate on it.
+const ZOOM_FLOOR = 13;
 // Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
 // centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
 // farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
@@ -278,7 +282,6 @@ export default function HomePage() {
       // request from scanning a huge area, but at low zoom the visible viewport itself covers so
       // much ground that even a repeatedly-reused small circle per pan adds up to scanning the
       // whole region over time. Below this zoom, discovery just doesn't fire at all.
-      const ZOOM_FLOOR = 13;
       const currentZoom = mapRef.current.getZoom() ?? DEFAULT_ZOOM;
       if (currentZoom < ZOOM_FLOOR) {
         setZoomTooLow(true);
@@ -455,6 +458,15 @@ export default function HomePage() {
       // cache instead of re-paying Places API every time the map settles.
       mapRef.current.addListener("idle", () => {
         if (!initialLocationDecidedRef.current) return; // still waiting on the location modal/geolocation
+
+        // Stored leads for the new viewport go up FIRST, before any discovery decision below. This
+        // is deliberately outside every guard that follows — the double-fire guard, the suppressed
+        // first idle, the throttles — because reading what is already in our own database costs
+        // nothing at Google and shouldn't be rationed. It's what makes panning back over ground
+        // that has already been scanned feel instant instead of re-running a sweep to see pins the
+        // database was holding the whole time.
+        if ((mapRef.current?.getZoom() ?? DEFAULT_ZOOM) >= ZOOM_FLOOR) void refreshLeads();
+
         if (suppressNextIdleSearchRef.current) {
           suppressNextIdleSearchRef.current = false;
           return;
@@ -559,8 +571,22 @@ export default function HomePage() {
     centerOnRealLocationAndSearch();
   }
 
+  /** Draws the leads already stored for whatever the map is currently showing.
+   *
+   * This is the fast path, and it does not depend on discovery at all: if this grid has been
+   * scanned before — by this user or anyone else — the pins come straight out of the database in
+   * one indexed query and appear immediately, and discovery becomes a background top-up rather
+   * than the thing the map is waiting on. Unbounded (no map yet, first paint) it falls back to the
+   * old whole-table behaviour. */
   async function refreshLeads() {
-    const res = await fetch("/api/leads");
+    const bounds = mapRef.current?.getBounds();
+    let url = "/api/leads";
+    if (bounds) {
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      url += `?sw_lat=${sw.lat()}&sw_lng=${sw.lng()}&ne_lat=${ne.lat()}&ne_lng=${ne.lng()}`;
+    }
+    const res = await fetch(url);
     const data = await res.json();
     setLeads(data.leads ?? []);
   }

@@ -67,6 +67,10 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS review_count INTEGER;
 
 CREATE INDEX IF NOT EXISTS idx_leads_area_scan ON leads(area_scan_id);
 CREATE INDEX IF NOT EXISTS idx_leads_has_website ON leads(has_website);
+-- The map asks for "every stored lead inside these bounds" on every pan, which is what lets an
+-- already-scanned area draw instantly instead of waiting for discovery. Without this the query is
+-- a full scan of leads on every map movement.
+CREATE INDEX IF NOT EXISTS idx_leads_latlng ON leads(lat, lng);
 
 -- Per (area cell, section, type-batch) grid-search progress, replacing area_scans' role as the
 -- fetch-skip cache for /api/leads/find. Nearby Search (New) hard-caps at 20 results per call with
