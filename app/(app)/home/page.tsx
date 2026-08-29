@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { ChatComposer } from "@/components/chat/ChatComposer";
@@ -50,6 +50,10 @@ const TILE_RADIUS_METERS = 800;
 // scale the viewport covers so much ground that the pins are noise rather than a map of anything.
 // Module scope because both the discovery path and the instant stored-lead read gate on it.
 const ZOOM_FLOOR = 13;
+// How long the map has to sit still before its area is considered the one the user actually wants
+// searched. Google's `idle` already waits for movement to settle, but it fires on every settle, so
+// a drag in stages fires several. Anything shorter than this reads as "still moving".
+const IDLE_SETTLE_MS = 600;
 // Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
 // centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
 // farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
@@ -237,6 +241,13 @@ export default function HomePage() {
   }, [category]);
 
   const lastAutoSearchRef = useRef(0);
+  // Pending debounced search for the area the map has settled on. Cleared and re-armed by every
+  // idle, so an area the user only drags past never gets one sent for it at all.
+  const idleSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Aborts the discovery requests still in flight when a newer search supersedes them. The
+  // generation check already stops the loop issuing MORE requests, but without this the ones
+  // already open run to completion — work, and Places API spend, for an area left behind.
+  const searchAbortRef = useRef<AbortController | null>(null);
   // Incremented on every handleFind call — a run checks this against the value it captured at
   // start and bails the moment it's no longer current, instead of a flat in-flight block. A pan to
   // a new area (or the real-location search resolving after an initial default-center race) must
@@ -280,6 +291,9 @@ export default function HomePage() {
   async function handleFind() {
     if (!mapRef.current) return;
     const myGeneration = ++searchGenerationRef.current;
+    searchAbortRef.current?.abort();
+    const abort = new AbortController();
+    searchAbortRef.current = abort;
     setSearching(true);
     try {
       // City/state/country-scale zoom levels must not silently keep fetching just because the
@@ -349,14 +363,22 @@ export default function HomePage() {
               // over — stop working toward this now-stale area immediately rather than finishing it.
               if (stopAll || searchGenerationRef.current !== myGeneration) return;
 
-              const res = await fetch("/api/leads/find", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
-              });
-              const data = (await res.json()) as {
+              let data: {
                 found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean; cached?: boolean;
               };
+              try {
+                const res = await fetch("/api/leads/find", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
+                  signal: abort.signal,
+                });
+                data = await res.json();
+              } catch {
+                // Aborted because a newer search took over, or the request failed outright.
+                // Either way this section's area is no longer the one being looked at.
+                return;
+              }
               hasMore = data.hasMore ?? false;
               if (data.apiDown) setShowMaintenance(true);
               if (data.throttled === "session_budget") {
@@ -476,10 +498,18 @@ export default function HomePage() {
           suppressNextIdleSearchRef.current = false;
           return;
         }
-        const now = Date.now();
-        if (now - lastAutoSearchRef.current < 1500) return; // guards against rapid double-fires
-        lastAutoSearchRef.current = now;
-        void handleFind();
+        // Trailing debounce, not a rate limiter. The old guard fired a full sweep on the FIRST
+        // idle and then blocked for 1500ms, so dragging across the map paid for discovery over
+        // every area merely passed through on the way somewhere — confirmed against production:
+        // one minute of dragging touched 169 distinct grid cells and billed 122 requests, which
+        // blew the 5-minute budget in under a minute. Only the area actually settled on is worth
+        // searching, so each idle cancels the previous pending search and re-arms.
+        if (idleSearchTimerRef.current) clearTimeout(idleSearchTimerRef.current);
+        idleSearchTimerRef.current = setTimeout(() => {
+          idleSearchTimerRef.current = null;
+          lastAutoSearchRef.current = Date.now();
+          void handleFind();
+        }, IDLE_SETTLE_MS);
       });
 
       // If the location prompt was already resolved on a prior visit, don't show it again —
@@ -1391,33 +1421,38 @@ const ENRICHMENT_STATUS_LABEL: Record<EnrichmentStatus, string> = {
  * duration this can take, so the job's state lives server-side and this just checks in on it. */
 function EnrichmentPanel({ leadId }: { leadId: string }) {
   const [enrichment, setEnrichment] = useState<Enrichment | null>(null);
+  const cancelledRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The server advances this job by exactly one step per request: the first call only creates the
+  // row (pending), the next starts the instance, the next dispatches the scrape. So the job only
+  // moves while something keeps calling. `start` used to POST once and stop, which left the row at
+  // pending forever and the panel showing "Queued…" indefinitely — confirmed against production,
+  // where every enrichment row ever created was still pending, none with an SSM command.
+  const poll = useCallback(async () => {
+    const res = await fetch(`/api/leads/${leadId}/enrich`).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as Enrichment | null;
+    if (cancelledRef.current || !data) return;
+    setEnrichment(data);
+    if (data.status === "pending" || data.status === "starting_instance" || data.status === "scraping") {
+      timeoutRef.current = setTimeout(() => void poll(), 4000);
+    }
+  }, [leadId]);
 
   useEffect(() => {
-    let cancelled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    async function poll() {
-      const res = await fetch(`/api/leads/${leadId}/enrich`).catch(() => null);
-      const data = (await res?.json().catch(() => null)) as Enrichment | null;
-      if (cancelled || !data) return;
-      setEnrichment(data);
-      if (data.status === "pending" || data.status === "starting_instance" || data.status === "scraping") {
-        timeout = setTimeout(poll, 4000);
-      }
-    }
+    cancelledRef.current = false;
     void poll();
-
     return () => {
-      cancelled = true;
-      if (timeout) clearTimeout(timeout);
+      cancelledRef.current = true;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [leadId]);
+  }, [poll]);
 
   async function start() {
     setEnrichment({ status: "pending" });
-    const res = await fetch(`/api/leads/${leadId}/enrich`, { method: "POST" }).catch(() => null);
-    const data = (await res?.json().catch(() => null)) as Enrichment | null;
-    if (data) setEnrichment(data);
+    await fetch(`/api/leads/${leadId}/enrich`, { method: "POST" }).catch(() => null);
+    // Hand straight over to the poller — without this the job stops at the row it just created.
+    void poll();
   }
 
   if (!enrichment || enrichment.status === "not_started") {
