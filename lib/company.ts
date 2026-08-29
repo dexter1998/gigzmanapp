@@ -95,11 +95,11 @@ export function organizationJsonLd() {
         closes: "23:59",
       },
     ],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: COMPANY.gbp.rating,
-      reviewCount: COMPANY.gbp.reviewCount,
-    },
+    // No aggregateRating here on purpose, even though the profile has one. Google's structured
+    // data policy requires rating markup to reflect reviews actually shown on the page, and treats
+    // a business marking up its own rating on its own site as self-serving -- which risks a manual
+    // action rather than a star rating. The profile's rating already surfaces where it belongs, in
+    // Google's own results for the profile.
     sameAs: [COMPANY.gbp.mapsUrl, COMPANY.agencySite],
   };
 }
