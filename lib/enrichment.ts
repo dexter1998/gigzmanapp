@@ -114,6 +114,17 @@ export async function advance(leadId: string, lead: LeadForEnrichment) {
       return { status: "failed" as const, error: "lead has no coordinates" };
     }
 
+    // One scrape at a time. There is a single small instance behind this, and dispatching every
+    // queued job the moment it was ready put four concurrent Docker containers on one burstable
+    // vCPU, which is slower than running them in turn and can starve them all. Waiting here is what
+    // makes this an actual queue rather than a fan-out; this job keeps its place and goes next.
+    const [busy] = await sql`
+      SELECT lead_id FROM lead_enrichment
+      WHERE status = 'scraping' AND lead_id <> ${leadId}
+      LIMIT 1
+    `;
+    if (busy) return { status: "starting_instance" as const };
+
     try {
       const sent = await ssm.send(
         new SendCommandCommand({
