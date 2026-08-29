@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { refreshAll } from "@/lib/pseo/refresh";
+import { submitToIndexNow } from "@/lib/pseo/indexnow";
+import { COMPANY } from "@/lib/company";
 
 /**
  * Daily recompute of every lead page: statistics, the quality gate, and the 15-day rotation.
@@ -28,22 +30,33 @@ export async function GET(req: NextRequest) {
   // would throw away the cache for no benefit. The sitemap follows whenever the published set
   // changes, so a newly promoted page is submitted the same day.
   const changed = results.filter((r) => r.changed);
-  for (const r of changed) {
-    const [service, city, rest] = r.pageKey.split("|");
-    const path =
-      rest === "city"
-        ? `/leads/${service}/${city}`
-        : rest.startsWith("area:")
-          ? `/leads/${service}/${city}/areas/${rest.slice(5)}`
-          : `/leads/${service}/${city}/categories/${rest.slice(4)}`;
-    revalidatePath(path);
-  }
+  for (const r of changed) revalidatePath(pathFor(r.pageKey));
   if (changed.length) revalidatePath("/sitemap.xml");
+
+  // Announce only genuine promotions. A page that already existed and simply had its figures
+  // recomputed is not news, and pinging unchanged URLs daily is the same manufactured-activity
+  // signal as restamping a sitemap.
+  const promoted = results.filter((r) => r.newlyPublished).map((r) => `${COMPANY.site}${pathFor(r.pageKey)}`);
+  const indexNow = promoted.length ? await submitToIndexNow(promoted) : { ok: true };
+  if (promoted.length) revalidatePath("/leads/feed.xml");
 
   const counts = results.reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1;
     return acc;
   }, {});
 
-  return NextResponse.json({ evaluated: results.length, revalidated: changed.length, counts });
+  return NextResponse.json({
+    evaluated: results.length,
+    revalidated: changed.length,
+    promoted: promoted.length,
+    indexNow,
+    counts,
+  });
+}
+
+function pathFor(pageKey: string): string {
+  const [service, city, rest] = pageKey.split("|");
+  if (rest === "city") return `/leads/${service}/${city}`;
+  if (rest.startsWith("area:")) return `/leads/${service}/${city}/areas/${rest.slice(5)}`;
+  return `/leads/${service}/${city}/categories/${rest.slice(4)}`;
 }

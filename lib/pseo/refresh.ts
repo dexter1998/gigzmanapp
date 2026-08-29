@@ -20,6 +20,8 @@ export type RefreshResult = {
   status: string;
   qualifying: number;
   changed: boolean;
+  /** Crossed into `published` on this run — the only moment worth announcing. */
+  newlyPublished: boolean;
   failures: string[];
 };
 
@@ -133,7 +135,11 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
       ON CONFLICT (page_key, captured_on) DO NOTHING
     `;
 
-    results.push({ pageKey, status, qualifying: stats.qualifying, changed, failures: gate.failures });
+    results.push({
+      pageKey, status, qualifying: stats.qualifying, changed,
+      newlyPublished: existing?.status !== "published" && status === "published",
+      failures: gate.failures,
+    });
     void shown;
   }
 

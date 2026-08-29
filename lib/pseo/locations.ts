@@ -158,6 +158,16 @@ export function resolveSectorAlias(token: string): string | null {
   return `sector-${num}${m[2] ?? ""}`;
 }
 
+/** Display name for an area slug. Named areas come from the registry; sector slugs are generated,
+ *  so they have no entry to look up and would otherwise render as "sector-104". */
+export function areaDisplayName(slug: string): string {
+  const named = AREA_BY_SLUG.get(slug);
+  if (named) return named.name;
+  const m = /^sector-(\d{1,3})([a-z])?$/.exec(slug);
+  if (m) return `Sector ${m[1]}${m[2] ? m[2].toUpperCase() : ""}`;
+  return slug;
+}
+
 export function isInBbox(city: City, lat: number, lng: number): boolean {
   const [minLat, minLng, maxLat, maxLng] = city.bbox;
   return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;

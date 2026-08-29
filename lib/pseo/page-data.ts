@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AREA_BY_SLUG, CITY_BY_SLUG } from "@/lib/pseo/locations";
+import { CITY_BY_SLUG, areaDisplayName } from "@/lib/pseo/locations";
 import { SERVICE_BY_SLUG } from "@/lib/pseo/services";
 import { loadScope, type Scope, type PageStats, type ScoredLead } from "@/lib/pseo/stats";
 import {
@@ -66,7 +66,7 @@ export async function loadPageData(
   return {
     service,
     city,
-    areaName: scope.kind === "area" ? AREA_BY_SLUG.get(scope.areaSlug)?.name ?? scope.areaSlug : null,
+    areaName: scope.kind === "area" ? areaDisplayName(scope.areaSlug) : null,
     categoryLabel: scope.kind === "category" ? stats.categories[0]?.label ?? scope.category : null,
     indexable: page.status === "published",
     stats,

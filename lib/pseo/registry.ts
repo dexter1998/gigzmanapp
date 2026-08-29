@@ -1,5 +1,5 @@
 import { pseoSql } from "@/lib/pseo/db";
-import { AREA_BY_SLUG, CITY_BY_SLUG, distanceKm } from "@/lib/pseo/locations";
+import { AREA_BY_SLUG, CITY_BY_SLUG, areaDisplayName, distanceKm } from "@/lib/pseo/locations";
 import { formatCategory } from "@/lib/categories";
 import type { Scope } from "@/lib/pseo/stats";
 import type { GateStatus } from "@/lib/pseo/gate";
@@ -77,7 +77,7 @@ export async function cityAreaBreakdown(citySlug: string): Promise<AreaRow[]> {
   return rows
     .map((r) => ({
       area_slug: r.area_slug,
-      name: AREA_BY_SLUG.get(r.area_slug)?.name ?? formatCategory(r.area_slug) ?? r.area_slug,
+      name: areaDisplayName(r.area_slug),
       qualifying: r.qualifying,
       checked: r.checked,
       gapRate: r.checked ? r.qualifying / r.checked : 0,
@@ -130,7 +130,7 @@ export async function publishedChildren(serviceSlug: string, citySlug: string) {
       .filter((r) => r.page_type === "area" && r.area_slug)
       .map((r) => ({
         slug: r.area_slug!,
-        name: AREA_BY_SLUG.get(r.area_slug!)?.name ?? r.area_slug!,
+        name: areaDisplayName(r.area_slug!),
         qualifying: r.qualifying_leads,
       })),
     categories: rows

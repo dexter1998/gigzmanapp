@@ -182,8 +182,15 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
       distinctCategories: categories.length,
       withRating: noSite.filter((r) => r.rating !== null).length,
       ratedShare: noSite.length ? noSite.filter((r) => r.rating !== null).length / noSite.length : 0,
-      medianReviewsNoWebsite: median(noSite.map((r) => r.review_count ?? 0)),
-      medianReviewsWithWebsite: median(hasSite.map((r) => r.review_count ?? 0)),
+      // Computed only over businesses that actually carry a review count. Treating a missing
+      // count as zero dragged both medians to 0 and produced "carries 0 reviews, against 0 for
+      // those that have one" — a sentence that says nothing and invites doubt about the rest.
+      medianReviewsNoWebsite: median(
+        noSite.filter((r) => r.review_count != null).map((r) => r.review_count!)
+      ),
+      medianReviewsWithWebsite: median(
+        hasSite.filter((r) => r.review_count != null).map((r) => r.review_count!)
+      ),
       medianRatingNoWebsite: median(
         noSite.filter((r) => r.rating !== null).map((r) => Math.round(r.rating! * 10))
       ),

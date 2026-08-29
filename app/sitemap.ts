@@ -58,6 +58,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly",
         priority: page.page_type === "city" ? 0.8 : 0.6,
       });
+
+      // A published city also has two index pages. They aren't registry rows — they exist
+      // whenever their city does — but they're real pages with their own rankings, and they're
+      // the browseable hierarchy the whole structure rests on, so they belong here.
+      if (page.page_type === "city") {
+        for (const sub of ["areas", "categories"]) {
+          entries.push({
+            url: `${COMPANY.site}${path}/${sub}`,
+            lastModified: page.last_material_change_at ?? now,
+            changeFrequency: "weekly",
+            priority: 0.7,
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("sitemap: could not read published lead pages", err);

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { loadPageData } from "@/lib/pseo/page-data";
 import { publishedPages } from "@/lib/pseo/registry";
-import { AREA_BY_SLUG } from "@/lib/pseo/locations";
+import { areaDisplayName } from "@/lib/pseo/locations";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 import { LeadCard } from "@/components/pseo/LeadCard";
 import { ProvenanceNote } from "@/components/pseo/ProvenanceNote";
@@ -60,8 +60,8 @@ export default async function CategoryPage({ params }: Params) {
       <p style={{ fontSize: 16.5, lineHeight: 1.65, color: "var(--g-ink-soft)", margin: "14px 0 0" }}>
         {d.stats.qualifying} of the {d.stats.checked} {String(d.categoryLabel).toLowerCase()} businesses we have mapped in{" "}
         {d.city.name} have no website — a {pct(d.stats.gapRate)} gap.
-        {d.stats.medianReviewsNoWebsite !== null &&
-          ` The median one carries ${d.stats.medianReviewsNoWebsite} reviews, so these are trading businesses rather than stale listings.`}
+        {d.stats.medianReviewsNoWebsite !== null && d.stats.medianReviewsNoWebsite > 0 &&
+          ` Among those carrying reviews, the median has ${d.stats.medianReviewsNoWebsite} — these are trading businesses, not stale listings.`}
       </p>
 
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "30px 0 14px" }}>
@@ -71,7 +71,7 @@ export default async function CategoryPage({ params }: Params) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {d.leads.map((l) => (
-          <LeadCard key={l.id} lead={l} areaName={l.area_slug ? AREA_BY_SLUG.get(l.area_slug)?.name ?? null : null} />
+          <LeadCard key={l.id} lead={l} areaName={l.area_slug ? areaDisplayName(l.area_slug) : null} />
         ))}
       </div>
 
@@ -82,7 +82,7 @@ export default async function CategoryPage({ params }: Params) {
           </h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {topAreas.map(([slug, n]) => {
-              const name = AREA_BY_SLUG.get(slug)?.name ?? slug;
+              const name = areaDisplayName(slug);
               const linked = d.children.areas.some((a) => a.slug === slug);
               const label = `${name} · ${n}`;
               return linked ? (

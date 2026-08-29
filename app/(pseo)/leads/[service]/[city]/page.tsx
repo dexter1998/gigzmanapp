@@ -6,7 +6,7 @@ import { publishedPages } from "@/lib/pseo/registry";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 import { LeadCard } from "@/components/pseo/LeadCard";
 import { ProvenanceNote } from "@/components/pseo/ProvenanceNote";
-import { AREA_BY_SLUG } from "@/lib/pseo/locations";
+import { areaDisplayName } from "@/lib/pseo/locations";
 import { SERVICE_BY_SLUG } from "@/lib/pseo/services";
 
 // Statically rendered and revalidated daily; the refresh job additionally revalidates a page the
@@ -58,7 +58,15 @@ export default async function CityLeadsPage({ params }: Params) {
   ];
 
   const topAreas = areas.slice(0, 6);
-  const strongest = [...areas].filter((a) => a.checked >= 40).sort((a, b) => b.gapRate - a.gapRate)[0];
+  // A rate over a handful of businesses isn't a finding. At 40 the widest gap was a 40-lead village
+  // at 85%, which is noise presented as insight; 150 is enough for the claim to hold up.
+  const strongest = [...areas].filter((a) => a.checked >= 150).sort((a, b) => b.gapRate - a.gapRate)[0];
+  // Only worth saying when the two medians actually differ — otherwise it reads as filler.
+  const reviewComparison =
+    stats.medianReviewsNoWebsite !== null &&
+    stats.medianReviewsWithWebsite !== null &&
+    stats.medianReviewsNoWebsite > 0 &&
+    stats.medianReviewsNoWebsite !== stats.medianReviewsWithWebsite;
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 96px" }}>
@@ -75,8 +83,8 @@ export default async function CityLeadsPage({ params }: Params) {
           active Google listing and no website of their own — {pct(stats.gapRate)} of the {stats.checked} we have
           checked here.{" "}
           {strongest && `The gap is widest in ${strongest.name}, where ${pct(strongest.gapRate)} of businesses have no site.`}{" "}
-          {stats.medianReviewsWithWebsite !== null && stats.medianReviewsNoWebsite !== null &&
-            `They are not dormant listings: the median business without a website carries ${stats.medianReviewsNoWebsite} reviews, against ${stats.medianReviewsWithWebsite} for those that have one.`}
+          {reviewComparison &&
+            `They are not dormant listings: among those carrying reviews, the median business without a website has ${stats.medianReviewsNoWebsite}, against ${stats.medianReviewsWithWebsite} for those that have one.`}
         </p>
       </header>
 
@@ -93,14 +101,14 @@ export default async function CityLeadsPage({ params }: Params) {
             exists. That is the structure Google's doorway definition contrasts itself against. */}
         <aside style={{ position: "sticky", top: 20 }}>
           {children.areas.length > 0 && (
-            <SidebarBlock title="By area">
+            <SidebarBlock title="By area" moreHref={`/leads/${serviceSlug}/${citySlug}/areas`} moreLabel="All areas, ranked by gap">
               {children.areas.slice(0, 12).map((a) => (
                 <SidebarLink key={a.slug} href={`/leads/${serviceSlug}/${citySlug}/areas/${a.slug}`} label={a.name} count={a.qualifying} />
               ))}
             </SidebarBlock>
           )}
           {children.categories.length > 0 && (
-            <SidebarBlock title="By business category">
+            <SidebarBlock title="By business category" moreHref={`/leads/${serviceSlug}/${citySlug}/categories`} moreLabel="All categories, ranked by gap">
               {children.categories.slice(0, 12).map((c) => (
                 <SidebarLink key={c.slug} href={`/leads/${serviceSlug}/${citySlug}/categories/${c.slug}`} label={c.name} count={c.qualifying} />
               ))}
@@ -120,7 +128,7 @@ export default async function CityLeadsPage({ params }: Params) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {leads.map((l) => (
-              <LeadCard key={l.id} lead={l} areaName={l.area_slug ? AREA_BY_SLUG.get(l.area_slug)?.name ?? null : null} />
+              <LeadCard key={l.id} lead={l} areaName={l.area_slug ? areaDisplayName(l.area_slug) : null} />
             ))}
           </div>
 
@@ -221,13 +229,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SidebarBlock({ title, children }: { title: string; children: React.ReactNode }) {
+function SidebarBlock({ title, children, moreHref, moreLabel }: {
+  title: string; children: React.ReactNode; moreHref?: string; moreLabel?: string;
+}) {
   return (
     <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", padding: 16, marginBottom: 14 }}>
       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: "var(--g-gray-500)", marginBottom: 10 }}>
         {title.toUpperCase()}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>{children}</div>
+      {moreHref && (
+        <Link href={moreHref} style={{ display: "block", marginTop: 10, fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "none" }}>
+          {moreLabel} →
+        </Link>
+      )}
     </div>
   );
 }
