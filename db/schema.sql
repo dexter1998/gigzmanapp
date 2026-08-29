@@ -27,8 +27,17 @@ CREATE TABLE IF NOT EXISTS area_scans (
 -- the table already exists, so new columns need their own explicit migration.
 ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS cache_key TEXT;
 ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS full_depth BOOLEAN NOT NULL DEFAULT true;
+-- How many Places API calls this request actually paid for. 0 = served entirely from
+-- area_type_scans. The throttles in /api/leads/find count only rows above 0: a row is written for
+-- every request regardless of cache state, so counting rows made a user panning around a fully
+-- cached area (their own neighbourhood, already scanned) burn the budget exactly as fast as one
+-- exploring genuinely new ground, and then go silent with nothing left to show them.
+ALTER TABLE area_scans ADD COLUMN IF NOT EXISTS billed_places_calls INT NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_area_scans_cache_key ON area_scans(cache_key);
+-- Both throttle lookups filter requested_by over a recent created_at window on every single
+-- request; without this they degrade into a scan of the whole table as it grows.
+CREATE INDEX IF NOT EXISTS idx_area_scans_requester_recent ON area_scans(requested_by, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

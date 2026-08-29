@@ -22,6 +22,11 @@ const PER_AREA_COOLDOWN_SECONDS = 45;
 // it looks like it would.
 const SESSION_REQUEST_BUDGET = 120;
 const SESSION_WINDOW_MINUTES = 5;
+// Counts every request in the window, cache hits included -- purely a runaway-client backstop, not
+// a spend control, so it sits far above what map use can reach. One "All categories" search is up
+// to 9 sections x 4 tiles plus however many cells each needs, so a person exploring hard can
+// legitimately produce a few hundred requests in five minutes.
+const SESSION_RAW_REQUEST_CEILING = 1500;
 
 // Bounds every scan to roughly a "default zoom" neighborhood regardless of what radius the client
 // computes from its viewport — user report: zooming out toward city/state/country scale must not
@@ -69,6 +74,8 @@ type PlacesResult = {
 
 type Cell = { lat: number; lng: number; radius: number };
 
+/** Every Places API call this process makes goes through here, so counting invocations of this
+ * function is what "did this request actually cost money" means. See billed_places_calls. */
 async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ places: NonNullable<PlacesResult["places"]>; failed: boolean }> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
@@ -165,7 +172,7 @@ async function discoverBatch(
   if (existing?.is_exhausted) {
     const staleMs = Date.now() - new Date(existing.last_verified_at).getTime();
     if (staleMs < STALENESS_TTL_MS) {
-      return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false, failed: false };
+      return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false, failed: false, apiCalls: 0 };
     }
 
     // Stale — spend exactly one call at the original top-level cell and compare its count
@@ -188,7 +195,7 @@ async function discoverBatch(
       WHERE cache_key = ${cacheKey}
     `;
 
-    return { places: unchanged ? [] : probe, hasMore: !unchanged, failed: probeFailed };
+    return { places: unchanged ? [] : probe, hasMore: !unchanged, failed: probeFailed, apiCalls: 1 };
   }
 
   const cellsToQuery: Cell[] =
@@ -200,9 +207,11 @@ async function discoverBatch(
   const places: NonNullable<PlacesResult["places"]> = [];
   let topLevelCount: number | null = existing?.top_level_count ?? null;
   let anyFailed = false;
+  let apiCalls = 0;
 
   for (const cell of thisRun) {
     const result = await fetchNearbyBatch(types, cell);
+    apiCalls += 1;
     anyFailed = anyFailed || result.failed;
     places.push(...result.places);
     if (cell.lat === lat && cell.lng === lng && cell.radius === radius) {
@@ -227,7 +236,7 @@ async function discoverBatch(
       updated_at = now()
   `;
 
-  return { places, hasMore: !isExhausted, failed: anyFailed };
+  return { places, hasMore: !isExhausted, failed: anyFailed, apiCalls };
 }
 
 export async function POST(req: NextRequest) {
@@ -245,9 +254,15 @@ export async function POST(req: NextRequest) {
   const userEmail = session.user.email;
   const cooldownKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}`;
 
+  // Both throttles below count only requests that actually called Places API
+  // (billed_places_calls > 0). They exist to cap Google spend, and a request served entirely from
+  // area_type_scans spends nothing -- counting those made a user panning around an area that is
+  // already fully scanned (typically their own neighbourhood) hit the ceiling just as fast as one
+  // exploring new ground, and then see nothing at all for the rest of the window.
   const [recentSameArea] = await sql`
     SELECT id FROM area_scans
     WHERE requested_by = ${userEmail} AND cache_key = ${cooldownKey}
+      AND billed_places_calls > 0
       AND created_at > now() - (${PER_AREA_COOLDOWN_SECONDS} || ' seconds')::interval
     LIMIT 1
   `;
@@ -255,12 +270,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "area_cooldown" });
   }
 
-  const [{ count: recentRequestCount }] = (await sql`
-    SELECT COUNT(*)::int AS count FROM area_scans
+  const [counts] = (await sql`
+    SELECT COUNT(*) FILTER (WHERE billed_places_calls > 0)::int AS billed,
+           COUNT(*)::int AS total
+    FROM area_scans
     WHERE requested_by = ${userEmail}
       AND created_at > now() - (${SESSION_WINDOW_MINUTES} || ' minutes')::interval
-  `) as [{ count: number }];
-  if (recentRequestCount >= SESSION_REQUEST_BUDGET) {
+  `) as [{ billed: number; total: number }];
+  if (counts.billed >= SESSION_REQUEST_BUDGET) {
+    return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
+  }
+  // Backstop so dropping cache hits from the budget above doesn't leave the request rate itself
+  // uncapped. This one costs no Google money, only our own DB, so it sits far higher and should
+  // only ever be reached by something automated rather than by a person using the map.
+  if (counts.total >= SESSION_RAW_REQUEST_CEILING) {
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
   }
 
@@ -275,11 +298,13 @@ export async function POST(req: NextRequest) {
   const rows: Array<{ id: string; lat: number | null; lng: number | null; is_competitor: boolean }> = [];
   let hasMore = false;
   let apiDown = false;
+  let placesCalls = 0;
 
   for (let i = 0; i < batches.length; i++) {
     const result = await discoverBatch(batches[i], section, i, lat, lng, radius);
     hasMore = hasMore || result.hasMore;
     apiDown = apiDown || result.failed;
+    placesCalls += result.apiCalls;
     for (const place of result.places) {
       // Dropped entirely, not just hidden client-side — confirmed via a live audit that ~20% of
       // raw results are non-commercial (apartment/housing/association types Google occasionally
@@ -305,7 +330,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await sql`UPDATE area_scans SET status = 'done', completed_at = now() WHERE id = ${scan.id}`;
+  await sql`
+    UPDATE area_scans
+    SET status = 'done', completed_at = now(), billed_places_calls = ${placesCalls}
+    WHERE id = ${scan.id}
+  `;
 
-  return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown });
+  // cached: this request cost nothing at Google. The client uses it to tell "still discovering"
+  // apart from "this area is already fully scanned", so it can stop draining and stop refetching.
+  return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown, cached: placesCalls === 0 });
 }
