@@ -177,6 +177,26 @@ export default function HomePage() {
   // window lines up exactly with the 5-minute budget this was silently enforcing.
   const [sessionThrottled, setSessionThrottled] = useState(false);
   const [showMaintenance, setShowMaintenance] = useState(false);
+  // The map status pills ("Finding businesses in ...", zoom hint, throttle notice) sit directly
+  // above the bottom composer. They used a fixed `bottom: 172` tuned for one particular composer
+  // height, so as soon as the suggestion row rendered — or the textarea grew a line — the
+  // composer's top edge rose past them and covered them (confirmed live: the "Finding businesses
+  // in" pill was half-hidden behind the composer). Measuring the composer keeps them clear of it
+  // at any height instead of re-guessing a constant.
+  const composerWrapRef = useRef<HTMLDivElement | null>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
+  const statusPillBottom = composerHeight ? composerHeight + 36 : 172;
+
+  useEffect(() => {
+    const el = composerWrapRef.current;
+    if (!el) return;
+    const measure = () => setComposerHeight(el.getBoundingClientRect().height);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
   const [startingChat, setStartingChat] = useState(false);
@@ -923,7 +943,12 @@ export default function HomePage() {
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-card)",
             padding: 20,
-            zIndex: 20,
+            // Above the top toolbar (zIndex 30), not below it. At 20 the toolbar painted over the
+            // card's top edge and, being on top, also swallowed the pointer there: moving from the
+            // pin toward the card crossed the toolbar, so the card's own onMouseEnter never fired,
+            // scheduleHideCard from the pin's mouseleave ran, the card vanished, the pin re-entered
+            // -- the flicker. Clicks aimed at "Add to leads" in that strip hit the toolbar too.
+            zIndex: 40,
           }}
         >
           <button
@@ -1097,7 +1122,7 @@ export default function HomePage() {
             // stacking regardless (it's later in the DOM than the pill, so without an explicit
             // zIndex it paints on top by default) — confirmed live the pill was rendering behind
             // the chat panel.
-            bottom: 172,
+            bottom: statusPillBottom,
             left: "50%",
             transform: "translateX(-50%)",
             width: 320,
@@ -1129,7 +1154,7 @@ export default function HomePage() {
         <div
           style={{
             position: "absolute",
-            bottom: 172,
+            bottom: statusPillBottom,
             left: "50%",
             transform: "translateX(-50%)",
             background: "var(--g-ink)",
@@ -1149,7 +1174,7 @@ export default function HomePage() {
         <div
           style={{
             position: "absolute",
-            bottom: 172,
+            bottom: statusPillBottom,
             left: "50%",
             transform: "translateX(-50%)",
             background: "var(--g-amber-tint)",
@@ -1170,6 +1195,7 @@ export default function HomePage() {
           real chat, not a placeholder. Submitting creates a chat and jumps straight to its
           thread, same flow as the chat landing page's own composer. */}
       <div
+        ref={composerWrapRef}
         style={{
           position: "absolute",
           bottom: 24,
