@@ -443,3 +443,36 @@ CREATE TABLE IF NOT EXISTS pseo_location_candidates (
 );
 CREATE INDEX IF NOT EXISTS idx_pseo_candidates_pending ON pseo_location_candidates(qualifying_count DESC)
   WHERE decision IS NULL;
+
+-- Public marketing pages (/contact, /partner). Both forms are reachable by logged-out visitors,
+-- which is the whole point of putting them on the marketing site — so neither can key off an
+-- Auth.js session the way every other table in this file does.
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name TEXT NOT NULL,
+  last_name TEXT,
+  email TEXT NOT NULL,
+  company TEXT,
+  topic TEXT,                              -- product support | sales & pricing | partnerships |
+                                            -- data accuracy | something else
+  message TEXT NOT NULL,
+  user_email TEXT,                         -- set only when a logged-in user submits; NULL for
+                                            -- anonymous visitors (the normal case here)
+  status TEXT NOT NULL DEFAULT 'new',      -- new | read | replied | closed
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status, created_at DESC);
+
+-- partner_applications predates the public /partner page, where there is no session to attribute
+-- a row to — user_email has to stop being required for that page to work at all. The dashboard
+-- modal still fills it in, so `source` is what tells the two apart when triaging.
+ALTER TABLE partner_applications ALTER COLUMN user_email DROP NOT NULL;
+ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS agency_type TEXT;
+ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS designation TEXT;
+ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS avg_ticket_size TEXT;
+ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'dashboard';
+
+CREATE INDEX IF NOT EXISTS idx_partner_applications_triage
+  ON partner_applications(agency_type, status, submitted_at DESC);

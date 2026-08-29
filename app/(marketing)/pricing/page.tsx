@@ -1,20 +1,54 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { PLANS } from "@/components/plans-config";
 import { COMPANY } from "@/lib/company";
-import { PageHeader, Prose } from "@/components/marketing/Shell";
+import { PLANS, FREE_PLAN } from "@/components/plans-config";
+import { PricingPlans } from "@/components/marketing/PricingPlans";
+import { EyebrowPill, FaqAccordion, MarketingCta, OrigamiFloor, SectionHeading } from "@/components/marketing/MarketingPieces";
+import { UserIcon, GlobeIcon, ZapIcon, PinIcon, TableIcon, ShieldIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: `Pricing — ${COMPANY.brandLong}`,
-  description:
-    "Mantis pricing. Start free with 20 credits a month, or pick a plan sized to how many local leads you actually unlock. No contracts.",
+  title: `Pricing — ${COMPANY.brandLong} lead credits for agencies & freelancers`,
+  description: `Searching the map is free. Start with ${FREE_PLAN.creditsPerMonth} credits a month, then pick a plan sized to how many local leads you actually unlock — from 2,000 to 30,000 a month. No contracts.`,
+  keywords: [
+    "Mantis AI pricing",
+    "lead generation pricing India",
+    "lead credits",
+    "agency lead software cost",
+    "local lead tool pricing",
+  ],
   alternates: { canonical: `${COMPANY.site}/pricing` },
+  openGraph: {
+    title: `${COMPANY.brandLong} Pricing — pay for the leads you actually use`,
+    description: "Free forever plan, paid tiers from 2,000 to 30,000 lead credits a month, and custom Agency plans.",
+    url: `${COMPANY.site}/pricing`,
+    siteName: COMPANY.brand,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${COMPANY.brandLong} Pricing`,
+    description: "Searching is free. Credits are only spent when you unlock a lead you want to contact.",
+  },
 };
 
-const FAQ = [
+const AUDIENCES = [
+  { icon: UserIcon, title: "Freelancers", desc: "Find local businesses and win more client projects." },
+  { icon: GlobeIcon, title: "Web Development Studios", desc: "Fuel your pipeline with qualified, ready-to-reach prospects." },
+  { icon: ZapIcon, title: "Marketing Agencies", desc: "Discover new clients and scale your outreach faster." },
+  { icon: PinIcon, title: "Multi-location Teams", desc: "Manage leads across cities with centralised access." },
+  { icon: TableIcon, title: "Sales Teams", desc: "Empower reps with high-intent leads and smart insights." },
+  { icon: ShieldIcon, title: "Enterprise Partners", desc: "Unlock advanced tools, APIs and white-label exports." },
+];
+
+const FAQS = [
   {
     q: "What is a credit?",
     a: "One credit unlocks one lead — its name, full address and phone number. Searching the map, seeing how many businesses are in an area and reading their heat score costs nothing; you only spend a credit when you decide a specific lead is worth contacting.",
+  },
+  {
+    q: `Can I use ${COMPANY.brand} for free?`,
+    a: `Yes. The Free plan gives you ${FREE_PLAN.creditsPerMonth} credits every month with no card, and unlimited searching on top. It's enough to work one neighbourhood properly and judge the lead quality before you pay for anything.`,
   },
   {
     q: "Do unused credits roll over?",
@@ -22,121 +56,117 @@ const FAQ = [
   },
   {
     q: "Can I change plan later?",
-    a: "Yes, up or down, at any time. Changes apply from your next billing period.",
+    a: "Yes, up or down, at any time. Changes apply from your next billing period, so you keep what you have already paid for.",
   },
   {
     q: "Is there a contract?",
     a: "No. Plans are monthly and you can cancel whenever you like — your plan simply runs to the end of the period you have paid for.",
+  },
+  {
+    q: "Do you offer agency and enterprise plans?",
+    a: "Yes. The Agency plan is quoted around your lead volume, seats and API needs, and includes a dedicated account manager. Talk to sales and we'll scope it with you.",
   },
 ];
 
 export default function PricingPage() {
   return (
     <>
-      <PageHeader
-        eyebrow="Pricing"
-        title="Pay for the leads you actually use"
-        intro="Searching is free. Credits are only spent when you unlock a lead you want to contact — so an afternoon spent exploring the map costs you nothing."
-      />
-
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 24px 0" }}>
-        <div
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}
-          className="pricing-grid"
-        >
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              style={{
-                background: "var(--g-white)",
-                border: plan.badge ? "2px solid var(--g-green)" : "1px solid var(--g-border)",
-                borderRadius: 18,
-                padding: 26,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              {plan.badge && (
-                <div
-                  style={{
-                    alignSelf: "flex-start",
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: 0.5,
-                    textTransform: "uppercase",
-                    color: "var(--g-green-text)",
-                    background: "var(--g-green-mint)",
-                    borderRadius: 999,
-                    padding: "5px 11px",
-                    marginBottom: 12,
-                  }}
-                >
-                  {plan.badge}
-                </div>
-              )}
-              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--g-ink)" }}>{plan.name}</div>
-              <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: -1, color: "var(--g-ink)", marginTop: 10 }}>
-                {plan.price}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--g-green-text)", marginTop: 6 }}>
-                {plan.credits}
-              </div>
-              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--g-ink-soft)", marginTop: 12, flex: 1 }}>
-                {plan.desc}
-              </p>
-              <Link
-                href="/login"
-                style={{
-                  marginTop: 18,
-                  display: "block",
-                  textAlign: "center",
-                  borderRadius: 12,
-                  padding: "13px 18px",
-                  fontSize: 14.5,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  background: plan.badge ? "var(--g-ink)" : "var(--g-white)",
-                  color: plan.badge ? "#fff" : "var(--g-ink)",
-                  border: plan.badge ? "none" : "1px solid var(--g-border)",
-                }}
-              >
-                {plan.id === "free" ? "Start free" : "Choose " + plan.name}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Prose>
-        <h2>Questions</h2>
-        {FAQ.map((f) => (
-          <div key={f.q} style={{ marginBottom: 22 }}>
-            <h3 style={{ fontSize: 16.5, fontWeight: 800, margin: "0 0 6px", color: "var(--g-ink)" }}>{f.q}</h3>
-            <p style={{ margin: 0 }}>{f.a}</p>
-          </div>
-        ))}
-        <p style={{ marginTop: 30 }}>
-          Running Mantis across a whole team, or want to resell it to your own clients? Look at{" "}
-          <Link href="/partner">partner access</Link>, or email{" "}
-          <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.
-        </p>
-      </Prose>
-
-      {/* FAQPage markup so these answers are eligible for rich results — they are real answers to
-          the questions people actually ask before signing up, not keyword filler. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: FAQ.map((f) => ({
-              "@type": "Question",
-              name: f.q,
-              acceptedAnswer: { "@type": "Answer", text: f.a },
+            "@type": "Product",
+            name: COMPANY.brandLong,
+            description: "Local lead intelligence for agencies, freelancers and sales teams.",
+            url: `${COMPANY.site}/pricing`,
+            brand: { "@type": "Brand", name: COMPANY.brandLong },
+            offers: PLANS.map((p) => ({
+              "@type": "Offer",
+              name: p.name,
+              price: String(p.monthlyUsd),
+              priceCurrency: "USD",
+              url: `${COMPANY.site}/pricing`,
+              description: `${p.creditsPerMonth.toLocaleString("en-IN")} lead credits per month.`,
             })),
           }),
         }}
+      />
+
+      <section style={{ position: "relative", padding: "64px 24px 88px", overflow: "hidden" }}>
+        <OrigamiFloor opacity={0.55} height={340} />
+        <div style={{ maxWidth: 1160, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: 34 }}>
+            <EyebrowPill>Simple pricing</EyebrowPill>
+            <h1
+              className="marketing-h1"
+              style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 14px", textWrap: "balance" }}
+            >
+              More leads. <span style={{ color: "var(--g-green)" }}>More clients.</span> No complexity.
+            </h1>
+            <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
+              Searching is free. Credits are only spent when you unlock a lead you want to contact — so an afternoon
+              exploring the map costs you nothing.
+            </p>
+          </div>
+
+          <PricingPlans />
+        </div>
+      </section>
+
+      {/* Who it's for */}
+      <section style={{ background: "var(--g-white)", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+          <SectionHeading title="Built for" accent="every stage of your agency." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+            {AUDIENCES.map((a) => {
+              const Icon = a.icon;
+              return (
+                <div key={a.title} style={{ display: "flex", gap: 14, alignItems: "flex-start", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 22, background: "var(--g-cream)" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "var(--g-green-mint)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon color="var(--g-green-text)" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 5px" }}>{a.title}</h3>
+                    <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", lineHeight: 1.55, margin: 0 }}>{a.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ, with the seated mantis anchored beside it */}
+      <section style={{ position: "relative", padding: "80px 24px", overflow: "hidden" }}>
+        <Image
+          aria-hidden="true"
+          alt=""
+          src="/marketing/mantis-pricing.webp"
+          width={900}
+          height={961}
+          style={{ position: "absolute", right: "2%", bottom: 40, width: "20vw", maxWidth: 240, height: "auto", pointerEvents: "none", zIndex: 0 }}
+          className="pricing-pose"
+        />
+        <div style={{ maxWidth: 860, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <SectionHeading title="Pricing questions," accent="answered." />
+          <FaqAccordion faqs={FAQS} />
+          <p style={{ fontSize: 14, color: "var(--g-gray-500)", textAlign: "center", marginTop: 26 }}>
+            Running Mantis across a whole team, or reselling to your own clients?{" "}
+            <Link href="/partner" style={{ color: "var(--g-green-text)", fontWeight: 700 }}>Look at partner access</Link>.
+          </p>
+        </div>
+      </section>
+
+      <MarketingCta
+        title="Start finding clients"
+        accent="near you."
+        sub="Join agencies already growing their pipeline with Mantis — free to start, no card needed."
+        primary={{ label: "Get Free Access", href: "/login" }}
+        secondary={{ label: "Talk to Sales", href: "/contact" }}
+        pose="/marketing/mantis-pricing.webp"
+        poseWidth={900}
+        poseHeight={961}
       />
     </>
   );

@@ -238,3 +238,18 @@ body {
   .pseo-layout { grid-template-columns: 1fr !important; }
   .pseo-lead-card { grid-template-columns: 1fr !important; }
 }
+
+/* ---- marketing pages: contact / pricing / partner / about ----------------- */
+/* The 860px breakpoint above already collapses .contact-grid and .pricing-grid; these cover the
+   pieces those pages added — the CTA band's pose, the pricing top-up packs, and the two-column
+   field rows inside the contact and partner forms. */
+@media (max-width: 900px) {
+  .marketing-cta-grid { grid-template-columns: 1fr !important; }
+  .marketing-cta-pose { display: none !important; }
+  .pricing-packs { grid-template-columns: 1fr !important; }
+  .pricing-pose { display: none !important; }
+}
+@media (max-width: 560px) {
+  .partner-form-row { grid-template-columns: 1fr !important; }
+  .contact-pose { display: none !important; }
+}
