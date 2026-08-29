@@ -313,34 +313,80 @@ export default function HomePage() {
       // before the frontend hears back. has_website is set directly from the Nearby Search
       // response now (see /api/leads/find) — pins render already resolved (green/amber), no
       // separate enrichment pass, no per-lead API cost.
-      for (const section of sectionsToRun) {
-        setCurrentSearchingSection(section);
-        for (const tile of tiles) {
-          let hasMore = true;
-          while (hasMore) {
-            // A newer handleFind (a pan, or the real-location search finally resolving) has taken
-            // over — stop working toward this now-stale area immediately rather than finishing it.
-            if (searchGenerationRef.current !== myGeneration) return;
+      // Sections are independent of one another, but used to run strictly one after the other, each
+      // request awaiting a full lead refetch before the next one went out. An "All categories"
+      // sweep is 9 sections x 4 tiles plus however many cells each needs, so that was ~70 round
+      // trips end to end in series — and identical whether the area was already cached or not,
+      // since a cache hit still costs the same round trip. A few sections now run at once. The cap
+      // is deliberate: this is one user's map settling, not a batch job.
+      const SECTION_CONCURRENCY = 4;
+      const inFlight = new Set<string>();
+      let stopAll = false;
 
-            const res = await fetch("/api/leads/find", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
-            });
-            const data = (await res.json()) as { found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean };
-            hasMore = data.hasMore ?? false;
-            if (data.apiDown) setShowMaintenance(true);
-            if ((data.found ?? 0) > 0) clearDecorativeDotsAfterMinDuration();
-            if (data.throttled === "session_budget") {
-              // Every remaining request this search would make is going to get throttled the
-              // same way — stop immediately instead of burning through the rest of the tiles/
-              // categories for nothing.
-              setSessionThrottled(true);
-              return;
+      // With sections overlapping, the status pill shows whichever is still running (it keeps
+      // transitioning as they finish) rather than pretending the sweep is at one known step.
+      const showRunningSection = () => {
+        const [first] = inFlight;
+        setCurrentSearchingSection(first ?? null);
+      };
+
+      const runSection = async (section: string) => {
+        inFlight.add(section);
+        showRunningSection();
+        try {
+          for (const tile of tiles) {
+            let hasMore = true;
+            while (hasMore) {
+              // A newer handleFind (a pan, or the real-location search finally resolving) has taken
+              // over — stop working toward this now-stale area immediately rather than finishing it.
+              if (stopAll || searchGenerationRef.current !== myGeneration) return;
+
+              const res = await fetch("/api/leads/find", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
+              });
+              const data = (await res.json()) as {
+                found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean; cached?: boolean;
+              };
+              hasMore = data.hasMore ?? false;
+              if (data.apiDown) setShowMaintenance(true);
+              if (data.throttled === "session_budget") {
+                // Every remaining request this search would make is going to get throttled the
+                // same way — stop every section immediately instead of burning through the rest of
+                // the tiles/categories for nothing.
+                setSessionThrottled(true);
+                stopAll = true;
+                return;
+              }
+              if ((data.found ?? 0) > 0) {
+                clearDecorativeDotsAfterMinDuration();
+                scheduleLeadRefresh();
+              }
             }
-            await refreshLeads();
           }
+        } finally {
+          inFlight.delete(section);
+          showRunningSection();
         }
+      };
+
+      const queue = [...sectionsToRun];
+      await Promise.all(
+        Array.from({ length: Math.min(SECTION_CONCURRENCY, queue.length) }, async () => {
+          while (queue.length && !stopAll) {
+            if (searchGenerationRef.current !== myGeneration) return;
+            const next = queue.shift();
+            if (next) await runSection(next);
+          }
+        })
+      );
+
+      // The coalesced refreshes above can leave the very last batch of results unrendered, so the
+      // run that's still current always ends on one real refresh.
+      if (searchGenerationRef.current === myGeneration) {
+        cancelScheduledLeadRefresh();
+        await refreshLeads();
       }
     } finally {
       // Only the run that's still current should clear the indicator — an older, superseded run
@@ -517,6 +563,30 @@ export default function HomePage() {
     const res = await fetch("/api/leads");
     const data = await res.json();
     setLeads(data.leads ?? []);
+  }
+
+  // /api/leads returns the account's whole lead set (up to 500 rows, joined against unlocks) with
+  // no viewport filter, and the discovery loop used to await it after every single request. One
+  // "All categories" sweep is 9 sections x 4 tiles plus however many cells each needs, so that was
+  // ~70 full refetches per search, each one blocking the next discovery request. Bursts are
+  // coalesced into one refresh per window instead; the loop does a final un-debounced refresh when
+  // it finishes so the last results always land.
+  const REFRESH_COALESCE_MS = 700;
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function scheduleLeadRefresh() {
+    if (refreshTimerRef.current) return;
+    refreshTimerRef.current = setTimeout(() => {
+      refreshTimerRef.current = null;
+      void refreshLeads();
+    }, REFRESH_COALESCE_MS);
+  }
+
+  function cancelScheduledLeadRefresh() {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
   }
 
   useEffect(() => {
