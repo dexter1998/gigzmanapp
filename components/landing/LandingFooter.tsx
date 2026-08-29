@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronRightIcon, ArrowRightIcon, LinkedInIcon, XSocialIcon, YouTubeIcon } from "@/components/icons";
 
 const COLUMNS = [
-  { title: "Product", links: [["Features", "#capabilities"], ["Lead Search", "#capabilities"], ["Enrichment", "#enrichment"], ["Pricing", "/pricing"]] },
+  { title: "Product", links: [["Features", "#capabilities"], ["Lead Search", "#capabilities"], ["Local Lead Market", "/leads"], ["Pricing", "/pricing"]] },
   { title: "Use Cases", links: [["Agencies", "#testimonials"], ["Freelancers", "#testimonials"], ["Consultants", "#testimonials"]] },
   { title: "Resources", links: [["Help Center", "#faq"], ["Guides", "#faq"], ["Email Preferences", "/preferences"]] },
   { title: "Company", links: [["About", "/company"], ["Partner Access", "/partner"], ["Contact", "/contact"]] },

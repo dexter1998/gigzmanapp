@@ -232,3 +232,9 @@ body {
 @media (max-width: 560px) {
   .pricing-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ---- public lead-market pages (app/(pseo)) ------------------------------- */
+@media (max-width: 900px) {
+  .pseo-layout { grid-template-columns: 1fr !important; }
+  .pseo-lead-card { grid-template-columns: 1fr !important; }
+}
