@@ -214,6 +214,11 @@ export default function HomePage() {
   // moment refreshLeads() updates the underlying data (has_website resolving, is_unlocked
   // flipping after "Add to leads"), so the open card always reads through to current `leads`.
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  // Copy of the lead the open card is showing, so a background refresh that momentarily drops it
+  // from `leads` can't unmount the card mid-hover. Mirrored into a ref because the pin-rendering
+  // effect below needs to read it without re-running every time the selection changes.
+  const [selectedLeadSnapshot, setSelectedLeadSnapshot] = useState<Lead | null>(null);
+  const selectedLeadIdRef = useRef<string | null>(null);
   // The hovered/clicked pin's own screen pixel position (from PinOverlay.getScreenPosition()),
   // so the popup card renders directly above THAT pin instead of a fixed spot on screen.
   const [cardPosition, setCardPosition] = useState<{ x: number; y: number } | null>(null);
@@ -626,7 +631,15 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) ?? null) : null;
+  // The open card reads from the live `leads` array so it picks up enrichment as it lands, but it
+  // must not depend on that array still containing the lead. Background discovery replaces `leads`
+  // every time results arrive, and a lead can legitimately fall out of one response (it drifts past
+  // the viewport bounds, or the pin cap below keeps a nearer one instead) — when that happened
+  // mid-hover the card unmounted under the cursor, the pin re-fired mouseenter, and it came
+  // straight back. That was the flicker. The snapshot keeps it rendered through the gap.
+  const selectedLead = selectedLeadId
+    ? (leads.find((l) => l.id === selectedLeadId) ?? selectedLeadSnapshot)
+    : null;
 
   function showLeadCard(lead: Lead, overlay: PinOverlayInstance) {
     if (hideCardTimeoutRef.current) {
@@ -634,12 +647,16 @@ export default function HomePage() {
       hideCardTimeoutRef.current = null;
     }
     setSelectedLeadId(lead.id);
+    setSelectedLeadSnapshot(lead);
+    selectedLeadIdRef.current = lead.id;
     setCardPosition(overlay.getScreenPosition());
   }
 
   function scheduleHideCard() {
     hideCardTimeoutRef.current = setTimeout(() => {
       setSelectedLeadId(null);
+      setSelectedLeadSnapshot(null);
+      selectedLeadIdRef.current = null;
       setCardPosition(null);
     }, 250);
   }
@@ -742,7 +759,10 @@ export default function HomePage() {
     const visibleIds = new Set(visible.map((l) => l.id));
 
     for (const [id, overlay] of markersRef.current) {
-      if (!visibleIds.has(id)) {
+      // The pin whose card is open is never evicted, even if the cap above would now prefer a
+      // nearer one. Destroying the pin under the cursor fires its mouseleave, which hides the card
+      // the user is actively reading — and the replacement pin immediately fires mouseenter again.
+      if (!visibleIds.has(id) && id !== selectedLeadIdRef.current) {
         overlay.setMap(null);
         markersRef.current.delete(id);
       }
@@ -1052,6 +1072,8 @@ export default function HomePage() {
             onClick={() => {
               cancelHideCard();
               setSelectedLeadId(null);
+              setSelectedLeadSnapshot(null);
+              selectedLeadIdRef.current = null;
               setCardPosition(null);
             }}
             style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", cursor: "pointer", display: "flex" }}
