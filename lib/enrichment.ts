@@ -13,7 +13,12 @@ import { SSMClient, SendCommandCommand, GetCommandInvocationCommand } from "@aws
 // by exactly one step and returns immediately — a serverless function can't stay alive for the
 // minute-plus a run takes, so the job's state lives in `lead_enrichment` and SSM's command-status
 // API, never in one request's lifetime.
-const REGION = process.env.AWS_REGION || "ap-south-1";
+// NOT process.env.AWS_REGION. Vercel sets that itself, to the region of the Lambda the function
+// happens to run in, so the "|| ap-south-1" fallback never applied in production and every EC2/SSM
+// call went to the wrong region: "InvalidInstanceID.NotFound: the instance ID does not exist" for
+// an instance that was running the whole time. That is why every enrichment job sat at pending.
+// Same reason SES_REGION and BEDROCK_REGION exist as their own variables in this codebase.
+const REGION = process.env.SCRAPER_REGION || "ap-south-1";
 const INSTANCE_ID = process.env.GOSOM_EC2_INSTANCE_ID;
 const ec2 = new EC2Client({ region: REGION });
 const ssm = new SSMClient({ region: REGION });
@@ -235,15 +240,21 @@ export async function advanceInFlightForUser(userEmail: string, limit = 5) {
 }
 
 async function runTicks(rows: Array<LeadForEnrichment & { lead_id: string }>) {
-  const results: Array<{ leadId: string; status: string }> = [];
+  const results: Array<{ leadId: string; status: string; error?: string }> = [];
   for (const row of rows) {
     try {
       const r = await advance(row.lead_id, row);
       results.push({ leadId: row.lead_id, status: (r as { status: string }).status });
     } catch (err) {
-      // One stuck job must not stop the rest of the queue from advancing this tick.
+      // One stuck job must not stop the rest of the queue from advancing this tick. The reason is
+      // reported back as well as logged: a job that throws every tick looks identical to one that
+      // is simply slow, and without the reason there is nothing to act on.
       console.error("enrichment tick failed for lead", row.lead_id, err);
-      results.push({ leadId: row.lead_id, status: "error" });
+      results.push({
+        leadId: row.lead_id,
+        status: "error",
+        error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      });
     }
   }
   return results;
