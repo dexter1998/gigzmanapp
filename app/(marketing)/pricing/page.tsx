@@ -3,14 +3,14 @@ import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
-import { PLANS, FREE_PLAN } from "@/components/plans-config";
+import { CREDIT_PACKS, FREE_MONTHLY_CREDITS, rupees } from "@/lib/credits/pricing";
 import { PricingPlans } from "@/components/marketing/PricingPlans";
 import { EyebrowPill, FaqAccordion, MarketingCta, OrigamiFloor, SectionHeading } from "@/components/marketing/MarketingPieces";
 import { UserIcon, GlobeIcon, ZapIcon, PinIcon, TableIcon, ShieldIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: `Pricing — ${COMPANY.brandLong} lead credits for agencies & freelancers`,
-  description: `Searching the map is free. Start with ${FREE_PLAN.creditsPerMonth} credits a month, then pick a plan sized to how many local leads you actually unlock — from 2,000 to 30,000 a month. No contracts.`,
+  description: `Searching the map is free. Start with ${FREE_MONTHLY_CREDITS} credits a month, then pick a plan sized to how many local leads you actually unlock — from 2,000 to 30,000 a month. No contracts.`,
   keywords: [
     "Mantis AI pricing",
     "lead generation pricing India",
@@ -57,7 +57,7 @@ const FAQS = [
   },
   {
     q: `Can I use ${COMPANY.brand} for free?`,
-    a: `Yes. The Free plan gives you ${FREE_PLAN.creditsPerMonth} credits every month with no card, and unlimited searching on top. It's enough to work one neighbourhood properly and judge the lead quality before you pay for anything.`,
+    a: `Yes. The Free plan gives you ${FREE_MONTHLY_CREDITS} credits every month with no card, and unlimited searching on top. It's enough to work one neighbourhood properly and judge the lead quality before you pay for anything.`,
   },
   {
     q: "Do unused credits roll over?",
@@ -90,14 +90,24 @@ export default function PricingPage() {
             description: "Local lead intelligence for agencies, freelancers and sales teams.",
             url: `${COMPANY.site}/pricing`,
             brand: { "@type": "Brand", name: COMPANY.brandLong },
-            offers: PLANS.map((p) => ({
-              "@type": "Offer",
-              name: p.name,
-              price: String(p.monthlyUsd),
-              priceCurrency: "USD",
-              url: `${COMPANY.site}/pricing`,
-              description: `${p.creditsPerMonth.toLocaleString("en-IN")} lead credits per month.`,
-            })),
+            offers: [
+              {
+                "@type": "Offer",
+                name: "Free",
+                price: "0",
+                priceCurrency: "INR",
+                url: `${COMPANY.site}/pricing`,
+                description: `${FREE_MONTHLY_CREDITS} lead credits every month.`,
+              },
+              ...CREDIT_PACKS.map((pack) => ({
+                "@type": "Offer",
+                name: pack.label,
+                price: String(rupees(pack.pricePaise)),
+                priceCurrency: "INR",
+                url: `${COMPANY.site}/pricing`,
+                description: `${pack.credits.toLocaleString("en-IN")} lead credits, one-time purchase, never expire.`,
+              })),
+            ],
           }),
         }}
       />

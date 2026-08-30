@@ -1,143 +1,110 @@
 "use client";
 
 import { useState } from "react";
-import { PLANS } from "./plans-config";
+import Link from "next/link";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
-import { XIcon } from "./icons";
+import { XIcon, CheckIcon } from "./icons";
+import { CreditPackCards, CreditPackFootnote } from "./billing/CreditPackCards";
+import { useCashfreeCheckout } from "./billing/useCashfreeCheckout";
 
+/**
+ * Buy credits, from inside the app.
+ *
+ * This used to be a plan picker whose "Choose" button called /api/user/plan — a route that granted
+ * up to 30,000 credits to anyone signed in, because no gateway existed when it was written. Now
+ * that credits are money, that button goes to Cashfree instead, and it shows the same packs at the
+ * same prices as the marketing page because both read CREDIT_PACKS.
+ */
 export function PlansModal({
   open,
   onClose,
-  currentPlan,
-  onPlanChange,
 }: {
   open: boolean;
   onClose: () => void;
-  currentPlan: string;
-  onPlanChange: (plan: string) => void;
+  /** Retained in callers' props but unused — the modal no longer switches plans. */
+  currentPlan?: string;
+  onPlanChange?: (plan: string) => void;
 }) {
   const [partnerOpen, setPartnerOpen] = useState(false);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const { buy, sdkReady, busyPackId, error } = useCashfreeCheckout(
+    // The client can't read the server's secret, so the SDK mode keys off the host instead:
+    // anything that isn't the live domain is treated as test.
+    typeof window !== "undefined" && window.location.hostname === "mantisai.in" ? "production" : "sandbox"
+  );
 
   if (!open) return null;
-
-  async function handleUpgrade(planId: string) {
-    setUpgrading(planId);
-    try {
-      await fetch("/api/user/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId }),
-      });
-      onPlanChange(planId);
-    } finally {
-      setUpgrading(null);
-    }
-  }
 
   return (
     <>
       <div style={overlayStyle} onClick={onClose}>
         <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-          <button type="button" onClick={onClose} style={closeBtnStyle}>
+          <button type="button" onClick={onClose} style={closeBtnStyle} aria-label="Close">
             <XIcon />
           </button>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Plans</h2>
-          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
-            Upgrade any time — no real payment gateway yet, so this just updates your account.
+
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Add credits</h2>
+          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 22px", maxWidth: 460 }}>
+            Credits are spent only when Mantis does real work — adding a lead, or searching ground
+            nobody has covered yet. Searching an area you&apos;ve already scanned is always free.
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {PLANS.map((plan) => {
-              const isCurrent = plan.id === currentPlan;
-              return (
-                <div
-                  key={plan.id}
-                  style={{
-                    border: isCurrent ? "2px solid var(--g-green)" : "1px solid var(--g-border)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: 14,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>{plan.name}</span>
-                      {plan.badge && (
-                        <span style={{ fontSize: 10, fontWeight: 700, background: "var(--g-amber-tint)", color: "#b45309", borderRadius: 999, padding: "2px 8px" }}>
-                          {plan.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>{plan.desc}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2, fontWeight: 600 }}>
-                      {plan.price} · {plan.credits}
-                    </div>
-                  </div>
-                  {isCurrent ? (
-                    <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-green-text)" }}>Current</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleUpgrade(plan.id)}
-                      disabled={upgrading === plan.id}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: "var(--radius-pill)",
-                        border: "none",
-                        background: "var(--g-green)",
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {upgrading === plan.id ? "…" : "Choose"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+          {error && (
+            <p style={{ fontSize: 12.5, color: "var(--g-red-text)", background: "var(--g-red-tint)", padding: "9px 12px", borderRadius: "var(--radius-sm)", marginBottom: 14 }}>
+              {error}
+            </p>
+          )}
 
-            <div
+          <CreditPackCards onBuy={buy} busyPackId={busyPackId} disabled={!sdkReady || busyPackId !== null} showFree={false} />
+          <CreditPackFootnote />
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--g-border)" }}>
+            <Link href="/settings/billing" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "none" }}>
+              See what credits buy →
+            </Link>
+            <Link href="/settings/usage" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink-soft)", textDecoration: "none" }}>
+              Usage history
+            </Link>
+          </div>
+
+          <div
+            style={{
+              border: "1px solid var(--g-green)",
+              background: "var(--g-green-mint)",
+              borderRadius: "var(--radius-sm)",
+              padding: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>Partner with us</div>
+              <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2 }}>
+                Approved agency partners get higher limits, priority support and referral revenue.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPartnerOpen(true)}
               style={{
-                border: "1px solid var(--g-green)",
-                background: "var(--g-green-mint)",
-                borderRadius: "var(--radius-sm)",
-                padding: 14,
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
-                marginTop: 4,
+                gap: 6,
+                padding: "8px 16px",
+                borderRadius: "var(--radius-pill)",
+                border: "none",
+                background: "var(--g-green-dark)",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                flexShrink: 0,
+                fontFamily: "inherit",
               }}
             >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>Partner with us</div>
-                <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2 }}>
-                  Get free Mantis AI portal access. Bring Mantis to your clients as a qualified agency partner.
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPartnerOpen(true)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-pill)",
-                  border: "1px solid var(--g-green)",
-                  background: "var(--g-white)",
-                  color: "var(--g-green-text)",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              >
-                Become a Partner
-              </button>
-            </div>
+              <CheckIcon size={13} color="#fff" /> Apply
+            </button>
           </div>
         </div>
       </div>
@@ -154,20 +121,20 @@ const overlayStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  zIndex: 40,
+  zIndex: 50,
   padding: 20,
+  overflowY: "auto",
 };
 
 const modalStyle: React.CSSProperties = {
   width: "100%",
-  maxWidth: 460,
+  maxWidth: 720,
   background: "var(--g-white)",
   borderRadius: "var(--radius-lg)",
   boxShadow: "var(--shadow-card)",
   padding: 28,
   position: "relative",
-  maxHeight: "85vh",
-  overflowY: "auto",
+  margin: "auto",
 };
 
 const closeBtnStyle: React.CSSProperties = {

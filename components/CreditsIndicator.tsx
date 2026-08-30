@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { PlansModal } from "./PlansModal";
-import { PLANS } from "./plans-config";
 
 type Profile = { plan: string; credits: number; credits_limit: number };
 
@@ -33,8 +32,9 @@ export function CreditsIndicator() {
 
   if (!profile) return null;
 
-  const planMeta = PLANS.find((p) => p.id === profile.plan);
-  const isFree = profile.plan === "free";
+  // No plan tiers to name any more — everyone is on the free allowance and tops up with credit
+  // packs, so the pill shows the balance and the action, not a tier label.
+  const low = profile.credits < 50;
 
   return (
     <>
@@ -53,7 +53,7 @@ export function CreditsIndicator() {
         }}
       >
         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--g-ink)" }}>
-          {profile.credits} / {profile.credits_limit} Credits
+          {profile.credits.toLocaleString("en-IN")} credits
         </span>
         <span
           style={{
@@ -61,11 +61,11 @@ export function CreditsIndicator() {
             fontWeight: 700,
             padding: "4px 10px",
             borderRadius: "var(--radius-pill)",
-            background: isFree ? "var(--g-green)" : "var(--g-green-mint)",
-            color: isFree ? "#fff" : "var(--g-green-text)",
+            background: low ? "var(--g-green)" : "var(--g-green-mint)",
+            color: low ? "#fff" : "var(--g-green-text)",
           }}
         >
-          {isFree ? "Upgrade" : `${planMeta?.name ?? profile.plan} Plan`}
+          Add credits
         </span>
       </button>
 

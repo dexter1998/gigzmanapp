@@ -4,9 +4,10 @@ import { sql } from "@/lib/db";
 import { creditCost } from "@/lib/credits/pricing";
 
 /**
- * "Add to leads" — costs 1 credit, reveals full contact/address detail for this lead in Leads
+ * "Add to leads" — spends credits (priced in lib/credits/pricing.ts) and reveals full contact
+ * and address detail for this lead in Leads
  * (see /api/leads GET, which nulls those fields out server-side until a matching `unlocks` row
- * exists). Credits only ever go down here; they go up via /api/user/plan on an "upgrade".
+ * exists). Credits only ever go down here; they go up when a credit pack is paid for.
  */
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
