@@ -85,7 +85,10 @@ export default function LeadsPage() {
     const rows = leads.filter((l) => selected.has(l.id));
     if (rows.length === 0) return;
 
-    const headers = ["Business", "Category", "Address", "Phone", "Email", "Rating", "Reviews", "Has Website", "Score"];
+    const headers = [
+      "Business", "Category", "Address", "Phone", "Email", "Rating", "Reviews", "Has Website",
+      "Score", "Website", "Description", "Services", "Price Level", "Business Status", "Opening Hours",
+    ];
     const csvEscape = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const lines = [
       headers.join(","),
@@ -100,6 +103,12 @@ export default function LeadsPage() {
           String(l.review_count ?? ""),
           l.has_website ? "Yes" : "No",
           String(l.heat_score ?? ""),
+          l.enrichment_website_url ?? "",
+          l.enrichment_description ?? "",
+          (l.enrichment_services ?? []).join("; "),
+          l.enrichment_price_level ?? "",
+          l.enrichment_business_status ?? "",
+          (l.enrichment_open_hours?.weekdayDescriptions ?? []).join("; "),
         ]
           .map(csvEscape)
           .join(",")

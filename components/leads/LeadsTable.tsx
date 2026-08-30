@@ -20,6 +20,12 @@ export type Lead = {
   /** Null until this lead has ever been queued for enrichment. */
   enrichment_status?: "pending" | "starting_instance" | "scraping" | "done" | "failed" | null;
   enrichment_website_url?: string | null;
+  /** From Google Place Details, fetched the moment a lead is unlocked. */
+  enrichment_description?: string | null;
+  enrichment_services?: string[] | null;
+  enrichment_price_level?: string | null;
+  enrichment_business_status?: string | null;
+  enrichment_open_hours?: { weekdayDescriptions?: string[]; openNow?: boolean } | null;
 };
 
 export function LeadsTable({

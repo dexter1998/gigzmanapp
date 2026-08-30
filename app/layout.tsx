@@ -8,6 +8,7 @@ const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
+  display: "swap",
   weight: ["400", "500", "600", "700", "800"],
 });
 
@@ -17,6 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 const fraunces = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
+  display: "swap",
   weight: ["500", "600"],
   style: ["normal", "italic"],
 });
@@ -26,6 +28,7 @@ const fraunces = Fraunces({
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
+  display: "swap",
   weight: ["500", "600", "700"],
 });
 
@@ -41,8 +44,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         {/* afterInteractive: loads once the page is interactive, matching Next.js's own
             recommendation for analytics scripts that don't need to block rendering. */}
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
-        <Script id="ga-init" strategy="afterInteractive">
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="lazyOnload" />
+        <Script id="ga-init" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

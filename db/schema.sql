@@ -125,6 +125,13 @@ CREATE TABLE IF NOT EXISTS lead_enrichment (
   enriched_at TIMESTAMPTZ
 );
 
+-- Enrichment moved from a scraper on EC2 to Google Place Details, which returns these directly.
+-- Broken out of raw so the CSV export and the detail panel don't each have to reach into JSON.
+ALTER TABLE lead_enrichment ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE lead_enrichment ADD COLUMN IF NOT EXISTS services TEXT[];
+ALTER TABLE lead_enrichment ADD COLUMN IF NOT EXISTS price_level TEXT;
+ALTER TABLE lead_enrichment ADD COLUMN IF NOT EXISTS business_status TEXT;
+
 CREATE TABLE IF NOT EXISTS unlocks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lead_id UUID NOT NULL REFERENCES leads(id),

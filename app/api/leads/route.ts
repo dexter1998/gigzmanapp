@@ -38,7 +38,12 @@ export async function GET(req: NextRequest) {
            -- "More details" control for every saved lead, and one request per visible row just to
            -- learn which of them are queued would be a request storm for information already here.
            e.status AS enrichment_status,
-           e.website_url AS enrichment_website_url
+           e.website_url AS enrichment_website_url,
+           e.description AS enrichment_description,
+           e.services AS enrichment_services,
+           e.price_level AS enrichment_price_level,
+           e.business_status AS enrichment_business_status,
+           e.open_hours AS enrichment_open_hours
     FROM leads l
     LEFT JOIN unlocks u ON u.lead_id = l.id AND u.unlocked_by = ${userEmail}
     LEFT JOIN lead_enrichment e ON e.lead_id = l.id

@@ -9,7 +9,11 @@ import type { Lead } from "./LeadsTable";
 type Enrichment = {
   status: "not_started" | "pending" | "starting_instance" | "scraping" | "done" | "failed";
   website_url?: string | null;
-  open_hours?: unknown;
+  description?: string | null;
+  services?: string[] | null;
+  price_level?: string | null;
+  business_status?: string | null;
+  open_hours?: { weekdayDescriptions?: string[]; openNow?: boolean } | null;
   popular_times?: unknown;
   error?: string | null;
 };
@@ -19,17 +23,17 @@ const IN_PROGRESS: Enrichment["status"][] = ["pending", "starting_instance", "sc
 
 const STATUS_LABEL: Record<Enrichment["status"], string> = {
   not_started: "",
-  pending: "Queued…",
-  starting_instance: "Starting up…",
-  scraping: "Fetching live details…",
+  pending: "Fetching details…",
+  starting_instance: "Fetching details…",
+  scraping: "Fetching details…",
   done: "Enriched",
   failed: "Couldn't fetch extra details",
 };
 
-/** Right-side detail panel for whichever row is active in the Leads table. Unlocked leads
- * trigger the gosom-based enrichment job (real website/hours/popular-times, beyond what the
- * original Places search returned) and poll it to completion; locked leads show an unlock CTA
- * instead — gosom enrichment only runs for a lead the user has already paid to reveal (see
+/** Right-side detail panel for whichever row is active in the Leads table. Unlocking a lead now
+ * fetches its full Place Details in the same round trip — description, opening hours, services and
+ * website — so this fills in immediately rather than polling a queue. Locked leads show an unlock
+ * CTA instead; details are never fetched for a lead the user has not paid to reveal (see
  * app/api/leads/[id]/enrich/route.ts's own assertUnlocked check). */
 export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnlocked: () => void }) {
   const [enrichment, setEnrichment] = useState<Enrichment | null>(null);
@@ -158,14 +162,53 @@ export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnl
 
             {enrichment?.status === "done" && (
               <div>
-                {enrichment.website_url ? (
+                {enrichment.description && (
+                  <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--g-ink)", margin: "0 0 14px" }}>
+                    {enrichment.description}
+                  </p>
+                )}
+
+                {enrichment.website_url && (
                   <Row icon={<GlobeIcon size={13} />} label="Website">
                     <a href={enrichment.website_url} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)" }}>
                       {enrichment.website_url}
                     </a>
                   </Row>
-                ) : (
-                  <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>No additional details found for this business.</p>
+                )}
+
+                {enrichment.services && enrichment.services.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>
+                      Services
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {enrichment.services.map((sv) => (
+                        <span key={sv} style={{ fontSize: 11.5, background: "var(--g-green-mint)", color: "var(--g-green-text)", borderRadius: 999, padding: "4px 10px" }}>
+                          {sv}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {enrichment.open_hours?.weekdayDescriptions && (
+                  <Row icon={<ClockIcon size={13} />} label="Opening hours">
+                    <span style={{ display: "block", lineHeight: 1.7 }}>
+                      {enrichment.open_hours.weekdayDescriptions.map((line) => (
+                        <span key={line} style={{ display: "block" }}>{line}</span>
+                      ))}
+                    </span>
+                  </Row>
+                )}
+
+                {enrichment.business_status && enrichment.business_status !== "OPERATIONAL" && (
+                  <p style={{ fontSize: 12.5, color: "#b45309", marginTop: 4 }}>
+                    Google lists this business as {enrichment.business_status.toLowerCase().replace(/_/g, " ")}.
+                  </p>
+                )}
+
+                {!enrichment.description && !enrichment.website_url && !enrichment.services?.length && !enrichment.open_hours && (
+                  <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>No additional details published for this business.</p>
                 )}
               </div>
             )}
