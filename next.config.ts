@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Container deploys (App Runner) run node server.js from a self-contained folder instead of
+  // needing the full node_modules tree. Vercel ignores this setting, so it is safe to keep on
+  // while both deploy targets exist during the migration.
+  output: "standalone",
   // The OG renderer reads its background art and fonts from disk. public/ is served from the CDN and
   // is not otherwise present in a serverless function, so these have to be traced in explicitly.
   outputFileTracingIncludes: {

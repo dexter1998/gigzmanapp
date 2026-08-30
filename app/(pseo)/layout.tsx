@@ -1,4 +1,16 @@
 import type { ReactNode } from "react";
+
+/**
+ * Every page under this group renders per-request instead of at build time.
+ *
+ * These pages are driven by the pSEO registry in Postgres, and prerendering them made `next
+ * build` require a reachable production database — which is how a database outage blocked all
+ * deploys for a day (the Neon quota suspension), and how the container build failed with
+ * ECONNREFUSED: a build environment has no database at all. A build must never depend on the
+ * database being up. The pages are still fully server-rendered HTML for crawlers; on a 40 MB
+ * database the per-request read is milliseconds, and at current traffic ISR bought nothing.
+ */
+export const dynamic = "force-dynamic";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { COMPANY } from "@/lib/company";
