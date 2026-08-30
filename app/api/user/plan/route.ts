@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 
 const PLAN_CREDITS: Record<string, number> = {
-  free: 20,
+  free: 100,
   starter: 2000,
   pro: 12000,
   business: 30000,

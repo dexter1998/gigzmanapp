@@ -153,8 +153,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   custom_role TEXT,                        -- set when role = 'other'
   business_type TEXT,                      -- agency | freelancer
   plan TEXT NOT NULL DEFAULT 'free',       -- free | starter | pro | business
-  credits INTEGER NOT NULL DEFAULT 20,
-  credits_limit INTEGER NOT NULL DEFAULT 20,
+  credits INTEGER NOT NULL DEFAULT 100,
+  credits_limit INTEGER NOT NULL DEFAULT 100,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

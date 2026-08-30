@@ -33,7 +33,7 @@ export const CREDIT_COST = {
   /** Contact reveal. Zero COGS — the phone number already arrived with discovery — so this is
    * where the margin actually lives. Keyed `lead_unlock` to match the ledger reason the map's
    * "Add to leads" flow has been writing since before this rate card existed. */
-  lead_unlock: 10,
+  lead_unlock: 5,
   website_check: 4,
   deep_enrich: 10,
   verified_email: 8,

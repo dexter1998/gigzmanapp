@@ -19,8 +19,27 @@ type CashfreeWebhook = {
   data?: {
     order?: { order_id?: string; order_amount?: number };
     payment?: { cf_payment_id?: string | number; payment_status?: string; payment_amount?: number };
+    order_id?: string;
   };
+  order_id?: string;
 };
+
+/**
+ * Cashfree's webhook payload shape is versioned (the endpoint is registered against a specific
+ * version in their dashboard), and the fields below sit in different places across versions. These
+ * readers check each known location rather than assuming one, so upgrading the endpoint's version
+ * doesn't silently stop matching orders — the failure mode would be a paid customer receiving no
+ * credits, with a 200 in the logs.
+ */
+function readOrderId(p: CashfreeWebhook): string | undefined {
+  return p.data?.order?.order_id ?? p.data?.order_id ?? p.order_id;
+}
+
+/** Rupees, as Cashfree reports them. Returns 0 when absent so the caller can skip the check
+ * rather than treat "unknown" as "mismatched". */
+function readPaidAmount(p: CashfreeWebhook): number {
+  return p.data?.payment?.payment_amount ?? p.data?.order?.order_amount ?? 0;
+}
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
@@ -47,8 +66,13 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = JSON.parse(rawBody) as CashfreeWebhook;
-  const orderId = payload.data?.order?.order_id;
-  if (!orderId) return NextResponse.json({ ok: true, ignored: "no_order_id" });
+  const orderId = readOrderId(payload);
+  if (!orderId) {
+    // Cashfree's dashboard "Test" button sends a sample payload with no real order. Acknowledged
+    // as 200 so the endpoint verifies, but logged so a genuine parsing regression is visible.
+    console.warn("Cashfree webhook had no order id", payload.type ?? "(no type)");
+    return NextResponse.json({ ok: true, ignored: "no_order_id" });
+  }
 
   const [payment] = await sql`SELECT * FROM payments WHERE order_id = ${orderId}`;
   if (!payment) {
@@ -75,7 +99,7 @@ export async function POST(req: NextRequest) {
   // Guard against a mismatch between what was paid and what the order was for. Cashfree reports
   // rupees; our row holds paise. If they disagree, credit nothing and flag it — granting on a
   // wrong amount is far worse than a support ticket.
-  const paidPaise = Math.round((payload.data?.payment?.payment_amount ?? payload.data?.order?.order_amount ?? 0) * 100);
+  const paidPaise = Math.round(readPaidAmount(payload) * 100);
   if (paidPaise > 0 && paidPaise !== payment.amount_paise) {
     console.error("Cashfree amount mismatch", { orderId, expected: payment.amount_paise, paid: paidPaise });
     await sql`
