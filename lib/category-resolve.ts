@@ -47,7 +47,6 @@ const ALIASES: Record<string, string> = {
   human_resource_consulting: "consultant",
   educational_consultant: "consultant",
   immigration_consultant: "consultant",
-  chartered_accountant: "accounting",
   certified_public_accountant: "accounting",
   tax_consultant: "accounting",
   legal_services: "lawyer",
