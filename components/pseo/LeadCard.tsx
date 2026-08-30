@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeatGauge } from "@/components/HeatGauge";
 import { StarIcon, PinIcon, ClockIcon, GlobeIcon, ZapIcon, LockIcon } from "@/components/icons";
+import { CategoryIcon } from "@/components/pseo/CategoryIcon";
 import type { ScoredLead } from "@/lib/pseo/stats";
 
 /**
@@ -76,7 +77,7 @@ export function LeadCard({
         {/* Icon + data row: category, area, and how recently we checked the no-website claim. */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, flexWrap: "wrap", fontSize: 12.5, color: "var(--g-ink-soft)" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span aria-hidden="true" style={{ fontSize: 13 }}>{lead.categoryIcon ?? "🏢"}</span>
+            <CategoryIcon category={lead.category} size={13} />
             {hideCategory ? null : lead.categoryLabel}
           </span>
           {areaName && (

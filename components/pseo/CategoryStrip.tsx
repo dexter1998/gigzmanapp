@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { categoryIcon } from "@/lib/pseo/category-icons";
+import { CategoryIcon } from "@/components/pseo/CategoryIcon";
 
 /**
  * A horizontal rail of the categories that actually exist in this slice, dropped in between the
@@ -40,7 +40,7 @@ export function CategoryStrip({
               whiteSpace: "nowrap",
             }}
           >
-            <span aria-hidden="true" style={{ fontSize: 14 }}>{categoryIcon(c.category)}</span>
+            <CategoryIcon category={c.category} size={14} />
             {c.name}
             <span style={{ color: "var(--g-gray-500)", fontSize: 12 }}>{c.count}</span>
           </Link>

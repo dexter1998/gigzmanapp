@@ -1,7 +1,6 @@
 import { pseoSql } from "@/lib/pseo/db";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
-import { categoryIcon } from "@/lib/pseo/category-icons";
 
 /**
  * Everything a public lead page states about its slice of the market.
@@ -22,7 +21,6 @@ export type ScoredLead = {
   business_name: string;
   category: string | null;
   categoryLabel: string;
-  categoryIcon: string;
   area_slug: string | null;
   rating: number | null;
   review_count: number | null;
@@ -154,7 +152,6 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
         section: r.category ? (TYPE_TO_SECTION[r.category] ?? null) : null,
         address: r.address,
       }),
-      categoryIcon: categoryIcon(r.category),
       intent: intentOf(r.rating, r.review_count),
       verifiedDaysAgo: r.website_checked_at
         ? Math.floor((Date.now() - r.website_checked_at.getTime()) / 86_400_000)

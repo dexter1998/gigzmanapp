@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { categoryIcon } from "@/lib/pseo/category-icons";
-import { CheckIcon, ZapIcon, PlusIcon, PinIcon, ChevronRightIcon } from "@/components/icons";
+import { CategoryIcon } from "@/components/pseo/CategoryIcon";
+import { CheckIcon, ZapIcon, PlusIcon, PinIcon, ChevronRightIcon, RefreshIcon } from "@/components/icons";
 import type { ScoredLead } from "@/lib/pseo/stats";
 
 /**
@@ -26,11 +26,7 @@ export function UpdatedPill({ at }: { at: Date | null }) {
     >
       <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--g-green)", flexShrink: 0 }} />
       {at ? `Updated ${longDate(at)}` : "Updated in the last 24 hours"}
-      {/* No refresh glyph exists in the icon set and one icon does not justify a new export. */}
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--g-gray-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-        <path d="M21 3v6h-6" />
-      </svg>
+<RefreshIcon size={12} />
     </span>
   );
 }
@@ -151,9 +147,9 @@ export function CategoryTiles({
           >
             <span
               aria-hidden="true"
-              style={{ width: 34, height: 34, borderRadius: 999, background: "var(--g-green-mint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}
+              style={{ width: 34, height: 34, borderRadius: 999, background: "var(--g-green-mint)", display: "flex", alignItems: "center", justifyContent: "center" }}
             >
-              {categoryIcon(c.slug)}
+              <CategoryIcon category={c.slug} size={16} color="var(--g-green-text)" />
             </span>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)", lineHeight: 1.25 }}>{c.name}</span>
             <span style={{ fontSize: 11, color: "var(--g-gray-500)" }}>{c.count.toLocaleString("en-IN")} leads</span>
