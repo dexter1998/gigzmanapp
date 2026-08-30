@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { OrigamiDecoration } from "./OrigamiDecoration";
-import { CreditPackCards, CreditPackFootnote } from "@/components/billing/CreditPackCards";
+import { CreditPackCards, CreditPackFootnote, EnterpriseBand } from "@/components/billing/CreditPackCards";
 import { CREDIT_COST } from "@/lib/credits/pricing";
 
 /**
@@ -24,6 +24,7 @@ export function LandingPricing() {
         </p>
 
         <CreditPackCards />
+        <EnterpriseBand />
         <CreditPackFootnote />
 
         {/* The two prices that decide whether the packs read as expensive. Stated here rather than

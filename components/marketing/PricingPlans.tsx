@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditPackCards, CreditPackFootnote } from "@/components/billing/CreditPackCards";
+import { CreditPackCards, CreditPackFootnote, EnterpriseBand } from "@/components/billing/CreditPackCards";
 import { CREDIT_COST, FREE_MONTHLY_CREDITS } from "@/lib/credits/pricing";
 import { CheckIcon } from "@/components/icons";
 
@@ -29,6 +29,7 @@ export function PricingPlans() {
   return (
     <>
       <CreditPackCards />
+      <EnterpriseBand />
       <CreditPackFootnote />
 
       <h2 style={{ fontSize: "clamp(22px, 3vw, 30px)", fontWeight: 800, color: "var(--g-ink)", textAlign: "center", margin: "72px 0 10px", letterSpacing: "-0.02em" }}>

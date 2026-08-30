@@ -71,14 +71,54 @@ export function CreditPackCards({
         />
       ))}
 
-      <Card
-        title="Enterprise"
-        price="Talk to us"
-        priceNote="volume pricing"
-        headline="Custom credits"
-        features={["Volume discounts", "Invoicing & PO", "API access", "Dedicated support"]}
-        cta={{ label: "Contact us", href: "/contact" }}
-      />
+    </div>
+  );
+}
+
+/** Quoted rather than priced, so it sits below the grid instead of pretending to be a fifth
+ * comparable card. */
+export function EnterpriseBand() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 20,
+        marginTop: 18,
+        padding: "22px 26px",
+        background: "var(--g-white)",
+        border: "1px solid var(--g-border)",
+        borderRadius: "var(--radius-lg)",
+        textAlign: "left",
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 6 }}>Enterprise — go custom</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 22px" }}>
+          {["Volume discounts", "Invoicing & PO", "API access", "Dedicated support"].map((f) => (
+            <span key={f} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--g-ink-soft)" }}>
+              <CheckIcon size={13} color="var(--g-green)" /> {f}
+            </span>
+          ))}
+        </div>
+      </div>
+      <Link
+        href="/contact"
+        style={{
+          padding: "12px 26px",
+          borderRadius: "var(--radius-sm)",
+          background: "var(--g-ink)",
+          color: "#fff",
+          fontSize: 14,
+          fontWeight: 700,
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Contact us
+      </Link>
     </div>
   );
 }
