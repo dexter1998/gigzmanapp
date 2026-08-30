@@ -245,7 +245,6 @@ function AssistantTurn({
   const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
   const intent = message.intent;
-  const isSearch = intent?.action === "search_leads";
   const hasLeads = intent?.leads && intent.leads.length > 0;
 
   return (
@@ -265,9 +264,10 @@ function AssistantTurn({
           <div style={{ fontSize: 14.5, color: "var(--g-ink)", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{message.content}</div>
 
           {hasLeads && <ChatLeadsTable leads={intent!.leads!} />}
-          {isSearch && !hasLeads && (
-            <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--g-gray-500)" }}>No matching businesses found — try a different area or category.</div>
-          )}
+          {/* No generic "nothing found" line here. The server already writes a specific reply into
+              message.content — whether we have not mapped the area at all, or have mapped it and
+              this trade is not there — and printing a vague duplicate underneath it contradicted
+              the accurate one directly above. */}
 
           {intent?.nextActions && intent.nextActions.length > 0 && (
             <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-white)", padding: 14 }}>

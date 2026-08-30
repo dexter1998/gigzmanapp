@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HeatGauge } from "@/components/HeatGauge";
-import { CheckIcon } from "@/components/icons";
+import { CheckIcon, StarIcon } from "@/components/icons";
 
 export type ChatLead = {
   id: string;
@@ -11,6 +11,13 @@ export type ChatLead = {
   has_website: boolean | null;
   heat_score: number | null;
   is_unlocked?: boolean;
+  /** Shown whether or not the row is unlocked. None of it identifies the business — it is exactly
+   *  what a user needs to judge which masked row is worth a credit, and withholding it made the
+   *  table impossible to act on. */
+  rating?: number | null;
+  review_count?: number | null;
+  area?: string | null;
+  verified_at?: string | null;
 };
 
 /** Real table (not a compact list) for chat search results — selectable rows (plus a header
@@ -69,7 +76,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
   return (
     <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
           <thead>
             <tr style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
@@ -79,6 +86,8 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
               </th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Business</th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Category</th>
+              <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Area</th>
+              <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Rating</th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Website</th>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)" }}>Score</th>
             </tr>
@@ -95,8 +104,27 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
                       <input type="checkbox" checked={selected.has(lead.id)} onChange={() => toggle(lead.id)} style={{ cursor: "pointer" }} />
                     )}
                   </td>
-                  <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</td>
+                  <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>
+                    {lead.business_name}
+                    {lead.verified_at && (
+                      <span style={{ display: "block", fontSize: 10.5, fontWeight: 400, color: "var(--g-gray-500)", marginTop: 2 }}>
+                        Checked {new Date(lead.verified_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ padding: "8px 10px", fontSize: 12, color: "var(--g-gray-500)" }}>{lead.category ?? "Business"}</td>
+                  <td style={{ padding: "8px 10px", fontSize: 12, color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>{lead.area ?? "—"}</td>
+                  <td style={{ padding: "8px 10px", fontSize: 12, color: "var(--g-ink-soft)", whiteSpace: "nowrap" }}>
+                    {lead.rating != null ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <StarIcon size={11} />
+                        {lead.rating.toFixed(1)}
+                        <span style={{ color: "var(--g-gray-500)" }}>({lead.review_count ?? 0})</span>
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td style={{ padding: "8px 10px" }}>
                     <span
                       style={{

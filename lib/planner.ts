@@ -10,8 +10,15 @@ export class BedrockUnavailableError extends Error {}
 export type ChatIntent = {
   action: "search_leads" | "answer_from_existing" | "needs_clarification";
   category: string | null;
+  /** Whatever the user actually called the business type, verbatim — "CA", "dentist", "parlour".
+   *  Resolved to a real place type server-side; the section enum above can't express any of these. */
+  categoryText: string | null;
   areaText: string | null;
   noWebsiteOnly: boolean;
+  /** Thresholds the user asked for. Before these existed there was nowhere to put "100+ reviews",
+   *  so the constraint was silently discarded and the same question got asked again. */
+  minReviews: number | null;
+  minRating: number | null;
   missingField: "category" | "location" | "count" | null;
   reply: string;
   nextActions: string[];
@@ -41,7 +48,27 @@ const INTENT_TOOL = {
           category: {
             type: ["string", "null"],
             enum: [...SECTION_NAMES, null],
-            description: "The business category section to search, or null if not applicable/unknown.",
+            description:
+              "The broad section, when the user asked for something broad. Null is fine and normal — " +
+              "prefer categoryText whenever the user named a specific trade.",
+          },
+          categoryText: {
+            type: ["string", "null"],
+            description:
+              "The business type exactly as the user described it, in their own words — 'CA', 'chartered accountant', " +
+              "'dentist', 'beauty parlour', 'gym'. Do NOT force it into the section list and do NOT translate it. " +
+              "This is resolved to a real place type outside the model, so a specific trade belongs here, not in category. " +
+              "Null only if the user named no business type at all.",
+          },
+          minReviews: {
+            type: ["number", "null"],
+            description:
+              "Minimum Google review COUNT the user asked for (e.g. '100+ reviews' -> 100). Review counts are unbounded " +
+              "integers. If the user says 'rating 100+' they mean reviews, not rating — ratings only run 0-5.",
+          },
+          minRating: {
+            type: ["number", "null"],
+            description: "Minimum Google star rating, 0-5 only (e.g. '4 star se upar' -> 4). Null if not asked for.",
           },
           areaText: {
             type: ["string", "null"],
@@ -75,17 +102,24 @@ const INTENT_TOOL = {
               "(e.g. 'Search a nearby area too', 'Only show ones with no website'). Empty array if nothing useful to suggest.",
           },
         },
-        required: ["action", "category", "areaText", "noWebsiteOnly", "missingField", "reply", "nextActions"],
+        required: [
+          "action", "category", "categoryText", "areaText", "noWebsiteOnly",
+          "minReviews", "minRating", "missingField", "reply", "nextActions",
+        ],
       },
     },
   },
 };
 
-const SYSTEM_PROMPT = `You are Mantis, a lead-finding assistant for a web development agency. You help the user find local businesses that are good prospects for website/digital services — mainly businesses with no website or a weak one.
+const SYSTEM_PROMPT = `You are Mantis, a lead-finding assistant for a web development agency. You help the user find local businesses that have no website — that is the signal the product actually measures. Do not offer to find "weak", "outdated" or "slow" websites; that data does not exist.
 
 You do not run searches yourself — you only classify the user's message and extract structured parameters via the ${TOOL_NAME} tool. Always call that tool, never reply in plain text.
 
-Only ever select a category from the fixed list you're given (via the tool's enum) — never invent one. If the user's message doesn't map cleanly to a real category or doesn't give you a location, set action to "needs_clarification" and missingField to what's missing rather than guessing.`;
+Carry details forward. Anything the user has already told you in this conversation — the trade, the place, a review or rating threshold — stays true until they change it. Never ask again for something they have already said, in this message or an earlier one.
+
+Put a specific trade in categoryText using the user's own words ("CA", "dentist", "parlour"); it is resolved to a real category outside the model. Use the category enum only for genuinely broad asks. Set missingField only when something is genuinely absent from the whole conversation.
+
+If the user gives a threshold that cannot be a rating (ratings are 0-5), read it as a review count and put it in minReviews. Say so in your reply rather than asking them to repeat it.`;
 
 export async function runChatIntent(input: {
   message: string;
@@ -127,6 +161,17 @@ export async function runChatIntent(input: {
   const missingField: ChatIntent["missingField"] =
     raw.missingField === "category" || raw.missingField === "location" || raw.missingField === "count" ? raw.missingField : null;
 
+  // "rating 100+" is not a rating. Rather than bouncing it back as a clarification — which is what
+  // the old schema did, forever — read an out-of-range rating as the review count it must have been.
+  let minRating = typeof raw.minRating === "number" && Number.isFinite(raw.minRating) ? raw.minRating : null;
+  let minReviews = typeof raw.minReviews === "number" && Number.isFinite(raw.minReviews) ? raw.minReviews : null;
+  if (minRating !== null && minRating > 5) {
+    if (minReviews === null) minReviews = Math.round(minRating);
+    minRating = null;
+  }
+  if (minRating !== null) minRating = Math.max(0, Math.min(5, minRating));
+  if (minReviews !== null) minReviews = Math.max(0, Math.round(minReviews));
+
   const nextActions = Array.isArray(raw.nextActions)
     ? raw.nextActions.filter((a): a is string => typeof a === "string" && a.trim().length > 0).slice(0, 3)
     : [];
@@ -134,8 +179,11 @@ export async function runChatIntent(input: {
   return {
     action,
     category,
+    categoryText: typeof raw.categoryText === "string" && raw.categoryText.trim() ? raw.categoryText.trim() : null,
     areaText: typeof raw.areaText === "string" && raw.areaText.trim() ? raw.areaText.trim() : null,
     noWebsiteOnly: raw.noWebsiteOnly === true,
+    minReviews,
+    minRating,
     missingField,
     reply: typeof raw.reply === "string" && raw.reply.trim() ? raw.reply.trim() : "Let me look into that.",
     nextActions,
