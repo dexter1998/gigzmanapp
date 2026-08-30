@@ -34,7 +34,7 @@ export function LandingPipeline() {
           <span style={pillOutline}>High Intent <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
           <span style={pillOutline}>Website Status <ChevronDownIcon size={13} color="var(--g-gray-500)" /></span>
           <span style={{ ...pillOutline, marginLeft: "auto" }}><DownloadIcon size={14} /> Export CSV</span>
-          <span style={{ ...pill, background: "var(--g-green-dark)", color: "#fff", borderColor: "var(--g-green-dark)" }}>+ Add to Pipeline</span>
+          <span style={{ ...pill, background: "var(--g-green-darker)", color: "#fff", borderColor: "var(--g-green-dark)" }}>+ Add to Pipeline</span>
         </div>
 
         <div style={{ overflowX: "auto" }}>

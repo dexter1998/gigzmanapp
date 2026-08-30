@@ -50,7 +50,7 @@ export function LandingCta({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, flexWrap: "wrap" }}>
           <Link
             href={primary.href}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "15px 30px", borderRadius: "var(--radius-sm)", background: "var(--g-green-dark)", color: "#fff", fontSize: 16, fontWeight: 700, textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "15px 30px", borderRadius: "var(--radius-sm)", background: "var(--g-green-darker)", color: "#fff", fontSize: 16, fontWeight: 700, textDecoration: "none" }}
           >
             {primary.label}
           </Link>

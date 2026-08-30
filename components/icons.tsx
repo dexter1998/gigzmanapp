@@ -17,20 +17,25 @@ import {
  * LinkedIn, X, YouTube, Instagram, Facebook or WhatsApp to import.
  */
 
+/** Lucide's own default is 2 against a 24px viewBox. Scaling it with the icon (rather than pinning
+ *  it with absoluteStrokeWidth) is what keeps a 13px icon looking like a line and not a blob; 1.75
+ *  takes a little more weight out again at the small sizes this set is mostly used at. */
+const STROKE = 1.75;
+
 type IconProps = { color?: string; size?: number };
 type FillableProps = IconProps & { filled?: boolean };
 
 /** Wraps a lucide icon in our prop shape, preserving the default size each icon had before. */
 function icon(Base: LucideIcon, defaultSize: number, defaultColor = "var(--g-ink)") {
   return function Icon({ color = defaultColor, size = defaultSize }: IconProps = {}) {
-    return <Base size={size} color={color} strokeWidth={2} absoluteStrokeWidth />;
+    return <Base size={size} color={color} strokeWidth={STROKE} />;
   };
 }
 
 /** Same, for the icons that render solid when active. */
 function fillableIcon(Base: LucideIcon, defaultSize: number, defaultColor: string, defaultFilled = false) {
   return function Icon({ color = defaultColor, size = defaultSize, filled = defaultFilled }: FillableProps = {}) {
-    return <Base size={size} color={color} strokeWidth={2} absoluteStrokeWidth fill={filled ? color : "none"} />;
+    return <Base size={size} color={color} strokeWidth={STROKE} fill={filled ? color : "none"} />;
   };
 }
 

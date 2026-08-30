@@ -24,7 +24,7 @@ export function Pagination({ basePath, page, pageCount }: { basePath: string; pa
         n === "gap" ? (
           <span key={`gap-${i}`} style={{ color: "var(--g-gray-500)", padding: "0 4px" }}>…</span>
         ) : n === page ? (
-          <span key={n} style={{ ...pill, background: "var(--g-green)", color: "#fff", border: "1px solid var(--g-green)" }} aria-current="page">
+          <span key={n} style={{ ...pill, background: "var(--g-green-darker)", color: "#fff", border: "1px solid var(--g-green)" }} aria-current="page">
             {n}
           </span>
         ) : (

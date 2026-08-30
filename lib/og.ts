@@ -27,10 +27,13 @@ export function ogImageUrl(opts: {
   eyebrow: string;
   t1: string;
   t2?: string;
+  /** The action the card is asking for. Sits under the headline as a pill. */
+  cta?: string;
   url?: string;
 }): string {
   const p = new URLSearchParams({ v: opts.v, eyebrow: opts.eyebrow, t1: opts.t1 });
   if (opts.t2) p.set("t2", opts.t2);
+  if (opts.cta) p.set("cta", opts.cta);
   if (opts.url) p.set("url", opts.url);
   return `${COMPANY.site}/api/og?${p.toString()}`;
 }

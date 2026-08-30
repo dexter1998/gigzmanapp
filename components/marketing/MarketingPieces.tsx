@@ -210,7 +210,7 @@ export function MarketingCta({
                 gap: 7,
                 padding: "14px 26px",
                 borderRadius: "var(--radius-sm)",
-                background: "var(--g-green-dark)",
+                background: "var(--g-green-darker)",
                 color: "#fff",
                 fontSize: 14.5,
                 fontWeight: 700,

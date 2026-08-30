@@ -50,6 +50,7 @@ export async function GET(req: Request) {
   const eyebrow = text(q.get("eyebrow"), 34) || "MANTIS AI";
   const line1 = text(q.get("t1"), 46) || "Find local clients.";
   const line2 = text(q.get("t2"), 46);
+  const cta = text(q.get("cta"), 36);
   const urlLabel = text(q.get("url"), 48) || "mantisai.in";
 
   const bgFile = OG_BACKGROUNDS[variant as keyof typeof OG_BACKGROUNDS] ?? OG_BACKGROUNDS.hero;
@@ -95,6 +96,25 @@ export async function GET(req: Request) {
               <div style={{ display: "flex", color: INK }}>{line1}</div>
               {line2 && <div style={{ display: "flex", color: GREEN }}>{line2}</div>}
             </div>
+
+            {cta && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  alignSelf: "flex-start",
+                  marginTop: 30,
+                  background: INK,
+                  color: "#fff",
+                  fontSize: 21,
+                  fontWeight: 700,
+                  padding: "15px 30px",
+                  borderRadius: 999,
+                }}
+              >
+                {cta}
+              </div>
+            )}
 
           </div>
 

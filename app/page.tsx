@@ -27,6 +27,7 @@ export const metadata: Metadata = {
       eyebrow: "Mantis AI",
       t1: "Find local clients.",
       t2: "Reach the right people.",
+      cta: "Get free access →",
       url: "mantisai.in",
     }),
     title: "mantis — AI-powered local lead intelligence",

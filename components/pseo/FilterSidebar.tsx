@@ -116,7 +116,7 @@ export function FilterSidebar({
           <FilterIcon size={14} color="var(--g-ink)" />
           Filters
           {active > 0 && (
-            <span style={{ background: "var(--g-green)", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 800, padding: "1px 7px" }}>
+            <span style={{ background: "var(--g-green-darker)", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 800, padding: "1px 7px" }}>
               {active}
             </span>
           )}

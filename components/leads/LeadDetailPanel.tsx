@@ -207,7 +207,7 @@ const unlockBtn: React.CSSProperties = {
   padding: "9px 18px",
   borderRadius: "var(--radius-sm)",
   border: "none",
-  background: "var(--g-green-dark)",
+  background: "var(--g-green-darker)",
   color: "#fff",
   fontSize: 12.5,
   fontWeight: 700,

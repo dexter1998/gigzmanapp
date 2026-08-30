@@ -70,5 +70,5 @@ export function CategoryIcon({
   color?: string;
 }) {
   const Icon = categoryIconFor(category);
-  return <Icon size={size} color={color} strokeWidth={2} absoluteStrokeWidth aria-hidden="true" />;
+  return <Icon size={size} color={color} strokeWidth={1.75} aria-hidden="true" />;
 }

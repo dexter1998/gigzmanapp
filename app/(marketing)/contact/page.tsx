@@ -23,6 +23,7 @@ export const metadata: Metadata = {
       eyebrow: "Contact Mantis",
       t1: "Let's help you",
       t2: "grow.",
+      cta: "Talk to us →",
       url: "mantisai.in/contact",
     }),
     title: `Contact ${COMPANY.brandLong}`,

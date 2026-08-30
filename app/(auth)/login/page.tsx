@@ -290,7 +290,7 @@ const primaryBtn: React.CSSProperties = {
   padding: "13px 0",
   borderRadius: "var(--radius-sm)",
   border: "none",
-  background: "var(--g-green-dark)",
+  background: "var(--g-green-darker)",
   color: "#fff",
   fontSize: 14,
   fontWeight: 700,

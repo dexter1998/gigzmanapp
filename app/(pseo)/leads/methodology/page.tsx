@@ -14,6 +14,7 @@ export const metadata: Metadata = {
       eyebrow: "How Mantis works",
       t1: "Live web search.",
       t2: "Verified opportunity signals.",
+      cta: "See the method →",
       url: "mantisai.in/leads/methodology",
     }),
   },

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       eyebrow: "Local lead market",
       t1: "High-intent local leads,",
       t2: "ready to pitch.",
+      cta: "Browse the free list →",
       url: "mantisai.in/leads",
     }),
   },
