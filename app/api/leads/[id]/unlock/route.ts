@@ -24,14 +24,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     `;
   }
   const credits = profile?.credits ?? 0;
+  // One lookup drives both the balance change and the ledger row. They used to disagree: the
+  // UPDATE subtracted a hardcoded 1 while the ledger recorded creditCost(), so the moment that
+  // price stopped being 1 the audit trail would have stopped matching the balance it audits.
+  const cost = creditCost("lead_unlock");
 
   const [alreadyUnlocked] = await sql`
     SELECT id FROM unlocks WHERE lead_id = ${id} AND unlocked_by = ${userEmail}
   `;
   if (alreadyUnlocked) return NextResponse.json({ unlocked: true, alreadyUnlocked: true, credits });
 
-  if (credits <= 0) {
-    return NextResponse.json({ error: "insufficient_credits", credits }, { status: 402 });
+  if (credits < cost) {
+    return NextResponse.json({ error: "insufficient_credits", credits, required: cost }, { status: 402 });
   }
 
   const [inserted] = await sql`
@@ -44,15 +48,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!inserted) return NextResponse.json({ unlocked: true, alreadyUnlocked: true, credits });
 
   const [updated] = await sql`
-    UPDATE user_profiles SET credits = credits - 1, updated_at = now()
+    UPDATE user_profiles SET credits = credits - ${cost}, updated_at = now()
     WHERE email = ${userEmail}
     RETURNING credits
   `;
 
-  // Additive audit trail alongside the unlocks row above — doesn't change the response or
-  // any existing behavior. ON CONFLICT DO NOTHING backstops the same double-charge case the
-  // unlocks insert above already guards against.
-  const cost = creditCost("lead_unlock");
+  // Audit trail alongside the unlocks row above. ON CONFLICT DO NOTHING backstops the same
+  // double-charge case the unlocks insert already guards against.
   await sql`
     INSERT INTO credit_ledger (user_email, lead_id, reason, amount)
     VALUES (${userEmail}, ${id}, 'lead_unlock', ${-cost})

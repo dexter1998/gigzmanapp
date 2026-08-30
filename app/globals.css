@@ -274,3 +274,28 @@ body {
   .partner-form-row { grid-template-columns: 1fr !important; }
   .contact-pose { display: none !important; }
 }
+
+/* ---- settings + printable invoice ---------------------------------------- */
+@media (max-width: 860px) {
+  .settings-shell { flex-direction: column !important; }
+  .settings-rail {
+    width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--g-border) !important;
+  }
+}
+
+/* What prints is the invoice document, not a screenshot of the app around it. */
+@media print {
+  .no-print,
+  aside { display: none !important; }
+  body { background: #fff !important; }
+  .invoice-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  @page { margin: 18mm; }
+}
