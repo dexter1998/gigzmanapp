@@ -11,12 +11,19 @@ import crypto from "node:crypto";
 
 const API_VERSION = "2023-08-01";
 
-/** `cfsk_ma_prod_` keys only work against the live host and `cfsk_ma_test_` only against sandbox —
- * a mismatch fails as an auth error, which reads like a bad key rather than a wrong environment,
- * so the env is derived from the key itself rather than trusted from a separate variable. */
+/**
+ * Which Cashfree environment a key belongs to, read off the key itself rather than a separate
+ * flag. A key only works against its own host, and the mismatch surfaces as an auth error — which
+ * reads like a bad credential rather than a wrong environment, and would be chased in the wrong
+ * place. Deriving it here makes the two impossible to get out of step.
+ *
+ * Live keys are prefixed `cfsk_ma_prod_`; sandbox keys observed from the dashboard's CSV export
+ * are prefixed `TEST`. Anything unrecognised is treated as sandbox on purpose — the safe default
+ * is the one that cannot move real money.
+ */
 function resolveEnv(): { baseUrl: string; isProd: boolean } {
   const secret = process.env.CASHFREE_SECRET_KEY ?? "";
-  const isProd = secret.includes("_prod_");
+  const isProd = secret.includes("_prod_") && !secret.startsWith("TEST");
   return { baseUrl: isProd ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg", isProd };
 }
 
