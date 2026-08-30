@@ -5,6 +5,12 @@ import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION } from "@/lib/categories";
 
+// A map viewport shows a few dozen pins, not five hundred, and every row here carries the full
+// lead record. Returning 500 on every pan was the single largest source of database egress in
+// the app — enough to exhaust a hosted Postgres transfer quota on a 40 MB database.
+const DEFAULT_LIMIT = 120;
+const MAX_LIMIT = 500;
+
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -13,6 +19,9 @@ export async function GET(req: NextRequest) {
   const hasWebsite = params.get("has_website"); // "true" | "false" | null (= any)
   const category = params.get("category");
   const unlockedOnly = params.get("unlocked") === "true";
+  // Clamped rather than trusted: an unbounded ?limit would hand any signed-in caller the whole
+  // table in one request.
+  const limit = Math.min(MAX_LIMIT, Math.max(1, Number(params.get("limit")) || DEFAULT_LIMIT));
   const userEmail = session.user.email;
 
   // Viewport bounds. Without them this returns the newest 500 leads in the entire table, which is
@@ -59,7 +68,7 @@ export async function GET(req: NextRequest) {
       ${category ? sql`AND l.category = ${category}` : sql``}
       ${unlockedOnly ? sql`AND u.id IS NOT NULL` : sql``}
     ORDER BY l.created_at DESC
-    LIMIT 500
+    LIMIT ${limit}
   `;
 
   // Real protection, not cosmetic — an unpurchased lead's identity/contact info must not be

@@ -10,7 +10,7 @@ import { TYPE_TO_SECTION } from "@/lib/categories";
 // there is no discovery/insert path reachable from this route. Every non-unlocked field is
 // masked exactly like /api/leads does pre-unlock — a visitor here has no unlocks, ever.
 const MAX_RADIUS_METERS = 3000;
-const RESULT_LIMIT = 60;
+const RESULT_LIMIT = 40;
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
@@ -57,5 +57,11 @@ export async function GET(req: NextRequest) {
     }),
   }));
 
-  return NextResponse.json({ leads });
+  // Cached at the edge: this endpoint is unauthenticated, sits on the landing page, and reads
+  // only already-scanned rows, so the same viewport asked for twice should not reach the
+  // database twice. Crawlers hitting the landing page were doing exactly that.
+  return NextResponse.json(
+    { leads },
+    { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" } }
+  );
 }
