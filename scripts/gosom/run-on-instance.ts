@@ -20,10 +20,18 @@ async function main() {
   const outFile = process.argv[3] ?? "/tmp/gosom-instance-out.json";
   const depth = process.argv[4] ?? "2";
   const concurrency = process.argv[5] ?? "2"; // 2 vCPU on the box; more just thrashes it
+  const fastMode = process.argv.includes("--fast");
+  // -fast-mode refuses to start without coordinates ("geo coordinates are required in fast mode"),
+  // and geo is worth passing regardless: it anchors the search rather than letting Google decide
+  // from the phrase alone.
+  const geoArg = process.argv.find((a) => a.startsWith("--geo="));
+  const geo = geoArg ? geoArg.slice("--geo=".length) : "28.4595,77.0266";
+  const zoomArg = process.argv.find((a) => a.startsWith("--zoom="));
+  const zoom = zoomArg ? zoomArg.slice("--zoom=".length) : "14";
 
   const queries = fs.readFileSync(queryFile, "utf8");
   const queriesB64 = Buffer.from(queries).toString("base64");
-  console.log(`${queries.trim().split("\n").length} queries, depth ${depth}, concurrency ${concurrency}`);
+  console.log(`${queries.trim().split("\n").length} queries, depth ${depth}, c=${concurrency}, geo ${geo}, zoom ${zoom}${fastMode ? ", FAST" : ""}`);
 
   console.log("instance:", await ensureRunning());
 
@@ -39,16 +47,22 @@ async function main() {
   if (!stage.ok) throw new Error(`staging failed: ${stage.stderr.slice(0, 400)}`);
   console.log(" ", stage.stdout.trim().replace(/\n/g, " | "));
 
-  console.log("scraping (this is the long part)…");
+  console.log(`scraping${fastMode ? " (fast mode)" : ""} — this is the long part…`);
+  const t0 = Date.now();
   const scrape = await run([
     "set -e",
     "cd /opt/gosom-run",
-    `docker run --rm -v /opt/gosom-run:/data ${IMAGE} ` +
+    // --shm-size is not optional. Docker gives a container 64MB of /dev/shm by default and
+    // Chromium falls over on that, which is why an earlier version of this script came back with
+    // gosom's banner and an empty results file while the same command worked by hand.
+    `docker run --rm --shm-size=1g -v /opt/gosom-run:/data ${IMAGE} ` +
       `-input /data/queries.txt -results /data/results.json -json ` +
-      `-depth ${depth} -c ${concurrency} -lang en -exit-on-inactivity 3m`,
+      `-depth ${depth} -c ${concurrency} -lang en -geo ${geo} -zoom ${zoom} ` +
+      `${fastMode ? "-fast-mode " : ""}-exit-on-inactivity 3m`,
     "wc -l results.json",
   ], 7200);
-  console.log("  scrape ok:", scrape.ok);
+  const elapsed = (Date.now() - t0) / 1000;
+  console.log(`  scrape ok: ${scrape.ok} in ${elapsed.toFixed(0)}s`);
   if (scrape.stderr.trim()) console.log("  stderr:", scrape.stderr.trim().slice(0, 400));
   if (!scrape.ok && !scrape.stdout.includes("results.json")) {
     throw new Error("scrape produced nothing");
@@ -80,7 +94,9 @@ async function main() {
 
   const json = zlib.gunzipSync(Buffer.from(b64, "base64")).toString("utf8");
   fs.writeFileSync(outFile, json);
-  console.log(`wrote ${json.trim().split("\n").length} records to ${outFile}`);
+  const records = json.trim() ? json.trim().split("\n").length : 0;
+  console.log(`wrote ${records} records to ${outFile}`);
+  console.log(`RESULT: ${records} records in ${elapsed.toFixed(0)}s = ${(records / Math.max(1, elapsed) * 60).toFixed(1)} records/min`);
 
   // The box stays up on purpose — a cold boot in front of every run is what made this feel broken
   // before. Only the working files go.

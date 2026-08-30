@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { pseoSql } from "../../lib/pseo/db";
-import { TYPE_TO_SECTION } from "../../lib/categories";
+import { gosomCategoryToPlaceType } from "../../lib/pseo/gosom-categories";
 import { looksLikeCompetitor } from "../../lib/competitors";
 import { resolveLocation } from "../../lib/pseo/address";
 
@@ -20,29 +20,27 @@ import { resolveLocation } from "../../lib/pseo/address";
  */
 
 type Rec = {
-  place_id?: string; title?: string; category?: string; address?: string;
+  place_id?: string; title?: string; category?: string; categories?: string[]; address?: string;
   latitude?: number; longitude?: number; phone?: string; emails?: string[];
   web_site?: string; review_rating?: number; review_count?: number;
   open_hours?: Record<string, unknown>;
 };
 
-/** gosom reports Google's display label ("Grocery store"); leads.category holds the place type
- *  ("grocery_store"). Anything that doesn't map to a known type is dropped rather than guessed —
- *  the same allowlist the public pages qualify on. */
-function toPlaceType(display: string | undefined): string | null {
-  if (!display) return null;
-  const t = display.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  return TYPE_TO_SECTION[t] ? t : null;
-}
-
 async function main() {
   const file = process.argv[2] ?? "/tmp/gosom-out.json";
   const label = process.argv[3] ?? "gosom";
+  // Two shapes come out of gosom: full mode writes one object per line, fast mode writes one JSON
+  // *array* per line (one array per query). Counting lines in the fast-mode file reports the query
+  // count as the record count, which is how a 155-record run first looked like a 10-record one.
   const recs: Rec[] = [];
   for (const line of fs.readFileSync(file, "utf8").split("\n")) {
     const t = line.trim();
     if (!t) continue;
-    try { recs.push(JSON.parse(t)); } catch { /* a truncated final line while the run is live */ }
+    try {
+      const parsed = JSON.parse(t);
+      if (Array.isArray(parsed)) recs.push(...parsed);
+      else recs.push(parsed);
+    } catch { /* a truncated final line while the run is still writing */ }
   }
   console.log(`${recs.length} records in ${file}`);
 
@@ -51,7 +49,8 @@ async function main() {
 
   for (const r of recs) {
     if (!r.place_id || !r.title || r.latitude == null || r.longitude == null) { skippedLoc++; continue; }
-    const type = toPlaceType(r.category);
+    // fast mode leaves `category` blank and only fills `categories`; try both, in order.
+    const type = gosomCategoryToPlaceType(r.category, r.categories?.[0], r.categories?.[1]);
     if (!type) { skippedType++; continue; }
 
     const loc = resolveLocation(r.address ?? null, r.latitude, r.longitude);
