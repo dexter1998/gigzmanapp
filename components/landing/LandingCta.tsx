@@ -3,7 +3,23 @@ import Image from "next/image";
 import { PinIcon } from "@/components/icons";
 import { OrigamiDecoration } from "./OrigamiDecoration";
 
-export function LandingCta() {
+/** Props exist so the public lead pages can reuse this band verbatim with their own copy.
+ *  Defaults keep the landing page's call site unchanged. */
+export function LandingCta({
+  pill = "Start finding clients today",
+  title = "Your next clients are",
+  accent = "already nearby.",
+  sub = "Search your area, uncover real business gaps, and start pitching with proof.",
+  primary = { label: "Get Free Access →", href: "/login" },
+  secondary = { label: "Explore local leads ›", href: "#capabilities" },
+}: {
+  pill?: string;
+  title?: string;
+  accent?: string;
+  sub?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+} = {}) {
   return (
     <section
       style={{
@@ -22,24 +38,24 @@ export function LandingCta() {
 
       <div style={{ maxWidth: 780, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 16px", borderRadius: "var(--radius-pill)", background: "var(--g-white)", color: "var(--g-green-text)", fontSize: 12.5, fontWeight: 700, marginBottom: 22 }}>
-          <PinIcon size={14} color="var(--g-green-text)" /> Start finding clients today
+          <PinIcon size={14} color="var(--g-green-text)" /> {pill}
         </div>
         <h2 style={{ fontSize: "clamp(32px, 5.5vw, 56px)", fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.15, margin: "0 0 18px" }}>
-          Your next clients are <br />
-          <span style={{ color: "var(--g-green-dark)" }}>already nearby.</span>
+          {title} <br />
+          <span style={{ color: "var(--g-green-dark)" }}>{accent}</span>
         </h2>
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", maxWidth: 480, margin: "0 auto 32px" }}>
-          Search your area, uncover real business gaps, and start pitching with proof.
+          {sub}
         </p>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, flexWrap: "wrap" }}>
           <Link
-            href="/login"
+            href={primary.href}
             style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "15px 30px", borderRadius: "var(--radius-sm)", background: "var(--g-green-dark)", color: "#fff", fontSize: 16, fontWeight: 700, textDecoration: "none" }}
           >
-            Get Free Access →
+            {primary.label}
           </Link>
-          <a href="#capabilities" style={{ fontSize: 15, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "underline dotted", textUnderlineOffset: 4 }}>
-            Explore local leads ›
+          <a href={secondary.href} style={{ fontSize: 15, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "underline dotted", textUnderlineOffset: 4 }}>
+            {secondary.label}
           </a>
         </div>
       </div>

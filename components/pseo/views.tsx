@@ -21,6 +21,12 @@ function ordinal(n: number): string {
 }
 
 /** Page 2 and beyond say so in the title, and are never submitted for indexing. */
+/** The intro is two lines, with the figures that carry the claim set in bold — a reader scanning
+ *  should get the whole finding without reading a paragraph. */
+function B({ children }: { children: React.ReactNode }) {
+  return <strong style={{ color: "var(--g-ink)", fontWeight: 700 }}>{children}</strong>;
+}
+
 function paged(title: string, page: number) {
   return page > 1 ? `${title} — page ${page}` : title;
 }
@@ -74,24 +80,18 @@ export async function CityLeadsView({ serviceSlug, citySlug, page = 1 }: {
       crumbs={crumbs}
       basePath={base}
       canonical={`${COMPANY.site}${d.page > 1 ? `${base}/page/${d.page}` : base}`}
-      h1={`${d.stats.qualifying} ${d.service.name} Leads in ${d.city.name}`}
-      headlineStats={[
-        { label: "no website", value: String(d.stats.qualifying) },
-        { label: "checked here", value: String(d.stats.checked) },
-        { label: "website gap", value: pct(d.stats.gapRate) },
-        { label: "categories", value: String(d.stats.distinctCategories) },
-        { label: "areas covered", value: String(d.areas.length) },
-      ]}
-      listingTitle="Highest-scoring opportunities"
+      h1={`${d.stats.qualifying.toLocaleString("en-IN")} ${d.service.name} Leads in ${d.city.name}`}
+      listingNoun="opportunities"
       showAreaGrid
       intro={
         <>
-          {d.stats.qualifying} businesses in {d.city.name}{" "}
-          ({d.city.aliases.includes("gurugram") ? "Gurugram" : d.city.state}) have an active Google listing and no
-          website of their own — {pct(d.stats.gapRate)} of the {d.stats.checked} we have checked here.{" "}
-          {strongest && `The gap is widest in ${strongest.name}, where ${pct(strongest.gapRate)} of businesses have no site.`}{" "}
-          {reviewComparison &&
-            `They are not dormant listings: among those carrying reviews, the median business without a website has ${d.stats.medianReviewsNoWebsite}, against ${d.stats.medianReviewsWithWebsite} for those that have one.`}
+          <B>{d.stats.qualifying.toLocaleString("en-IN")}</B> businesses in {d.city.name} have an active Google listing
+          and <B>no website</B> — <B>{pct(d.stats.gapRate)}</B> of the {d.stats.checked.toLocaleString("en-IN")} we have checked.
+          <br />
+          {strongest && <>The gap runs widest in <B>{strongest.name}</B>, at {pct(strongest.gapRate)}. </>}
+          {reviewComparison && (
+            <>Their median review count is <B>{d.stats.medianReviewsNoWebsite}</B> — these are trading businesses.</>
+          )}
         </>
       }
     />
@@ -142,28 +142,25 @@ export async function AreaLeadsView({ serviceSlug, citySlug, areaSlug, page = 1 
       crumbs={crumbs}
       basePath={base}
       canonical={`${COMPANY.site}${d.page > 1 ? `${base}/page/${d.page}` : base}`}
-      h1={`${d.stats.qualifying} businesses with no website in ${d.areaName}`}
+      h1={`${d.stats.qualifying.toLocaleString("en-IN")} businesses with no website in ${d.areaName}`}
       activeAreaSlug={areaSlug}
-      headlineStats={[
-        { label: "no website", value: String(d.stats.qualifying) },
-        { label: "checked here", value: String(d.stats.checked) },
-        { label: "website gap", value: pct(d.stats.gapRate) },
-        ...(d.rank ? [{ label: `of ${d.rank.of} areas by volume`, value: `#${d.rank.byCount}` }] : []),
-        { label: "categories", value: String(d.stats.distinctCategories) },
-      ]}
-      listingTitle="Highest-scoring opportunities"
+      listingNoun="opportunities"
       intro={
         <>
           {/* The comparison against the city is the reason this page exists separately from its
               parent: the same list without it would be a slice, not a finding. */}
-          {d.stats.qualifying} of the {d.stats.checked} businesses we have mapped in {d.areaName} have no website — a{" "}
-          {pct(d.stats.gapRate)} gap,{" "}
-          {Math.abs(delta) < 0.02
-            ? `close to the ${pct(cityGap)} average across ${d.city.name}`
-            : `${Math.abs(Math.round(delta * 100))} points ${delta > 0 ? "above" : "below"} the ${pct(cityGap)} average across ${d.city.name}`}
-          .{" "}
-          {d.rank &&
-            `That ranks ${d.areaName} ${ordinal(d.rank.byCount)} of ${d.rank.of} areas by volume, and ${ordinal(d.rank.byGapRate)} by gap rate.`}
+          <B>{d.stats.qualifying.toLocaleString("en-IN")}</B> of {d.stats.checked.toLocaleString("en-IN")} businesses
+          mapped in {d.areaName} have <B>no website</B> — a <B>{pct(d.stats.gapRate)}</B> gap.
+          <br />
+          {Math.abs(delta) < 0.02 ? (
+            <>Close to the <B>{pct(cityGap)}</B> {d.city.name} average. </>
+          ) : (
+            <>
+              That is <B>{Math.abs(Math.round(delta * 100))} points {delta > 0 ? "above" : "below"}</B> the{" "}
+              {pct(cityGap)} {d.city.name} average.{" "}
+            </>
+          )}
+          {d.rank && <>It ranks <B>{ordinal(d.rank.byCount)} of {d.rank.of}</B> areas by volume.</>}
         </>
       }
     />
@@ -213,21 +210,19 @@ export async function CategoryLeadsView({ serviceSlug, citySlug, category, page 
       h1={`${d.categoryLabel} businesses with no website in ${d.city.name}`}
       activeCategorySlug={category}
       showAreaGrid
-      headlineStats={[
-        { label: "no website", value: String(d.stats.qualifying) },
-        { label: "checked here", value: String(d.stats.checked) },
-        { label: "website gap", value: pct(d.stats.gapRate) },
-        ...(d.stats.medianRatingNoWebsite !== null
-          ? [{ label: "median rating", value: `${d.stats.medianRatingNoWebsite.toFixed(1)}★` }]
-          : []),
-      ]}
-      listingTitle="Highest-scoring opportunities"
+      listingNoun={`${String(d.categoryLabel).toLowerCase()} opportunities`}
       intro={
         <>
-          {d.stats.qualifying} of the {d.stats.checked} {String(d.categoryLabel).toLowerCase()} businesses we have
-          mapped in {d.city.name} have no website — a {pct(d.stats.gapRate)} gap.
-          {d.stats.medianReviewsNoWebsite !== null && d.stats.medianReviewsNoWebsite > 0 &&
-            ` Among those carrying reviews, the median has ${d.stats.medianReviewsNoWebsite} — these are trading businesses, not stale listings.`}
+          <B>{d.stats.qualifying.toLocaleString("en-IN")}</B> of {d.stats.checked.toLocaleString("en-IN")}{" "}
+          {String(d.categoryLabel).toLowerCase()} businesses in {d.city.name} have <B>no website</B> — a{" "}
+          <B>{pct(d.stats.gapRate)}</B> gap.
+          <br />
+          {d.stats.medianRatingNoWebsite !== null && (
+            <>They rate <B>{d.stats.medianRatingNoWebsite.toFixed(1)}★</B> at the median</>
+          )}
+          {d.stats.medianReviewsNoWebsite !== null && d.stats.medianReviewsNoWebsite > 0 && (
+            <>, on <B>{d.stats.medianReviewsNoWebsite}</B> reviews — trading businesses, not stale listings.</>
+          )}
         </>
       }
     />

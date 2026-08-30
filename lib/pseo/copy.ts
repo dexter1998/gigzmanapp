@@ -6,6 +6,8 @@ const dateFmt = (d: Date | null) =>
   d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : null;
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
+/** Indian digit grouping, matching every other number on the page. */
+const num = (n: number) => n.toLocaleString("en-IN");
 
 /**
  * FAQ answers built from the page's own figures.
@@ -25,10 +27,10 @@ export function faqsFor(data: PseoPageData): Faq[] {
   faqs.push({
     q: `How many ${subject} have no website?`,
     a:
-      `${stats.qualifying} of the ${stats.checked} ${subject} we have checked have no website of their own — ` +
+      `${num(stats.qualifying)} of the ${num(stats.checked)} ${subject} we have checked have no website of their own — ` +
       `${pct(stats.gapRate)}. ` +
       (stats.unknown > 0
-        ? `A further ${stats.unknown} have not been checked either way; they are excluded from both sides of that figure rather than counted as having no site.`
+        ? `A further ${num(stats.unknown)} have not been checked either way; they are excluded from both sides of that figure rather than counted as having no site.`
         : `Every business in this slice has been checked in both directions.`),
   });
 
@@ -63,7 +65,7 @@ export function faqsFor(data: PseoPageData): Faq[] {
   faqs.push({
     q: `Is this the complete list of ${subject} with no website?`,
     a:
-      `It is the complete set we have verified. ${stats.coverage.exhausted} of the ${stats.coverage.cells} map cells covering ` +
+      `It is the complete set we have verified. ${num(stats.coverage.exhausted)} of the ${num(stats.coverage.cells)} map cells covering ` +
       `${place} have been searched to exhaustion` +
       `${dateFmt(stats.coverage.lastVerified) ? `, most recently on ${dateFmt(stats.coverage.lastVerified)}` : ""}, ` +
       `which is why we can state a rate rather than just a count. Coverage deepens over time and these figures are recalculated daily.`,

@@ -10,9 +10,11 @@ export function Pagination({ basePath, page, pageCount }: { basePath: string; pa
   if (pageCount <= 1) return null;
 
   const href = (n: number) => (n === 1 ? basePath : `${basePath}/page/${n}`);
+  // Five numbers before the ellipsis, matching the mockup — a two-number window read as broken
+  // rather than condensed on a ten-page listing.
   const windowed: Array<number | "gap"> = [];
   for (let n = 1; n <= pageCount; n++) {
-    if (n <= 2 || n > pageCount - 1 || Math.abs(n - page) <= 1) windowed.push(n);
+    if (n <= 5 || n > pageCount - 1 || Math.abs(n - page) <= 2) windowed.push(n);
     else if (windowed.at(-1) !== "gap") windowed.push("gap");
   }
 

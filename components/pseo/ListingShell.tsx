@@ -3,15 +3,20 @@ import { COMPANY } from "@/lib/company";
 import type { PseoPageData } from "@/lib/pseo/page-data";
 import { faqsFor } from "@/lib/pseo/copy";
 import { areaDisplayName } from "@/lib/pseo/locations";
+import { MIN_RATED_SHARE } from "@/lib/pseo/gate";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 import { SearchBar } from "@/components/pseo/SearchBar";
 import { FilterSidebar } from "@/components/pseo/FilterSidebar";
+import { SortPills } from "@/components/pseo/SortPills";
 import { LeadCard } from "@/components/pseo/LeadCard";
-import { CategoryStrip } from "@/components/pseo/CategoryStrip";
 import { Pagination } from "@/components/pseo/Pagination";
 import { ProvenanceNote } from "@/components/pseo/ProvenanceNote";
+import {
+  UpdatedPill, SignalStrip, AreaTiles, HighIntentStrip, CategoryTiles, EmailCapture,
+} from "@/components/pseo/Modules";
+import { LandingFaq } from "@/components/landing/LandingFaq";
+import { LandingCta } from "@/components/landing/LandingCta";
 import { ArrowRightIcon, ZapIcon } from "@/components/icons";
-import { MIN_RATED_SHARE } from "@/lib/pseo/gate";
 
 /**
  * The single layout every public listing page uses — city, area and category alike.
@@ -21,13 +26,19 @@ import { MIN_RATED_SHARE } from "@/lib/pseo/gate";
  * ways that had nothing to do with the data. Everything variable arrives as props computed from
  * that page's own slice.
  *
- * The whole thing is a server component apart from the filter rail. Every card, statistic,
- * breadcrumb and link is in the initial HTML.
+ * Server-rendered throughout apart from two inert islands, the filter rail and the sort control.
+ * Neither fetches; both only rearrange cards that are already in the HTML.
  */
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const longDate = (d: Date | null) =>
   d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : null;
+
+/** Cards take even orders so the interleaved module block can hold the odd slot between the fourth
+ *  and fifth of them whatever the sort control does. */
+const CARDS_BEFORE_MODULES = 4;
+const MODULE_ORDER = 2 * CARDS_BEFORE_MODULES + 1;
+const orderFor = (rank: number) => 2 * (rank + 1);
 
 export function ListingShell({
   data,
@@ -38,8 +49,7 @@ export function ListingShell({
   canonical,
   h1,
   intro,
-  headlineStats,
-  listingTitle,
+  listingNoun,
   activeAreaSlug,
   activeCategorySlug,
   showAreaGrid,
@@ -53,8 +63,8 @@ export function ListingShell({
   canonical: string;
   h1: string;
   intro: React.ReactNode;
-  headlineStats: Array<{ label: string; value: string }>;
-  listingTitle: string;
+  /** What the listing is counting, e.g. "opportunities" or "restaurant opportunities". */
+  listingNoun: string;
   activeAreaSlug?: string | null;
   activeCategorySlug?: string | null;
   showAreaGrid?: boolean;
@@ -70,13 +80,14 @@ export function ListingShell({
     slug: c.slug, name: c.name, count: c.qualifying, href: `${cityBase}/categories/${c.slug}`,
   }));
 
-  // The strip is dropped into the run of cards rather than sitting above it, so a reader deep in a
-  // list of restaurants has a way sideways without scrolling back to the rail.
-  const stripItems = children.categories
+  const tileCategories = children.categories
     .filter((c) => c.slug !== activeCategorySlug)
-    .slice(0, 10)
-    .map((c) => ({ slug: c.slug, name: c.name, count: c.qualifying, category: c.slug, href: `${cityBase}/categories/${c.slug}` }));
-  const stripAt = leads.length > 8 ? 6 : -1;
+    .slice(0, 6)
+    .map((c) => ({ slug: c.slug, name: c.name, count: c.qualifying, href: `${cityBase}/categories/${c.slug}` }));
+  const tileAreas = children.areas
+    .filter((a) => a.slug !== activeAreaSlug)
+    .slice(0, 4)
+    .map((a) => ({ slug: a.slug, name: a.name, count: a.qualifying, href: `${cityBase}/areas/${a.slug}` }));
 
   const intentShare = data.intentCounts.high / Math.max(1, stats.qualifying);
   // A single high-intent business out of fifteen hundred is not a finding, and rounding it to
@@ -89,6 +100,7 @@ export function ListingShell({
   const faqs = faqsFor(data);
   const topAreas = areas.slice(0, 8);
   const mix = stats.categories.slice(0, 8);
+  const place = data.areaName ?? city.name;
 
   return (
     <>
@@ -99,36 +111,34 @@ export function ListingShell({
         cityHref={cityBase}
       />
 
-      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 96px" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 60px" }}>
         <Breadcrumbs items={crumbs} />
 
         <header style={{ paddingTop: 20 }}>
-          <h1 className="marketing-h1" style={{ fontSize: 38, lineHeight: 1.12, letterSpacing: -1.2, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>
-            {h1}
-          </h1>
-          <p style={{ fontSize: 16, lineHeight: 1.65, color: "var(--g-ink-soft)", margin: "14px 0 0", maxWidth: 780 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
+            <h1 className="marketing-h1" style={{ fontSize: 38, lineHeight: 1.12, letterSpacing: -1.2, fontWeight: 800, color: "var(--g-ink)", margin: 0, flex: "1 1 420px" }}>
+              {h1}
+            </h1>
+            <div style={{ paddingTop: 6 }}>
+              <UpdatedPill at={data.statsComputedAt} />
+            </div>
+          </div>
+          <p style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--g-ink-soft)", margin: "12px 0 0", maxWidth: 720 }}>
             {intro}
           </p>
         </header>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 22, margin: "20px 0 0", padding: "14px 18px", background: "var(--g-green-mint)", borderRadius: "var(--radius-md)" }}>
-          {headlineStats.map((s) => (
-            <div key={s.label}>
-              <div style={{ fontSize: 19, fontWeight: 800, color: "var(--g-ink)" }}>{s.value}</div>
-              <div style={{ fontSize: 11.5, color: "var(--g-green-text)", fontWeight: 700, letterSpacing: 0.2 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <SignalStrip
+          qualifying={stats.qualifying}
+          highIntent={data.intentCounts.high}
+          addedThisWeek={stats.addedThisWeek}
+        />
 
-        <div className="pseo-layout" style={{ display: "grid", gridTemplateColumns: "252px 1fr", gap: 26, marginTop: 26, alignItems: "start" }}>
+        <div className="pseo-layout" style={{ display: "grid", gridTemplateColumns: "252px 1fr", gap: 26, marginTop: 24, alignItems: "start" }}>
           <div className="pseo-rail">
             <FilterSidebar
               items={leads.map((l) => ({
-                id: l.id,
-                intent: l.intent,
-                rating: l.rating,
-                score: l.score,
-                fresh: l.verifiedDaysAgo,
+                id: l.id, intent: l.intent, rating: l.rating, score: l.score, fresh: l.verifiedDaysAgo,
               }))}
               areas={areaFacets}
               categories={categoryFacets}
@@ -140,32 +150,35 @@ export function ListingShell({
           </div>
 
           <div style={{ minWidth: 0 }}>
-            <div id="leads" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: 0 }}>{listingTitle}</h2>
-              <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>
-                {data.pageCount > 1
-                  ? `Page ${data.page} of ${data.pageCount} · ${data.listed} listed of ${data.totalQualifying}`
-                  : `Showing ${leads.length} of ${data.totalQualifying}`}
-              </span>
+            <div id="leads" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--g-ink)", margin: 0 }}>
+                Showing {leads.length} {listingNoun}
+                {data.pageCount > 1 && (
+                  <span style={{ fontWeight: 500, color: "var(--g-gray-500)" }}> · page {data.page} of {data.pageCount}</span>
+                )}
+              </h2>
+              <SortPills items={leads.map((l) => ({ id: l.id, score: l.score, fresh: l.verifiedDaysAgo }))} />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* flatMap rather than a wrapper element: the strip has to be a sibling of the cards
-                  in the flex column, and wrapping each card in a container would nest it out of that
-                  flow. */}
-              {leads.flatMap((l, i) => {
-                const card = (
-                  <LeadCard
-                    key={l.id}
-                    lead={l}
-                    areaName={l.area_slug && l.area_slug !== activeAreaSlug ? areaDisplayName(l.area_slug) : null}
-                    hideCategory={l.category === activeCategorySlug}
-                  />
-                );
-                return i === stripAt
-                  ? [card, <CategoryStrip key="strip" title={`Other categories in ${city.name}`} items={stripItems} />]
-                  : [card];
-              })}
+              {leads.map((l, i) => (
+                <LeadCard
+                  key={l.id}
+                  lead={l}
+                  order={orderFor(i)}
+                  areaName={l.area_slug && l.area_slug !== activeAreaSlug ? areaDisplayName(l.area_slug) : null}
+                  hideCategory={l.category === activeCategorySlug}
+                />
+              ))}
+
+              {/* Dropped into the run of cards rather than stacked underneath it, so a reader deep in
+                  a list has somewhere sideways to go before they run out of patience. */}
+              <div style={{ order: MODULE_ORDER, display: "flex", flexDirection: "column", gap: 12 }}>
+                <AreaTiles title={`Top opportunity areas in ${city.name}`} href={`${cityBase}/areas`} items={tileAreas} />
+                <HighIntentStrip leads={leads} />
+                <CategoryTiles title={`Popular business categories in ${city.name}`} href={`${cityBase}/categories`} items={tileCategories} />
+                <EmailCapture cityName={city.name} />
+              </div>
             </div>
 
             {/* Shown only when the filter rail has hidden everything. Server-rendered and hidden by
@@ -188,7 +201,7 @@ export function ListingShell({
             {/* ---- Below the listing: what the data says, rather than more of the same list ---- */}
 
             {(showScoreBands || showIntentPanel) && (
-              <Section title={`What the numbers say about ${data.areaName ?? city.name}`}>
+              <Section title={`What the numbers say about ${place}`} bare>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
                   {showIntentPanel && (
                     <Panel>
@@ -199,8 +212,7 @@ export function ListingShell({
                       <div style={{ fontSize: 26, fontWeight: 800, color: "var(--g-ink)" }}>{data.intentCounts.high}</div>
                       <p style={{ fontSize: 13, color: "var(--g-ink-soft)", lineHeight: 1.6, margin: "6px 0 0" }}>
                         businesses here carry 20 or more reviews at 4.0★ or better and still have no website —{" "}
-                        {pct(intentShare)} of the total. These are the ones
-                        already winning customers without a site.
+                        {pct(intentShare)} of the total. These are the ones already winning customers without a site.
                       </p>
                       <a href="#leads" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "none", marginTop: 10 }}>
                         Filter the list to these <ArrowRightIcon size={12} color="var(--g-green-text)" />
@@ -256,8 +268,8 @@ export function ListingShell({
             )}
 
             {mix.length >= 3 && (
-              <Section title={`Which trades are missing a website in ${data.areaName ?? city.name}`}
-                       sub="Count and gap rate for each category we have checked here.">
+              <Section title={`Which trades are missing a website in ${place}`}
+                       sub="Count and gap rate for each category we have checked here." bare>
                 <div style={{ overflowX: "auto", background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, minWidth: 460 }}>
                     <thead>
@@ -300,7 +312,7 @@ export function ListingShell({
 
             {showAreaGrid && topAreas.length > 1 && (
               <Section title={`Where the gap is widest in ${city.name}`}
-                       sub="Share of mapped businesses with no website, by area.">
+                       sub="Share of mapped businesses with no website, by area." bare>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 12 }}>
                   {topAreas.map((a) => {
                     const linked = children.areas.some((c) => c.slug === a.area_slug);
@@ -328,8 +340,8 @@ export function ListingShell({
 
             <Section title="How this list was built">
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "var(--g-ink-soft)", margin: 0 }}>
-                {stats.coverage.exhausted} of {stats.coverage.cells} scan cells covering {data.areaName ?? city.name} have
-                been searched to exhaustion
+                {stats.coverage.exhausted} of {stats.coverage.cells} scan cells covering {place} have been searched to
+                exhaustion
                 {longDate(stats.coverage.lastVerified) ? `, most recently on ${longDate(stats.coverage.lastVerified)}` : ""}.
                 {stats.unknown > 0 &&
                   ` ${stats.unknown} businesses here have not been checked either way and are excluded from every figure above, rather than counted as having no website.`}{" "}
@@ -343,7 +355,7 @@ export function ListingShell({
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {nearby.map((n) => (
                     <Link key={n.slug} href={`/leads/${serviceSlug}/${n.slug}`}
-                      style={{ fontSize: 13, color: "var(--g-green-text)", border: "1px solid var(--g-border)", background: "var(--g-white)", borderRadius: "var(--radius-pill)", padding: "7px 14px", textDecoration: "none" }}>
+                      style={{ fontSize: 13, color: "var(--g-green-text)", border: "1px solid var(--g-border)", background: "var(--g-cream)", borderRadius: "var(--radius-pill)", padding: "7px 14px", textDecoration: "none" }}>
                       {n.name} · {n.km} km
                     </Link>
                   ))}
@@ -364,31 +376,27 @@ export function ListingShell({
           categories={children.categories.slice(0, 12).map((c) => ({ ...c, href: `${cityBase}/categories/${c.slug}` }))}
         />
 
-        <section style={{ marginTop: 52 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px", letterSpacing: -0.5 }}>
-            Questions about this data
-          </h2>
-          <p style={{ fontSize: 14, color: "var(--g-gray-500)", margin: "0 0 18px" }}>
-            Answered from this page&rsquo;s own figures, not a template.
-          </p>
-          {/* <details>, not an accordion component: the answers are in the DOM either way, it needs no
-              JavaScript, and it keeps this page down to a single client island. */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: "0 40px" }}>
-            {faqs.map((f) => (
-              <details key={f.q} className="pseo-faq" style={{ borderTop: "1px solid var(--g-border)", padding: "14px 0" }}>
-                <summary style={{ fontSize: 15, fontWeight: 700, color: "var(--g-ink)", cursor: "pointer", listStyle: "none" }}>
-                  {f.q}
-                </summary>
-                <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--g-ink-soft)", margin: "10px 0 0" }}>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <PseoCta cityName={data.areaName ?? city.name} qualifying={stats.qualifying} />
-
         <ProvenanceNote observedOn={stats.verifiedRange.newest} />
       </div>
+
+      {/* The same two sections the landing page closes with, so the lead pages don't read as a
+          separate site bolted on. Only the questions change — and they are generated from this
+          page's own figures, which is what stops ninety pages sharing one FAQ block. */}
+      <LandingFaq
+        faqs={faqs}
+        title="Questions about"
+        accent="this data."
+        sub={`How the ${place} figures on this page are produced, and what they do and don't cover.`}
+      />
+
+      <LandingCta
+        pill="Free to read, free to start"
+        title={`All ${stats.qualifying.toLocaleString("en-IN")} of these are`}
+        accent="one call away."
+        sub="Everything on this page is free. A Mantis account adds phone numbers, saved lists and the full map."
+        primary={{ label: "Get Free Access →", href: "/login" }}
+        secondary={{ label: "See pricing ›", href: "/pricing" }}
+      />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(crumbs, COMPANY.site)) }} />
       <script
@@ -415,31 +423,21 @@ export function ListingShell({
           }),
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: faqs.map((f) => ({
-              "@type": "Question",
-              name: f.q,
-              acceptedAnswer: { "@type": "Answer", text: f.a },
-            })),
-          }),
-        }}
-      />
     </>
   );
 }
 
-function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+/** Sections read as cards unless they already contain their own boxes — `bare` is for those, so a
+ *  grid of panels isn't wrapped in a second identical panel. */
+function Section({ title, sub, children, bare }: {
+  title: string; sub?: string; children: React.ReactNode; bare?: boolean;
+}) {
   return (
-    <section style={{ marginTop: 40 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 5px" }}>{title}</h2>
-      {sub && <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", margin: "0 0 14px" }}>{sub}</p>}
-      {!sub && <div style={{ height: 12 }} />}
-      {children}
+    <section style={{ marginTop: 32 }}>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 5px" }}>{title}</h2>
+      {sub && <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 12px" }}>{sub}</p>}
+      {!sub && <div style={{ height: 10 }} />}
+      {bare ? children : <Panel>{children}</Panel>}
     </section>
   );
 }
@@ -475,18 +473,18 @@ function QuickLinks({ cityBase, cityName, serviceSlug, serviceName, areas, categ
   areas: LinkItem[]; categories: LinkItem[];
 }) {
   return (
-    <section style={{ marginTop: 52, borderTop: "1px solid var(--g-border)", paddingTop: 30 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 18px" }}>
+    <section style={{ marginTop: 44, borderTop: "1px solid var(--g-border)", paddingTop: 28 }}>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 16px" }}>
         Browse {serviceName.toLowerCase()} leads
       </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 26 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
         {areas.length > 0 && (
           <QuickCol title={`By area in ${cityName}`} moreHref={`${cityBase}/areas`} moreLabel="All areas"
             items={areas.map((a) => ({ label: `${a.name} leads`, href: a.href, count: a.qualifying }))} />
         )}
         {categories.length > 0 && (
           <QuickCol title="By business category" moreHref={`${cityBase}/categories`} moreLabel="All categories"
-            items={categories.map((c) => ({ label: `${c.name} with no website`, href: c.href, count: c.qualifying }))} />
+            items={categories.map((c) => ({ label: `${c.name} leads`, href: c.href, count: c.qualifying }))} />
         )}
         <QuickCol title="By opportunity"
           items={[
@@ -513,7 +511,7 @@ function QuickCol({ title, items, moreHref, moreLabel }: {
   moreHref?: string; moreLabel?: string;
 }) {
   return (
-    <div>
+    <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", padding: "15px 17px" }}>
       <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.45, color: "var(--g-gray-500)", marginBottom: 11 }}>
         {title.toUpperCase()}
       </div>
@@ -533,27 +531,5 @@ function QuickCol({ title, items, moreHref, moreLabel }: {
         </Link>
       )}
     </div>
-  );
-}
-
-function PseoCta({ cityName, qualifying }: { cityName: string; qualifying: number }) {
-  return (
-    <section style={{ marginTop: 56, background: "var(--g-ink)", borderRadius: "var(--radius-lg)", padding: "44px 36px", textAlign: "center" }}>
-      <h2 style={{ fontSize: "clamp(24px, 3.4vw, 34px)", fontWeight: 800, color: "#fff", margin: 0, letterSpacing: -0.8, textWrap: "balance" }}>
-        Get the phone numbers for all {qualifying.toLocaleString("en-IN")} of them.
-      </h2>
-      <p style={{ fontSize: 15, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: "12px auto 24px", maxWidth: 520 }}>
-        Everything on this page is free to read. A free Mantis account adds contact details, saved lists and the full
-        {" "}{cityName} map — no card needed.
-      </p>
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        <Link href="/login" style={{ background: "var(--g-green)", color: "#fff", borderRadius: "var(--radius-pill)", padding: "13px 28px", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
-          Get free access
-        </Link>
-        <Link href="/pricing" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "var(--radius-pill)", padding: "13px 28px", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
-          See pricing
-        </Link>
-      </div>
-    </section>
   );
 }

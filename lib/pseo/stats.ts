@@ -54,6 +54,8 @@ export type PageStats = {
   distinctCategories: number;
   withRating: number;
   ratedShare: number;
+  /** Qualifying businesses first stored in the last seven days — the "12 added this week" signal. */
+  addedThisWeek: number;
   /** Median review count of the no-website businesses vs those that have one. The argument that
    *  these are live businesses rather than dead listings — a comparison Places never publishes. */
   medianReviewsNoWebsite: number | null;
@@ -107,6 +109,7 @@ type RawLead = {
   review_count: number | null;
   has_website: boolean | null;
   website_checked_at: Date | null;
+  created_at: Date | null;
 };
 
 export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads: ScoredLead[] }> {
@@ -114,7 +117,7 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
 
   const rows = (await pseoSql`
     SELECT l.id, l.business_name, l.category, l.address, l.area_slug,
-           l.rating, l.review_count, l.has_website, l.website_checked_at
+           l.rating, l.review_count, l.has_website, l.website_checked_at, l.created_at
     FROM leads l
     WHERE ${where}
       AND l.is_competitor = false
@@ -129,6 +132,9 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
   // Only leads we can honestly date are eligible to appear — the page states "last verified" per
   // card, and a card with no timestamp can't support that claim.
   const eligible = noSite.filter((r) => r.website_checked_at !== null);
+
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  const addedThisWeek = eligible.filter((r) => r.created_at !== null && r.created_at.getTime() >= weekAgo).length;
 
   const scored: ScoredLead[] = eligible
     .map((r) => ({
@@ -202,6 +208,7 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
       gapRate: checkedRows.length ? noSite.length / checkedRows.length : 0,
       distinctCategories: categories.length,
       withRating: noSite.filter((r) => r.rating !== null).length,
+      addedThisWeek,
       ratedShare: noSite.length ? noSite.filter((r) => r.rating !== null).length / noSite.length : 0,
       // Computed only over businesses that actually carry a review count. Treating a missing
       // count as zero dragged both medians to 0 and produced "carries 0 reviews, against 0 for

@@ -40,6 +40,9 @@ export type PseoPageData = {
   children: Awaited<ReturnType<typeof publishedChildren>>;
   nearby: Awaited<ReturnType<typeof nearbyPublishedCities>>;
   lastMaterialChangeAt: Date | null;
+  /** When the figures were last recalculated — what the "Updated" pill shows. Distinct from
+   *  lastMaterialChangeAt, which only moves when the numbers themselves move. */
+  statsComputedAt: Date | null;
 };
 
 export async function loadPageData(
@@ -116,5 +119,6 @@ export async function loadPageData(
     children: await publishedChildren(serviceSlug, citySlug),
     nearby: await nearbyPublishedCities(citySlug),
     lastMaterialChangeAt: registryRow.last_material_change_at,
+    statsComputedAt: registryRow.stats_computed_at,
   };
 }

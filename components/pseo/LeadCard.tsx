@@ -20,9 +20,13 @@ export function LeadCard({
   lead,
   areaName,
   hideCategory,
+  order,
 }: {
   lead: ScoredLead & { masked?: boolean };
   areaName: string | null;
+  /** Explicit flex order so the modules interleaved between the cards keep their position when the
+   *  sort control renumbers everything around them. */
+  order?: number;
   /** True on a category page, where naming the category on every card says nothing the heading
    *  hasn't already said. The icon still carries it. */
   hideCategory?: boolean;
@@ -35,6 +39,7 @@ export function LeadCard({
       data-pseo-card=""
       data-lead-id={lead.id}
       style={{
+        order,
         display: "grid",
         gridTemplateColumns: "1fr 136px",
         gap: 16,
@@ -99,9 +104,7 @@ export function LeadCard({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.4, color: "var(--g-gray-500)" }}>
-          LEAD SCORE
-        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--g-gray-500)" }}>Lead Score</div>
         <HeatGauge score={lead.score} size={74} />
         {/* Every call to action is the same registration boundary. The page itself stays useful to
             someone who never clicks it — that is what keeps it from being a funnel. */}
