@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { refreshAll } from "@/lib/pseo/refresh";
 import { submitToIndexNow } from "@/lib/pseo/indexnow";
+import { PSEO_SEGMENTS } from "@/lib/pseo/sitemap";
 import { COMPANY } from "@/lib/company";
 
 /**
@@ -31,7 +32,12 @@ export async function GET(req: NextRequest) {
   // changes, so a newly promoted page is submitted the same day.
   const changed = results.filter((r) => r.changed);
   for (const r of changed) revalidatePath(pathFor(r.pageKey));
-  if (changed.length) revalidatePath("/sitemap.xml");
+  if (changed.length) {
+    // The index and the segment the change lives in. Segments are cheap to rebuild and there are
+    // three of them, so this is simpler than working out which one a given page belongs to.
+    revalidatePath("/sitemap.xml");
+    for (const seg of ["pages", ...PSEO_SEGMENTS]) revalidatePath(`/sitemaps/${seg}.xml`);
+  }
 
   // Announce only genuine promotions. A page that already existed and simply had its figures
   // recomputed is not news, and pinging unchanged URLs daily is the same manufactured-activity
