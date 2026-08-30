@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
@@ -7,6 +8,17 @@ import { MIN_PUBLISH_LEADS, MIN_RATED_SHARE, MIN_CATEGORIES } from "@/lib/pseo/g
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
+  openGraph: {
+    images: ogImageMeta({
+      v: "methodology",
+      eyebrow: "How Mantis works",
+      t1: "Live web search.",
+      t2: "Verified opportunity signals.",
+      sub: "Real-time discovery, multi-source verification and enriched decision-makers.",
+      url: "mantisai.in/leads/methodology",
+    }),
+  },
+  twitter: { card: "summary_large_image" },
   title: "How Mantis measures the local website gap | Methodology",
   description:
     "Where the data comes from, how the website gap rate and Lead Score are calculated, what is excluded, and the threshold a page must clear before we publish it.",

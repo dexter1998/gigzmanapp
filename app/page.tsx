@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LandingNav } from "@/components/landing/LandingNav";
@@ -21,6 +22,14 @@ export const metadata: Metadata = {
     "Mantis AI finds local businesses without a website or with weak digital presence, and delivers high-intent leads for tech & marketing agencies near you.",
   alternates: { canonical: SITE_URL },
   openGraph: {
+    images: ogImageMeta({
+      v: "hero",
+      eyebrow: "Mantis AI",
+      t1: "Find local clients.",
+      t2: "Reach the right people.",
+      sub: "Search the live web, uncover business gaps and turn high-intent local opportunities into clients.",
+      url: "mantisai.in",
+    }),
     title: "mantis — AI-powered local lead intelligence",
     description: "We find clients near you. Real-time local lead discovery for agencies and consultants.",
     url: SITE_URL,

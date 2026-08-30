@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Link from "next/link";
 import { COMPANY, addressOneLine } from "@/lib/company";
 import { PageHeader, Prose } from "@/components/marketing/Shell";
 
 export const metadata: Metadata = {
+  openGraph: {
+    images: ogImageMeta({
+      v: "privacy",
+      eyebrow: "Privacy policy",
+      t1: "Your data.",
+      t2: "Protected by design.",
+      sub: "How Mantis AI collects, uses and protects your information.",
+      url: "mantisai.in/privacy",
+    }),
+  },
+  twitter: { card: "summary_large_image" },
   title: `Privacy Policy — ${COMPANY.brandLong}`,
   description: `How ${COMPANY.legalName} collects, uses and protects data in ${COMPANY.brandLong}.`,
   alternates: { canonical: `${COMPANY.site}/privacy` },

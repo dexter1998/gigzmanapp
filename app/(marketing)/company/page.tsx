@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
@@ -17,6 +18,14 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: `${COMPANY.site}/company` },
   openGraph: {
+    images: ogImageMeta({
+      v: "company",
+      eyebrow: "About Mantis AI",
+      t1: "We make local",
+      t2: "opportunity visible.",
+      sub: "Built in Gurugram to help agencies discover and close local opportunities.",
+      url: "mantisai.in/company",
+    }),
     title: `About ${COMPANY.brandLong} — we make local opportunity visible`,
     description: "Built in Gurugram by the agency that needed it first. Live public business data, scored for who actually needs what you sell.",
     url: `${COMPANY.site}/company`,

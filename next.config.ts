@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The OG renderer reads its background art and fonts from disk. public/ is served from the CDN and
+  // is not otherwise present in a serverless function, so these have to be traced in explicitly.
+  outputFileTracingIncludes: {
+    "/api/og": ["./public/og/**/*", "./public/mantis-logo-wordmark.png", "./app/api/og/fonts/**/*"],
+  },
   async redirects() {
     return [
       // The partnership email that goes to paid users at their limit links to

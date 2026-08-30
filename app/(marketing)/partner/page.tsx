@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import { COMPANY } from "@/lib/company";
 import { PartnerApplicationForm } from "@/components/partner/PartnerApplicationForm";
@@ -18,6 +19,14 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: `${COMPANY.site}/partner` },
   openGraph: {
+    images: ogImageMeta({
+      v: "partner",
+      eyebrow: "Mantis partner network",
+      t1: "Grow together.",
+      t2: "Win more local clients.",
+      sub: "Get free portal access, fresh local leads and dedicated partner support.",
+      url: "mantisai.in/partner",
+    }),
     title: `${COMPANY.brandLong} Partner Access — grow together, win more local clients`,
     description: "Higher lead limits, priority support and referral revenue for agencies that deliver for local businesses.",
     url: `${COMPANY.site}/partner`,

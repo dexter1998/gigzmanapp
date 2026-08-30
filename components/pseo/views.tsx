@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { COMPANY } from "@/lib/company";
+import { ogImageMeta } from "@/lib/og";
 import { loadPageData } from "@/lib/pseo/page-data";
 import { ListingShell } from "@/components/pseo/ListingShell";
 import type { Crumb } from "@/components/pseo/Breadcrumbs";
@@ -46,6 +47,20 @@ export async function cityMetadata(serviceSlug: string, citySlug: string, page =
       `${pct(d.stats.gapRate)} of the ${d.stats.checked} we've checked. Ranked by opportunity, with category and area breakdowns.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
+    openGraph: {
+      type: "website",
+      url: d.page > 1 ? `${base}/page/${d.page}` : base,
+      siteName: COMPANY.brand,
+      images: ogImageMeta({
+        v: "leads",
+        eyebrow: "Local lead market",
+        t1: `${d.stats.qualifying.toLocaleString("en-IN")} businesses in ${d.city.name}`,
+        t2: "with no website.",
+        sub: `${pct(d.stats.gapRate)} of the ${d.stats.checked.toLocaleString("en-IN")} we have checked here have no website of their own.`,
+        url: `mantisai.in/leads/${serviceSlug}/${citySlug}`,
+      }),
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -110,6 +125,20 @@ export async function areaMetadata(serviceSlug: string, citySlug: string, areaSl
       `a ${pct(d.stats.gapRate)} gap. Ranked by opportunity score.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
+    openGraph: {
+      type: "website",
+      url: d.page > 1 ? `${base}/page/${d.page}` : base,
+      siteName: COMPANY.brand,
+      images: ogImageMeta({
+        v: "nearby",
+        eyebrow: `${d.city.name} · ${d.areaName}`,
+        t1: `${d.stats.qualifying.toLocaleString("en-IN")} businesses here`,
+        t2: "have no website.",
+        sub: `A ${pct(d.stats.gapRate)} gap across ${d.stats.checked.toLocaleString("en-IN")} businesses we have mapped in ${d.areaName}.`,
+        url: `mantisai.in/leads/${serviceSlug}/${citySlug}/areas/${areaSlug}`,
+      }),
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -179,6 +208,20 @@ export async function categoryMetadata(serviceSlug: string, citySlug: string, ca
       `${d.city.name} have no website — a ${pct(d.stats.gapRate)} gap.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
+    openGraph: {
+      type: "website",
+      url: d.page > 1 ? `${base}/page/${d.page}` : base,
+      siteName: COMPANY.brand,
+      images: ogImageMeta({
+        v: "leads",
+        eyebrow: `${d.city.name} · ${d.categoryLabel}`,
+        t1: `${d.stats.qualifying.toLocaleString("en-IN")} ${String(d.categoryLabel).toLowerCase()}`,
+        t2: "with no website.",
+        sub: `A ${pct(d.stats.gapRate)} gap across the ${d.stats.checked.toLocaleString("en-IN")} we have checked in ${d.city.name}.`,
+        url: `mantisai.in/leads/${serviceSlug}/${citySlug}/categories/${category}`,
+      }),
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 

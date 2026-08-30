@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { SERVICES } from "@/lib/pseo/services";
@@ -9,6 +10,17 @@ import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Bre
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
+  openGraph: {
+    images: ogImageMeta({
+      v: "leads",
+      eyebrow: "Local lead market",
+      t1: "High-intent local leads,",
+      t2: "ready to pitch.",
+      sub: "Fresh opportunities scored by website gaps, commercial intent and contactability.",
+      url: "mantisai.in/leads",
+    }),
+  },
+  twitter: { card: "summary_large_image" },
   title: "Local Lead Market — where businesses still have no website | Mantis",
   description:
     "Which local businesses have an active Google listing and no website, by city and by area. Gap rates, opportunity scores and coverage, measured by Mantis.",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
@@ -19,6 +20,14 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: `${COMPANY.site}/pricing` },
   openGraph: {
+    images: ogImageMeta({
+      v: "pricing",
+      eyebrow: "Simple pricing",
+      t1: "More leads. More clients.",
+      t2: "No complexity.",
+      sub: "Start free. Upgrade when your pipeline grows.",
+      url: "mantisai.in/pricing",
+    }),
     title: `${COMPANY.brandLong} Pricing — pay for the leads you actually use`,
     description: "Free forever plan, paid tiers from 2,000 to 30,000 lead credits a month, and custom Agency plans.",
     url: `${COMPANY.site}/pricing`,
