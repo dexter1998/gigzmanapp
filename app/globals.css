@@ -234,9 +234,27 @@ body {
 }
 
 /* ---- public lead-market pages (app/(pseo)) ------------------------------- */
+/* The filter panel is open by default and the toggle is hidden, so with JavaScript disabled the
+   whole rail is still on the page. Only below 900px does the toggle appear and the panel collapse —
+   which is a layout choice, not a content one: every card and link stays in the HTML either way. */
+.pseo-filter-panel { display: block; }
+/* The filter island hides cards by setting these attributes — never by writing to style.display,
+   which would wipe the card's own inline `display: grid`. */
+[data-pseo-card][data-filtered] { display: none !important; }
+[data-pseo-empty][data-show] { display: block !important; }
+.pseo-rail { position: sticky; top: 20px; }
+.pseo-lead-card summary::-webkit-details-marker { display: none; }
+
 @media (max-width: 900px) {
   .pseo-layout { grid-template-columns: 1fr !important; }
   .pseo-lead-card { grid-template-columns: 1fr !important; }
+  .pseo-rail { position: static; }
+  .pseo-searchbar { grid-template-columns: 1fr 1fr !important; }
+  .pseo-filter-toggle { display: flex !important; }
+  .pseo-filter-panel[data-open="0"] { display: none; }
+}
+@media (max-width: 560px) {
+  .pseo-searchbar { grid-template-columns: 1fr !important; }
 }
 
 /* ---- marketing pages: contact / pricing / partner / about ----------------- */
@@ -245,6 +263,9 @@ body {
    field rows inside the contact and partner forms. */
 @media (max-width: 900px) {
   .marketing-cta-grid { grid-template-columns: 1fr !important; }
+  /* Stacked, the cropped frames have the full width to work with, so let them keep their own height. */
+  .about-frame { aspect-ratio: auto !important; }
+  .about-frame img { width: 100% !important; margin-left: 0 !important; height: auto !important; }
   .marketing-cta-pose { display: none !important; }
   .pricing-packs { grid-template-columns: 1fr !important; }
   .pricing-pose { display: none !important; }

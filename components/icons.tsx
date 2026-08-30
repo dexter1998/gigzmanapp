@@ -52,17 +52,17 @@ export function GlobeIcon({ color = "var(--g-ink)", size = 14 }: { color?: strin
   );
 }
 
-export function FilterIcon() {
+export function FilterIcon({ size = 18, color = "var(--g-ink)" }: { size?: number; color?: string } = {}) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 4h16l-6 8v6l-4 2v-8L4 4Z" />
     </svg>
   );
 }
 
-export function LockIcon() {
+export function LockIcon({ size = 13, color = "var(--g-ink)" }: { size?: number; color?: string } = {}) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="10" width="16" height="10" rx="2" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>
@@ -103,9 +103,9 @@ export function UserIcon({ color = "var(--g-ink)" }: { color?: string }) {
   );
 }
 
-export function ArrowRightIcon() {
+export function ArrowRightIcon({ size = 14, color = "#fff" }: { size?: number; color?: string } = {}) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );

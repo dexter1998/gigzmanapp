@@ -1,5 +1,5 @@
 import { pseoSql } from "@/lib/pseo/db";
-import { AREA_BY_SLUG, CITY_BY_SLUG, areaDisplayName, distanceKm } from "@/lib/pseo/locations";
+import { CITY_BY_SLUG, areaDisplayName, distanceKm } from "@/lib/pseo/locations";
 import { formatCategory } from "@/lib/categories";
 import type { Scope } from "@/lib/pseo/stats";
 import type { GateStatus } from "@/lib/pseo/gate";

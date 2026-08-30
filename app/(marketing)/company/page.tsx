@@ -165,8 +165,7 @@ export default function CompanyPage() {
 
       {/* Live data */}
       <section style={{ background: "var(--g-green-mint)", padding: "80px 24px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 52, alignItems: "center" }} className="contact-grid">
-          <Image aria-hidden="true" alt="" src="/marketing/about-source-network.webp" width={1200} height={800} style={{ width: "100%", height: "auto" }} />
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 52, alignItems: "center" }} className="contact-grid">
           <div>
             <h2 style={{ fontSize: "clamp(25px, 3.5vw, 36px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.02em", margin: "0 0 16px", lineHeight: 1.2, textWrap: "balance" }}>
               The internet changes every day. Your <span style={{ color: "var(--g-green-dark)" }}>lead data</span> should too.
@@ -182,6 +181,18 @@ export default function CompanyPage() {
                 </div>
               ))}
             </div>
+          </div>
+          {/* The source art carries a wide margin of its own. Framed and overscaled so the artwork
+              fills the column edge to edge instead of floating in the middle of it. */}
+          <div style={{ borderRadius: "var(--radius-lg)", overflow: "hidden", aspectRatio: "16 / 11", background: "var(--g-white)" }} className="about-frame">
+            <Image
+              aria-hidden="true"
+              alt=""
+              src="/marketing/about-source-network.webp"
+              width={1200}
+              height={800}
+              style={{ width: "122%", height: "100%", objectFit: "cover", objectPosition: "center", marginLeft: "-11%" }}
+            />
           </div>
         </div>
       </section>
@@ -199,7 +210,16 @@ export default function CompanyPage() {
             <div style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)" }}>Tarun Kumar</div>
             <div style={{ fontSize: 13.5, color: "var(--g-gray-500)" }}>Founder, {COMPANY.brandLong}</div>
           </div>
-          <Image aria-hidden="true" alt="" src="/marketing/about-founder.webp" width={1100} height={734} style={{ width: "100%", height: "auto" }} />
+          <div style={{ borderRadius: "var(--radius-lg)", overflow: "hidden", aspectRatio: "4 / 3", background: "var(--g-cream)" }} className="about-frame">
+            <Image
+              aria-hidden="true"
+              alt=""
+              src="/marketing/about-founder.webp"
+              width={1100}
+              height={734}
+              style={{ width: "128%", height: "100%", objectFit: "cover", objectPosition: "center 45%", marginLeft: "-14%" }}
+            />
+          </div>
         </div>
       </section>
 

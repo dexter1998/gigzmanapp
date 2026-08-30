@@ -1,6 +1,7 @@
 import { pseoSql } from "@/lib/pseo/db";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
+import { categoryIcon } from "@/lib/pseo/category-icons";
 
 /**
  * Everything a public lead page states about its slice of the market.
@@ -21,11 +22,17 @@ export type ScoredLead = {
   business_name: string;
   category: string | null;
   categoryLabel: string;
+  categoryIcon: string;
   area_slug: string | null;
   rating: number | null;
   review_count: number | null;
   website_checked_at: Date | null;
   score: number;
+  /** Derived signals the filters work on. "Intent" is an established trading business without a
+   *  website — reviews prove it is active, the rating proves customers like it. */
+  intent: "high" | "medium" | "low";
+  /** Days since we verified the no-website claim, for the freshness filter. */
+  verifiedDaysAgo: number | null;
 };
 
 export type CategoryMix = {
@@ -72,6 +79,15 @@ function scopePredicate(scope: Scope) {
     return pseoSql`l.city_slug = ${scope.citySlug} AND l.category = ${scope.category}`;
   }
   return pseoSql`l.city_slug = ${scope.citySlug}`;
+}
+
+/** A business with real reviews and a good rating, and still no website, is the strongest kind of
+ *  opportunity on these pages — it is demonstrably trading and demonstrably underserved. */
+function intentOf(rating: number | null, reviews: number | null): "high" | "medium" | "low" {
+  if (reviews == null || reviews === 0) return "low";
+  if (reviews >= 20 && (rating ?? 0) >= 4) return "high";
+  if (reviews >= 5) return "medium";
+  return "low";
 }
 
 function median(values: number[]): number | null {
@@ -132,6 +148,11 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
         section: r.category ? (TYPE_TO_SECTION[r.category] ?? null) : null,
         address: r.address,
       }),
+      categoryIcon: categoryIcon(r.category),
+      intent: intentOf(r.rating, r.review_count),
+      verifiedDaysAgo: r.website_checked_at
+        ? Math.floor((Date.now() - r.website_checked_at.getTime()) / 86_400_000)
+        : null,
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -191,9 +212,12 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
       medianReviewsWithWebsite: median(
         hasSite.filter((r) => r.review_count != null).map((r) => r.review_count!)
       ),
-      medianRatingNoWebsite: median(
-        noSite.filter((r) => r.rating !== null).map((r) => Math.round(r.rating! * 10))
-      ),
+      // Ratings go through the integer median in tenths and come back out — median() rounds, and
+      // rounding 4.45 to 4 would misstate the figure by nearly half a star.
+      medianRatingNoWebsite: (() => {
+        const tenths = median(noSite.filter((r) => r.rating !== null).map((r) => Math.round(r.rating! * 10)));
+        return tenths === null ? null : tenths / 10;
+      })(),
       categories,
       scoreBands,
       coverage: await coverageFor(scope),

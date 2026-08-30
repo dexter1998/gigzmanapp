@@ -15,10 +15,14 @@
 const EPOCH_START = Date.UTC(2026, 0, 1);
 const CYCLE_DAYS = 15;
 
-/** Leads always shown, in true score order — rotating the strongest out would misrepresent the
- *  ranking rather than refresh it. */
-export const FIXED_HEAD = 6;
-export const CARDS_PER_PAGE = 30;
+/** Named, stable, in true score order. Rotating the strongest out would misrepresent the ranking
+ *  rather than refresh it — and these are the leads the page is actually arguing about. */
+export const NAMED_LEADS = 40;
+export const CARDS_PER_PAGE = 20;
+/** Everything past the named head is shown masked, so the tail can be deeper without giving the
+ *  inventory away. Ten pages is enough to browse and far short of anything that reads as a search
+ *  result set. */
+export const MAX_LISTED = 200;
 
 export function epochFor(date: Date = new Date()): number {
   return Math.floor((date.getTime() - EPOCH_START) / (CYCLE_DAYS * 86_400_000));
@@ -48,21 +52,27 @@ export function selectForEpoch<T extends { id: string }>(
   items: T[],
   pageKey: string,
   epoch: number,
-  count = CARDS_PER_PAGE
+  count = MAX_LISTED
 ): T[] {
   if (items.length <= count) return items;
 
-  const head = items.slice(0, FIXED_HEAD);
-  const tail = items.slice(FIXED_HEAD);
+  // The named head never rotates: those are the leads the page's own ranking is about, and moving
+  // them would be churn dressed up as freshness. Only the masked tail is resampled.
+  const head = items.slice(0, NAMED_LEADS);
+  const tail = items.slice(NAMED_LEADS);
   const seed = seedFor(pageKey, epoch);
 
   const sampled = [...tail]
     .map((item) => ({ item, rank: hashString(`${item.id}:${seed}`) }))
     .sort((a, b) => a.rank - b.rank)
-    .slice(0, count - head.length)
+    .slice(0, Math.max(0, count - head.length))
     .map((x) => x.item);
 
   // Restored to score order so the page still reads as a ranking, not a shuffle.
   const chosen = new Set(sampled.map((s) => s.id));
   return [...head, ...tail.filter((t) => chosen.has(t.id))];
+}
+
+export function totalPages(listed: number): number {
+  return Math.max(1, Math.ceil(Math.min(listed, MAX_LISTED) / CARDS_PER_PAGE));
 }
