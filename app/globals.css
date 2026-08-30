@@ -299,3 +299,22 @@ body {
   }
   @page { margin: 18mm; }
 }
+
+/* ---- auth (login/signup) on phones ---------------------------------------- */
+/* The card is a hard two-column grid on desktop; below tablet width the carousel column would
+   crush the form into a sliver, so the card collapses to the form alone. */
+@media (max-width: 860px) {
+  .auth-card {
+    grid-template-columns: 1fr !important;
+    max-width: 440px !important;
+  }
+  .auth-carousel-panel { display: none !important; }
+  .auth-form-panel { padding: 30px 22px !important; }
+}
+
+/* ---- app + pSEO pages on phones ------------------------------------------- */
+@media (max-width: 900px) {
+  /* Leads table above, detail panel below — a 340px fixed column leaves nothing for the table. */
+  .leads-split { grid-template-columns: 1fr !important; }
+  .pseo-searchbar { grid-template-columns: 1fr 1fr !important; }
+}

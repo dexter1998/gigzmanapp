@@ -28,6 +28,14 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# next/image writes optimized copies under .next/cache at runtime. The COPYs above land owned by
+# root while the server runs as node, and the failed mkdir surfaces as an unhandledRejection —
+# which on modern Node is a process crash, not a warning.
+RUN mkdir -p .next/cache && chown -R node:node .next/cache
 USER node
 EXPOSE 3000
-CMD ["node", "server.js"]
+# Forced at exec time, not via ENV: App Runner injects its own HOSTNAME (the instance hostname)
+# over any ENV set here, and Next's standalone server binds to whatever HOSTNAME says — so the
+# app came up on one interface while the TCP health check knocked on another, and every deploy
+# failed "healthy app, failed health check".
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 exec node server.js"]

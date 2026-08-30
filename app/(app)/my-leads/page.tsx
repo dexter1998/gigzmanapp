@@ -179,7 +179,7 @@ export default function LeadsPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "start" }} className="leads-split">
           <LeadsTable
             leads={leads}
             selected={selected}

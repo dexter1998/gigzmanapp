@@ -118,17 +118,20 @@ export default function LoginPage() {
           gridTemplateColumns: "1fr 1fr",
           overflow: "hidden",
         }}
+        className="auth-card"
       >
         {/* Left — carousel, edge-to-edge (no inset/padding so it fully fills the panel; the
             outer card's own border-radius + overflow:hidden clips its left corners for us). */}
-        <div style={{ position: "relative" }}>
+        {/* Hidden entirely on phones: at half of a 390px screen the art is a sliver and the
+            form is crushed — the carousel is desktop garnish, the form is the point. */}
+        <div style={{ position: "relative" }} className="auth-carousel-panel">
           <AuthCarousel />
         </div>
 
         {/* Right — auth form. Email/password is the primary path (always visible, no mode
             toggle needed to reach it) with Google underneath as the alternative — both
             reachable in one glance instead of switching between them. */}
-        <div style={{ padding: "48px 56px", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "48px 56px", display: "flex", flexDirection: "column" }} className="auth-form-panel">
           <div style={{ marginBottom: 28 }}>
             <Image src="/mantis-logo-wordmark.png" alt="mantis" width={150} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
           </div>
