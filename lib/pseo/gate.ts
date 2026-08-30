@@ -29,6 +29,10 @@ export const MIN_PUBLISH_LEADS = 25;
  *  and leave the sitemap on alternate days, which is a worse signal than never appearing. */
 export const MIN_KEEP_LEADS = 15;
 export const MIN_RENDER_LEADS = 8;
+/** Not a publish rule. Rating coverage decides whether a page can make its rating-dependent
+ *  claims — the score distribution in particular is one flat bar without it — but it does not
+ *  decide whether the page exists. Those are different questions, and conflating them held back
+ *  the largest pages in the section for a reason that had nothing to do with their content. */
 export const MIN_RATED_SHARE = 0.4;
 export const MIN_CATEGORIES = 5;
 export const MIN_AREAS = 3;
@@ -50,12 +54,12 @@ export function evaluateGate(input: GateInput): GateResult {
     failures.push(`only ${stats.qualifying} qualifying leads (need ${MIN_PUBLISH_LEADS})`);
   }
 
-  // A page of unrated listings has nothing to analyse: rating and review count carry 65 of the 100
-  // points in the lead score, so without them every card scores the same and the page is a list,
-  // not an assessment.
-  if (stats.ratedShare < MIN_RATED_SHARE) {
-    failures.push(`only ${(stats.ratedShare * 100).toFixed(0)}% of leads carry a rating (need ${MIN_RATED_SHARE * 100}%)`);
-  }
+  // Rating coverage is deliberately NOT a rule here. It was, and it turned out to gate on when we
+  // happened to scan rather than on what the page can say: ratings only entered the Places field
+  // mask on 25 Aug, so a 1,505-lead area with 165 categories, a real gap rate and a real rank sat
+  // unindexed at 0% rated. Review counts are present regardless, so the demand-evidence comparison
+  // still holds; only the score distribution genuinely needs ratings, and that panel now suppresses
+  // itself. What a page may claim and whether a page may exist are separate questions.
 
   // Category pages are a single category by definition; the rule exists to stop a city or area page
   // being thirty of the same shop.

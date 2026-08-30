@@ -11,6 +11,7 @@ import { CategoryStrip } from "@/components/pseo/CategoryStrip";
 import { Pagination } from "@/components/pseo/Pagination";
 import { ProvenanceNote } from "@/components/pseo/ProvenanceNote";
 import { ArrowRightIcon, ZapIcon } from "@/components/icons";
+import { MIN_RATED_SHARE } from "@/lib/pseo/gate";
 
 /**
  * The single layout every public listing page uses — city, area and category alike.
@@ -81,6 +82,9 @@ export function ListingShell({
   // A single high-intent business out of fifteen hundred is not a finding, and rounding it to
   // "0% of the total" states the opposite of what the panel is for.
   const showIntentPanel = data.intentCounts.high >= 10 && intentShare >= 0.02;
+  // Without ratings the score bands collapse into a single "under 40" bar, which is a chart of our
+  // own missing data rather than a finding about the market.
+  const showScoreBands = stats.scoreBands.length > 0 && stats.ratedShare >= MIN_RATED_SHARE;
 
   const faqs = faqsFor(data);
   const topAreas = areas.slice(0, 8);
@@ -183,7 +187,7 @@ export function ListingShell({
 
             {/* ---- Below the listing: what the data says, rather than more of the same list ---- */}
 
-            {(stats.scoreBands.length > 0 || showIntentPanel) && (
+            {(showScoreBands || showIntentPanel) && (
               <Section title={`What the numbers say about ${data.areaName ?? city.name}`}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
                   {showIntentPanel && (
@@ -204,7 +208,7 @@ export function ListingShell({
                     </Panel>
                   )}
 
-                  {stats.scoreBands.length > 0 && (
+                  {showScoreBands && (
                     <Panel>
                       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: "var(--g-gray-500)", marginBottom: 12 }}>
                         LEAD SCORE DISTRIBUTION
