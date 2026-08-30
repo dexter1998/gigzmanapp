@@ -23,14 +23,17 @@ export function CreditPackCards({
   busyPackId,
   disabled,
   showFree = true,
+  minCardWidth = 240,
 }: {
   onBuy?: (packId: string) => void;
   busyPackId?: string | null;
   disabled?: boolean;
   showFree?: boolean;
+  /** Narrower inside the modal, where three cards have to share less width than a page. */
+  minCardWidth?: number;
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 18, alignItems: "stretch", textAlign: "left" }}>
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}px, 1fr))`, gap: 18, alignItems: "stretch", textAlign: "left" }}>
       {showFree && (
         <Card
           title="Free"

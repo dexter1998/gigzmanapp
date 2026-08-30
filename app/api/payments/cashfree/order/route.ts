@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   const [profile] = await sql`SELECT phone, name FROM user_profiles WHERE email = ${userEmail}`;
 
   const orderId = newOrderId();
+  const origin = req.nextUrl.origin;
 
   // Credits and price are frozen onto the row now. The webhook grants whatever this row says, so
   // a later change to CREDIT_PACKS can never retroactively alter what an in-flight order buys.
@@ -51,7 +52,13 @@ export async function POST(req: NextRequest) {
         phone: profile?.phone || PHONE_FALLBACK,
         name: profile?.name ?? session.user.name ?? null,
       },
-      returnUrl: `${COMPANY.site}/settings/billing/return?order_id=${orderId}`,
+      // Back to wherever this purchase started, not a hardcoded host: a checkout begun on
+      // localhost that returns to mantisai.in lands on a different origin with no session, and
+      // the buyer sees themselves logged out right after paying.
+      returnUrl: `${origin}/settings/billing/return?order_id=${orderId}`,
+      // The webhook is different — Cashfree's servers call it, so it must always be a public
+      // URL. A localhost notify_url is simply unreachable, and the status endpoint reconciles
+      // local test purchases instead.
       notifyUrl: `${COMPANY.site}/api/payments/cashfree/webhook`,
     });
 

@@ -54,7 +54,7 @@ export function PlansModal({
             </p>
           )}
 
-          <CreditPackCards onBuy={buy} busyPackId={busyPackId} disabled={!sdkReady || busyPackId !== null} showFree={false} />
+          <CreditPackCards onBuy={buy} busyPackId={busyPackId} disabled={!sdkReady || busyPackId !== null} showFree={false} minCardWidth={200} />
           <CreditPackFootnote />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--g-border)" }}>
@@ -128,7 +128,7 @@ const overlayStyle: React.CSSProperties = {
 
 const modalStyle: React.CSSProperties = {
   width: "100%",
-  maxWidth: 720,
+  maxWidth: 880,
   background: "var(--g-white)",
   borderRadius: "var(--radius-lg)",
   boxShadow: "var(--shadow-card)",
