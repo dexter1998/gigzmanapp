@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { looksLikeCompetitor } from "@/lib/competitors";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
 import { isExcludedType } from "@/lib/lead-quality";
 import { recordApiFailure } from "@/lib/api-alerts";
@@ -46,17 +47,6 @@ const CELLS_PER_REQUEST_BUDGET = 1;
 // against whatever the normal section search already returned, not via a separate dedicated
 // search. A software/web/app dev shop showing up under "Business & B2B" (as corporate_office or
 // consultant, say) gets flagged here instead of treated as a lead.
-const COMPETITOR_NAME_KEYWORDS = [
-  "web design", "web development", "website design", "website development",
-  "software development", "software company", "software solutions", "app development",
-  "mobile app development", "digital agency", "it solutions", "it services", "web solutions",
-  "software technologies", "web technologies",
-];
-
-function looksLikeCompetitor(name: string): boolean {
-  const text = name.toLowerCase();
-  return COMPETITOR_NAME_KEYWORDS.some((k) => text.includes(k));
-}
 
 type PlacesResult = {
   places?: Array<{
