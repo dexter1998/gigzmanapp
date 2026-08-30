@@ -122,7 +122,7 @@ export default function ContactPage() {
               className="marketing-h1"
               style={{ fontSize: "clamp(34px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 16px", textWrap: "balance" }}
             >
-              How can we help you <span style={{ color: "var(--g-green)" }}>grow?</span>
+              How can we help you <span style={{ color: "var(--g-green-dark)" }}>grow?</span>
             </h1>
             <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 0 34px", maxWidth: 410 }}>
               Questions about leads, enrichment, pricing or partnerships? {COMPANY.brandLong} is built in{" "}

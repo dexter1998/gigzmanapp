@@ -22,7 +22,7 @@ export function LandingTestimonials() {
           <ShieldCheckIcon size={14} color="var(--g-green-text)" /> Trusted by 1,000+ agencies
         </div>
         <h2 style={{ fontSize: "clamp(30px, 4.5vw, 46px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>
-          Clients found. Pitches sent. <span style={{ color: "var(--g-green)" }}>Deals won.</span>
+          Clients found. Pitches sent. <span style={{ color: "var(--g-green-dark)" }}>Deals won.</span>
         </h2>
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", margin: "0 0 52px" }}>What agencies and freelancers are building with Mantis AI.</p>
 
@@ -72,6 +72,7 @@ export function LandingTestimonials() {
           aria-hidden="true"
           alt=""
           src="/landing/mantis-crouch.png"
+          sizes="(max-width: 900px) 45vw, 360px"
           width={1254}
           height={1254}
           style={{ position: "absolute", bottom: 0, right: "6%", width: 190, height: "auto", zIndex: 1 }}

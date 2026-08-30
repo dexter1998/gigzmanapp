@@ -110,7 +110,7 @@ export default function PricingPage() {
               className="marketing-h1"
               style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 14px", textWrap: "balance" }}
             >
-              More leads. <span style={{ color: "var(--g-green)" }}>More clients.</span> No complexity.
+              More leads. <span style={{ color: "var(--g-green-dark)" }}>More clients.</span> No complexity.
             </h1>
             <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
               Searching is free. Credits are only spent when you unlock a lead you want to contact — so an afternoon

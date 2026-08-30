@@ -67,7 +67,7 @@ export function SectionHeading({
           textWrap: "balance",
         }}
       >
-        {title} {accent && <span style={{ color: "var(--g-green)" }}>{accent}</span>}
+        {title} {accent && <span style={{ color: "var(--g-green-dark)" }}>{accent}</span>}
       </h2>
       {sub && (
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", margin: 0, maxWidth: 620, marginLeft: align === "center" ? "auto" : 0, marginRight: align === "center" ? "auto" : 0, lineHeight: 1.6 }}>

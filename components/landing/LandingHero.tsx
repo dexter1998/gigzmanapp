@@ -7,8 +7,8 @@ export function LandingHero() {
   return (
     <section style={{ position: "relative", overflow: "hidden", padding: "72px 24px 96px" }}>
       <div style={{ position: "absolute", inset: 0, opacity: 0.4 }}>
-        <OrigamiDecoration variant="corner-left" opacity={1} width="46vw" />
-        <OrigamiDecoration variant="corner-right" opacity={1} width="46vw" />
+        <OrigamiDecoration variant="corner-left" opacity={1} width="46vw" priority />
+        <OrigamiDecoration variant="corner-right" opacity={1} width="46vw" priority />
       </div>
       <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
         <div
@@ -39,7 +39,7 @@ export function LandingHero() {
             textWrap: "balance",
           }}
         >
-          We find clients <span style={{ color: "var(--g-green)" }}>near you</span>.
+          We find clients <span style={{ color: "var(--g-green-dark)" }}>near you</span>.
         </h1>
 
         <p

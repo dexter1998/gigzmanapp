@@ -42,7 +42,7 @@ export function LandingWebSearch() {
           </div>
           <h2 style={{ fontSize: "clamp(30px, 4.5vw, 46px)", fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.15, margin: "0 0 18px" }}>
             We search the web. <br />
-            <span style={{ color: "var(--g-green)" }}>Not a stale database.</span>
+            <span style={{ color: "var(--g-green-dark)" }}>Not a stale database.</span>
           </h2>
           <p style={{ fontSize: 16, color: "var(--g-gray-500)", lineHeight: 1.65, maxWidth: 560, margin: "0 0 32px" }}>
             Every search scans multiple live sources across Google Maps, business websites, social profiles and the open web. Results are verified before they reach your workspace.

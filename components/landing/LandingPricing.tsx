@@ -41,7 +41,7 @@ export function LandingPricing() {
       <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--g-green-text)", marginBottom: 14 }}>• Pricing</div>
         <h2 style={{ fontSize: "clamp(30px, 4.5vw, 46px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>
-          Simple pricing. <span style={{ color: "var(--g-green)" }}>More clients.</span>
+          Simple pricing. <span style={{ color: "var(--g-green-dark)" }}>More clients.</span>
         </h2>
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", margin: "0 0 52px" }}>Start free. Upgrade when your pipeline grows.</p>
 

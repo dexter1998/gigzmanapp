@@ -42,7 +42,7 @@ export function LandingFaq({
       <OrigamiDecoration variant="corner-left" opacity={0.35} width="42vw" />
       <div style={{ maxWidth: 1240, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <h2 style={{ fontSize: "clamp(30px, 5vw, 50px)", fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>
-          {title} <span style={{ color: "var(--g-green)" }}>{accent}</span>
+          {title} <span style={{ color: "var(--g-green-dark)" }}>{accent}</span>
         </h2>
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", margin: "0 0 52px" }}>{sub}</p>
 

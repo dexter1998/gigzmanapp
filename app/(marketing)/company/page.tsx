@@ -101,7 +101,7 @@ export default function CompanyPage() {
             className="marketing-h1"
             style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 16px", textWrap: "balance" }}
           >
-            We make <span style={{ color: "var(--g-green)" }}>local opportunity</span> visible.
+            We make <span style={{ color: "var(--g-green-dark)" }}>local opportunity</span> visible.
           </h1>
           <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 auto 40px", maxWidth: 560 }}>
             Mantis reads the public business data anyone can see on a map, scores it for who actually needs what you
@@ -124,7 +124,7 @@ export default function CompanyPage() {
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 52, alignItems: "start" }} className="contact-grid">
             <h2 style={{ fontSize: "clamp(24px, 3.4vw, 34px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.2, textWrap: "balance" }}>
-              We built Mantis because <span style={{ color: "var(--g-green)" }}>we needed it.</span>
+              We built Mantis because <span style={{ color: "var(--g-green-dark)" }}>we needed it.</span>
             </h2>
             <div>
               <p style={{ fontSize: 15.5, color: "var(--g-gray-500)", lineHeight: 1.75, margin: "0 0 16px" }}>

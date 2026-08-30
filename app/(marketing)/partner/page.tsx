@@ -129,7 +129,7 @@ export default function PartnerPage() {
               className="marketing-h1"
               style={{ fontSize: "clamp(32px, 4.8vw, 50px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 16px", textWrap: "balance" }}
             >
-              Grow together. Win more <span style={{ color: "var(--g-green)" }}>local clients.</span>
+              Grow together. Win more <span style={{ color: "var(--g-green-dark)" }}>local clients.</span>
             </h1>
             <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 430 }}>
               If you&apos;re working Mantis hard enough to hit your plan&apos;s ceiling every month, the partner
@@ -179,7 +179,7 @@ export default function PartnerPage() {
           <div>
             <div style={{ fontSize: 12, fontWeight: 800, color: "var(--g-green-text)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 12 }}>How it works</div>
             <h2 style={{ fontSize: "clamp(26px, 3.6vw, 38px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.02em", margin: "0 0 30px", textWrap: "balance" }}>
-              From application to <span style={{ color: "var(--g-green)" }}>opportunities.</span>
+              From application to <span style={{ color: "var(--g-green-dark)" }}>opportunities.</span>
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               {STEPS.map((s) => (
@@ -229,7 +229,7 @@ export default function PartnerPage() {
           <div>
             <div style={{ fontSize: 12, fontWeight: 800, color: "var(--g-green-text)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 12 }}>Who we take</div>
             <h2 style={{ fontSize: "clamp(26px, 3.6vw, 38px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.02em", margin: "0 0 20px", textWrap: "balance" }}>
-              Built for people who help businesses <span style={{ color: "var(--g-green)" }}>grow.</span>
+              Built for people who help businesses <span style={{ color: "var(--g-green-dark)" }}>grow.</span>
             </h2>
             <p style={{ fontSize: 15, color: "var(--g-gray-500)", lineHeight: 1.65, margin: "0 0 22px", maxWidth: 440 }}>
               You don&apos;t need to be large. A two-person studio that closes consistently is a better partner than a

@@ -43,7 +43,7 @@ export function LandingEnrichment() {
         </div>
         <h2 style={{ fontSize: "clamp(30px, 4.5vw, 46px)", fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.2, margin: "0 0 14px" }}>
           Know the business. <br />
-          <span style={{ color: "var(--g-green)" }}>Reach the right person.</span>
+          <span style={{ color: "var(--g-green-dark)" }}>Reach the right person.</span>
         </h2>
         <p style={{ fontSize: 16, color: "var(--g-gray-500)", maxWidth: 580, margin: "0 auto 56px" }}>
           Enrich local business profiles, identify founders and decision-makers, and verify the best available contact channels.

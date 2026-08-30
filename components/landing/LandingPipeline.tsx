@@ -87,7 +87,7 @@ export function LandingPipeline() {
           <OrigamiDecoration variant="corner-right" opacity={0.5} width="100%" />
         </div>
         <div style={{ position: "absolute", bottom: -40, right: "calc(50% - 610px)", width: 130, zIndex: 1 }}>
-          <Image aria-hidden="true" alt="" src="/landing/mantis-crouch.png" width={1254} height={1254} style={{ width: "100%", height: "auto" }} />
+          <Image aria-hidden="true" alt="" src="/landing/mantis-crouch.png" width={1254} height={1254} sizes="(max-width: 900px) 45vw, 360px" style={{ width: "100%", height: "auto" }} />
         </div>
       </div>
     </section>

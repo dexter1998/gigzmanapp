@@ -116,7 +116,7 @@ export function LandingCapabilities() {
             textWrap: "balance",
           }}
         >
-          Everything you need to <span style={{ color: "var(--g-green)" }}>find and close</span> local clients
+          Everything you need to <span style={{ color: "var(--g-green-dark)" }}>find and close</span> local clients
         </h2>
 
         {/* Discover → Close journey line, matching the approved reference's dotted progress indicator */}
@@ -156,7 +156,7 @@ export function LandingCapabilities() {
                 <cap.icon color="var(--g-green-text)" size={22} />
               </div>
               {cap.preview}
-              <div style={{ fontSize: 34, fontWeight: 800, color: "var(--g-green)", marginBottom: 6, lineHeight: 1 }}>{cap.n}</div>
+              <div style={{ fontSize: 34, fontWeight: 800, color: "var(--g-green-dark)", marginBottom: 6, lineHeight: 1 }}>{cap.n}</div>
               <div style={{ fontSize: 17, fontWeight: 700, color: "var(--g-ink)", marginBottom: 8 }}>{cap.title}</div>
               <div style={{ fontSize: 13.5, color: "var(--g-gray-500)", lineHeight: 1.55 }}>{cap.description}</div>
             </div>

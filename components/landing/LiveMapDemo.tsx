@@ -55,7 +55,10 @@ export function LiveMapDemo() {
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps().then(() => {
+    const host = mapDivRef.current;
+    if (!host) return;
+
+    const start = () => loadGoogleMaps().then(() => {
       if (cancelled || !mapDivRef.current || mapRef.current) return;
       PinOverlayClassRef.current = createPinOverlayClass();
       mapRef.current = new google.maps.Map(mapDivRef.current, {
@@ -87,8 +90,27 @@ export function LiveMapDemo() {
 
       void loadLeadsNear(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
     });
+
+    // The Maps SDK is 590 KiB and 226 ms of main thread — by a wide margin the most expensive thing
+    // on the landing page, and the top entry in every "unused JavaScript" and "long task" audit.
+    // Holding it until the canvas is near the viewport and the browser has gone idle takes it off
+    // the critical path; the visitor still gets the same map, just not before the page is usable.
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        const idle = window.requestIdleCallback ?? ((cb: IdleRequestCallback) => window.setTimeout(() => cb({ didTimeout: true, timeRemaining: () => 0 }), 200));
+        idle(() => {
+          if (!cancelled) void start();
+        }, { timeout: 2500 });
+      },
+      { rootMargin: "300px" }
+    );
+    io.observe(host);
+
     return () => {
       cancelled = true;
+      io.disconnect();
     };
   }, []);
 

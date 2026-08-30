@@ -13,6 +13,13 @@ const COLUMNS = [
   { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]] },
 ] as const;
 
+/** Icon-only links announce as "link" to a screen reader unless they carry a name of their own. */
+const SOCIALS = [
+  { Icon: LinkedInIcon, label: "LinkedIn" },
+  { Icon: XSocialIcon, label: "X" },
+  { Icon: YouTubeIcon, label: "YouTube" },
+] as const;
+
 export function LandingFooter() {
   return (
     <footer style={{ position: "relative", background: "var(--g-green-mint)", padding: "88px 24px 32px", marginTop: 0 }}>
@@ -46,7 +53,7 @@ export function LandingFooter() {
               placeholder="Enter your email"
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", padding: "12px 16px", fontSize: 14, color: "var(--g-ink)" }}
             />
-            <button type="submit" style={{ width: 42, height: 42, borderRadius: 8, border: "none", background: "var(--g-green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <button type="submit" aria-label="Subscribe to updates" style={{ width: 42, height: 42, borderRadius: 8, border: "none", background: "var(--g-green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <ArrowRightIcon />
             </button>
           </form>
@@ -55,8 +62,8 @@ export function LandingFooter() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginTop: 44, paddingTop: 24, borderTop: "1px solid rgba(20,32,51,0.12)" }}>
           <span style={{ fontSize: 13, color: "var(--g-ink-soft)" }}>© {new Date().getFullYear()} Mantis AI. All rights reserved.</span>
           <div style={{ display: "flex", gap: 12 }}>
-            {[LinkedInIcon, XSocialIcon, YouTubeIcon].map((Icon, i) => (
-              <a key={i} href="#" style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {SOCIALS.map(({ Icon, label }) => (
+              <a key={label} href="#" aria-label={`Mantis AI on ${label}`} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon size={16} />
               </a>
             ))}

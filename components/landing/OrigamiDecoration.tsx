@@ -16,10 +16,15 @@ export function OrigamiDecoration({
   variant = "corner-left",
   opacity = 0.9,
   width = 560,
+  priority = false,
 }: {
   variant?: "corner-left" | "corner-right" | "wide";
   opacity?: number;
   width?: number | string;
+  /** Set on the instance above the fold. next/image lazy-loads by default, and Lighthouse measured
+   *  the hero's corner fold as the Largest Contentful Paint — lazy-loading the LCP element delays
+   *  the one paint the score is built on. */
+  priority?: boolean;
 }) {
   const source = SOURCES[variant];
 
@@ -31,6 +36,7 @@ export function OrigamiDecoration({
         src={source.src}
         width={source.width}
         height={source.height}
+        priority={priority}
         style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "auto", pointerEvents: "none", opacity, zIndex: 0 }}
       />
     );
@@ -44,6 +50,7 @@ export function OrigamiDecoration({
       src={source.src}
       width={source.width}
       height={source.height}
+      priority={priority}
       style={{
         position: "absolute",
         bottom: 0,
