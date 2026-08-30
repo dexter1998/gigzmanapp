@@ -2,6 +2,7 @@ import { pseoSql } from "@/lib/pseo/db";
 import { CITIES } from "@/lib/pseo/locations";
 import { SERVICES } from "@/lib/pseo/services";
 import { loadScope, type Scope } from "@/lib/pseo/stats";
+import { TYPE_TO_SECTION } from "@/lib/categories";
 import { evaluateGate, shouldStayPublished, MIN_RENDER_LEADS } from "@/lib/pseo/gate";
 import { pageKeyFor, cityAreaBreakdown } from "@/lib/pseo/registry";
 import { hashString, epochFor, selectForEpoch } from "@/lib/pseo/rotation";
@@ -46,6 +47,12 @@ async function scopesForCity(citySlug: string): Promise<Array<{ scope: Scope; ty
   `) as unknown as Array<{ category: string; qualifying: number }>;
 
   for (const c of cats) {
+    // The allowlist in lib/categories.ts deliberately excludes infrastructure, government, transit
+    // and residential locations. Page creation was reading leads.category directly and skipping
+    // that check, which published "28 bus stops with no website in Gurgaon" and pages for parking
+    // lots, housing complexes and apartment buildings. None of those is a lead for a web agency,
+    // and a section carrying them reads as generated rather than assembled.
+    if (!TYPE_TO_SECTION[c.category]) continue;
     out.push({ scope: { kind: "category", citySlug, category: c.category }, type: "category" });
   }
 
@@ -57,8 +64,24 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
   const service = SERVICES[0];
   const epoch = epochFor();
   const areas = await cityAreaBreakdown(citySlug);
+  const scopes = await scopesForCity(citySlug);
 
-  for (const { scope, type } of await scopesForCity(citySlug)) {
+  // Anything this city still has a row for but no longer has a scope for is retired. Without this
+  // a page that stops qualifying — because its category left the allowlist, or its leads dried up —
+  // keeps its published status forever, since the loop below only ever visits current scopes.
+  const liveKeys = scopes.map(({ scope }) => pageKeyFor(service.slug, scope));
+  const retired = (await pseoSql`
+    UPDATE pseo_pages
+    SET status = 'withheld', gate_pass_streak = 0, updated_at = now()
+    WHERE service_slug = ${service.slug} AND city_slug = ${citySlug}
+      AND status <> 'withheld' AND page_key <> ALL(${liveKeys})
+    RETURNING page_key
+  `) as unknown as Array<{ page_key: string }>;
+  for (const r of retired) {
+    results.push({ pageKey: r.page_key, status: "withheld", qualifying: 0, changed: true, newlyPublished: false, failures: ["no longer in scope"] });
+  }
+
+  for (const { scope, type } of scopes) {
     const pageKey = pageKeyFor(service.slug, scope);
     const { stats, leads } = await loadScope(scope);
 
