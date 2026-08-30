@@ -19,6 +19,10 @@ import { SSMClient, SendCommandCommand, GetCommandInvocationCommand } from "@aws
 // an instance that was running the whole time. That is why every enrichment job sat at pending.
 // Same reason SES_REGION and BEDROCK_REGION exist as their own variables in this codebase.
 const REGION = process.env.SCRAPER_REGION || "ap-south-1";
+
+/** A gosom run on one lead takes minutes, not hours. Past this a job is treated as dead so the
+ *  queue behind it can move; the lead can simply be requeued. */
+const STALE_AFTER_MS = 45 * 60 * 1000;
 const INSTANCE_ID = process.env.GOSOM_EC2_INSTANCE_ID;
 const ec2 = new EC2Client({ region: REGION });
 const ssm = new SSMClient({ region: REGION });
@@ -93,6 +97,18 @@ export async function advance(leadId: string, lead: LeadForEnrichment) {
   }
 
   if (existing.status === "done" || existing.status === "failed") return existing;
+
+  // A job that has been in flight far longer than a scrape can take is not in flight — the instance
+  // was replaced, the command invocation expired, or a deploy landed mid-run. Nothing marked those
+  // rows, so three of them sat at 'scraping' for a day and the one-at-a-time check below then held
+  // every other lead at 'starting_instance' behind them. A stuck job has to fail loudly, or the
+  // whole queue stops on the first one that dies quietly.
+  const ageMs = Date.now() - new Date(existing.requested_at).getTime();
+  if (ageMs > STALE_AFTER_MS) {
+    const error = `stalled in '${existing.status}' for ${Math.round(ageMs / 60000)} minutes`;
+    await sql`UPDATE lead_enrichment SET status = 'failed', error = ${error} WHERE lead_id = ${leadId}`;
+    return { status: "failed" as const, error };
+  }
 
   if (existing.status === "pending") {
     const desc = await ec2.send(new DescribeInstancesCommand({ InstanceIds: [INSTANCE_ID] }));
