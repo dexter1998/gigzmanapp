@@ -11,7 +11,6 @@ export const metadata: Metadata = {
       eyebrow: "Terms of service",
       t1: "Clear terms.",
       t2: "Fair access.",
-      sub: "The rules for using Mantis AI, lead data and partner access.",
       url: "mantisai.in/terms",
     }),
   },

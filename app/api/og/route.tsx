@@ -6,7 +6,7 @@ import { OG_BACKGROUNDS } from "@/lib/og";
 /**
  * Open Graph image renderer.
  *
- * One layout, ten backgrounds. Every page passes its own eyebrow, two-line headline and sub-line;
+ * One layout, eleven backgrounds. Every page passes its own eyebrow and two-line headline;
  * the art is chosen by `v` so a pricing card looks like pricing and a lead page looks like the lead
  * market, without a designer touching anything when a new city publishes.
  *
@@ -50,7 +50,6 @@ export async function GET(req: Request) {
   const eyebrow = text(q.get("eyebrow"), 34) || "MANTIS AI";
   const line1 = text(q.get("t1"), 46) || "Find local clients.";
   const line2 = text(q.get("t2"), 46);
-  const sub = text(q.get("sub"), 130);
   const urlLabel = text(q.get("url"), 48) || "mantisai.in";
 
   const bgFile = OG_BACKGROUNDS[variant as keyof typeof OG_BACKGROUNDS] ?? OG_BACKGROUNDS.hero;
@@ -77,9 +76,9 @@ export async function GET(req: Request) {
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            width: 640,
+            width: 600,
             height: H,
-            padding: "52px 0 52px 64px",
+            padding: "54px 0 54px 64px",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -88,20 +87,15 @@ export async function GET(req: Request) {
               <img src={logo} alt="" height={34} width={140} style={{ objectFit: "contain", marginBottom: 34 }} />
             )}
 
-            <div style={{ display: "flex", fontSize: 14, fontWeight: 700, letterSpacing: 1.7, color: GREEN_TEXT, marginBottom: 16 }}>
+            <div style={{ display: "flex", fontSize: 15, fontWeight: 700, letterSpacing: 1.9, color: GREEN_TEXT, marginBottom: 18 }}>
               {eyebrow.toUpperCase()}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", fontSize: 50, fontWeight: 800, lineHeight: 1.14, letterSpacing: -1.4 }}>
+            <div style={{ display: "flex", flexDirection: "column", fontSize: 62, fontWeight: 800, lineHeight: 1.08, letterSpacing: -2.2 }}>
               <div style={{ display: "flex", color: INK }}>{line1}</div>
               {line2 && <div style={{ display: "flex", color: GREEN }}>{line2}</div>}
             </div>
 
-            {sub && (
-              <div style={{ display: "flex", fontSize: 17, fontWeight: 500, lineHeight: 1.5, color: GREY, marginTop: 18, maxWidth: 480 }}>
-                {sub}
-              </div>
-            )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column" }}>

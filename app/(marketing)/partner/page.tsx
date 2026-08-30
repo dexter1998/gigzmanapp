@@ -24,7 +24,6 @@ export const metadata: Metadata = {
       eyebrow: "Mantis partner network",
       t1: "Grow together.",
       t2: "Win more local clients.",
-      sub: "Get free portal access, fresh local leads and dedicated partner support.",
       url: "mantisai.in/partner",
     }),
     title: `${COMPANY.brandLong} Partner Access — grow together, win more local clients`,

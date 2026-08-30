@@ -11,7 +11,6 @@ export const metadata: Metadata = {
       eyebrow: "Privacy policy",
       t1: "Your data.",
       t2: "Protected by design.",
-      sub: "How Mantis AI collects, uses and protects your information.",
       url: "mantisai.in/privacy",
     }),
   },

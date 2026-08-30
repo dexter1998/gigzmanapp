@@ -12,11 +12,10 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   openGraph: {
     images: ogImageMeta({
-      v: "leads",
+      v: "network",
       eyebrow: "Local lead market",
       t1: "High-intent local leads,",
       t2: "ready to pitch.",
-      sub: "Fresh opportunities scored by website gaps, commercial intent and contactability.",
       url: "mantisai.in/leads",
     }),
   },

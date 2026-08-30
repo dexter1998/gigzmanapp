@@ -23,7 +23,6 @@ export const metadata: Metadata = {
       eyebrow: "About Mantis AI",
       t1: "We make local",
       t2: "opportunity visible.",
-      sub: "Built in Gurugram to help agencies discover and close local opportunities.",
       url: "mantisai.in/company",
     }),
     title: `About ${COMPANY.brandLong} — we make local opportunity visible`,

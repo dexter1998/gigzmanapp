@@ -25,7 +25,6 @@ export const metadata: Metadata = {
       eyebrow: "Simple pricing",
       t1: "More leads. More clients.",
       t2: "No complexity.",
-      sub: "Start free. Upgrade when your pipeline grows.",
       url: "mantisai.in/pricing",
     }),
     title: `${COMPANY.brandLong} Pricing — pay for the leads you actually use`,

@@ -14,7 +14,6 @@ export const metadata: Metadata = {
       eyebrow: "How Mantis works",
       t1: "Live web search.",
       t2: "Verified opportunity signals.",
-      sub: "Real-time discovery, multi-source verification and enriched decision-makers.",
       url: "mantisai.in/leads/methodology",
     }),
   },
