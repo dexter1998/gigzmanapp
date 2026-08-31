@@ -21,10 +21,59 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Password reset lives inside the sign-in card as its own two-step mode — a dead-end error
+  // ("Incorrect email or password") now has a way forward without leaving the page.
+  const [forgotStep, setForgotStep] = useState<null | "request" | "reset">(null);
+
   function switchTab(next: Tab) {
     setTab(next);
     setError("");
     setEmailStep("form");
+    setForgotStep(null);
+  }
+
+  async function requestResetCode() {
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        setError("Couldn't send the code — try again in a minute.");
+        return;
+      }
+      setCode("");
+      setPassword("");
+      setForgotStep("reset");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitReset() {
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Couldn't reset the password");
+        return;
+      }
+      // Straight into the product with the new password — landing back on a blank sign-in form
+      // after a successful reset would make the user re-do what they just proved.
+      const result = await emailPasswordSignIn(email, password);
+      if (result) setError(result);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function submitEmailSignup() {
@@ -159,7 +208,7 @@ export default function LoginPage() {
           </h1>
           <div style={{ width: 32, height: 3, background: "var(--g-green)", borderRadius: 2, marginBottom: 26 }} />
 
-          {(!isSignup || emailStep === "form") && (
+          {!forgotStep && (!isSignup || emailStep === "form") && (
             <div>
               <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
               <Field
@@ -170,6 +219,15 @@ export default function LoginPage() {
                 placeholder={isSignup ? "At least 8 characters" : "••••••••"}
               />
               {error && <ErrorText>{error}</ErrorText>}
+              {!isSignup && (
+                <button
+                  type="button"
+                  onClick={() => { setError(""); setForgotStep("request"); }}
+                  style={{ background: "none", border: "none", padding: 0, marginBottom: 14, fontSize: 12.5, fontWeight: 600, color: "var(--g-green-darker)", cursor: "pointer" }}
+                >
+                  Forgot password?
+                </button>
+              )}
               {isSignup ? (
                 <button type="button" disabled={busy || !email || password.length < 8} onClick={submitEmailSignup} style={primaryBtn}>
                   {busy ? "Sending code…" : "Create account"}
@@ -188,6 +246,39 @@ export default function LoginPage() {
                   {isSignup ? "Sign up with Google" : "Continue with Google"}
                 </button>
               </form>
+            </div>
+          )}
+
+          {forgotStep === "request" && (
+            <div>
+              <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
+                Enter your account email and we&apos;ll send a 6-digit reset code.
+              </p>
+              <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@company.com" />
+              {error && <ErrorText>{error}</ErrorText>}
+              <button type="button" disabled={busy || !email} onClick={requestResetCode} style={primaryBtn}>
+                {busy ? "Sending…" : "Send reset code"}
+              </button>
+              <button type="button" onClick={() => { setError(""); setForgotStep(null); }} style={linkBtn}>
+                Back to sign in
+              </button>
+            </div>
+          )}
+
+          {forgotStep === "reset" && (
+            <div>
+              <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
+                If an account exists for <strong style={{ color: "var(--g-ink)" }}>{email}</strong>, a code is on its way.
+              </p>
+              <Field label="Reset code" value={code} onChange={setCode} placeholder="123456" />
+              <Field label="New password" value={password} onChange={setPassword} type="password" placeholder="At least 8 characters" />
+              {error && <ErrorText>{error}</ErrorText>}
+              <button type="button" disabled={busy || code.trim().length < 6 || password.length < 8} onClick={submitReset} style={primaryBtn}>
+                {busy ? "Resetting…" : "Reset password & sign in"}
+              </button>
+              <button type="button" onClick={() => { setError(""); setForgotStep("request"); }} style={linkBtn}>
+                Resend / change email
+              </button>
             </div>
           )}
 

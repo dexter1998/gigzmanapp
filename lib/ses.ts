@@ -68,3 +68,33 @@ export async function sendVerificationEmail(to: string, code: string) {
     throw err;
   }
 }
+
+export async function sendPasswordResetEmail(to: string, code: string) {
+  const values = {
+    otp_code: code,
+    verification_url: `${COMPANY.site}/forgot-password?email=${encodeURIComponent(to)}`,
+    privacy_url: `${COMPANY.site}/privacy`,
+  };
+  const text =
+    `Your Mantis password reset code is ${code}.\n\n` +
+    `It expires in 10 minutes. Enter it on the reset page along with your new password.\n\n` +
+    `Didn't request this? You can safely ignore this email — your password stays unchanged.\n`;
+  try {
+    await ses.send(
+      new SendEmailCommand({
+        Source: FROM_ADDRESS,
+        Destination: { ToAddresses: [to] },
+        Message: {
+          Subject: { Data: `${code} is your Mantis password reset code` },
+          Body: {
+            Html: { Data: fill(OTP_EMAIL_HTML, values), Charset: "UTF-8" },
+            Text: { Data: text, Charset: "UTF-8" },
+          },
+        },
+      })
+    );
+  } catch (err) {
+    await recordApiFailure("ses", (err as Error).message, { to });
+    throw err;
+  }
+}
