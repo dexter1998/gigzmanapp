@@ -9,7 +9,10 @@ import { pseoSitemapSegments } from "@/lib/pseo/sitemap";
  * site is at ~110 URLs; a crawler discovers exactly the same pages either way. The split exists so
  * that when indexing goes wrong we can see *which kind* of page it went wrong for.
  */
-export const revalidate = 86400;
+// Rendered per request, never at build: prerendering this handler made `next build`
+// query the production database, which is the coupling that blocked deploys during the
+// Neon outage and broke the container build entirely.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const children: Array<{ id: string; lastModified?: Date }> = [{ id: "pages" }];

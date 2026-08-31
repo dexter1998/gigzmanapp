@@ -9,7 +9,10 @@ import { isPseoSegment, pseoSitemapUrls, PSEO_SEGMENTS, type SitemapEntry } from
  * one, so they carry none — stamping today's date on a page that hasn't changed is how a sitemap's
  * lastmod earns being ignored, and an absent lastmod is honest where a fabricated one is not.
  */
-export const revalidate = 86400;
+// Rendered per request, never at build: prerendering this handler made `next build`
+// query the production database, which is the coupling that blocked deploys during the
+// Neon outage and broke the container build entirely.
+export const dynamic = "force-dynamic";
 export const dynamicParams = false;
 
 const STATIC_PAGES: SitemapEntry[] = [

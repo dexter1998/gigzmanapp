@@ -14,7 +14,10 @@ import { formatCategory } from "@/lib/categories";
  *
  * pubDate is when a page was genuinely first published, never when this was generated.
  */
-export const revalidate = 3600;
+// Rendered per request, never at build: prerendering this handler made `next build`
+// query the production database, which is the coupling that blocked deploys during the
+// Neon outage and broke the container build entirely.
+export const dynamic = "force-dynamic";
 
 function escapeXml(s: string) {
   return s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!);

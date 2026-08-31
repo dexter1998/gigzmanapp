@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { COMPANY } from "@/lib/company";
 import { CITY_BY_SLUG } from "@/lib/pseo/locations";
 import { SERVICE_BY_SLUG } from "@/lib/pseo/services";
-import { getPage, pageKeyFor, publishedChildren, publishedPages } from "@/lib/pseo/registry";
+import { getPage, pageKeyFor, publishedChildren} from "@/lib/pseo/registry";
 import { loadScope } from "@/lib/pseo/stats";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 
@@ -19,12 +19,6 @@ export const revalidate = 86400;
 export const dynamicParams = true;
 
 type Params = { params: Promise<{ service: string; city: string }> };
-
-export async function generateStaticParams() {
-  return (await publishedPages())
-    .filter((p) => p.page_type === "city" && p.city_slug)
-    .map((p) => ({ service: p.service_slug, city: p.city_slug! }));
-}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { service, city } = await params;
