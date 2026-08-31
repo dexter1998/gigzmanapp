@@ -43,6 +43,27 @@ function text(v: string | null, max: number): string {
   return (v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/**
+ * Headline size that keeps the design's two-line promise.
+ *
+ * The card is laid out as exactly two headline lines with the CTA beneath. At a fixed 62px a
+ * line longer than ~17 characters wrapped, which silently turned a two-line headline into three
+ * and pushed the CTA down — "Reach the right people." was rendering as two lines on the
+ * homepage card. Rather than force every caller to count characters, the size is derived from
+ * the longest line so any copy fits on one line, and the lines are set nowrap so it cannot
+ * degrade quietly again.
+ *
+ * 0.54em is the measured average advance of Plus Jakarta Sans ExtraBold; the letter-spacing is
+ * subtracted per character because it is negative here and materially narrows long strings.
+ */
+const TEXT_WIDTH = 570;
+const LETTER_SPACING = -2.2;
+function headlineSize(...lines: string[]): number {
+  const longest = Math.max(1, ...lines.map((l) => l.length));
+  const fitted = (TEXT_WIDTH / longest - LETTER_SPACING) / 0.54;
+  return Math.round(Math.max(34, Math.min(62, fitted)));
+}
+
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
 
@@ -92,9 +113,9 @@ export async function GET(req: Request) {
               {eyebrow.toUpperCase()}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", fontSize: 62, fontWeight: 800, lineHeight: 1.08, letterSpacing: -2.2 }}>
-              <div style={{ display: "flex", color: INK }}>{line1}</div>
-              {line2 && <div style={{ display: "flex", color: GREEN }}>{line2}</div>}
+            <div style={{ display: "flex", flexDirection: "column", fontSize: headlineSize(line1, line2), fontWeight: 800, lineHeight: 1.08, letterSpacing: LETTER_SPACING }}>
+              <div style={{ display: "flex", color: INK, whiteSpace: "nowrap" }}>{line1}</div>
+              {line2 && <div style={{ display: "flex", color: GREEN, whiteSpace: "nowrap" }}>{line2}</div>}
             </div>
 
             {cta && (
