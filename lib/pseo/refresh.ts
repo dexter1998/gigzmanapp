@@ -1,10 +1,10 @@
 import { pseoSql } from "@/lib/pseo/db";
 import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
-import { CITIES } from "@/lib/pseo/locations";
+import { CITIES, CITY_BY_SLUG } from "@/lib/pseo/locations";
 import { SERVICES } from "@/lib/pseo/services";
 import { loadScope, type Scope } from "@/lib/pseo/stats";
 import { TYPE_TO_SECTION } from "@/lib/categories";
-import { evaluateGate, shouldStayPublished, MIN_RENDER_LEADS } from "@/lib/pseo/gate";
+import { evaluateGate, shouldStayPublished, minRenderFor } from "@/lib/pseo/gate";
 import { pageKeyFor, cityAreaBreakdown } from "@/lib/pseo/registry";
 import { hashString, epochFor, selectForEpoch } from "@/lib/pseo/rotation";
 
@@ -28,13 +28,14 @@ export type RefreshResult = {
 };
 
 /** Which scopes are worth a row at all. A page is only created once there is something to say. */
-async function scopesForCity(citySlug: string): Promise<Array<{ scope: Scope; type: "city" | "area" | "category" }>> {
+async function scopesForCity(citySlug: string, countryCode: string): Promise<Array<{ scope: Scope; type: "city" | "area" | "category" }>> {
+  const minRender = minRenderFor(countryCode);
   const out: Array<{ scope: Scope; type: "city" | "area" | "category" }> = [
     { scope: { kind: "city", citySlug }, type: "city" },
   ];
 
   for (const area of await cityAreaBreakdown(citySlug)) {
-    if (area.qualifying >= MIN_RENDER_LEADS) {
+    if (area.qualifying >= minRender) {
       out.push({ scope: { kind: "area", citySlug, areaSlug: area.area_slug }, type: "area" });
     }
   }
@@ -45,7 +46,7 @@ async function scopesForCity(citySlug: string): Promise<Array<{ scope: Scope; ty
     WHERE city_slug = ${citySlug} AND is_competitor = false AND category IS NOT NULL
       AND category = ANY(${ALLOWED_LEAD_TYPES_SQL})
     GROUP BY category
-    HAVING count(*) FILTER (WHERE has_website = false) >= ${MIN_RENDER_LEADS}
+    HAVING count(*) FILTER (WHERE has_website = false) >= ${minRender}
   `) as unknown as Array<{ category: string; qualifying: number }>;
 
   for (const c of cats) {
@@ -65,8 +66,9 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
   const results: RefreshResult[] = [];
   const service = SERVICES[0];
   const epoch = epochFor();
+  const countryCode = CITY_BY_SLUG.get(citySlug)?.countryCode ?? "in";
   const areas = await cityAreaBreakdown(citySlug);
-  const scopes = await scopesForCity(citySlug);
+  const scopes = await scopesForCity(citySlug, countryCode);
 
   // Anything this city still has a row for but no longer has a scope for is retired. Without this
   // a page that stops qualifying — because its category left the allowlist, or its leads dried up —
@@ -96,12 +98,13 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
       pageType: type,
       passStreak: existing?.gate_pass_streak ?? 0,
       distinctAreas: type === "city" ? areas.length : undefined,
+      countryCode,
     });
 
     // An already-published page uses the lower keep threshold, so ordinary movement in the data
     // doesn't pull it out of the index and put it back a day later.
     let status = gate.status;
-    if (existing?.status === "published" && status !== "published" && shouldStayPublished(stats)) {
+    if (existing?.status === "published" && status !== "published" && shouldStayPublished(stats, countryCode)) {
       status = "published";
     }
 
@@ -123,11 +126,11 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
 
     await pseoSql`
       INSERT INTO pseo_pages (
-        page_key, page_type, service_slug, city_slug, area_slug, category_slug, status,
+        page_key, page_type, service_slug, country_code, city_slug, area_slug, category_slug, status,
         qualifying_leads, total_leads, stats, content_hash, rotation_epoch, gate_pass_streak,
         stats_computed_at, last_material_change_at, first_published_at
       ) VALUES (
-        ${pageKey}, ${type}, ${service.slug}, ${citySlug},
+        ${pageKey}, ${type}, ${service.slug}, ${countryCode}, ${citySlug},
         ${scope.kind === "area" ? scope.areaSlug : null},
         ${scope.kind === "category" ? scope.category : null},
         ${status}, ${stats.qualifying}, ${stats.checked},
@@ -135,6 +138,7 @@ export async function refreshCity(citySlug: string): Promise<RefreshResult[]> {
         now(), now(), ${status === "published" ? pseoSql`now()` : null}
       )
       ON CONFLICT (page_key) DO UPDATE SET
+        country_code = EXCLUDED.country_code,
         status = EXCLUDED.status,
         qualifying_leads = EXCLUDED.qualifying_leads,
         total_leads = EXCLUDED.total_leads,

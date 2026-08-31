@@ -22,11 +22,31 @@ export type GateInput = {
   distinctAreas?: number;
   /** Aggregate result_count of the scan cells covering this scope. */
   coverageResultCount?: number;
+  /** ISO 3166-1 alpha-2 of the city this page belongs to — selects the thresholds below. */
+  countryCode?: string;
 };
 
+/**
+ * Thresholds are per country, because the signal itself is not equally available everywhere.
+ *
+ * Measured across 141,863 places: the share of businesses with no website is 37.5% in India, 12.2%
+ * in Britain and about 4% in Australia, the United States and Canada. One global threshold does not
+ * hold two things constant — it holds the *count* constant while the underlying population varies
+ * by nine times, which means an American page needs nine times the businesses behind it to say the
+ * same sentence.
+ *
+ * This is a deliberate loosening, requested explicitly, and it is worth naming what it costs: the
+ * comment above about the gate being hard to weaken exists because loosening it is how programmatic
+ * SEO turns into a penalty. The protection that remains is that these are still real counts of real
+ * verified businesses — nothing here lets a page exist without data behind it — but a 10-lead
+ * American page is a thinner page than a 25-lead Indian one, and no threshold hides that.
+ */
+export const MIN_PUBLISH_LEADS_BY_COUNTRY: Record<string, number> = { in: 25, gb: 15, au: 10, us: 10, ca: 10 };
 export const MIN_PUBLISH_LEADS = 25;
+
 /** Demotion sits below promotion on purpose: a page that hovers at the line would otherwise enter
- *  and leave the sitemap on alternate days, which is a worse signal than never appearing. */
+ *  and leave the sitemap on alternate days, which is a worse signal than never appearing. Held at
+ *  60% of the publish threshold so the hysteresis scales with it. */
 export const MIN_KEEP_LEADS = 15;
 export const MIN_RENDER_LEADS = 8;
 /** Not a publish rule. Rating coverage decides whether a page can make its rating-dependent
@@ -35,8 +55,33 @@ export const MIN_RENDER_LEADS = 8;
  *  the largest pages in the section for a reason that had nothing to do with their content. */
 export const MIN_RATED_SHARE = 0.4;
 export const MIN_CATEGORIES = 5;
+/**
+ * How many areas a city page needs beneath it.
+ *
+ * Also per country, and for a reason that has nothing to do with quality: outside India and
+ * Britain, Google's addressComponents frequently carry no neighbourhood at all. Australia's
+ * `locality` is the suburb itself, and American addresses reliably carry `neighborhood` but the low
+ * gap rate leaves too few qualifying leads in any one of them. Requiring three there does not
+ * enforce a standard, it just withholds every page in the country — and because a withheld city
+ * page 404s its whole subtree, it withholds the category pages too.
+ */
+export const MIN_AREAS_BY_COUNTRY: Record<string, number> = { in: 3, gb: 3, au: 1, us: 1, ca: 1 };
 export const MIN_AREAS = 3;
 export const REQUIRED_PASS_STREAK = 2;
+
+export function minPublishFor(countryCode: string | null | undefined): number {
+  return MIN_PUBLISH_LEADS_BY_COUNTRY[countryCode ?? "in"] ?? MIN_PUBLISH_LEADS;
+}
+export function minKeepFor(countryCode: string | null | undefined): number {
+  return Math.ceil(minPublishFor(countryCode) * 0.6);
+}
+/** Floored at 5: below that a "page" is a heading and a handful of rows. */
+export function minRenderFor(countryCode: string | null | undefined): number {
+  return Math.max(5, Math.round(minPublishFor(countryCode) * 0.32));
+}
+export function minAreasFor(countryCode: string | null | undefined): number {
+  return MIN_AREAS_BY_COUNTRY[countryCode ?? "in"] ?? MIN_AREAS;
+}
 
 export type GateResult = {
   status: GateStatus;
@@ -50,8 +95,9 @@ export function evaluateGate(input: GateInput): GateResult {
   const { stats, pageType } = input;
   const failures: string[] = [];
 
-  if (stats.qualifying < MIN_PUBLISH_LEADS) {
-    failures.push(`only ${stats.qualifying} qualifying leads (need ${MIN_PUBLISH_LEADS})`);
+  const minPublish = minPublishFor(input.countryCode);
+  if (stats.qualifying < minPublish) {
+    failures.push(`only ${stats.qualifying} qualifying leads (need ${minPublish})`);
   }
 
   // Rating coverage is deliberately NOT a rule here. It was, and it turned out to gate on when we
@@ -67,8 +113,9 @@ export function evaluateGate(input: GateInput): GateResult {
     failures.push(`only ${stats.distinctCategories} categories (need ${MIN_CATEGORIES})`);
   }
 
-  if (pageType === "city" && (input.distinctAreas ?? 0) < MIN_AREAS) {
-    failures.push(`only ${input.distinctAreas ?? 0} areas (need ${MIN_AREAS})`);
+  const minAreas = minAreasFor(input.countryCode);
+  if (pageType === "city" && (input.distinctAreas ?? 0) < minAreas) {
+    failures.push(`only ${input.distinctAreas ?? 0} areas (need ${minAreas})`);
   }
 
   // Proves the count reflects the ground rather than how far a scan happened to get. Without it a
@@ -79,12 +126,12 @@ export function evaluateGate(input: GateInput): GateResult {
   const passesAllRules = failures.length === 0;
 
   if (passesAllRules && input.passStreak + 1 >= REQUIRED_PASS_STREAK) return { status: "published", failures, passesAllRules };
-  if (stats.qualifying >= MIN_RENDER_LEADS) return { status: "noindex", failures, passesAllRules };
+  if (stats.qualifying >= minRenderFor(input.countryCode)) return { status: "noindex", failures, passesAllRules };
   return { status: "withheld", failures, passesAllRules };
 }
 
 /** Whether an already-published page should stay published. Uses the lower keep threshold so
  *  ordinary fluctuation doesn't pull a page out of the index. */
-export function shouldStayPublished(stats: PageStats): boolean {
-  return stats.qualifying >= MIN_KEEP_LEADS;
+export function shouldStayPublished(stats: PageStats, countryCode?: string): boolean {
+  return stats.qualifying >= minKeepFor(countryCode);
 }

@@ -542,3 +542,25 @@ CREATE TABLE IF NOT EXISTS unresolved_phrases (
 );
 CREATE INDEX IF NOT EXISTS idx_unresolved_phrases ON unresolved_phrases(phrase, created_at DESC);
 
+-- Multi-country lead pages. Additive and inert to the product, like the rest of the pSEO columns:
+-- dropping this feature leaves these columns harmless.
+--
+-- `city_slug` alone was sufficient while there was one country. It still identifies a city (slugs
+-- are globally unique by construction — see lib/pseo/locations.ts), but every aggregate that wants
+-- "this country's pages" would otherwise have to join through the registry in application code.
+
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS country_code TEXT;   -- ISO 3166-1 alpha-2, lowercase
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS postal_code TEXT;
+-- 'components' | 'text' | 'coordinates' — which resolution path produced city_slug. A coverage
+-- shortfall traced to the parser and one traced to the scan need completely different fixes, and
+-- without this the two are indistinguishable after the fact.
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS location_via TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_leads_country ON leads(country_code, city_slug, has_website);
+
+ALTER TABLE pseo_pages ADD COLUMN IF NOT EXISTS country_code TEXT;
+CREATE INDEX IF NOT EXISTS idx_pseo_pages_country ON pseo_pages(country_code, status);
+
+-- The one-off backfill (every pre-existing lead is Indian) lives in
+-- db/migrations/2026-08-31-global-locations.sql only. This file stays free of UPDATE statements so
+-- that db/apply-schema.sh remains safe to point at production, exactly as its header promises.
