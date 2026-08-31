@@ -104,7 +104,7 @@ const INTENT_TOOL = {
             description:
               "Your own short, natural reply shown directly to the user — never a repetition or paraphrase of their message, and avoid " +
               "opening with 'I am'/'I'm' (a separate loading indicator already shows while a search runs, so don't narrate starting one). " +
-              "Match the language/tone they wrote in (e.g. reply in Hindi/Hinglish if they wrote in Hindi/Hinglish).",
+              "LANGUAGE: reply in English by default. Mirror the user ONLY when their own message is clearly in another language: Devanagari Hindi gets Hindi, romanized Hinglish gets Hinglish. A plain English message like 'hello' or 'find leads' must ALWAYS get an English reply — never switch languages on your own.",
           },
           nextActions: {
             type: "array",
@@ -137,8 +137,26 @@ export async function runChatIntent(input: {
   message: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<ChatIntent> {
+  // Bedrock Converse rejects a conversation whose first message is from the assistant (seen
+  // live: the HISTORY_LIMIT window can cut mid-conversation on an assistant turn). Trim leading
+  // assistant messages, and collapse consecutive same-role turns while we're at it — Nova
+  // requires strict user/assistant alternation too.
+  const trimmed = [...input.history];
+  while (trimmed.length && trimmed[0].role === "assistant") trimmed.shift();
+  const alternating: typeof trimmed = [];
+  for (const h of trimmed) {
+    const last = alternating[alternating.length - 1];
+    if (last && last.role === h.role) last.content = `${last.content}\n${h.content}`;
+    else alternating.push({ ...h });
+  }
+  // The new user message must not collide with a trailing user turn in history either.
+  if (alternating.length && alternating[alternating.length - 1].role === "user") {
+    const last = alternating.pop()!;
+    input = { ...input, message: `${last.content}\n${input.message}` };
+  }
+
   const messages = [
-    ...input.history.map((h) => ({ role: h.role, content: [{ text: h.content }] })),
+    ...alternating.map((h) => ({ role: h.role, content: [{ text: h.content }] })),
     { role: "user" as const, content: [{ text: input.message }] },
   ];
 

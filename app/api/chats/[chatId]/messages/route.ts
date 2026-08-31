@@ -8,6 +8,8 @@ import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
 import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, CATEGORY_SECTIONS, formatCategory } from "@/lib/categories";
+import { chargeCredits } from "@/lib/credits/server";
+import { ALLOWANCE, CREDIT_COST } from "@/lib/credits/pricing";
 import { resolveCategoryPhrase, suggestCategories } from "@/lib/category-resolve";
 import { POST as findLeadsPost } from "@/app/api/leads/find/route";
 
@@ -68,7 +70,42 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
     message = resolved.value ? `Search near ${resolved.value}` : "my last searched area";
   }
 
-  await sql`INSERT INTO chat_messages (chat_id, role, content) VALUES (${chatId}, 'user', ${message})`;
+  const [userMsg] = await sql`
+    INSERT INTO chat_messages (chat_id, role, content) VALUES (${chatId}, 'user', ${message})
+    RETURNING id
+  `;
+
+  // Pricing-page contract: the first N chat messages a day are free, after that each one costs
+  // CREDIT_COST.chat_turn — metered, not blocked, so a paying user is never told to come back
+  // tomorrow. The count spans all of the user's chats (per-chat would reset the meter by
+  // opening a new chat), and counts messages BEFORE this one so message N+1 is the first paid.
+  const [{ turns_today }] = await sql`
+    SELECT count(*)::int AS turns_today
+    FROM chat_messages m JOIN chats c ON c.id = m.chat_id
+    WHERE c.user_email = ${userEmail} AND m.role = 'user'
+      AND m.created_at > date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+      AND m.id != ${userMsg.id}
+  `;
+  if (turns_today >= ALLOWANCE.chatTurnsPerDay) {
+    const charge = await chargeCredits(userEmail, "chat_turn", { ref: `chat_msg:${userMsg.id}` });
+    if (!charge.ok) {
+      const reply =
+        `You've used today's ${ALLOWANCE.chatTurnsPerDay} free chat messages, and your credit balance ` +
+        `(${charge.credits}) is below the ${CREDIT_COST.chat_turn} credits a message costs after that. ` +
+        `Top up from Settings → Billing to keep chatting — your free messages reset at midnight.`;
+      const intent: AssistantIntent = {
+        action: "needs_clarification", category: null, categoryText: null, areaText: null,
+        noWebsiteOnly: false, minReviews: null, minRating: null, missingField: null,
+        clearFilters: [], reply, nextActions: [],
+      };
+      const [saved] = await sql`
+        INSERT INTO chat_messages (chat_id, role, content, intent)
+        VALUES (${chatId}, 'assistant', ${reply}, ${sql.json(intent as unknown as Parameters<typeof sql.json>[0])})
+        RETURNING id, role, content, intent
+      `;
+      return NextResponse.json({ message: saved });
+    }
+  }
 
   const historyRows = await sql`
     SELECT role, content, intent FROM chat_messages

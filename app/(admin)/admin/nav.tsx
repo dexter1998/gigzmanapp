@@ -10,6 +10,7 @@ const ICONS: Record<string, React.ReactNode> = {
   mailing: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>,
   pseo: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.8-3.8"/></svg>,
   health: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>,
+  inbound: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 13l3-8h12l3 8"/><path d="M3 13v6h18v-6"/><path d="M3 13h5l2 3h4l2-3h5"/></svg>,
 };
 
 const NAV: { group: string; items: { href: string; label: string; icon: string }[] }[] = [
@@ -17,6 +18,7 @@ const NAV: { group: string; items: { href: string; label: string; icon: string }
     { href: "/admin", label: "Overview", icon: "overview" },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/economics", label: "Economics", icon: "economics" },
+    { href: "/admin/inbound", label: "Inbound", icon: "inbound" },
   ]},
   { group: "Systems", items: [
     { href: "/admin/mailing", label: "Mailing", icon: "mailing" },

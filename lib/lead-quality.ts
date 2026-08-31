@@ -13,7 +13,34 @@ export const EXCLUDED_PRIMARY_TYPES = new Set([
   "housing_complex",
   "community_center",
   "association_or_organization",
+  // Second audit wave (user report, 2026-08-31): these were reaching the map because the list
+  // above only covered residential noise. A corporate office or a government counter is not a
+  // web-design prospect any more than an apartment block is.
+  "corporate_office",
+  "government_office",
+  "local_government_office",
+  "city_hall",
+  "courthouse",
+  "embassy",
+  "fire_station",
+  "police",
+  "post_office",
+  "parking",
+  "rest_stop",
+  "transit_station",
+  "bus_station",
+  "train_station",
+  "subway_station",
+  "light_rail_station",
+  "taxi_stand",
+  "cemetery",
+  "public_bathroom",
 ]);
+
+/** Read-time guard for rows inserted before their type joined the list above — the map and the
+ * pSEO figures both filter through this, so an old corporate_office row disappears everywhere
+ * without a destructive backfill (unlock/ledger FKs point at leads; deleting is not an option). */
+export const EXCLUDED_PRIMARY_TYPES_SQL = Array.from(EXCLUDED_PRIMARY_TYPES);
 
 export function isExcludedType(primaryType: string | null | undefined): boolean {
   return !primaryType || EXCLUDED_PRIMARY_TYPES.has(primaryType);

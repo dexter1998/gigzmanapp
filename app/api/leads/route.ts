@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION } from "@/lib/categories";
+import { EXCLUDED_PRIMARY_TYPES_SQL } from "@/lib/lead-quality";
 
 // A map viewport shows a few dozen pins, not five hundred, and every row here carries the full
 // lead record. Returning 500 on every pan was the single largest source of database egress in
@@ -66,6 +67,7 @@ export async function GET(req: NextRequest) {
       ${hasWebsite === "true" ? sql`AND l.has_website = true` : sql``}
       ${hasWebsite === "false" ? sql`AND l.has_website = false` : sql``}
       ${category ? sql`AND l.category = ${category}` : sql``}
+      AND (l.category IS NULL OR l.category != ALL(${EXCLUDED_PRIMARY_TYPES_SQL}))
       ${unlockedOnly ? sql`AND u.id IS NOT NULL` : sql``}
     ORDER BY l.created_at DESC
     LIMIT ${limit}

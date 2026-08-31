@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FOCUS_COMPOSER } from "@/lib/chat-clarifications";
 import { ChatComposer } from "./ChatComposer";
 import { ChatLeadsTable, type ChatLead } from "./ChatLeadsTable";
 import { ClipboardIcon, LightbulbIcon, ThumbsUpIcon, ThumbsDownIcon, CheckIcon } from "@/components/icons";
@@ -122,7 +123,7 @@ export function ChatThread({ chatId, title, initialMessages }: { chatId: string;
                     key={opt.label}
                     type="button"
                     disabled={sending}
-                    onClick={() => send(opt.label, opt.value)}
+                    onClick={() => (opt.value === FOCUS_COMPOSER ? setShowOtherInput(true) : send(opt.label, opt.value))}
                     style={{
                       textAlign: "left",
                       padding: "10px 13px",

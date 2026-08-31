@@ -14,6 +14,11 @@ export type Clarification = { question: string; options: ClarificationOption[] }
 
 export const USE_LAST_MAP_AREA = "__USE_LAST_MAP_AREA__";
 
+// Client-side sentinel: the option is an affordance, not an answer — tapping it opens the
+// inline input instead of sending its label as a message (which the planner could never
+// resolve into a location; that was the "neighbourhood chip does nothing" bug).
+export const FOCUS_COMPOSER = "__FOCUS_COMPOSER__";
+
 export const CLARIFICATIONS: Record<string, Clarification> = {
   category: {
     question: "What kind of business should I look for?",
@@ -29,7 +34,7 @@ export const CLARIFICATIONS: Record<string, Clarification> = {
     // "My last searched area" is appended dynamically in the messages route, only when the
     // user actually has a recent map search to reuse — an option that promises something and
     // does nothing when clicked is worse than not offering it.
-    options: [{ label: "Type a city or neighborhood", description: "e.g. \"Gurugram\" or \"Sector 56\"" }],
+    options: [{ label: "Type a city or neighborhood", description: "e.g. \"Gurugram\" or \"Sector 56\"", value: FOCUS_COMPOSER }],
   },
   count: {
     question: "How many leads should I look for?",
