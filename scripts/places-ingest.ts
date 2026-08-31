@@ -20,6 +20,9 @@ import { pseoSql } from "@/lib/pseo/db";
 import { resolveLocation, type ResolutionFailure } from "@/lib/pseo/address";
 import { isAllowedLeadType } from "@/lib/lead-quality";
 import { looksLikeCompetitor } from "@/lib/competitors";
+import { CITY_BY_SLUG } from "@/lib/pseo/locations";
+import { TYPE_TO_SECTION } from "@/lib/categories";
+import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
 import type { ArchivedPlace } from "@/lib/pseo/archive";
 
 const DATA_DIR = process.env.PLACES_DATA_DIR ?? path.join(os.homedir(), "Desktop", "mantis-places-data");
@@ -106,8 +109,54 @@ async function main() {
     }
   }
 
+  // Per (city, section) coverage, so /api/leads/find can skip ground this sweep already owns.
+  //
+  // Recomputed from `leads` rather than accumulated in the loop above, because the claim has to be
+  // about what is actually stored and queryable — including rows from earlier runs — not about
+  // what this particular file happened to contain.
+  //
+  // A section needs a real number of leads before it counts. The sweep asks 106 phrases, not 370
+  // types, so some sections are genuinely thin here; marking those covered would make the route
+  // stop looking for businesses nobody ever searched for.
+  const MIN_LEADS_PER_SECTION = 30;
+  let regions = 0;
+  if (!DRY) {
+    const rows = (await pseoSql`
+      SELECT city_slug, country_code, category, count(*)::int AS n
+      FROM leads
+      WHERE city_slug IS NOT NULL AND is_competitor = false
+        AND category = ANY(${ALLOWED_LEAD_TYPES_SQL})
+      GROUP BY 1, 2, 3
+    `) as unknown as Array<{ city_slug: string; country_code: string; category: string; n: number }>;
+
+    const bySection = new Map<string, { city: string; country: string; section: string; n: number }>();
+    for (const r of rows) {
+      const section = TYPE_TO_SECTION[r.category];
+      if (!section) continue;
+      const k = `${r.city_slug}|${section}`;
+      const cur = bySection.get(k) ?? { city: r.city_slug, country: r.country_code, section, n: 0 };
+      cur.n += r.n;
+      bySection.set(k, cur);
+    }
+
+    for (const v of bySection.values()) {
+      if (v.n < MIN_LEADS_PER_SECTION) continue;
+      const city = CITY_BY_SLUG.get(v.city);
+      if (!city) continue;
+      await pseoSql`
+        INSERT INTO prescanned_regions (country_code, city_slug, section, min_lat, min_lng, max_lat, max_lng, lead_count)
+        VALUES (${city.countryCode}, ${city.slug}, ${v.section},
+                ${city.bbox[0]}, ${city.bbox[1]}, ${city.bbox[2]}, ${city.bbox[3]}, ${v.n})
+        ON CONFLICT (city_slug, section) DO UPDATE SET
+          lead_count = EXCLUDED.lead_count, scanned_at = now(), updated_at = now()
+      `;
+      regions++;
+    }
+  }
+
   console.log(`${total} archived places${DRY ? " (dry run, nothing written)" : ""}`);
   console.log(`  ${inserted} new, ${updated} updated, ${competitors} competitors, ${cells} coverage cells`);
+  console.log(`  ${regions} (city, section) pre-scanned regions recorded`);
   console.log(`  ${skippedType} dropped: category not in allowlist`);
   for (const [k, v] of Object.entries(failures).sort((a, b) => b[1] - a[1])) console.log(`  ${v} dropped: ${k}`);
   await pseoSql.end();

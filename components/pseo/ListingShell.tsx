@@ -1,3 +1,4 @@
+import { cityPath, servicePath } from "@/lib/pseo/urls";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import type { PseoPageData } from "@/lib/pseo/page-data";
@@ -354,7 +355,7 @@ export function ListingShell({
               <Section title="Nearby cities">
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {nearby.map((n) => (
-                    <Link key={n.slug} href={`/leads/${serviceSlug}/${n.slug}`}
+                    <Link key={n.slug} href={cityPath(serviceSlug, n.slug)}
                       style={{ fontSize: 13, color: "var(--g-green-text)", border: "1px solid var(--g-border)", background: "var(--g-cream)", borderRadius: "var(--radius-pill)", padding: "7px 14px", textDecoration: "none" }}>
                       {n.name} · {n.km} km
                     </Link>
@@ -496,7 +497,7 @@ function QuickLinks({ cityBase, cityName, serviceSlug, serviceName, areas, categ
         <QuickCol title="About this data"
           items={[
             { label: "How we measure the website gap", href: "/leads/methodology" },
-            { label: `${serviceName} leads by city`, href: `/leads/${serviceSlug}` },
+            { label: `${serviceName} leads by city`, href: servicePath(serviceSlug) },
             { label: "The whole lead market", href: "/leads" },
             { label: "New coverage feed (RSS)", href: "/leads/feed.xml" },
           ]} />

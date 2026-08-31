@@ -1,3 +1,4 @@
+import { cityPath, servicePath } from "@/lib/pseo/urls";
 import type { Metadata } from "next";
 import { ogImageMeta } from "@/lib/og";
 import Link from "next/link";
@@ -46,7 +47,7 @@ export default async function LeadMarketHub() {
       <section style={{ marginTop: 34 }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>By opportunity</h2>
         {SERVICES.map((s) => (
-          <Link key={s.slug} href={`/leads/${s.slug}`} style={cardStyle}>
+          <Link key={s.slug} href={servicePath(s.slug)} style={cardStyle}>
             <div style={{ fontSize: 16.5, fontWeight: 800, color: "var(--g-ink)" }}>{s.name}</div>
             <div style={{ fontSize: 13.5, color: "var(--g-ink-soft)", marginTop: 5 }}>{s.intro}</div>
           </Link>
@@ -61,7 +62,7 @@ export default async function LeadMarketHub() {
               const city = CITY_BY_SLUG.get(p.city_slug!);
               if (!city) return null;
               return (
-                <Link key={p.page_key} href={`/leads/${p.service_slug}/${p.city_slug}`} style={cardStyle}>
+                <Link key={p.page_key} href={cityPath(p.service_slug, p.city_slug!)} style={cardStyle}>
                   <div style={{ fontSize: 15.5, fontWeight: 700, color: "var(--g-ink)" }}>{city.name}</div>
                   <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 4 }}>
                     {p.qualifying_leads} businesses with no website

@@ -1,3 +1,4 @@
+import { areaPath, categoryPath, cityPath } from "@/lib/pseo/urls";
 import { COMPANY } from "@/lib/company";
 import { publishedPages } from "@/lib/pseo/registry";
 import { CITY_BY_SLUG, areaDisplayName } from "@/lib/pseo/locations";
@@ -40,10 +41,10 @@ export async function GET() {
             : city;
       const path =
         p.page_type === "city"
-          ? `/leads/${p.service_slug}/${p.city_slug}`
+          ? cityPath(p.service_slug, p.city_slug!)
           : p.page_type === "area"
-            ? `/leads/${p.service_slug}/${p.city_slug}/areas/${p.area_slug}`
-            : `/leads/${p.service_slug}/${p.city_slug}/categories/${p.category_slug}`;
+            ? areaPath(p.service_slug, p.city_slug!, p.area_slug!)
+            : categoryPath(p.service_slug, p.city_slug!, p.category_slug!);
       const url = `${COMPANY.site}${path}`;
       return `    <item>
       <title>${escapeXml(`${p.qualifying_leads} businesses with no website — ${where}`)}</title>

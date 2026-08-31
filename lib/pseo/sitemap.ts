@@ -1,4 +1,5 @@
 import { publishedPages } from "@/lib/pseo/registry";
+import { areaPath, categoryPath, cityIndexPath, cityPath } from "@/lib/pseo/urls";
 
 /**
  * The lead section's contribution to the sitemap index.
@@ -31,20 +32,20 @@ export async function pseoSitemapUrls(segment: PseoSegment): Promise<SitemapEntr
   const entries: SitemapEntry[] = [];
 
   for (const page of pages) {
-    const base = `/leads/${page.service_slug}/${page.city_slug}`;
+    const citySlug = page.city_slug!;
     const lastModified = page.last_material_change_at ?? undefined;
 
     if (segment === "leads-cities" && page.page_type === "city") {
-      entries.push({ path: base, lastModified, changeFrequency: "weekly", priority: 0.8 });
-      for (const sub of ["areas", "categories"]) {
-        entries.push({ path: `${base}/${sub}`, lastModified, changeFrequency: "weekly", priority: 0.7 });
+      entries.push({ path: cityPath(page.service_slug, citySlug), lastModified, changeFrequency: "weekly", priority: 0.8 });
+      for (const sub of ["areas", "categories"] as const) {
+        entries.push({ path: cityIndexPath(page.service_slug, citySlug, sub), lastModified, changeFrequency: "weekly", priority: 0.7 });
       }
     }
     if (segment === "leads-areas" && page.page_type === "area") {
-      entries.push({ path: `${base}/areas/${page.area_slug}`, lastModified, changeFrequency: "weekly", priority: 0.6 });
+      entries.push({ path: areaPath(page.service_slug, citySlug, page.area_slug!), lastModified, changeFrequency: "weekly", priority: 0.6 });
     }
     if (segment === "leads-categories" && page.page_type === "category") {
-      entries.push({ path: `${base}/categories/${page.category_slug}`, lastModified, changeFrequency: "weekly", priority: 0.6 });
+      entries.push({ path: categoryPath(page.service_slug, citySlug, page.category_slug!), lastModified, changeFrequency: "weekly", priority: 0.6 });
     }
   }
 

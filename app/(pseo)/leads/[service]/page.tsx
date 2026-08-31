@@ -1,3 +1,4 @@
+import { cityPath, servicePath } from "@/lib/pseo/urls";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: { absolute: `${service.name} leads by city — businesses with no website | Mantis` },
     description: `Cities where Mantis has mapped businesses with an active Google listing and no website, ranked by how large the gap is.`,
-    alternates: { canonical: `${COMPANY.site}/leads/${slug}` },
+    alternates: { canonical: `${COMPANY.site}${servicePath(slug)}` },
   };
 }
 
@@ -55,7 +56,7 @@ export default async function ServiceHub({ params }: Params) {
           if (!city) return null;
           const stats = p.stats as { gapRate?: number; checked?: number };
           return (
-            <Link key={p.page_key} href={`/leads/${slug}/${p.city_slug}`}
+            <Link key={p.page_key} href={cityPath(slug, p.city_slug!)}
               style={{ display: "block", background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", padding: 18, textDecoration: "none" }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: "var(--g-ink)" }}>{city.name}</div>
               <div style={{ fontSize: 13, color: "var(--g-ink-soft)", marginTop: 6 }}>

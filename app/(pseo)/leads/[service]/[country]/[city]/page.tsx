@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cityForParams } from "@/lib/pseo/urls";
 import {} from "@/lib/pseo/registry";
 import { CityLeadsView, cityMetadata } from "@/components/pseo/views";
 
@@ -9,7 +11,7 @@ import { CityLeadsView, cityMetadata } from "@/components/pseo/views";
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-type Params = { params: Promise<{ service: string; city: string }> };
+type Params = { params: Promise<{ service: string; country: string; city: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { service, city } = await params;
@@ -17,6 +19,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function CityLeadsPage({ params }: Params) {
-  const { service, city } = await params;
+  const { service, country, city } = await params;
+  // The country segment is redundant with the city — slugs are globally unique — which is
+  // exactly why it is checked. Unchecked, every wrong country renders a real page under a URL
+  // that lies about it, and each one is a duplicate for anything that crawls it.
+  if (!cityForParams(country, city)) notFound();
   return <CityLeadsView serviceSlug={service} citySlug={city} />;
 }

@@ -129,6 +129,34 @@ function splitIntoQuadrants(cell: Cell): Cell[] {
   ];
 }
 
+/**
+ * A bulk sweep (scripts/places-scan.ts) already covered this point for this section.
+ *
+ * The grid cache below is keyed on an exact `lat_lng_section_batch` string that only this route's
+ * own searchNearby grid ever writes, so an offline sweep is invisible to it — 125,000 stored leads
+ * would sit in the table while every request re-bought them. This is the bridge: a region recorded
+ * by the sweep, checked by geography instead of by cache key.
+ *
+ * Two things keep the claim honest. It is per (city, section), because the sweep asks 106 search
+ * phrases rather than all 370 allowlisted types and some sections genuinely came back thin — those
+ * are not recorded, so this returns false for them and the normal grid runs. And it expires: a
+ * sweep is a snapshot, and businesses open and close.
+ */
+const PRESCAN_TTL_DAYS = 90;
+
+async function prescannedCoverage(lat: number, lng: number, section: string) {
+  const [row] = await sql`
+    SELECT city_slug, lead_count FROM prescanned_regions
+    WHERE section = ${section}
+      AND ${lat} BETWEEN min_lat AND max_lat
+      AND ${lng} BETWEEN min_lng AND max_lng
+      AND scanned_at > now() - (${PRESCAN_TTL_DAYS} || ' days')::interval
+    ORDER BY lead_count DESC
+    LIMIT 1
+  `;
+  return (row as { city_slug: string; lead_count: number } | undefined) ?? null;
+}
+
 function cacheKeyFor(lat: number, lng: number, section: string, batchIndex: number) {
   return `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}_${batchIndex}`;
 }
@@ -282,6 +310,23 @@ export async function POST(req: NextRequest) {
     VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cooldownKey}, 'discovering')
     RETURNING id
   `;
+
+  // Checked before any batch runs, because the answer applies to the whole section: if a sweep
+  // already covered this ground there is nothing for the grid to find, and every call it would
+  // make is one we have already paid for once.
+  const prescan = await prescannedCoverage(lat, lng, section);
+  if (prescan) {
+    await sql`
+      UPDATE area_scans
+      SET status = 'done', completed_at = now(), billed_places_calls = 0,
+          area_label = ${`${lat.toFixed(4)},${lng.toFixed(4)} (prescanned: ${prescan.city_slug})`}
+      WHERE id = ${scan.id}
+    `;
+    // Same shape the fully-cached path already returns. The map draws its pins from the stored
+    // leads inside the viewport (GET /api/leads), not from this response, so an empty `leads` here
+    // means "nothing new to add", not "nothing here".
+    return NextResponse.json({ found: 0, leads: [], hasMore: false, apiDown: false, cached: true });
+  }
 
   const types = CATEGORY_SECTIONS[section] ?? [];
   const batches = chunkTypes(types, 50);

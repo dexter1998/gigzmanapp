@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cityForParams, cityPath, cityIndexPath, categoryPath, servicePath } from "@/lib/pseo/urls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { COMPANY } from "@/lib/company";
@@ -18,21 +19,25 @@ import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Bre
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-type Params = { params: Promise<{ service: string; city: string }> };
+type Params = { params: Promise<{ service: string; country: string; city: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { service, city } = await params;
-  const c = CITY_BY_SLUG.get(city);
+  const { service, country, city } = await params;
+  const c = cityForParams(country, city);
   if (!c) return {};
   return {
     title: `Which businesses in ${c.name} have no website, by category`,
     description: `The website gap in ${c.name} broken down by business category, with counts and rates for each.`,
-    alternates: { canonical: `${COMPANY.site}/leads/${service}/${city}/categories` },
+    alternates: { canonical: `${COMPANY.site}${cityIndexPath(service, city, "categories")}` },
   };
 }
 
 export default async function CategoryIndex({ params }: Params) {
-  const { service: serviceSlug, city: citySlug } = await params;
+  const { service: serviceSlug, country, city: citySlug } = await params;
+  // The country segment is redundant with the city — slugs are globally unique — which is
+  // exactly why it is checked. Unchecked, every wrong country renders a real page under a URL
+  // that lies about it, and each one is a duplicate for anything that crawls it.
+  if (!cityForParams(country, citySlug)) notFound();
   const service = SERVICE_BY_SLUG.get(serviceSlug);
   const city = CITY_BY_SLUG.get(citySlug);
   if (!service || !city) notFound();
@@ -51,8 +56,8 @@ export default async function CategoryIndex({ params }: Params) {
   const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Lead Market", href: "/leads" },
-    { label: service.name, href: `/leads/${serviceSlug}` },
-    { label: city.name, href: `/leads/${serviceSlug}/${citySlug}` },
+    { label: service.name, href: servicePath(serviceSlug) },
+    { label: city.name, href: cityPath(serviceSlug, citySlug) },
     { label: "Categories" },
   ];
 
@@ -77,7 +82,7 @@ export default async function CategoryIndex({ params }: Params) {
           <div key={c.category} style={{ display: "grid", gridTemplateColumns: "1fr 90px 110px", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--g-border)", fontSize: 14 }}>
             <span>
               {linkable.has(c.category) ? (
-                <Link href={`/leads/${serviceSlug}/${citySlug}/categories/${c.category}`} style={{ color: "var(--g-green-text)", textDecoration: "none", fontWeight: 600 }}>
+                <Link href={categoryPath(serviceSlug, citySlug, c.category)} style={{ color: "var(--g-green-text)", textDecoration: "none", fontWeight: 600 }}>
                   {c.label}
                 </Link>
               ) : (
@@ -97,7 +102,7 @@ export default async function CategoryIndex({ params }: Params) {
       </p>
 
       <p style={{ fontSize: 14, marginTop: 24 }}>
-        <Link href={`/leads/${serviceSlug}/${citySlug}`} style={{ color: "var(--g-green-text)" }}>
+        <Link href={cityPath(serviceSlug, citySlug)} style={{ color: "var(--g-green-text)" }}>
           ← All {service.name.toLowerCase()} leads in {city.name}
         </Link>
       </p>

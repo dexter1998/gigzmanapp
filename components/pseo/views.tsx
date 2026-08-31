@@ -1,3 +1,4 @@
+import { areaPath, categoryPath, cityPath, servicePath } from "@/lib/pseo/urls";
 import type { Metadata } from "next";
 import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
@@ -39,7 +40,7 @@ function robotsFor(indexable: boolean, page: number) {
 
 export async function cityMetadata(serviceSlug: string, citySlug: string, page = 1): Promise<Metadata> {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "city", citySlug }, page);
-  const base = `${COMPANY.site}/leads/${serviceSlug}/${citySlug}`;
+  const base = `${COMPANY.site}${cityPath(serviceSlug, citySlug)}`;
   return {
     title: paged(`${d.stats.qualifying} ${d.service.name} Leads in ${d.city.name} — businesses with no website`, d.page),
     description:
@@ -57,7 +58,7 @@ export async function cityMetadata(serviceSlug: string, citySlug: string, page =
         t1: `${d.stats.qualifying.toLocaleString("en-IN")} businesses in ${d.city.name}`,
         t2: "with no website.",
         cta: "See the free list →",
-        url: `mantisai.in/leads/${serviceSlug}/${citySlug}`,
+        url: `mantisai.in${cityPath(serviceSlug, citySlug)}`,
       }),
     },
     twitter: { card: "summary_large_image" },
@@ -68,7 +69,7 @@ export async function CityLeadsView({ serviceSlug, citySlug, page = 1 }: {
   serviceSlug: string; citySlug: string; page?: number;
 }) {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "city", citySlug }, page);
-  const base = `/leads/${serviceSlug}/${citySlug}`;
+  const base = cityPath(serviceSlug, citySlug);
 
   // A rate over a handful of businesses isn't a finding. At 40 the widest gap was a 40-lead village
   // at 85%, which is noise presented as insight; 150 is enough for the claim to hold up.
@@ -83,7 +84,7 @@ export async function CityLeadsView({ serviceSlug, citySlug, page = 1 }: {
   const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Lead Market", href: "/leads" },
-    { label: d.service.name, href: `/leads/${serviceSlug}` },
+    { label: d.service.name, href: servicePath(serviceSlug) },
     ...(d.page > 1 ? [{ label: d.city.name, href: base }, { label: `Page ${d.page}` }] : [{ label: d.city.name }]),
   ];
 
@@ -117,7 +118,7 @@ export async function CityLeadsView({ serviceSlug, citySlug, page = 1 }: {
 
 export async function areaMetadata(serviceSlug: string, citySlug: string, areaSlug: string, page = 1): Promise<Metadata> {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "area", citySlug, areaSlug }, page);
-  const base = `${COMPANY.site}/leads/${serviceSlug}/${citySlug}/areas/${areaSlug}`;
+  const base = `${COMPANY.site}${areaPath(serviceSlug, citySlug, areaSlug)}`;
   return {
     title: paged(`${d.stats.qualifying} businesses with no website in ${d.areaName}, ${d.city.name}`, d.page),
     description:
@@ -135,7 +136,7 @@ export async function areaMetadata(serviceSlug: string, citySlug: string, areaSl
         t1: `${d.stats.qualifying.toLocaleString("en-IN")} businesses here`,
         t2: "have no website.",
         cta: "See the free list →",
-        url: `mantisai.in/leads/${serviceSlug}/${citySlug}/areas/${areaSlug}`,
+        url: `mantisai.in${areaPath(serviceSlug, citySlug, areaSlug)}`,
       }),
     },
     twitter: { card: "summary_large_image" },
@@ -146,8 +147,8 @@ export async function AreaLeadsView({ serviceSlug, citySlug, areaSlug, page = 1 
   serviceSlug: string; citySlug: string; areaSlug: string; page?: number;
 }) {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "area", citySlug, areaSlug }, page);
-  const base = `/leads/${serviceSlug}/${citySlug}/areas/${areaSlug}`;
-  const cityBase = `/leads/${serviceSlug}/${citySlug}`;
+  const base = areaPath(serviceSlug, citySlug, areaSlug);
+  const cityBase = cityPath(serviceSlug, citySlug);
 
   const cityGap =
     d.areas.reduce((acc, a) => acc + a.qualifying, 0) / Math.max(1, d.areas.reduce((acc, a) => acc + a.checked, 0));
@@ -156,7 +157,7 @@ export async function AreaLeadsView({ serviceSlug, citySlug, areaSlug, page = 1 
   const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Lead Market", href: "/leads" },
-    { label: d.service.name, href: `/leads/${serviceSlug}` },
+    { label: d.service.name, href: servicePath(serviceSlug) },
     { label: d.city.name, href: cityBase },
     ...(d.page > 1
       ? [{ label: d.areaName ?? areaSlug, href: base }, { label: `Page ${d.page}` }]
@@ -200,7 +201,7 @@ export async function AreaLeadsView({ serviceSlug, citySlug, areaSlug, page = 1 
 
 export async function categoryMetadata(serviceSlug: string, citySlug: string, category: string, page = 1): Promise<Metadata> {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "category", citySlug, category }, page);
-  const base = `${COMPANY.site}/leads/${serviceSlug}/${citySlug}/categories/${category}`;
+  const base = `${COMPANY.site}${categoryPath(serviceSlug, citySlug, category)}`;
   return {
     title: paged(`${d.categoryLabel} businesses with no website in ${d.city.name} — ${d.stats.qualifying} leads`, d.page),
     description:
@@ -218,7 +219,7 @@ export async function categoryMetadata(serviceSlug: string, citySlug: string, ca
         t1: `${d.stats.qualifying.toLocaleString("en-IN")} ${String(d.categoryLabel).toLowerCase()}`,
         t2: "with no website.",
         cta: "See the free list →",
-        url: `mantisai.in/leads/${serviceSlug}/${citySlug}/categories/${category}`,
+        url: `mantisai.in${categoryPath(serviceSlug, citySlug, category)}`,
       }),
     },
     twitter: { card: "summary_large_image" },
@@ -229,13 +230,13 @@ export async function CategoryLeadsView({ serviceSlug, citySlug, category, page 
   serviceSlug: string; citySlug: string; category: string; page?: number;
 }) {
   const d = await loadPageData(serviceSlug, citySlug, { kind: "category", citySlug, category }, page);
-  const base = `/leads/${serviceSlug}/${citySlug}/categories/${category}`;
-  const cityBase = `/leads/${serviceSlug}/${citySlug}`;
+  const base = categoryPath(serviceSlug, citySlug, category);
+  const cityBase = cityPath(serviceSlug, citySlug);
 
   const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Lead Market", href: "/leads" },
-    { label: d.service.name, href: `/leads/${serviceSlug}` },
+    { label: d.service.name, href: servicePath(serviceSlug) },
     { label: d.city.name, href: cityBase },
     ...(d.page > 1
       ? [{ label: d.categoryLabel ?? category, href: base }, { label: `Page ${d.page}` }]
