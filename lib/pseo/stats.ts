@@ -1,5 +1,5 @@
 import { pseoSql } from "@/lib/pseo/db";
-import { EXCLUDED_PRIMARY_TYPES_SQL } from "@/lib/lead-quality";
+import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
 
@@ -121,7 +121,7 @@ export async function loadScope(scope: Scope): Promise<{ stats: PageStats; leads
     WHERE ${where}
       AND l.is_competitor = false
       AND l.category IS NOT NULL
-      AND l.category != ALL(${EXCLUDED_PRIMARY_TYPES_SQL})
+      AND l.category = ANY(${ALLOWED_LEAD_TYPES_SQL})
     LIMIT ${MAX_SCORED_ROWS}
   `) as unknown as RawLead[];
 

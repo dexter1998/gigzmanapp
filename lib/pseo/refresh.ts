@@ -1,5 +1,5 @@
 import { pseoSql } from "@/lib/pseo/db";
-import { EXCLUDED_PRIMARY_TYPES_SQL } from "@/lib/lead-quality";
+import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
 import { CITIES } from "@/lib/pseo/locations";
 import { SERVICES } from "@/lib/pseo/services";
 import { loadScope, type Scope } from "@/lib/pseo/stats";
@@ -43,7 +43,7 @@ async function scopesForCity(citySlug: string): Promise<Array<{ scope: Scope; ty
     SELECT category, count(*) FILTER (WHERE has_website = false)::int AS qualifying
     FROM leads
     WHERE city_slug = ${citySlug} AND is_competitor = false AND category IS NOT NULL
-      AND category != ALL(${EXCLUDED_PRIMARY_TYPES_SQL})
+      AND category = ANY(${ALLOWED_LEAD_TYPES_SQL})
     GROUP BY category
     HAVING count(*) FILTER (WHERE has_website = false) >= ${MIN_RENDER_LEADS}
   `) as unknown as Array<{ category: string; qualifying: number }>;

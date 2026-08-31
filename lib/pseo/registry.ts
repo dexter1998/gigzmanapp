@@ -1,5 +1,5 @@
 import { pseoSql } from "@/lib/pseo/db";
-import { EXCLUDED_PRIMARY_TYPES_SQL } from "@/lib/lead-quality";
+import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
 import { CITY_BY_SLUG, areaDisplayName, distanceKm } from "@/lib/pseo/locations";
 import { formatCategory } from "@/lib/categories";
 import type { Scope } from "@/lib/pseo/stats";
@@ -72,7 +72,7 @@ export async function cityAreaBreakdown(citySlug: string): Promise<AreaRow[]> {
            count(*) FILTER (WHERE has_website IS NOT NULL)::int AS checked
     FROM leads
     WHERE city_slug = ${citySlug} AND area_slug IS NOT NULL AND is_competitor = false
-      AND (category IS NULL OR category != ALL(${EXCLUDED_PRIMARY_TYPES_SQL}))
+      AND category = ANY(${ALLOWED_LEAD_TYPES_SQL})
     GROUP BY area_slug
   `) as unknown as Array<{ area_slug: string; qualifying: number; checked: number }>;
 

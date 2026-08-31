@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { looksLikeCompetitor } from "@/lib/competitors";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
-import { isExcludedType } from "@/lib/lead-quality";
+import { isAllowedLeadType } from "@/lib/lead-quality";
 import { recordApiFailure } from "@/lib/api-alerts";
 
 // Anti-abuse: a real discovery request (one that would actually call Places API) for the same
@@ -301,9 +301,13 @@ export async function POST(req: NextRequest) {
       // assigns regardless of what was searched for), and a lead with no phone number isn't
       // actually sellable to a customer of this product. Competitors are exempt from the phone
       // requirement — they're a flag, not something meant to be contacted.
-      if (isExcludedType(place.primaryType)) continue;
       const name = place.displayName?.text ?? "Unknown";
       const isCompetitor = looksLikeCompetitor(name);
+      // Allowlist, not denylist: Google attaches types we never requested (park, temples,
+      // housing societies) to unrelated type queries — anything outside the curated list is
+      // dropped before it costs an insert or a website check. Competitors are exempt (red-pin
+      // flag, type deliberately not allowlisted).
+      if (!isCompetitor && !isAllowedLeadType(place.primaryType)) continue;
       if (!isCompetitor && !place.nationalPhoneNumber) continue;
 
       const [row] = await sql`

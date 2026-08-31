@@ -7,8 +7,10 @@
 export const CATEGORY_SECTIONS: Record<string, string[]> = {
   Automotive: ["car_dealer", "car_rental", "car_repair", "car_wash", "tire_shop", "truck_dealer"],
 
+  // corporate_office removed (2026-09-01, user report): an office of some company is not a
+  // web-design prospect, and Google returns them in volume for this section.
   "Business & B2B": [
-    "business_center", "corporate_office", "coworking_space", "farm", "manufacturer", "ranch",
+    "business_center", "coworking_space", "farm", "manufacturer", "ranch",
     "supplier", "television_studio",
   ],
 
@@ -118,7 +120,7 @@ export const CATEGORY_SECTIONS: Record<string, string[]> = {
     "building_materials_store", "butcher_shop", "cell_phone_store", "clothing_store",
     "convenience_store", "cosmetics_store", "department_store", "discount_store",
     "discount_supermarket", "electronics_store", "farmers_market", "flea_market", "food_store",
-    "furniture_store", "garden_center", "general_store", "gift_shop", "grocery_store",
+    "furniture_store", "garden_center", "gift_shop", "grocery_store",
     "hardware_store", "health_food_store", "home_goods_store", "home_improvement_store",
     "hypermarket", "jewelry_store", "liquor_store", "market", "pet_store", "shoe_store",
     "shopping_mall", "sporting_goods_store", "sportswear_store", "store", "supermarket",

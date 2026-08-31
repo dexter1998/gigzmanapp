@@ -6,6 +6,7 @@
  * entirely at discovery time — never inserted into `leads` — rather than filtered client-side, so
  * they never cost a website-check call either.
  */
+import { TYPE_TO_SECTION } from "@/lib/categories";
 export const EXCLUDED_PRIMARY_TYPES = new Set([
   "apartment_building",
   "apartment_complex",
@@ -37,10 +38,23 @@ export const EXCLUDED_PRIMARY_TYPES = new Set([
   "public_bathroom",
 ]);
 
-/** Read-time guard for rows inserted before their type joined the list above — the map and the
- * pSEO figures both filter through this, so an old corporate_office row disappears everywhere
- * without a destructive backfill (unlock/ledger FKs point at leads; deleting is not an option). */
-export const EXCLUDED_PRIMARY_TYPES_SQL = Array.from(EXCLUDED_PRIMARY_TYPES);
+/**
+ * The real gate (2026-09-01): a lead's type must be IN the curated allowlist, not merely absent
+ * from the denylist above. Google attaches primary types we never asked for (park, hindu_temple,
+ * a housing society) to results of unrelated type queries — a denylist loses that race one type
+ * at a time; "unmatched means excluded" doesn't. The denylist above remains as the record of
+ * what was actually observed, and as the fast-path drop at discovery.
+ *
+ * Competitors are exempt everywhere: they're a name-detected flag (red pin), not a sellable
+ * lead, and their types (software_company etc.) are deliberately not in the allowlist.
+ */
+export function isAllowedLeadType(primaryType: string | null | undefined): boolean {
+  return !!primaryType && !!TYPE_TO_SECTION[primaryType] && !EXCLUDED_PRIMARY_TYPES.has(primaryType);
+}
+
+/** For read-time SQL: legacy junk rows (park, mandir, corporate_office, section-name fallbacks)
+ * can't be deleted — unlocks/ledger FK-reference leads — so every surface filters through this. */
+export const ALLOWED_LEAD_TYPES_SQL = Object.keys(TYPE_TO_SECTION).filter((t) => !EXCLUDED_PRIMARY_TYPES.has(t));
 
 export function isExcludedType(primaryType: string | null | undefined): boolean {
   return !primaryType || EXCLUDED_PRIMARY_TYPES.has(primaryType);
