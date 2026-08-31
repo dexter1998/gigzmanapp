@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { generateCode, hashCode, CODE_TTL_MINUTES, PER_EMAIL_CODE_COOLDOWN_SECONDS } from "@/lib/verification-code";
 import { sendPasswordResetEmail } from "@/lib/ses";
+import { isDisposableEmail } from "@/lib/disposable-email";
 
 /**
  * Step 1 of password reset: mail a 6-digit code. Always answers {ok:true} — whether the account
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as { email?: string };
   const email = (body.email ?? "").trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "email is required" }, { status: 400 });
+
+  // Silently a no-op for throwaway addresses, matching the unknown-email answer above — the
+  // reset flow must not become a way back in for an address signup already refused.
+  if (isDisposableEmail(email)) return NextResponse.json({ ok: true });
 
   const [profile] = await sql`SELECT email FROM user_profiles WHERE email = ${email}`;
   if (!profile) return NextResponse.json({ ok: true });

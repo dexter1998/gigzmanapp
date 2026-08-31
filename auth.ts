@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { sql } from "@/lib/db";
 import { comparePassword } from "@/lib/password";
+import { isDisposableEmail } from "@/lib/disposable-email";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -33,6 +34,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Google already carries email/name through implicitly; Credentials providers don't unless
   // explicitly threaded through jwt -> session here.
   callbacks: {
+    // Google Workspace can be run on any custom domain, including a throwaway one, so the same
+    // rule that guards the signup form guards this door too. Returning false sends the user back
+    // to /login with an error rather than creating the account.
+    async signIn({ user }) {
+      return !(user.email && isDisposableEmail(user.email));
+    },
     async jwt({ token, user }) {
       if (user) {
         token.email = user.email;

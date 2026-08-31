@@ -25,6 +25,10 @@ export default function LoginPage() {
   // ("Incorrect email or password") now has a way forward without leaving the page.
   const [forgotStep, setForgotStep] = useState<null | "request" | "reset">(null);
 
+  // Temp-mail signups are a deliberate act, not a typo, so they get their own moment rather than
+  // a line of red text under the field that is easy to skim past and retry around.
+  const [tempMailBusted, setTempMailBusted] = useState(false);
+
   function switchTab(next: Tab) {
     setTab(next);
     setError("");
@@ -87,6 +91,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.disposable) { setTempMailBusted(true); return; }
         setError(data.error ?? "Couldn't create that account");
         return;
       }
@@ -140,6 +145,8 @@ export default function LoginPage() {
   }
 
   return (
+    <>
+    {tempMailBusted && <TempMailAlert onClose={() => setTempMailBusted(false)} />}
     <div
       style={{
         minHeight: "100vh",
@@ -302,6 +309,60 @@ export default function LoginPage() {
             By continuing you agree to our <u>Terms</u> and <u>Privacy Policy</u>.
           </p>
         </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+/**
+ * Shown when someone tries to sign up with a throwaway inbox. A modal rather than inline text
+ * because the inline error was something to route around; this has to be dismissed and read.
+ * The tone is deliberate — a disposable signup is a choice, and being caught out should feel
+ * like being caught out.
+ */
+function TempMailAlert({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tempmail-title"
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 100, display: "flex",
+        alignItems: "center", justifyContent: "center", padding: 20,
+        background: "rgba(16, 18, 20, 0.55)", backdropFilter: "blur(3px)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--g-white)", borderRadius: "var(--radius-lg)", maxWidth: 420,
+          padding: "28px 28px 22px", boxShadow: "0 24px 64px rgba(20,32,51,.3)", textAlign: "left",
+        }}
+      >
+        <div style={{ fontSize: 34, lineHeight: 1, marginBottom: 14 }} aria-hidden="true">🕵️</div>
+        <h2 id="tempmail-title" style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.01em", margin: "0 0 10px", color: "var(--g-ink)" }}>
+          Nice try.
+        </h2>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--g-gray-500)", margin: "0 0 8px" }}>
+          Don&apos;t be smart — temp mail doesn&apos;t work here. We spotted the throwaway inbox before
+          you even hit send.
+        </p>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
+          Use a real email you can actually receive mail on. Keep trying disposable ones and your IP
+          gets to sit in timeout — and nobody wants that on a Monday.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: "100%", padding: "13px 20px", borderRadius: "var(--radius-sm)", border: "none",
+            background: "var(--g-ink)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
+          }}
+        >
+          Fine, I&apos;ll use my real one
+        </button>
       </div>
     </div>
   );

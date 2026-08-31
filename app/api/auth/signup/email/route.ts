@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { sendVerificationEmail } from "@/lib/ses";
 import { generateCode, hashCode, CODE_TTL_MINUTES, PER_EMAIL_CODE_COOLDOWN_SECONDS } from "@/lib/verification-code";
+import { isDisposableEmail, DISPOSABLE_EMAIL_MESSAGE } from "@/lib/disposable-email";
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as { email?: string; password?: string };
@@ -10,6 +11,13 @@ export async function POST(req: NextRequest) {
   const password = body.password ?? "";
   if (!email || !email.includes("@")) return NextResponse.json({ error: "a valid email is required" }, { status: 400 });
   if (password.length < 8) return NextResponse.json({ error: "password must be at least 8 characters" }, { status: 400 });
+
+  // Checked before anything is written or sent: a throwaway signup costs real Places API spend
+  // against an account that can never be billed or contacted. `disposable` lets the client show
+  // its own treatment rather than a generic form error.
+  if (isDisposableEmail(email)) {
+    return NextResponse.json({ error: DISPOSABLE_EMAIL_MESSAGE, disposable: true }, { status: 400 });
+  }
 
   const [existing] = await sql`SELECT email, password_hash, email_verified FROM user_profiles WHERE email = ${email}`;
   if (existing?.password_hash && existing.email_verified) {
