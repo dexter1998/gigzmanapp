@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runLifecycleEmails } from "@/lib/lifecycle-email";
+import { recordCronRun } from "@/lib/cron-runs";
 
 /**
  * Daily evaluation of the lifecycle email rules.
@@ -24,7 +25,22 @@ export async function GET(req: NextRequest) {
 
   // ?dry=1 reports who today's rules would reach, and why, without sending or recording anything.
   const dryRun = req.nextUrl.searchParams.get("dry") === "1";
-  const results = await runLifecycleEmails(dryRun);
+  const startedAt = new Date();
+  let results;
+  try {
+    results = await runLifecycleEmails(dryRun);
+  } catch (err) {
+    await recordCronRun("lifecycle_email", startedAt, false, { dryRun }, err instanceof Error ? err.message : String(err));
+    throw err;
+  }
+  // Dry runs are rehearsals, not runs — recording them would let a rehearsal masquerade as the
+  // nightly send in the admin panel's "last run" answer.
+  if (!dryRun) {
+    await recordCronRun("lifecycle_email", startedAt, true, {
+      evaluated: results.length,
+      sent: results.filter((r) => r.sent).length,
+    });
+  }
   return NextResponse.json({
     dryRun,
     evaluated: results.length,

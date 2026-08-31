@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { advanceAllInFlight } from "@/lib/enrichment";
+import { recordCronRun } from "@/lib/cron-runs";
 
 /**
  * Drives the enrichment queue forward.
@@ -25,6 +26,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const results = await advanceAllInFlight();
-  return NextResponse.json({ advanced: results.length, results });
+  const startedAt = new Date();
+  try {
+    const results = await advanceAllInFlight();
+    await recordCronRun("enrich", startedAt, true, { advanced: results.length });
+    return NextResponse.json({ advanced: results.length, results });
+  } catch (err) {
+    await recordCronRun("enrich", startedAt, false, undefined, err instanceof Error ? err.message : String(err));
+    throw err;
+  }
 }

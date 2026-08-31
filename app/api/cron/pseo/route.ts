@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { refreshAll } from "@/lib/pseo/refresh";
+import { recordCronRun } from "@/lib/cron-runs";
 import { submitToIndexNow } from "@/lib/pseo/indexnow";
 import { PSEO_SEGMENTS } from "@/lib/pseo/sitemap";
 import { COMPANY } from "@/lib/company";
@@ -25,7 +26,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const results = await refreshAll();
+  const startedAt = new Date();
+  let results;
+  try {
+    results = await refreshAll();
+  } catch (err) {
+    await recordCronRun("pseo", startedAt, false, undefined, err instanceof Error ? err.message : String(err));
+    throw err;
+  }
 
   // Only pages whose figures actually moved are revalidated; blanket-revalidating everything daily
   // would throw away the cache for no benefit. The sitemap follows whenever the published set
@@ -51,6 +59,12 @@ export async function GET(req: NextRequest) {
     return acc;
   }, {});
 
+  await recordCronRun("pseo", startedAt, true, {
+    evaluated: results.length,
+    revalidated: changed.length,
+    promoted: promoted.length,
+    counts,
+  });
   return NextResponse.json({
     evaluated: results.length,
     revalidated: changed.length,

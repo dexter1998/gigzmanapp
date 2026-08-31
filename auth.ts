@@ -43,6 +43,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token.email) session.user.email = token.email as string;
       if (token.name) session.user.name = token.name as string;
+      // last_seen_at, throttled through the token: at most one write per ~6h per user, because
+      // this callback fires on every request and an unthrottled version would turn each page
+      // load into a database write. Best-effort — presence tracking must never block a session.
+      const now = Date.now();
+      const last = typeof token.lastSeenWrite === "number" ? token.lastSeenWrite : 0;
+      if (token.email && now - last > 6 * 60 * 60 * 1000) {
+        token.lastSeenWrite = now;
+        sql`UPDATE user_profiles SET last_seen_at = now() WHERE email = ${token.email as string}`
+          .catch(() => {});
+      }
       return session;
     },
   },

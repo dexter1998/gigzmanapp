@@ -200,6 +200,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   if (result.action === "needs_clarification" && result.missingField) {
     result.clarification = CLARIFICATIONS[result.missingField];
 
+    // The dictionary's next update comes from what users actually typed and we failed to
+    // resolve — queryable, not buried in CloudWatch.
+    if (result.missingField === "category" && intent.categoryText) {
+      sql`INSERT INTO unresolved_phrases (phrase, user_email) VALUES (${intent.categoryText}, ${userEmail})`.catch(() => {});
+    }
+
     // "dentists" earning chips for Restaurants and Salons read as "I ignored what you typed".
     // When the user DID name a trade and it just didn't resolve, the chips become the nearest
     // known categories to their own words, and say so.

@@ -1,0 +1,125 @@
+/* Admin panel — same token family as the product (globals.css), arranged as an ops console:
+   dark ink rail on the left, cream working surface, dense numeric cards. Read-only by design. */
+
+.adm-shell { display: flex; min-height: 100vh; background: var(--g-cream); }
+
+/* ── Rail ── */
+.adm-rail {
+  width: 232px; flex-shrink: 0; background: #14202f; color: #ffffff;
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+}
+.adm-rail-brand {
+  display: flex; align-items: baseline; gap: 8px; padding: 22px 20px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.adm-rail-brand .name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.adm-rail-brand .tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--g-green); border: 1px solid rgba(168, 213, 30, 0.45);
+  border-radius: var(--radius-sm); padding: 1px 6px;
+}
+.adm-nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.adm-nav-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: #7d8b9d; padding: 14px 10px 6px;
+}
+.adm-nav a {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+  border-radius: var(--radius-md); font-size: 13.5px; font-weight: 500;
+  color: #c3ccd7; text-decoration: none; line-height: 1;
+}
+.adm-nav a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.adm-nav a.active { background: rgba(168, 213, 30, 0.14); color: var(--g-green); font-weight: 600; }
+.adm-nav a svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+.adm-rail-foot {
+  padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11.5px; color: #7d8b9d; line-height: 1.5;
+}
+
+/* ── Working surface ── */
+.adm-main { flex: 1; min-width: 0; padding: 26px 30px 60px; max-width: 1240px; }
+.adm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+.adm-head h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--g-ink); }
+.adm-head .sub { font-size: 12.5px; color: var(--g-gray-500); }
+.adm-asof { font-size: 11.5px; color: var(--g-gray-500); font-variant-numeric: tabular-nums; }
+
+/* ── Stat cards ── */
+.adm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 12px; margin: 18px 0; }
+.adm-card {
+  background: var(--g-white); border: 1px solid var(--g-border); border-radius: var(--radius-lg);
+  padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+}
+.adm-card .k {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--g-gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.adm-card .v { font-size: 24px; font-weight: 700; color: var(--g-ink); font-variant-numeric: tabular-nums; line-height: 1.15; }
+.adm-card .d { font-size: 11.5px; color: var(--g-gray-500); font-variant-numeric: tabular-nums; }
+.adm-card .d.up { color: var(--g-green-text); }
+.adm-card .d.bad { color: var(--g-red-text); }
+
+/* ── Sections & tables ── */
+.adm-section { margin: 26px 0 0; }
+.adm-section > h2 { font-size: 14.5px; font-weight: 700; color: var(--g-ink); margin-bottom: 3px; }
+.adm-section > .note { font-size: 12px; color: var(--g-gray-500); margin-bottom: 10px; }
+.adm-tablewrap {
+  background: var(--g-white); border: 1px solid var(--g-border); border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+table.adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.adm-table th {
+  text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--g-gray-500); padding: 9px 14px; border-bottom: 1px solid var(--g-border);
+  background: #fafbf8; white-space: nowrap;
+}
+.adm-table td {
+  padding: 8px 14px; border-bottom: 1px solid var(--g-gray-100); color: var(--g-ink-soft);
+  font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top;
+}
+.adm-table tr:last-child td { border-bottom: none; }
+.adm-table td.num, .adm-table th.num { text-align: right; }
+.adm-table td.wrap { white-space: normal; min-width: 220px; max-width: 420px; }
+.adm-table a { color: var(--g-green-darker); font-weight: 600; text-decoration: none; }
+.adm-table a:hover { text-decoration: underline; }
+.adm-empty { padding: 22px 16px; font-size: 12.5px; color: var(--g-gray-500); }
+
+/* ── Pills & health ── */
+.adm-pill {
+  display: inline-flex; align-items: center; gap: 5px; border-radius: var(--radius-pill);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 9px; text-transform: uppercase;
+}
+.adm-pill.ok { background: var(--g-green-mint); color: var(--g-green-text); }
+.adm-pill.warn { background: var(--g-amber-tint); color: #92610a; }
+.adm-pill.bad { background: var(--g-red-tint); color: var(--g-red-text); }
+.adm-pill.mut { background: var(--g-gray-100); color: var(--g-gray-500); }
+.adm-pill.info { background: var(--g-blue-tint); color: var(--g-blue-text); }
+
+.adm-health { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 12px; margin: 18px 0; }
+.adm-health-item {
+  background: var(--g-white); border: 1px solid var(--g-border); border-radius: var(--radius-lg);
+  padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;
+}
+.adm-health-item .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.dot.ok { background: #57a815; box-shadow: 0 0 0 3px rgba(87, 168, 21, 0.18); }
+.dot.warn { background: var(--g-amber); box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.18); }
+.dot.bad { background: var(--g-red); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15); }
+.dot.mut { background: var(--g-gray-300); }
+.adm-health-item .t { font-size: 12.5px; font-weight: 600; color: var(--g-ink); line-height: 1.3; }
+.adm-health-item .s { font-size: 11.5px; color: var(--g-gray-500); margin-top: 2px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+
+/* ── Two-column split ── */
+.adm-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 1080px) { .adm-split { grid-template-columns: 1fr; } }
+
+/* ── Spark ── */
+.adm-spark { display: block; }
+.adm-bars { display: flex; align-items: flex-end; gap: 2px; height: 38px; }
+.adm-bars span { flex: 1; background: var(--g-green); border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.85; }
+
+@media (max-width: 900px) {
+  .adm-shell { flex-direction: column; }
+  .adm-rail { width: 100%; height: auto; position: static; }
+  .adm-nav { flex-direction: row; flex-wrap: wrap; }
+  .adm-nav-label { display: none; }
+  .adm-main { padding: 18px 14px 40px; }
+}
