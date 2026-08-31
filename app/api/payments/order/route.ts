@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { logAppError } from "@/lib/app-errors";
 import { packById } from "@/lib/credits/pricing";
 import { razorpayConfigured, createOrder as createRzpOrder } from "@/lib/razorpay";
 import { createOrder as createCfOrder, newOrderId } from "@/lib/cashfree";
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       await sql`UPDATE payments SET status = 'failed', raw = ${sql.json({ error: String(err) })} WHERE order_id = ${orderId}`;
       console.error("Razorpay order creation failed", err);
+      await logAppError("/api/payments/order", err, { userEmail, context: { provider: "razorpay", packId } });
       return NextResponse.json({ error: "gateway_error" }, { status: 502 });
     }
   }
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     await sql`UPDATE payments SET status = 'failed', raw = ${sql.json({ error: String(err) })} WHERE order_id = ${orderId}`;
     console.error("Cashfree order creation failed", err);
+    await logAppError("/api/payments/order", err, { userEmail, context: { provider: "cashfree", packId } });
     return NextResponse.json({ error: "gateway_error" }, { status: 502 });
   }
 }

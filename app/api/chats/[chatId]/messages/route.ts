@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { logAppError } from "@/lib/app-errors";
 import { runChatIntent, BedrockUnavailableError, type ChatIntent } from "@/lib/planner";
 import { geocodeText, reverseGeocode } from "@/lib/geocode";
 import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
     intent = await runChatIntent({ message, history: history.slice(0, -1) });
   } catch (err) {
     if (!(err instanceof BedrockUnavailableError)) throw err;
+    logAppError("/api/chats/messages", err, { userEmail, context: { degraded: true } }).catch(() => {});
     intent = {
       action: "needs_clarification",
       category: null,
