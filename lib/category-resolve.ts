@@ -79,6 +79,31 @@ const ALIASES: Record<string, string> = {
   medical_store: "pharmacy",
   advocate: "lawyer",
   advocates: "lawyer",
+  vakil: "lawyer",
+  vakeel: "lawyer",
+  chartered_acountent: "accounting",
+  charted_accountant: "accounting",
+  accountant: "accounting",
+  property_dealer: "real_estate_agency",
+  property_diler: "real_estate_agency",
+  propety_diler: "real_estate_agency",
+  broker: "real_estate_agency",
+  real_estate_agent: "real_estate_agency",
+  realtor: "real_estate_agency",
+  tuition: "educational_institution",
+  tuition_center: "educational_institution",
+  tuition_centre: "educational_institution",
+  college: "educational_institution",
+  physiotherapy: "physiotherapist",
+  physio: "physiotherapist",
+  jeweller: "jewelry_store",
+  jewellery_shop: "jewelry_store",
+  sweet_shop: "confectionery",
+  garment_shop: "clothing_store",
+  cloth_shop: "clothing_store",
+  boutique: "clothing_store",
+  mobile_shop: "cell_phone_store",
+  furniture_shop: "furniture_store",
   architect: "consultant",
   interior_designer: "consultant",
 
@@ -119,12 +144,75 @@ export function resolveCategoryPhrase(...labels: Array<string | undefined | null
   for (const label of labels) {
     const key = normalizeLabel(label);
     if (!key) continue;
-    if (TYPE_TO_SECTION[key]) return key;
-    const alias = ALIASES[key];
-    if (alias && TYPE_TO_SECTION[alias]) return alias;
-    if (alias && !TYPE_TO_SECTION[alias]) {
-      console.warn(`category-resolve: alias "${key}" -> "${alias}" is not a known place type`);
+    // Exact, then singular: "dentists" is not in any dictionary and never will be — every plural
+    // would need its own entry. The live failure that motivated this was exactly that word.
+    for (const candidate of singularForms(key)) {
+      if (TYPE_TO_SECTION[candidate]) return candidate;
+      const alias = ALIASES[candidate];
+      if (alias && TYPE_TO_SECTION[alias]) return alias;
+      if (alias && !TYPE_TO_SECTION[alias]) {
+        console.warn(`category-resolve: alias "${candidate}" -> "${alias}" is not a known place type`);
+      }
     }
+    // Logged misses are the next dictionary update — additions should come from what users
+    // actually typed, not from guessing.
+    console.warn(`category-resolve: unresolved phrase "${key}"`);
   }
   return null;
+}
+
+/** The key itself, then simple English singulars: cafes->cafe, salons->salon, companies->company.
+ * Applied to the whole phrase and to its last word ("beauty salons" -> "beauty_salon"). */
+function singularForms(key: string): string[] {
+  const forms = new Set<string>([key]);
+  const addSingulars = (k: string, out: Set<string>) => {
+    if (k.endsWith("ies") && k.length > 4) out.add(k.slice(0, -3) + "y");
+    if (k.endsWith("es") && k.length > 3) out.add(k.slice(0, -2));
+    if (k.endsWith("s") && !k.endsWith("ss") && k.length > 2) out.add(k.slice(0, -1));
+  };
+  addSingulars(key, forms);
+  const parts = key.split("_");
+  if (parts.length > 1) {
+    const last = new Set<string>();
+    addSingulars(parts[parts.length - 1], last);
+    for (const l of last) forms.add([...parts.slice(0, -1), l].join("_"));
+  }
+  return [...forms];
+}
+
+/**
+ * Nearest known categories for a phrase that would not resolve — powers clarification chips that
+ * actually relate to what the user typed, instead of a fixed Restaurants/Salons/Clinics list that
+ * reads as "I ignored what you said".
+ */
+export function suggestCategories(phrase: string, limit = 3): Array<{ type: string; label: string }> {
+  const key = normalizeLabel(phrase);
+  if (!key) return [];
+  const candidates = new Set<string>([...Object.keys(TYPE_TO_SECTION), ...Object.keys(ALIASES)]);
+  const scored: Array<{ type: string; score: number }> = [];
+  for (const cand of candidates) {
+    let score = 0;
+    if (cand.includes(key) || key.includes(cand)) score = Math.min(cand.length, key.length);
+    else {
+      // Cheap shared-prefix affinity — enough for typos like "acountent"; a full edit distance
+      // would be over-engineering for three chips.
+      let i = 0;
+      while (i < cand.length && i < key.length && cand[i] === key[i]) i++;
+      score = i >= 4 ? i : 0;
+    }
+    if (score > 0) {
+      const resolved = TYPE_TO_SECTION[cand] ? cand : ALIASES[cand];
+      if (resolved && TYPE_TO_SECTION[resolved]) scored.push({ type: resolved, score });
+    }
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const seen = new Set<string>();
+  const out: Array<{ type: string; label: string }> = [];
+  for (const s of scored) {
+    if (seen.has(s.type)) continue;
+    seen.add(s.type);
+    out.push({ type: s.type, label: s.type.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" ") });
+    if (out.length >= limit) break;
+  }
+  return out;
 }

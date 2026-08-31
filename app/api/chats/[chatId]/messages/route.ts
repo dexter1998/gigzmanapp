@@ -7,7 +7,7 @@ import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
 import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION, CATEGORY_SECTIONS, formatCategory } from "@/lib/categories";
-import { resolveCategoryPhrase } from "@/lib/category-resolve";
+import { resolveCategoryPhrase, suggestCategories } from "@/lib/category-resolve";
 import { POST as findLeadsPost } from "@/app/api/leads/find/route";
 
 const DEFAULT_SEARCH_RADIUS_METERS = 1500;
@@ -105,11 +105,57 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
       minReviews: null,
       minRating: null,
       missingField: null,
+      clearFilters: [],
       reply: "I'm having trouble reaching my search engine right now — please try again in a few minutes.",
       nextActions: [],
     };
     turnApiDown = true;
   }
+  // The previous assistant turn's stored intent is the conversation's slot memory.
+  const prior = ([...historyRows].find((r) => r.role === "assistant" && r.intent) ?? null)
+    ?.intent as AssistantIntent | null;
+
+  if (intent.action === "search_leads" || intent.action === "needs_clarification") {
+    // A bare value answers only the question that was actually pending. A standalone "25" after a
+    // count question is a count; after a location question it's nothing (clarify again) — it must
+    // never be read as a rating, which is what produced the "no results near Gujarat" ghost search.
+    const bare = message.trim();
+    const bareNumber = /^\d{1,4}$/.test(bare) ? Number(bare) : null;
+    const pending = prior?.action === "needs_clarification" ? prior.missingField : null;
+    if (bareNumber !== null && pending !== "count") {
+      intent.minRating = null;
+      if (intent.minReviews === bareNumber && !/review|rating/i.test(bare)) intent.minReviews = null;
+    }
+    if (pending === "location" && !intent.areaText && bareNumber === null && bare.split(/\s+/).length <= 4) {
+      intent.areaText = bare;
+    }
+    if (pending === "category" && !intent.categoryText && bareNumber === null) {
+      intent.categoryText = bare;
+    }
+
+    // Carry-forward: anything said earlier stays true until changed or explicitly cleared.
+    if (prior) {
+      intent.categoryText = intent.categoryText ?? prior.categoryText ?? null;
+      intent.category = intent.category ?? prior.category ?? null;
+      intent.areaText = intent.areaText ?? prior.areaText ?? null;
+      intent.minReviews = intent.minReviews ?? prior.minReviews ?? null;
+      intent.minRating = intent.minRating ?? prior.minRating ?? null;
+      intent.noWebsiteOnly = intent.noWebsiteOnly || prior.noWebsiteOnly === true;
+    }
+    for (const f of intent.clearFilters) {
+      if (f === "minRating") intent.minRating = null;
+      if (f === "minReviews") intent.minReviews = null;
+      if (f === "noWebsiteOnly") intent.noWebsiteOnly = false;
+    }
+    // With slots merged, a clarification the model raised may already be answered.
+    if (intent.action === "needs_clarification") {
+      const hasCat = Boolean(resolveCategoryPhrase(intent.categoryText) || intent.category);
+      if (intent.missingField === "category" && hasCat) intent.action = "search_leads";
+      else if (intent.missingField === "location" && intent.areaText) intent.action = "search_leads";
+      if (intent.action === "search_leads") intent.missingField = null;
+    }
+  }
+
   const result: AssistantIntent = { ...intent, tookMs: Date.now() - startedAt, apiDown: turnApiDown };
 
   // A specific trade beats a broad section. "CA" resolves to accounting; the section enum could
@@ -153,6 +199,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
 
   if (result.action === "needs_clarification" && result.missingField) {
     result.clarification = CLARIFICATIONS[result.missingField];
+
+    // "dentists" earning chips for Restaurants and Salons read as "I ignored what you typed".
+    // When the user DID name a trade and it just didn't resolve, the chips become the nearest
+    // known categories to their own words, and say so.
+    if (result.missingField === "category" && intent.categoryText) {
+      const near = suggestCategories(intent.categoryText);
+      if (near.length) {
+        result.clarification = {
+          question: `"${intent.categoryText}" ko main exactly map nahi kar paya — inme se koi?`,
+          options: [
+            ...near.map((n) => ({ label: n.label, description: TYPE_TO_SECTION[n.type] ?? "", value: n.label })),
+            { label: "Something else", description: "Type the business type in other words" },
+          ],
+        };
+      }
+    }
 
     if (result.missingField === "location") {
       const [lastScan] = await sql`

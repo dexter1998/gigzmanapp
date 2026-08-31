@@ -8,7 +8,7 @@ import { recordApiFailure } from "@/lib/api-alerts";
 export class BedrockUnavailableError extends Error {}
 
 export type ChatIntent = {
-  action: "search_leads" | "answer_from_existing" | "needs_clarification";
+  action: "search_leads" | "answer_from_existing" | "needs_clarification" | "advice";
   category: string | null;
   /** Whatever the user actually called the business type, verbatim — "CA", "dentist", "parlour".
    *  Resolved to a real place type server-side; the section enum above can't express any of these. */
@@ -20,6 +20,9 @@ export type ChatIntent = {
   minReviews: number | null;
   minRating: number | null;
   missingField: "category" | "location" | "count" | null;
+  /** Filters the user asked to drop this turn ("rating filter hata do"). Applied against the
+   *  carried-forward slots server-side; empty for most turns. */
+  clearFilters: Array<"minRating" | "minReviews" | "noWebsiteOnly">;
   reply: string;
   nextActions: string[];
 };
@@ -39,11 +42,13 @@ const INTENT_TOOL = {
         properties: {
           action: {
             type: "string",
-            enum: ["search_leads", "answer_from_existing", "needs_clarification"],
+            enum: ["search_leads", "answer_from_existing", "needs_clarification", "advice"],
             description:
               "search_leads: the user wants to find new businesses. answer_from_existing: the user is asking a question " +
               "you can answer from context already given (e.g. about leads already found, or how the product works) — no search needed. " +
-              "needs_clarification: a search was requested but a required detail is missing or too ambiguous to guess.",
+              "needs_clarification: a search was requested but a required detail is missing or too ambiguous to guess. " +
+              "advice: the user wants strategy/recommendations for their own business (which niches to target, how to pitch, " +
+              "what their ICP should be) — answer it yourself in reply, never treat it as a search.",
           },
           category: {
             type: ["string", "null"],
@@ -82,6 +87,13 @@ const INTENT_TOOL = {
             type: "boolean",
             description: "True only if the user specifically asked for businesses without a website.",
           },
+          clearFilters: {
+            type: "array",
+            items: { type: "string", enum: ["minRating", "minReviews", "noWebsiteOnly"] },
+            description:
+              "Filters the user explicitly asked to REMOVE this turn (e.g. 'rating filter hata do' -> ['minRating']). " +
+              "Usually empty. Never list a filter they are setting or keeping.",
+          },
           missingField: {
             type: ["string", "null"],
             enum: ["category", "location", "count", null],
@@ -104,14 +116,14 @@ const INTENT_TOOL = {
         },
         required: [
           "action", "category", "categoryText", "areaText", "noWebsiteOnly",
-          "minReviews", "minRating", "missingField", "reply", "nextActions",
+          "minReviews", "minRating", "missingField", "clearFilters", "reply", "nextActions",
         ],
       },
     },
   },
 };
 
-const SYSTEM_PROMPT = `You are Mantis, a lead-finding assistant for a web development agency. You help the user find local businesses that have no website — that is the signal the product actually measures. Do not offer to find "weak", "outdated" or "slow" websites; that data does not exist.
+const SYSTEM_PROMPT = `You are Mantis, a lead-finding assistant for a web development agency. When the user asks for strategy or recommendations about their own agency (which business types to target, how to position, what to pitch), use action "advice" and answer it yourself from that context — those questions are never a search. You help the user find local businesses that have no website — that is the signal the product actually measures. Do not offer to find "weak", "outdated" or "slow" websites; that data does not exist.
 
 You do not run searches yourself — you only classify the user's message and extract structured parameters via the ${TOOL_NAME} tool. Always call that tool, never reply in plain text.
 
@@ -155,7 +167,8 @@ export async function runChatIntent(input: {
   // The model's output is untrusted input — every field gets re-validated here, not just typed.
   const category = typeof raw.category === "string" && SECTION_NAMES.includes(raw.category) ? raw.category : null;
   const action: ChatIntent["action"] =
-    raw.action === "search_leads" || raw.action === "answer_from_existing" || raw.action === "needs_clarification"
+    raw.action === "search_leads" || raw.action === "answer_from_existing" ||
+    raw.action === "needs_clarification" || raw.action === "advice"
       ? raw.action
       : "needs_clarification";
   const missingField: ChatIntent["missingField"] =
@@ -176,8 +189,14 @@ export async function runChatIntent(input: {
     ? raw.nextActions.filter((a): a is string => typeof a === "string" && a.trim().length > 0).slice(0, 3)
     : [];
 
+  const clearFilters = Array.isArray(raw.clearFilters)
+    ? raw.clearFilters.filter((f): f is "minRating" | "minReviews" | "noWebsiteOnly" =>
+        f === "minRating" || f === "minReviews" || f === "noWebsiteOnly")
+    : [];
+
   return {
     action,
+    clearFilters,
     category,
     categoryText: typeof raw.categoryText === "string" && raw.categoryText.trim() ? raw.categoryText.trim() : null,
     areaText: typeof raw.areaText === "string" && raw.areaText.trim() ? raw.areaText.trim() : null,
