@@ -57,11 +57,13 @@ export type AreaStrategy = {
 
 export const AREA_STRATEGY: Record<string, AreaStrategy> = {
   in: { types: ["neighborhood", "sublocality_level_1", "sublocality", "route"], postalDistrict: false },
-  ca: { types: ["neighborhood", "sublocality_level_1", "sublocality"], postalDistrict: false },
-  us: { types: ["neighborhood"], postalDistrict: false },
+  ca: { types: ["neighborhood", "sublocality_level_1", "sublocality"], postalDistrict: true },
+  us: { types: ["neighborhood"], postalDistrict: true },
   // Australia's locality is the suburb, so the city can only come from coordinates — which is
   // exactly what resolveLocation's fallback already does.
   au: { types: ["locality"], postalDistrict: false },
+  // Australia deliberately keeps no postal fallback: its `locality` IS the suburb and is present
+  // on every address, so a postcode would only ever be a worse name for the same place.
   gb: { types: ["sublocality_level_1", "sublocality", "neighborhood"], postalDistrict: true },
 };
 
@@ -69,13 +71,56 @@ export function areaStrategyFor(countryCode: string): AreaStrategy {
   return AREA_STRATEGY[countryCode] ?? { types: ["sublocality"], postalDistrict: false };
 }
 
-/** "M15 4YB" -> "M15". British postcodes always split on the space, and the outward half is the
- *  district. Returns null for formats that are not a two-part postcode, so a US ZIP never becomes
- *  an "area" by accident. */
-export function postalDistrict(postalCode: string | null | undefined): string | null {
+/**
+ * The postal unit that names a neighbourhood, per country.
+ *
+ * Each country's postal code carries a different amount of place in it, so a single parser would be
+ * wrong four ways:
+ *   GB  "M15 4YB"  -> "M15"    the outward code, a real district people search
+ *   CA  "M5B 1R8"  -> "M5B"    the forward sortation area, the same idea
+ *   US  "78704"    -> "78704"  the ZIP is already the unit; there is nothing to trim
+ *
+ * Returns null for anything that does not match that country's shape, so a malformed value becomes
+ * no area rather than a fake one.
+ */
+export function postalDistrict(postalCode: string | null | undefined, countryCode = "gb"): string | null {
   if (!postalCode) return null;
-  const m = /^([A-Z]{1,2}\d[A-Z\d]?)\s+\d[A-Z]{2}$/i.exec(postalCode.trim());
-  return m ? m[1].toUpperCase() : null;
+  const v = postalCode.trim().toUpperCase();
+  if (countryCode === "us") return /^\d{5}(-\d{4})?$/.test(v) ? v.slice(0, 5) : null;
+  if (countryCode === "ca") { const m = /^([A-Z]\d[A-Z])\s*\d[A-Z]\d$/.exec(v); return m ? m[1] : null; }
+  const m = /^([A-Z]{1,2}\d[A-Z\d]?)\s+\d[A-Z]{2}$/.exec(v);
+  return m ? m[1] : null;
+}
+
+/**
+ * The same answer from a free-text address, for sources that give no addressComponents.
+ *
+ * gosom returns one address string and nothing else, so without this a scraped record resolves to
+ * the right city and no area at all — which is exactly what it did: every non-Indian test address
+ * came back `via=coordinates` with a null area, meaning a scrape would have added leads to city
+ * totals and contributed nothing to the area pages it was run for.
+ */
+export function areaTokenFromAddress(countryCode: string, address: string): string | null {
+  const a = address.toUpperCase();
+  if (countryCode === "gb") {
+    const m = /\b([A-Z]{1,2}\d[A-Z\d]?)\s+\d[A-Z]{2}\b/.exec(a);
+    return m ? m[1] : null;
+  }
+  if (countryCode === "ca") {
+    const m = /\b([A-Z]\d[A-Z])\s*\d[A-Z]\d\b/.exec(a);
+    return m ? m[1] : null;
+  }
+  if (countryCode === "us") {
+    // Anchored on the state abbreviation so a street number can never be read as a ZIP.
+    const m = /\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b/.exec(a);
+    return m ? m[1] : null;
+  }
+  if (countryCode === "au") {
+    // "…, Surry Hills NSW 2010, Australia" — the suburb sits immediately before the state code.
+    const m = /,\s*([^,]+?)\s+(?:NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s+\d{4}\b/.exec(a);
+    return m ? m[1].trim() : null;
+  }
+  return null;
 }
 
 export const COUNTRIES: Country[] = [

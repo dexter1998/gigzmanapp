@@ -69,13 +69,14 @@ async function main() {
       INSERT INTO leads (
         place_id, business_name, category, address, lat, lng, phone, email,
         has_website, website_checked_at, is_competitor, rating, review_count,
-        city_slug, area_slug, location_resolved_at
+        country_code, city_slug, area_slug, postal_code, location_via, location_resolved_at
       ) VALUES (
         ${r.place_id}, ${r.title}, ${type}, ${r.address ?? null}, ${r.latitude}, ${r.longitude},
         ${r.phone ?? null}, ${r.emails?.[0] ?? null},
         ${hasSite}, ${hasSite === null ? null : new Date()}, ${isCompetitor},
         ${r.review_rating ?? null}, ${r.review_count ?? null},
-        ${loc.value.citySlug}, ${loc.value.areaSlug ?? null}, now()
+        ${loc.value.countryCode}, ${loc.value.citySlug}, ${loc.value.areaSlug ?? null},
+        ${loc.value.postalCode}, ${loc.value.via}, now()
       )
       ON CONFLICT (place_id) DO UPDATE SET
         -- Only ever fill gaps. COALESCE keeps whatever we already verified.
@@ -84,8 +85,11 @@ async function main() {
         rating          = COALESCE(leads.rating, EXCLUDED.rating),
         review_count    = COALESCE(leads.review_count, EXCLUDED.review_count),
         address         = COALESCE(leads.address, EXCLUDED.address),
+        country_code    = COALESCE(leads.country_code, EXCLUDED.country_code),
         city_slug       = COALESCE(leads.city_slug, EXCLUDED.city_slug),
         area_slug       = COALESCE(leads.area_slug, EXCLUDED.area_slug),
+        postal_code     = COALESCE(leads.postal_code, EXCLUDED.postal_code),
+        location_via    = COALESCE(leads.location_via, EXCLUDED.location_via),
         location_resolved_at = COALESCE(leads.location_resolved_at, now()),
         has_website     = CASE WHEN leads.has_website IS NULL THEN EXCLUDED.has_website ELSE leads.has_website END,
         website_checked_at = CASE WHEN leads.has_website IS NULL AND EXCLUDED.has_website IS NOT NULL

@@ -8,7 +8,13 @@ import {
   resolveSectorAlias,
   type AliasHit,
 } from "@/lib/pseo/locations";
-import { COUNTRY_BY_GOOGLE_CODE, areaStrategyFor, postalDistrict } from "@/lib/pseo/countries";
+import {
+  COUNTRY_BY_CODE,
+  COUNTRY_BY_GOOGLE_CODE,
+  areaStrategyFor,
+  areaTokenFromAddress,
+  postalDistrict,
+} from "@/lib/pseo/countries";
 
 /**
  * Turns a place's address into a canonical country/city/area, using no API calls.
@@ -92,9 +98,11 @@ export function resolveFromComponents(
     .map((t) => pick(components, t))
     .filter((t): t is string => !!t);
   if (strategy.postalDistrict) {
-    // Britain fills `sublocality` about a quarter of the time; the postcode district is on every
-    // address, and it is a unit people genuinely search ("dentist M15").
-    const d = postalDistrict(pick(components, "postal_code"));
+    // Britain fills `sublocality` about a quarter of the time and America fills `neighborhood` only
+    // in its larger cities; the postal code is on every address in both. It is also the one unit a
+    // free-text address can yield, which is what keeps the scraper and Places describing the same
+    // places rather than two parallel sets.
+    const d = postalDistrict(pick(components, "postal_code"), country.code);
     if (d) areaTokens.push(d);
   }
 
@@ -196,6 +204,25 @@ export function parseIndianAddress(address: string): ParsedAddress {
 }
 
 /**
+ * The area a free-text address names, for the countries whose addresses actually carry one.
+ *
+ * gosom gives one address string and no components, so without this every non-Indian scraped record
+ * resolved to the right city and no area — measured, not assumed: London, Manchester, Austin,
+ * Sydney and Toronto all came back `via=coordinates` with a null area. A scrape run to fill area
+ * pages would have added leads to city totals and left the area pages exactly as they were.
+ *
+ * Deliberately returns the same unit the components path would, so the two sources describe one set
+ * of places rather than two overlapping ones.
+ */
+function areaFromText(countryCode: string, address: string): string | null {
+  if (!COUNTRY_BY_CODE.has(countryCode)) return null;
+  const token = areaTokenFromAddress(countryCode, address);
+  if (!token) return null;
+  const hit = lookupAlias(countryCode, token);
+  return hit?.areaSlug ?? null;
+}
+
+/**
  * The full resolution.
  *
  * Pass `components` whenever they exist — every Places response carries them, and that path is
@@ -229,7 +256,8 @@ export function resolveLocation(
     return {
       ok: true,
       value: {
-        countryCode: near.countryCode, citySlug: near.slug, areaSlug: null,
+        countryCode: near.countryCode, citySlug: near.slug,
+        areaSlug: areaFromText(near.countryCode, address),
         state: parsed.state, postalCode: parsed.postalCode, via: "coordinates",
       },
     };
@@ -248,6 +276,7 @@ export function resolveLocation(
       (city.countryCode === "in" ? resolveSectorAlias(parsed.areaToken) : null) ??
       areaSlug;
   }
+  areaSlug = areaSlug ?? areaFromText(city.countryCode, address);
 
   return {
     ok: true,
