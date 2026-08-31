@@ -31,11 +31,17 @@ export function ogImageUrl(opts: {
   cta?: string;
   url?: string;
 }): string {
-  const p = new URLSearchParams({ v: opts.v, eyebrow: opts.eyebrow, t1: opts.t1 });
-  if (opts.t2) p.set("t2", opts.t2);
-  if (opts.cta) p.set("cta", opts.cta);
-  if (opts.url) p.set("url", opts.url);
-  return `${COMPANY.site}/api/og?${p.toString()}`;
+  // Everything travels in ONE parameter, so the URL contains no "&" at all.
+  //
+  // In HTML an "&" inside an attribute is correctly written "&amp;", and a compliant parser
+  // decodes it. Several real scrapers do not: they read the raw attribute and request the URL
+  // with the entity intact, so every parameter after the first arrives named "amp;t1",
+  // "amp;cta", ... and the renderer falls back to its defaults. That is exactly what a card
+  // preview showed — the headline's second line and the CTA silently gone. With a single
+  // parameter there is no separator left to mangle.
+  const payload = { v: opts.v, eyebrow: opts.eyebrow, t1: opts.t1, t2: opts.t2, cta: opts.cta, url: opts.url };
+  const d = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return `${COMPANY.site}/api/og?d=${d}`;
 }
 
 /** The `images` block a page's openGraph/twitter metadata needs, so no caller repeats the size. */

@@ -67,12 +67,28 @@ function headlineSize(...lines: string[]): number {
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
 
-  const variant = q.get("v") ?? "hero";
-  const eyebrow = text(q.get("eyebrow"), 34) || "MANTIS AI";
-  const line1 = text(q.get("t1"), 46) || "Find local clients.";
-  const line2 = text(q.get("t2"), 46);
-  const cta = text(q.get("cta"), 36);
-  const urlLabel = text(q.get("url"), 48) || "mantisai.in";
+  // `d` is a single base64url-encoded payload (see lib/og.ts for why it is one parameter).
+  // The individual parameters remain supported so that already-shared card URLs keep rendering
+  // and so the endpoint stays hand-testable in a browser.
+  let p = q;
+  const d = q.get("d");
+  if (d) {
+    try {
+      const decoded = JSON.parse(Buffer.from(d, "base64url").toString("utf8")) as Record<string, string | undefined>;
+      p = new URLSearchParams(
+        Object.entries(decoded).filter(([, v]) => typeof v === "string" && v.length > 0) as [string, string][]
+      );
+    } catch {
+      // Undecodable payload: fall through to the defaults rather than fail the image.
+    }
+  }
+
+  const variant = p.get("v") ?? "hero";
+  const eyebrow = text(p.get("eyebrow"), 34) || "MANTIS AI";
+  const line1 = text(p.get("t1"), 46) || "Find local clients.";
+  const line2 = text(p.get("t2"), 46);
+  const cta = text(p.get("cta"), 36);
+  const urlLabel = text(p.get("url"), 48) || "mantisai.in";
 
   const bgFile = OG_BACKGROUNDS[variant as keyof typeof OG_BACKGROUNDS] ?? OG_BACKGROUNDS.hero;
   const bg = dataUri(readAsset(path.join("public/og", bgFile)), "image/jpeg");
