@@ -72,7 +72,7 @@ export function useCashfreeCheckout(mode: "production" | "sandbox") {
         const rzp = new window.Razorpay({
           key: data.keyId,
           order_id: data.razorpayOrderId,
-          name: "Mantis AI",
+          name: "Mantis Ai",
           description: "Lead credits",
           prefill: { name: data.name ?? "", email: data.email },
           theme: { color: "#5a8a2e" },

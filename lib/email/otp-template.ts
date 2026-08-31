@@ -15,7 +15,7 @@ export const OTP_EMAIL_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="only light">
 <meta name="supported-color-schemes" content="only light">
-<title>Verify your email &middot; Mantis AI</title>
+<title>Verify your email &middot; Mantis Ai</title>
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
   :root{color-scheme:only light;supported-color-schemes:only light;}
@@ -114,7 +114,7 @@ export const OTP_EMAIL_HTML = `<!doctype html>
 <td width="14" style="width:14px;">&nbsp;</td>
 <td class="dmc-232628" valign="middle" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.45;color:#232628;">Never share your verification code with anyone.</td>
 </tr></table>
-</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">&copy; 2026 Mantis AI<br><a class="dmc-64880d" href="mailto:support@mantisai.in" style="color:#64880d;text-decoration:underline;">Support</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{privacy_url}}" style="color:#64880d;text-decoration:underline;">Privacy</a></td></tr>
+</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">&copy; 2026 Mantis Ai<br><a class="dmc-64880d" href="mailto:support@mantisai.in" style="color:#64880d;text-decoration:underline;">Support</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{privacy_url}}" style="color:#64880d;text-decoration:underline;">Privacy</a></td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>

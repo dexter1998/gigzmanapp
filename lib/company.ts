@@ -15,7 +15,7 @@ export const COMPANY = {
   legalName: "Reverblunt Private Limited",
   /** Product/brand name used in page copy and titles. */
   brand: "Mantis",
-  brandLong: "Mantis AI",
+  brandLong: "Mantis Ai",
   email: "tarun@gigzman.com",
   // The Google Business Profile carries no public phone number, so none is published here either.
   // Inventing one, or publishing a different number from the profile, is precisely the NAP

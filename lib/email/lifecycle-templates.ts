@@ -18,7 +18,7 @@ export const LEADS_FOUND_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="only light">
 <meta name="supported-color-schemes" content="only light">
-<title>{{lead_count}} fresh website opportunities &middot; Mantis AI</title>
+<title>{{lead_count}} fresh website opportunities &middot; Mantis Ai</title>
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
   :root{color-scheme:only light;supported-color-schemes:only light;}
@@ -187,7 +187,7 @@ export const LEADS_FOUND_HTML = `<!doctype html>
    <td valign="middle" style="padding-right:8px;"><img src="https://mantisai.in/email/v1/ico-clock2.jpg" width="20" height="20" alt="" style="display:block;border:0;width:20px;height:20px;max-width:100%;"></td>
    <td class="dmc-6d7374" valign="middle" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#6d7374;">Fresh opportunities can change quickly.</td>
  </tr></table>
-</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">You&rsquo;re receiving this because you created a Mantis account.<br><a class="dmc-64880d" href="{{preferences_url}}" style="color:#64880d;text-decoration:underline;">Manage preferences</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{unsubscribe_url}}" style="color:#64880d;text-decoration:underline;">Unsubscribe</a><br>&copy; 2026 Mantis AI</td></tr>
+</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">You&rsquo;re receiving this because you created a Mantis account.<br><a class="dmc-64880d" href="{{preferences_url}}" style="color:#64880d;text-decoration:underline;">Manage preferences</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{unsubscribe_url}}" style="color:#64880d;text-decoration:underline;">Unsubscribe</a><br>&copy; 2026 Mantis Ai</td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>
@@ -205,7 +205,7 @@ export const SINGLE_LEAD_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="only light">
 <meta name="supported-color-schemes" content="only light">
-<title>Urgent website opportunity &middot; Mantis AI</title>
+<title>Urgent website opportunity &middot; Mantis Ai</title>
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
   :root{color-scheme:only light;supported-color-schemes:only light;}
@@ -361,7 +361,7 @@ export const SINGLE_LEAD_HTML = `<!doctype html>
    <td valign="middle" style="padding-right:8px;"><img src="https://mantisai.in/email/v1/ico-verified.jpg" width="22" height="22" alt="" style="display:block;border:0;width:22px;height:22px;max-width:100%;"></td>
    <td class="dmc-697071" valign="middle" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#697071;">Live opportunity &nbsp;&middot;&nbsp; Signals verified today</td>
  </tr></table>
-</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">You&rsquo;re receiving this because you enabled lead alerts.<br><a class="dmc-64880d" href="{{manage_alerts_url}}" style="color:#64880d;text-decoration:underline;">Manage alerts</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{unsubscribe_url}}" style="color:#64880d;text-decoration:underline;">Unsubscribe</a><br>&copy; 2026 Mantis AI</td></tr>
+</td></tr><tr><td class="dmc-777c7d dmk-e5e6e1" style="padding:26px 30px 32px;border-top:1px solid #e5e6e1;text-align:center;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.8;color:#777c7d;">You&rsquo;re receiving this because you enabled lead alerts.<br><a class="dmc-64880d" href="{{manage_alerts_url}}" style="color:#64880d;text-decoration:underline;">Manage alerts</a> &nbsp;&middot;&nbsp; <a class="dmc-64880d" href="{{unsubscribe_url}}" style="color:#64880d;text-decoration:underline;">Unsubscribe</a><br>&copy; 2026 Mantis Ai</td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>
@@ -379,7 +379,7 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="only light">
 <meta name="supported-color-schemes" content="only light">
-<title>Partner access &middot; Mantis AI</title>
+<title>Partner access &middot; Mantis Ai</title>
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
   :root{color-scheme:only light;supported-color-schemes:only light;}
@@ -475,7 +475,7 @@ export const PARTNERSHIP_HTML = `<!doctype html>
  <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">You&rsquo;ve used every credit<br>on your plan.</div>
  <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15.5px;line-height:1.5;color:#565b5d;font-weight:400;margin:0 0 20px;text-align:center;">That means you&rsquo;re working Mantis harder than the plan was built for.<br>Partner access raises the ceiling &mdash; higher lead limits, priority support,<br>and a direct line to the team that builds it.</div>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-   <td width="180" valign="middle" class="stack" style="width:180px;"><img src="https://mantisai.in/email/v1/05-mantis.jpg" width="170" height="216" alt="Mantis AI mascot" style="display:block;border:0;width:170px;height:216px;max-width:100%;"></td>
+   <td width="180" valign="middle" class="stack" style="width:180px;"><img src="https://mantisai.in/email/v1/05-mantis.jpg" width="170" height="216" alt="Mantis Ai mascot" style="display:block;border:0;width:170px;height:216px;max-width:100%;"></td>
    <td width="10" class="hide-sm" style="width:10px;">&nbsp;</td>
    <td valign="middle" class="stack"><table class="dmk-dfe2d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe2d9;border-radius:16px;">
 <tr>
@@ -551,10 +551,10 @@ export const PARTNERSHIP_HTML = `<!doctype html>
  <table class="dmk-e4e6df" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;border-top:1px solid #e4e6df;"><tr>
   <td width="66" valign="top" class="stack" style="width:66px;padding-top:20px;"><img src="https://mantisai.in/email/v1/05-mark.png" width="50" height="50" alt="" style="display:block;border:0;width:50px;height:50px;max-width:100%;"></td>
   <td valign="top" class="stack dmc-111315" style="padding-top:20px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.55;color:#111315;">
-    <strong style="font-size:14px;">Partnership proposal from Mantis AI</strong><br>
+    <strong style="font-size:14px;">Partnership proposal from Mantis Ai</strong><br>
     Questions? Reply directly to this email.<br>Reverblunt Pvt. Ltd. &middot; Gurugram, India</td>
   <td valign="top" align="right" class="stack dmc-737879" style="padding-top:20px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:11.5px;line-height:1.8;color:#737879;text-align:right;">
-    <a class="dmc-606768" href="{{unsubscribe_url}}" style="color:#606768;text-decoration:underline;">Unsubscribe from partnership emails</a><br>&copy; 2026 Mantis AI</td>
+    <a class="dmc-606768" href="{{unsubscribe_url}}" style="color:#606768;text-decoration:underline;">Unsubscribe from partnership emails</a><br>&copy; 2026 Mantis Ai</td>
  </tr></table>
 </td></tr>
 <tr><td class="dmb-b5e21d" bgcolor="#b5e21d" style="background:#b5e21d;height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>
@@ -562,4 +562,4 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>
 </body></html>`;
-export const PARTNERSHIP_TEXT = "Let's help you find more local clients.\n\nMantis AI is inviting selected web, tech and marketing agencies to access our lead intelligence portal for free.\n\n01 Fill the short form\n02 Get portal access\n03 Find and pitch clients\n\nApply: {{partnership_url}}\nNo payment required. Partner access is subject to approval.\n\nUnsubscribe: {{unsubscribe_url}}";
+export const PARTNERSHIP_TEXT = "Let's help you find more local clients.\n\nMantis Ai is inviting selected web, tech and marketing agencies to access our lead intelligence portal for free.\n\n01 Fill the short form\n02 Get portal access\n03 Find and pitch clients\n\nApply: {{partnership_url}}\nNo payment required. Partner access is subject to approval.\n\nUnsubscribe: {{unsubscribe_url}}";

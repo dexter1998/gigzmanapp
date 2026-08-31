@@ -26,7 +26,7 @@ export function LandingFooter() {
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.3fr repeat(5, 1fr)", gap: 32 }} className="landing-footer-grid">
           <div>
-            <Image src="/mantis-logo-wordmark.png" alt="Mantis AI" width={170} height={40} style={{ objectFit: "contain", height: "auto", marginBottom: 14 }} />
+            <Image src="/mantis-logo-wordmark.png" alt="Mantis Ai" width={170} height={40} style={{ objectFit: "contain", height: "auto", marginBottom: 14 }} />
             <p style={{ fontSize: 13.5, color: "var(--g-ink-soft)", lineHeight: 1.55, maxWidth: 230 }}>
               AI-powered local lead intelligence for agencies and consultants.
             </p>
@@ -60,10 +60,10 @@ export function LandingFooter() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginTop: 44, paddingTop: 24, borderTop: "1px solid rgba(20,32,51,0.12)" }}>
-          <span style={{ fontSize: 13, color: "var(--g-ink-soft)" }}>© {new Date().getFullYear()} Mantis AI. All rights reserved.</span>
+          <span style={{ fontSize: 13, color: "var(--g-ink-soft)" }}>© {new Date().getFullYear()} Mantis Ai. All rights reserved.</span>
           <div style={{ display: "flex", gap: 12 }}>
             {SOCIALS.map(({ Icon, label }) => (
-              <a key={label} href="#" aria-label={`Mantis AI on ${label}`} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <a key={label} href="#" aria-label={`Mantis Ai on ${label}`} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon size={16} />
               </a>
             ))}

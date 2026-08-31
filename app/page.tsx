@@ -17,25 +17,31 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 const SITE_URL = "https://mantisai.in";
 
 export const metadata: Metadata = {
-  title: "mantis — AI-powered local lead intelligence for agencies",
+  // `absolute` opts out of the root layout's "%s | Mantis" template — the brand is already the
+  // first word here, and the template would append it a second time.
+  title: { absolute: "Mantis Ai | Find Local Clients Who Need a Website" },
   description:
-    "Mantis AI finds local businesses without a website or with weak digital presence, and delivers high-intent leads for tech & marketing agencies near you.",
+    "Find local businesses with no website and turn them into high-intent leads for your agency. " +
+    "Real-time map search, not a stale database. Start free.",
   alternates: { canonical: SITE_URL },
   openGraph: {
     images: ogImageMeta({
       v: "hero",
-      eyebrow: "Mantis AI",
+      eyebrow: "Mantis Ai",
       t1: "Find local clients.",
       t2: "Reach the right people.",
       cta: "Get free access →",
       url: "mantisai.in",
     }),
-    title: "mantis — AI-powered local lead intelligence",
-    description: "We find clients near you. Real-time local lead discovery for agencies and consultants.",
+    title: "Mantis Ai | Find Local Clients Who Need a Website",
+    description:
+      "Find local businesses with no website and turn them into high-intent leads for your agency. " +
+      "Real-time map search, not a stale database. Start free.",
     url: SITE_URL,
-    siteName: "mantis",
+    siteName: "Mantis",
     type: "website",
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootPage() {
@@ -54,7 +60,7 @@ export default async function RootPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "Mantis AI",
+            name: "Mantis Ai",
             url: SITE_URL,
             logo: `${SITE_URL}/icon.png`,
             sameAs: [],

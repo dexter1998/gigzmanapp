@@ -8,11 +8,13 @@ import { EyebrowPill, FaqAccordion, MarketingCta, OrigamiFloor, SectionHeading }
 import { MailIcon, PartnerIcon, MapsPinIcon, HelpIcon, ClockIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: `Contact ${COMPANY.brandLong} — ${COMPANY.legalName}, Gurugram`,
-  description: `Talk to the team behind ${COMPANY.brandLong} about leads, enrichment, pricing or agency partnerships. ${COMPANY.legalName}, ${COMPANY.address.locality}, ${COMPANY.address.city}. A person reads every message.`,
+  // The title names what you can contact us about; the legal entity and full address are
+  // already in the page body and its structured data, which is what NAP matching reads.
+  title: { absolute: `Contact ${COMPANY.brandLong} | Sales, Support & Partnerships` },
+  description: `Talk to the ${COMPANY.brandLong} team about leads, pricing, data accuracy or agency partnerships. Based in ${COMPANY.address.city}, India — a real person reads every message.`,
   keywords: [
-    "contact Mantis AI",
-    "Mantis AI support",
+    "contact Mantis Ai",
+    "Mantis Ai support",
     "lead generation software Gurugram",
     "agency partnership enquiry India",
   ],

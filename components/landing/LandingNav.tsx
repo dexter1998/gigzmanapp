@@ -42,7 +42,7 @@ export function LandingNav() {
         }}
       >
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <Image src="/mantis-logo-wordmark.png" alt="Mantis AI" width={148} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
+          <Image src="/mantis-logo-wordmark.png" alt="Mantis Ai" width={148} height={36} style={{ objectFit: "contain", height: "auto" }} priority />
         </Link>
 
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="landing-nav-links">

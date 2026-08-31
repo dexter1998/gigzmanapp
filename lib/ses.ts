@@ -21,7 +21,7 @@ if (process.env.NODE_ENV !== "production") {
 // ap-south-1, and they're split on purpose: mantisai.in carries transactional and lifecycle mail,
 // blogyapp.com absorbs cold outreach, so prospecting reputation can never affect whether someone
 // can receive the code they need to log in.
-const FROM_ADDRESS = process.env.SES_FROM_ADDRESS || `Mantis AI <no-reply@${new URL(COMPANY.site).hostname}>`;
+const FROM_ADDRESS = process.env.SES_FROM_ADDRESS || `Mantis Ai <no-reply@${new URL(COMPANY.site).hostname}>`;
 
 function fill(template: string, values: Record<string, string>) {
   return Object.entries(values).reduce(

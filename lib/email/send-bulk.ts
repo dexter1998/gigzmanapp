@@ -18,7 +18,7 @@ import { COMPANY } from "@/lib/company";
  * attempt at the same step loses the race and simply doesn't send.
  */
 
-const SENDER = `Mantis AI <no-reply@${new URL(COMPANY.site).hostname}>`;
+const SENDER = `Mantis Ai <no-reply@${new URL(COMPANY.site).hostname}>`;
 
 /** Header value encoding for anything that might not be ASCII (a city name, a business name). */
 function encodeHeader(value: string): string {

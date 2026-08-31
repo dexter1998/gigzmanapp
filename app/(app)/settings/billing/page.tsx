@@ -6,7 +6,7 @@ import { cashfreeIsLive } from "@/lib/cashfree";
 import { CREDIT_COST, FREE_MONTHLY_CREDITS, ALLOWANCE, formatINR } from "@/lib/credits/pricing";
 import { allowanceFor } from "@/lib/credits/server";
 
-export const metadata = { title: "Billing — Mantis" };
+export const metadata = { title: "Billing" };
 
 const RATE_CARD: Array<{ label: string; credits: number; note: string }> = [
   { label: "Search an area you've already scanned", credits: CREDIT_COST.cached_search, note: "Always free" },

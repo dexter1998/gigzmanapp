@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { ChatLanding } from "@/components/chat/ChatLanding";
 
+export const metadata = { title: "Chat" };
+
 const SUGGESTION_COUNT = 10;
 
 export default async function ChatPage() {

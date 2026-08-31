@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     }),
   },
   twitter: { card: "summary_large_image" },
-  title: "Local Lead Market — where businesses still have no website | Mantis",
+  title: { absolute: "Local Lead Market — Businesses With No Website | Mantis" },
   description:
     "Which local businesses have an active Google listing and no website, by city and by area. Gap rates, opportunity scores and coverage, measured by Mantis.",
   alternates: { canonical: `${COMPANY.site}/leads` },

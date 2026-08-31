@@ -5,13 +5,13 @@ import { PlusIcon, MinusIcon } from "@/components/icons";
 import { OrigamiDecoration } from "./OrigamiDecoration";
 
 const FAQS = [
-  { q: "How does Mantis AI find leads?", a: "Mantis searches live web sources, business listings, websites and social profiles, then cross-checks results before adding them to your workspace." },
+  { q: "How does Mantis Ai find leads?", a: "Mantis searches live web sources, business listings, websites and social profiles, then cross-checks results before adding them to your workspace." },
   { q: "Can I export leads and contact data?", a: "Yes — export any list to CSV or Excel, or push leads directly into your CRM from the Pro plan up." },
   { q: "What counts as a high-intent lead?", a: "A lead scores high-intent when it combines a real digital gap (no website or weak SEO) with strong underlying demand signals like review volume and rating." },
   { q: "Can my team manage leads together?", a: "Yes — leads, stages and follow-ups are shared across your workspace so your whole team stays in sync." },
   { q: "Is the data fresh and verified?", a: "Every search runs live against 50+ sources rather than a stored database, and results are cross-checked before they reach you." },
   { q: "Can I search multiple locations?", a: "Yes — switch locations anytime from your workspace; each search is scoped to the area you're prospecting." },
-  { q: "Does Mantis AI use a stored database?", a: "No — every search scans live sources in real time. Results are cached per area so repeat searches stay fast without re-billing for the same ground." },
+  { q: "Does Mantis Ai use a stored database?", a: "No — every search scans live sources in real time. Results are cached per area so repeat searches stay fast without re-billing for the same ground." },
   { q: "Is there a free plan?", a: "Yes — the Free plan includes 50 leads a month, forever, no credit card required." },
 ];
 

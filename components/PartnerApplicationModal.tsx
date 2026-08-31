@@ -21,7 +21,7 @@ export function PartnerApplicationModal({ open, onClose }: { open: boolean; onCl
 
         <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Partner with us</h2>
         <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 20px", maxWidth: 440 }}>
-          Bring Mantis AI to your clients. Approved agency partners get free portal access and partner lead credits.
+          Bring Mantis Ai to your clients. Approved agency partners get free portal access and partner lead credits.
         </p>
 
         <PartnerApplicationForm variant="modal" onDone={onClose} />

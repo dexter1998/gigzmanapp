@@ -2,6 +2,8 @@ import { auth, signOut } from "@/auth";
 import { sql } from "@/lib/db";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 
+export const metadata = { title: "Profile" };
+
 export default async function ProfilePage() {
   const session = await auth();
   const email = session?.user?.email ?? "";
@@ -55,7 +57,7 @@ export default async function ProfilePage() {
         <Card>
           <CardHeader title="Support" />
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-            Have an idea or hit a snag? Tell us and help shape Mantis AI.
+            Have an idea or hit a snag? Tell us and help shape Mantis Ai.
           </p>
           <a href="mailto:support@gigzmanapp.com" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
             Send feedback

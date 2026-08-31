@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { ChatThread, type AssistantIntent } from "@/components/chat/ChatThread";
 
+export const metadata = { title: "Chat" };
+
 export default async function ChatThreadPage({ params }: { params: Promise<{ chatId: string }> }) {
   const session = await auth();
   if (!session?.user?.email) return notFound();

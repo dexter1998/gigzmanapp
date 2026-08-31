@@ -3,7 +3,7 @@ import { sql } from "@/lib/db";
 import { ALLOWANCE } from "@/lib/credits/pricing";
 import { allowanceFor } from "@/lib/credits/server";
 
-export const metadata = { title: "Usage — Mantis" };
+export const metadata = { title: "Usage" };
 
 /**
  * Where every credit went. Reads credit_ledger directly rather than deriving totals from the

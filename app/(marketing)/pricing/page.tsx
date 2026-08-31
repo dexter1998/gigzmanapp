@@ -9,10 +9,12 @@ import { EyebrowPill, FaqAccordion, MarketingCta, OrigamiFloor, SectionHeading }
 import { UserIcon, GlobeIcon, ZapIcon, PinIcon, TableIcon, ShieldIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: `Pricing — ${COMPANY.brandLong} lead credits for agencies & freelancers`,
-  description: `Searching the map is free. Start with ${FREE_MONTHLY_CREDITS} credits a month, then pick a plan sized to how many local leads you actually unlock — from 2,000 to 30,000 a month. No contracts.`,
+  // "cost" earns its place in the title: it is the phrase people actually type when comparing
+  // tools, and the old title spent those characters on "for agencies & freelancers" instead.
+  title: { absolute: `Pricing & Lead Credits Cost | ${COMPANY.brandLong} for Agencies` },
+  description: `Compare ${COMPANY.brandLong} plans: ${FREE_MONTHLY_CREDITS} free credits a month, then packs from ₹1,999. Pay only for the local leads you unlock — no seats, no contracts. Start free.`,
   keywords: [
-    "Mantis AI pricing",
+    "Mantis Ai pricing",
     "lead generation pricing India",
     "lead credits",
     "agency lead software cost",
@@ -28,8 +30,8 @@ export const metadata: Metadata = {
       cta: "Start free →",
       url: "mantisai.in/pricing",
     }),
-    title: `${COMPANY.brandLong} Pricing — pay for the leads you actually use`,
-    description: "Free forever plan, paid tiers from 2,000 to 30,000 lead credits a month, and custom Agency plans.",
+    title: `${COMPANY.brandLong} Pricing — Pay for Leads, Not Seats`,
+    description: "Free forever plan, paid credit packs, and custom Agency plans. Credits are spent only when you unlock a lead.",
     url: `${COMPANY.site}/pricing`,
     siteName: COMPANY.brand,
     type: "website",

@@ -7,10 +7,11 @@ import { EyebrowPill, MarketingCta, OrigamiFloor, SectionHeading } from "@/compo
 import { CheckIcon, QuoteIcon, ZapIcon, ShieldCheckIcon, TableIcon, PartnerIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: `About ${COMPANY.brandLong} — built by ${COMPANY.legalName}, Gurugram`,
-  description: `${COMPANY.brandLong} makes local opportunity visible: it finds businesses with a weak digital presence and turns them into a ranked list agencies can work. Built in ${COMPANY.address.city} by ${COMPANY.legalName}, the team behind the Gigzman web design and software studio.`,
+  title: { absolute: `About ${COMPANY.brandLong} | Local Lead Intelligence from Gurugram` },
+  // Was 253 characters — past what any SERP renders, so the half that mattered was cut.
+  description: `Meet the team making local opportunity visible. Built in ${COMPANY.address.city} by Reverblunt, ${COMPANY.brandLong} turns businesses with a weak web presence into ranked leads.`,
   keywords: [
-    "about Mantis AI",
+    "about Mantis Ai",
     "local lead intelligence",
     "Reverblunt Private Limited",
     "Gurugram SaaS company",
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     images: ogImageMeta({
       v: "company",
-      eyebrow: "About Mantis AI",
+      eyebrow: "About Mantis Ai",
       t1: "We make local",
       t2: "opportunity visible.",
       cta: "See how it works →",

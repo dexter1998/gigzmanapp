@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Fraunces, Poppins } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { COMPANY } from "@/lib/company";
+import { ogImageMeta } from "@/lib/og";
 
 const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
 
@@ -33,8 +35,34 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "mantis",
-  description: "Find local businesses without a website.",
+  // metadataBase resolves any relative URL a page emits. Every OG image today is already
+  // absolute (lib/og builds them from COMPANY.site), but a single relative one anywhere would
+  // otherwise silently produce a broken social card.
+  metadataBase: new URL(COMPANY.site),
+  // `template` applies to every page that sets a plain string title, so an app page writes only
+  // its own name ("Billing") and still renders "Billing | Mantis" in the tab. `default` is what
+  // a page with no title of its own gets — it must stand on its own as a real title, because
+  // anything that falls through to it is a page nobody wrote metadata for.
+  title: {
+    default: `${COMPANY.brandLong} | Find Local Clients Who Need a Website`,
+    template: `%s | ${COMPANY.brand}`,
+  },
+  description:
+    "Find local businesses with no website and turn them into high-intent leads for your agency. " +
+    "Real-time map search, not a stale database. Start free.",
+  openGraph: {
+    siteName: COMPANY.brand,
+    type: "website",
+    images: ogImageMeta({
+      v: "hero",
+      eyebrow: COMPANY.brandLong,
+      t1: "Find local clients.",
+      t2: "Reach the right people.",
+      cta: "Get free access →",
+      url: "mantisai.in",
+    }),
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
