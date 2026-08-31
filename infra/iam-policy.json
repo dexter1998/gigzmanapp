@@ -138,15 +138,7 @@
       "Sid": "PassBuildRoleToAppRunner",
       "Effect": "Allow",
       "Action": "iam:PassRole",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:PassedToService": [
-            "build.apprunner.amazonaws.com",
-            "tasks.apprunner.amazonaws.com"
-          ]
-        }
-      }
+      "Resource": "arn:aws:iam::248746142729:role/AppRunnerECRAccessRole"
     },
     {
       "Sid": "CreateOnlyAppRunnerServiceLinkedRoles",
@@ -205,6 +197,20 @@
         "ec2:DisassociateRouteTable"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ReadAppRunnerLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:ap-south-1:248746142729:log-group:/aws/apprunner/*",
+        "arn:aws:logs:ap-south-1:248746142729:log-group:/aws/apprunner/*:log-stream:*"
+      ]
     }
   ]
 }
