@@ -20,11 +20,27 @@ import { resolveLocation } from "../../lib/pseo/address";
  */
 
 type Rec = {
-  place_id?: string; title?: string; category?: string; categories?: string[]; address?: string;
-  latitude?: number; longitude?: number; phone?: string; emails?: string[];
+  place_id?: string; data_id?: string; title?: string; category?: string; categories?: string[];
+  address?: string; latitude?: number; longitude?: number; phone?: string; emails?: string[];
   web_site?: string; review_rating?: number; review_count?: number;
   open_hours?: Record<string, unknown>;
 };
+
+/** Same business, whichever tool found it.
+ *
+ *  Fast mode returns `place_id` as an empty string — the only stable identifier it gives is
+ *  `data_id`, Google's hex feature pair, which has no relationship to the `ChIJ…` id Places
+ *  returns. So the two sources cannot dedup on a key, and keying gosom rows on `data_id` alone
+ *  would have inserted a second copy of every business we already had: measured on the first
+ *  London run, 1,377 of 1,851 scraped records (74%) were already in `leads`, which would have
+ *  inflated every public count on the city by about a third.
+ *
+ *  Coordinates to four decimals is roughly eleven metres — closer than two distinct businesses
+ *  with the same name ever sit, and loose enough to absorb the small disagreement between what
+ *  Places reports and what the scraper reads off the map. */
+const normName = (s: string) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const dedupKey = (name: string, lat: number, lng: number) =>
+  `${normName(name)}|${lat.toFixed(4)}|${lng.toFixed(4)}`;
 
 async function main() {
   const file = process.argv[2] ?? "/tmp/gosom-out.json";
@@ -44,11 +60,25 @@ async function main() {
   }
   console.log(`${recs.length} records in ${file}`);
 
-  let inserted = 0, updated = 0, skippedType = 0, skippedLoc = 0, competitors = 0, filledWebsite = 0;
+  // Everything already stored for the places this run touches, so a scraped record can be matched
+  // to a business we have rather than added beside it.
+  const known = (await pseoSql`
+    SELECT place_id, business_name, lat, lng FROM leads WHERE lat IS NOT NULL AND lng IS NOT NULL
+  `) as unknown as Array<{ place_id: string; business_name: string; lat: number; lng: number }>;
+  const byKey = new Map(known.map((k) => [dedupKey(k.business_name, k.lat, k.lng), k.place_id]));
+  console.log(`${byKey.size} existing leads indexed for de-duplication`);
+
+  let inserted = 0, updated = 0, skippedType = 0, skippedLoc = 0, competitors = 0, filledWebsite = 0, matched = 0;
   const areaHits = new Map<string, { lat: number; lng: number; n: number }>();
 
   for (const r of recs) {
-    if (!r.place_id || !r.title || r.latitude == null || r.longitude == null) { skippedLoc++; continue; }
+    if (!r.title || r.latitude == null || r.longitude == null) { skippedLoc++; continue; }
+    // `gosom:` prefix so provenance is visible in the table and a scraped id can never be mistaken
+    // for a Places one.
+    const existingId = byKey.get(dedupKey(r.title, r.latitude, r.longitude));
+    if (existingId) matched++;
+    const placeId = existingId ?? (r.place_id || (r.data_id ? `gosom:${r.data_id}` : ""));
+    if (!placeId) { skippedLoc++; continue; }
     // fast mode leaves `category` blank and only fills `categories`; try both, in order.
     const type = gosomCategoryToPlaceType(r.category, r.categories?.[0], r.categories?.[1]);
     if (!type) { skippedType++; continue; }
@@ -71,7 +101,7 @@ async function main() {
         has_website, website_checked_at, is_competitor, rating, review_count,
         country_code, city_slug, area_slug, postal_code, location_via, location_resolved_at
       ) VALUES (
-        ${r.place_id}, ${r.title}, ${type}, ${r.address ?? null}, ${r.latitude}, ${r.longitude},
+        ${placeId}, ${r.title}, ${type}, ${r.address ?? null}, ${r.latitude}, ${r.longitude},
         ${r.phone ?? null}, ${r.emails?.[0] ?? null},
         ${hasSite}, ${hasSite === null ? null : new Date()}, ${isCompetitor},
         ${r.review_rating ?? null}, ${r.review_count ?? null},
@@ -97,7 +127,8 @@ async function main() {
       RETURNING (xmax = 0) AS is_new, has_website
     `) as unknown as Array<{ is_new: boolean; has_website: boolean | null }>;
 
-    if (row?.is_new) inserted++; else updated++;
+    if (row?.is_new) { inserted++; byKey.set(dedupKey(r.title, r.latitude, r.longitude), placeId); }
+    else updated++;
     if (hasSite !== null) filledWebsite++;
 
     const area = loc.value.areaSlug;
@@ -132,6 +163,7 @@ async function main() {
   }
 
   console.log(`\ninserted ${inserted} new leads, updated ${updated} existing`);
+  console.log(`matched to an existing business: ${matched} (would have been duplicates)`);
   console.log(`skipped: ${skippedType} unmapped category, ${skippedLoc} unresolvable location`);
   console.log(`competitors flagged: ${competitors} | website status filled: ${filledWebsite}`);
   console.log(`coverage cells written: ${cells}`);

@@ -5,6 +5,7 @@ import {
   isInBbox,
   lookupAlias,
   normalizeToken,
+  resolvePostalDistrictAlias,
   resolveSectorAlias,
   type AliasHit,
 } from "@/lib/pseo/locations";
@@ -13,6 +14,7 @@ import {
   COUNTRY_BY_GOOGLE_CODE,
   areaStrategyFor,
   areaTokenFromAddress,
+  postalCodeFromAddress,
   postalDistrict,
 } from "@/lib/pseo/countries";
 
@@ -136,7 +138,9 @@ export function resolveFromComponents(
 
   let areaSlug: string | null = hit.areaSlug ?? null;
   for (const t of areaTokens) {
-    const a = lookupAlias(country.code, t)?.areaSlug ?? (country.code === "in" ? resolveSectorAlias(t) : null);
+    const a =
+      lookupAlias(country.code, t)?.areaSlug ??
+      (country.code === "in" ? resolveSectorAlias(t) : resolvePostalDistrictAlias(country.code, t));
     if (a) { areaSlug = a; break; }
   }
 
@@ -218,8 +222,9 @@ function areaFromText(countryCode: string, address: string): string | null {
   if (!COUNTRY_BY_CODE.has(countryCode)) return null;
   const token = areaTokenFromAddress(countryCode, address);
   if (!token) return null;
-  const hit = lookupAlias(countryCode, token);
-  return hit?.areaSlug ?? null;
+  // A named locality registered by hand wins; otherwise a postal district is derived. Australia
+  // reaches only the first branch, which is correct — its token is a suburb name, not a code.
+  return lookupAlias(countryCode, token)?.areaSlug ?? resolvePostalDistrictAlias(countryCode, token);
 }
 
 /**
@@ -258,7 +263,9 @@ export function resolveLocation(
       value: {
         countryCode: near.countryCode, citySlug: near.slug,
         areaSlug: areaFromText(near.countryCode, address),
-        state: parsed.state, postalCode: parsed.postalCode, via: "coordinates",
+        state: parsed.state,
+        postalCode: parsed.postalCode ?? postalCodeFromAddress(near.countryCode, address),
+        via: "coordinates",
       },
     };
   }
@@ -282,7 +289,9 @@ export function resolveLocation(
     ok: true,
     value: {
       countryCode: city.countryCode, citySlug: city.slug, areaSlug,
-      state: parsed.state, postalCode: parsed.postalCode, via: "text",
+      state: parsed.state,
+      postalCode: parsed.postalCode ?? postalCodeFromAddress(city.countryCode, address),
+      via: "text",
     },
   };
 }

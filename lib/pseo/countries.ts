@@ -93,6 +93,28 @@ export function postalDistrict(postalCode: string | null | undefined, countryCod
 }
 
 /**
+ * The full postal code inside a free-text address.
+ *
+ * The old parser looked only for a six-digit Indian PIN, so every scraped British, American,
+ * Canadian and Australian lead stored a null postal code — which made them invisible to the
+ * district analysis that decides which areas are worth registering, even while the same leads were
+ * correctly landing in an already-registered area.
+ */
+export function postalCodeFromAddress(countryCode: string, address: string): string | null {
+  const a = address.toUpperCase();
+  const pat: Record<string, RegExp> = {
+    gb: /\b[A-Z]{1,2}\d[A-Z\d]?\s+\d[A-Z]{2}\b/,
+    ca: /\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b/,
+    us: /\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b/,
+    au: /\b(\d{4})\b(?=\s*,?\s*AUSTRALIA)/,
+    in: /\b(\d{6})\b/,
+  };
+  const m = pat[countryCode]?.exec(a);
+  if (!m) return null;
+  return (m[1] ?? m[0]).trim();
+}
+
+/**
  * The same answer from a free-text address, for sources that give no addressComponents.
  *
  * gosom returns one address string and nothing else, so without this a scraped record resolves to

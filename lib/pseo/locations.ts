@@ -791,78 +791,33 @@ export const AREAS: Area[] = [
   { slug: "south-austin", name: "South Austin", citySlug: "austin", countryCode: "us", aliases: ["south austin"] },  // 10/212
 
   // Birmingham, England — 12 areas with >= 15 qualifying leads
-  { slug: "b5", name: "B5", citySlug: "birmingham", countryCode: "gb", aliases: ["b5"] },  // 35/224
-  { slug: "b11", name: "B11", citySlug: "birmingham", countryCode: "gb", aliases: ["b11"] },  // 27/85
   { slug: "small-heath-birmingham", name: "Small Heath", citySlug: "birmingham", countryCode: "gb", aliases: ["small heath"] },  // 26/68
-  { slug: "b9", name: "B9", citySlug: "birmingham", countryCode: "gb", aliases: ["b9"] },  // 26/79
   { slug: "balsall-heath-birmingham", name: "Balsall Heath", citySlug: "birmingham", countryCode: "gb", aliases: ["balsall heath"] },  // 25/79
-  { slug: "b18", name: "B18", citySlug: "birmingham", countryCode: "gb", aliases: ["b18"] },  // 24/132
-  { slug: "b1", name: "B1", citySlug: "birmingham", countryCode: "gb", aliases: ["b1"] },  // 21/276
   { slug: "handsworth", name: "Handsworth", citySlug: "birmingham", countryCode: "gb", aliases: ["handsworth"] },  // 20/62
   { slug: "sparkbrook", name: "Sparkbrook", citySlug: "birmingham", countryCode: "gb", aliases: ["sparkbrook"] },  // 20/45
-  { slug: "b8", name: "B8", citySlug: "birmingham", countryCode: "gb", aliases: ["b8"] },  // 19/42
-  { slug: "b19", name: "B19", citySlug: "birmingham", countryCode: "gb", aliases: ["b19"] },  // 18/60
-  { slug: "b16", name: "B16", citySlug: "birmingham", countryCode: "gb", aliases: ["b16"] },  // 15/80
 
   // Bristol, England — 3 areas with >= 15 qualifying leads
-  { slug: "bs1", name: "BS1", citySlug: "bristol", countryCode: "gb", aliases: ["bs1"] },  // 33/508
   { slug: "clifton", name: "Clifton", citySlug: "bristol", countryCode: "gb", aliases: ["clifton"] },  // 17/257
-  { slug: "bs2", name: "BS2", citySlug: "bristol", countryCode: "gb", aliases: ["bs2"] },  // 16/136
 
   // Glasgow, Scotland — 13 areas with >= 15 qualifying leads
-  { slug: "g2", name: "G2", citySlug: "glasgow", countryCode: "gb", aliases: ["g2"] },  // 64/658
-  { slug: "g1", name: "G1", citySlug: "glasgow", countryCode: "gb", aliases: ["g1"] },  // 43/502
-  { slug: "g3", name: "G3", citySlug: "glasgow", countryCode: "gb", aliases: ["g3"] },  // 28/252
-  { slug: "g11", name: "G11", citySlug: "glasgow", countryCode: "gb", aliases: ["g11"] },  // 27/131
-  { slug: "g51", name: "G51", citySlug: "glasgow", countryCode: "gb", aliases: ["g51"] },  // 25/143
   { slug: "kinning-park-glasgow", name: "Kinning Park", citySlug: "glasgow", countryCode: "gb", aliases: ["kinning park"] },  // 25/124
   { slug: "govanhill", name: "Govanhill", citySlug: "glasgow", countryCode: "gb", aliases: ["govanhill"] },  // 24/93
-  { slug: "g31", name: "G31", citySlug: "glasgow", countryCode: "gb", aliases: ["g31"] },  // 23/127
-  { slug: "g41", name: "G41", citySlug: "glasgow", countryCode: "gb", aliases: ["g41"] },  // 21/87
-  { slug: "g4", name: "G4", citySlug: "glasgow", countryCode: "gb", aliases: ["g4"] },  // 19/160
-  { slug: "g40", name: "G40", citySlug: "glasgow", countryCode: "gb", aliases: ["g40"] },  // 19/64
-  { slug: "g5", name: "G5", citySlug: "glasgow", countryCode: "gb", aliases: ["g5"] },  // 16/85
-  { slug: "g32", name: "G32", citySlug: "glasgow", countryCode: "gb", aliases: ["g32"] },  // 15/67
 
   // Leeds, England — 10 areas with >= 15 qualifying leads
-  { slug: "ls1", name: "LS1", citySlug: "leeds", countryCode: "gb", aliases: ["ls1"] },  // 72/791
   { slug: "harehills-leeds", name: "Harehills", citySlug: "leeds", countryCode: "gb", aliases: ["harehills"] },  // 54/163
-  { slug: "ls2", name: "LS2", citySlug: "leeds", countryCode: "gb", aliases: ["ls2"] },  // 47/232
   { slug: "woodhouse-leeds", name: "Woodhouse", citySlug: "leeds", countryCode: "gb", aliases: ["woodhouse"] },  // 32/125
-  { slug: "ls7", name: "LS7", citySlug: "leeds", countryCode: "gb", aliases: ["ls7"] },  // 22/115
-  { slug: "ls9", name: "LS9", citySlug: "leeds", countryCode: "gb", aliases: ["ls9"] },  // 19/100
   { slug: "burley", name: "Burley", citySlug: "leeds", countryCode: "gb", aliases: ["burley"] },  // 17/105
-  { slug: "ls27", name: "LS27", citySlug: "leeds", countryCode: "gb", aliases: ["ls27"] },  // 16/118
   { slug: "armley", name: "Armley", citySlug: "leeds", countryCode: "gb", aliases: ["armley"] },  // 16/76
-  { slug: "ls11", name: "LS11", citySlug: "leeds", countryCode: "gb", aliases: ["ls11"] },  // 15/111
 
   // Liverpool, England — 12 areas with >= 15 qualifying leads
-  { slug: "l1", name: "L1", citySlug: "liverpool", countryCode: "gb", aliases: ["l1"] },  // 120/805
-  { slug: "l3", name: "L3", citySlug: "liverpool", countryCode: "gb", aliases: ["l3"] },  // 37/423
-  { slug: "l2", name: "L2", citySlug: "liverpool", countryCode: "gb", aliases: ["l2"] },  // 34/280
-  { slug: "l9", name: "L9", citySlug: "liverpool", countryCode: "gb", aliases: ["l9"] },  // 31/93
-  { slug: "l8", name: "L8", citySlug: "liverpool", countryCode: "gb", aliases: ["l8"] },  // 30/122
-  { slug: "l4", name: "L4", citySlug: "liverpool", countryCode: "gb", aliases: ["l4"] },  // 27/81
-  { slug: "l17", name: "L17", citySlug: "liverpool", countryCode: "gb", aliases: ["l17"] },  // 23/62
   { slug: "old-swan", name: "Old Swan", citySlug: "liverpool", countryCode: "gb", aliases: ["old swan"] },  // 22/100
-  { slug: "l15", name: "L15", citySlug: "liverpool", countryCode: "gb", aliases: ["l15"] },  // 22/106
   { slug: "anfield", name: "Anfield", citySlug: "liverpool", countryCode: "gb", aliases: ["anfield"] },  // 22/60
-  { slug: "l18", name: "L18", citySlug: "liverpool", countryCode: "gb", aliases: ["l18"] },  // 17/105
-  { slug: "l11", name: "L11", citySlug: "liverpool", countryCode: "gb", aliases: ["l11"] },  // 15/44
 
   // London, England — 1 areas with >= 15 qualifying leads
-  { slug: "se1", name: "SE1", citySlug: "london", countryCode: "gb", aliases: ["se1"] },  // 26/224
 
   // Manchester, England — 9 areas with >= 15 qualifying leads
   { slug: "cheetham-hill-manchester", name: "Cheetham Hill", citySlug: "manchester", countryCode: "gb", aliases: ["cheetham hill"] },  // 47/216
-  { slug: "m1", name: "M1", citySlug: "manchester", countryCode: "gb", aliases: ["m1"] },  // 35/534
-  { slug: "m14", name: "M14", citySlug: "manchester", countryCode: "gb", aliases: ["m14"] },  // 33/112
-  { slug: "m4", name: "M4", citySlug: "manchester", countryCode: "gb", aliases: ["m4"] },  // 31/311
   { slug: "longsight-manchester", name: "Longsight", citySlug: "manchester", countryCode: "gb", aliases: ["longsight"] },  // 29/84
-  { slug: "m3", name: "M3", citySlug: "manchester", countryCode: "gb", aliases: ["m3"] },  // 23/354
-  { slug: "m2", name: "M2", citySlug: "manchester", countryCode: "gb", aliases: ["m2"] },  // 19/360
-  { slug: "m8", name: "M8", citySlug: "manchester", countryCode: "gb", aliases: ["m8"] },  // 17/47
-  { slug: "m12", name: "M12", citySlug: "manchester", countryCode: "gb", aliases: ["m12"] },  // 17/107
 
   // Melbourne, Victoria — 1 areas with >= 10 qualifying leads
   { slug: "south-melbourne", name: "South Melbourne", citySlug: "melbourne", countryCode: "au", aliases: ["south melbourne"] },  // 14/233
@@ -982,11 +937,33 @@ export function resolveSectorAlias(token: string): string | null {
   return `sector-${num}${m[2] ?? ""}`;
 }
 
+/**
+ * "SE1" / "78704" / "M5B" -> a slug, for the countries whose neighbourhood unit is postal.
+ *
+ * Generated rather than listed, for exactly the reason the sector helper above is: Britain alone
+ * has about 3,000 outward codes and America 41,000 ZIPs, and hand-registering the ones that happen
+ * to clear a threshold today is a maintenance step in front of every scrape. The publish gate
+ * already decides which of them deserves a page; the registry does not need to pre-agree.
+ *
+ * Shape is validated per country, so a street number or a house name can never become an area.
+ */
+export function resolvePostalDistrictAlias(countryCode: string, token: string): string | null {
+  const t = token.trim().toUpperCase();
+  if (countryCode === "gb") return /^[A-Z]{1,2}\d[A-Z\d]?$/.test(t) ? t.toLowerCase() : null;
+  if (countryCode === "ca") return /^[A-Z]\d[A-Z]$/.test(t) ? t.toLowerCase() : null;
+  if (countryCode === "us") return /^\d{5}$/.test(t) ? t : null;
+  return null;
+}
+
 /** Display name for an area slug. Named areas come from the registry; sector slugs are generated,
  *  so they have no entry to look up and would otherwise render as "sector-104". */
 export function areaDisplayName(slug: string): string {
   const named = AREA_BY_SLUG.get(slug);
   if (named) return named.name;
+  // Postal districts are generated, so they have no registry entry to look up and would otherwise
+  // render as their slug.
+  if (/^[a-z]{1,2}\d[a-z\d]?$/.test(slug)) return slug.toUpperCase();
+  if (/^\d{5}$/.test(slug)) return slug;
   const m = /^sector-(\d{1,3})([a-z])?$/.exec(slug);
   if (m) return `Sector ${m[1]}${m[2] ? m[2].toUpperCase() : ""}`;
   return slug;

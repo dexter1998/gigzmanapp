@@ -47,12 +47,13 @@ for city in $CITIES; do
 
   for round in $(seq 1 "$ROUNDS"); do
     echo "== $city round ${round}/${ROUNDS} (at ${have:-0}/${NEEDED} areas)"
-    GEO=$(npx tsx scripts/gosom/plan-city.ts "$city" 2>&1 >/tmp/q-$city.txt | grep '^GEO=' | cut -d= -f2)
-    [ -z "$GEO" ] && { echo "   no geo for $city, skipping"; break; }
-
-    # zoom 12 on the first pass to spread across the city, 14 on the second to go deeper into the
-    # centre where the density -- and most of the website gap -- actually is.
-    ZOOM=$([ "$round" = "1" ] && echo 12 || echo 14)
+    # District-targeted, not city-wide. A city sweep asks Google the same question Places already
+    # asked and gets the same answer back: measured on London, 74% of a city sweep was already
+    # stored, against 34% for the same phrases aimed at individual districts.
+    DISTRICTS=$([ "$round" = "1" ] && echo 12 || echo 24)
+    GEO=$(npx tsx scripts/gosom/plan-districts.ts "$city" "$DISTRICTS" 2>&1 >/tmp/q-$city.txt | grep '^GEO=' | cut -d= -f2)
+    [ -z "$GEO" ] && { echo "   no districts known for $city yet, skipping"; break; }
+    ZOOM=14
     npx tsx scripts/gosom/run-on-instance.ts "/tmp/q-$city.txt" "/tmp/gosom-$city-$round.json" 2 2 \
       --fast --geo="$GEO" --zoom=$ZOOM 2>&1 | tail -3
     [ -s "/tmp/gosom-$city-$round.json" ] || { echo "   nothing came back"; break; }
