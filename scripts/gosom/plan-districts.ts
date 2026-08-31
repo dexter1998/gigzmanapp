@@ -15,7 +15,6 @@
  */
 import { pseoSql } from "@/lib/pseo/db";
 import { CITY_BY_SLUG } from "@/lib/pseo/locations";
-import { COUNTRY_BY_CODE } from "@/lib/pseo/countries";
 
 /** The low-website-penetration end of the sweep list. Professional services are ~0% gap outside
  *  India, so aiming a scrape at them spends the run finding businesses that already have sites. */
@@ -30,8 +29,6 @@ async function main() {
   const limit = Number(process.argv[3] ?? 12);
   const city = CITY_BY_SLUG.get(slug);
   if (!city) { console.error(`unknown city: ${slug}`); process.exit(2); }
-  const country = COUNTRY_BY_CODE.get(city.countryCode)!;
-
   // Australia's areas are suburb names rather than codes, so its targets come from the locality
   // stored on each lead rather than from a postal district.
   const col = city.countryCode === "au" ? "area_slug" : "split_part(postal_code, ' ', 1)";

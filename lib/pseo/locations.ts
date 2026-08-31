@@ -366,7 +366,7 @@ export const CITIES: City[] = [
     state: "England",
     centroid: { lat: 51.5072, lng: -0.1276 },
     bbox: [51.3849, -0.3515, 51.6723, 0.1483],
-    status: "draft",
+    status: "active",
   },
   {
     slug: "manchester",
@@ -826,7 +826,6 @@ export const AREAS: Area[] = [
   { slug: "haymarket", name: "Haymarket", citySlug: "sydney", countryCode: "au", aliases: ["haymarket"] },  // 17/102
 
   // Toronto, Ontario — 2 areas with >= 10 qualifying leads
-  { slug: "old-toronto-toronto", name: "Old Toronto", citySlug: "toronto", countryCode: "ca", aliases: ["old toronto"] },  // 50/1063
   { slug: "north-york", name: "North York", citySlug: "toronto", countryCode: "ca", aliases: ["north york"] },  // 10/256
 ];
 
