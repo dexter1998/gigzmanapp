@@ -19,7 +19,7 @@ const SITE_URL = "https://mantisai.in";
 export const metadata: Metadata = {
   // `absolute` opts out of the root layout's "%s | Mantis" template — the brand is already the
   // first word here, and the template would append it a second time.
-  title: { absolute: "Mantis Ai | Find Local Clients Who Need a Website" },
+  title: { absolute: "Mantis Ai — Find Local Clients Who Need a Website" },
   description:
     "Find local businesses with no website and turn them into high-intent leads for your agency. " +
     "Real-time map search, not a stale database. Start free.",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
       cta: "Get free access →",
       url: "mantisai.in",
     }),
-    title: "Mantis Ai | Find Local Clients Who Need a Website",
+    title: "Mantis Ai — Find Local Clients Who Need a Website",
     description:
       "Find local businesses with no website and turn them into high-intent leads for your agency. " +
       "Real-time map search, not a stale database. Start free.",

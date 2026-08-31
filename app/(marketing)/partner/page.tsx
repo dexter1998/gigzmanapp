@@ -8,7 +8,7 @@ import { CheckIcon, ShieldCheckIcon, ZapIcon, HelpIcon, ClipboardIcon, RadioIcon
 
 export const metadata: Metadata = {
   // "partner program" is the searched phrase; "Partner Access" is our internal name for it.
-  title: { absolute: `Agency Partner Program | ${COMPANY.brandLong} for Web Agencies` },
+  title: { absolute: `Agency Partner Program — ${COMPANY.brandLong} for Web Agencies` },
   description:
     `Join the ${COMPANY.brandLong} partner program for web, software and marketing agencies: higher lead limits, ` +
     "priority support and referral revenue. Apply in 5 steps.",

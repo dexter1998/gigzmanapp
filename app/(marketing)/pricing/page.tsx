@@ -11,7 +11,7 @@ import { UserIcon, GlobeIcon, ZapIcon, PinIcon, TableIcon, ShieldIcon } from "@/
 export const metadata: Metadata = {
   // "cost" earns its place in the title: it is the phrase people actually type when comparing
   // tools, and the old title spent those characters on "for agencies & freelancers" instead.
-  title: { absolute: `Pricing & Lead Credits Cost | ${COMPANY.brandLong} for Agencies` },
+  title: { absolute: `Pricing & Lead Credits Cost — ${COMPANY.brandLong} for Agencies` },
   description: `Compare ${COMPANY.brandLong} plans: ${FREE_MONTHLY_CREDITS} free credits a month, then packs from ₹1,999. Pay only for the local leads you unlock — no seats, no contracts. Start free.`,
   keywords: [
     "Mantis Ai pricing",

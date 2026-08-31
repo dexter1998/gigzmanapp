@@ -7,7 +7,7 @@ import { EyebrowPill, MarketingCta, OrigamiFloor, SectionHeading } from "@/compo
 import { CheckIcon, QuoteIcon, ZapIcon, ShieldCheckIcon, TableIcon, PartnerIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: { absolute: `About ${COMPANY.brandLong} | Local Lead Intelligence from Gurugram` },
+  title: { absolute: `About ${COMPANY.brandLong} — Local Lead Intelligence from Gurugram` },
   // Was 253 characters — past what any SERP renders, so the half that mattered was cut.
   description: `Meet the team making local opportunity visible. Built in ${COMPANY.address.city} by Reverblunt, ${COMPANY.brandLong} turns businesses with a weak web presence into ranked leads.`,
   keywords: [

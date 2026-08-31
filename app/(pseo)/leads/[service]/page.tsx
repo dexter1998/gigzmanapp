@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const service = SERVICE_BY_SLUG.get(slug);
   if (!service) return {};
   return {
-    title: { absolute: `${service.name} leads by city — businesses with no website | Mantis` },
+    title: { absolute: `${service.name} leads by city — businesses with no website` },
     description: `Cities where Mantis has mapped businesses with an active Google listing and no website, ranked by how large the gap is.`,
     alternates: { canonical: `${COMPANY.site}${servicePath(slug)}` },
   };

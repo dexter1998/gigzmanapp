@@ -10,7 +10,7 @@ import { MailIcon, PartnerIcon, MapsPinIcon, HelpIcon, ClockIcon } from "@/compo
 export const metadata: Metadata = {
   // The title names what you can contact us about; the legal entity and full address are
   // already in the page body and its structured data, which is what NAP matching reads.
-  title: { absolute: `Contact ${COMPANY.brandLong} | Sales, Support & Partnerships` },
+  title: { absolute: `Contact ${COMPANY.brandLong} — Sales, Support & Partnerships` },
   description: `Talk to the ${COMPANY.brandLong} team about leads, pricing, data accuracy or agency partnerships. Based in ${COMPANY.address.city}, India — a real person reads every message.`,
   keywords: [
     "contact Mantis Ai",

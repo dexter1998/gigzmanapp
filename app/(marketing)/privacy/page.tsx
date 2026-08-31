@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     }),
   },
   twitter: { card: "summary_large_image" },
-  title: { absolute: `Privacy Policy | ${COMPANY.brandLong}` },
+  title: { absolute: `Privacy Policy — ${COMPANY.brandLong}` },
   description: `How ${COMPANY.legalName} collects, uses and protects your data in ${COMPANY.brandLong} — what we store, why we store it, and the choices you control.`,
   alternates: { canonical: `${COMPANY.site}/privacy` },
 };

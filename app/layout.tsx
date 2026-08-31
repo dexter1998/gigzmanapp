@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   // a page with no title of its own gets — it must stand on its own as a real title, because
   // anything that falls through to it is a page nobody wrote metadata for.
   title: {
-    default: `${COMPANY.brandLong} | Find Local Clients Who Need a Website`,
-    template: `%s | ${COMPANY.brand}`,
+    default: `${COMPANY.brandLong} — Find Local Clients Who Need a Website`,
+    template: `%s — ${COMPANY.brand}`,
   },
   description:
     "Find local businesses with no website and turn them into high-intent leads for your agency. " +

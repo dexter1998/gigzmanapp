@@ -11,7 +11,7 @@ import { ogImageMeta } from "@/lib/og";
  * in WhatsApp, Slack or a DM, which is how most first visits to this page arrive.
  */
 export const metadata: Metadata = {
-  title: { absolute: `Sign In or Create Your Free Account | ${COMPANY.brandLong}` },
+  title: { absolute: `Sign In or Create Your Free Account — ${COMPANY.brandLong}` },
   description:
     `Sign in to ${COMPANY.brandLong} or create a free account. Get 100 credits a month to find local ` +
     "businesses with no website near you. No card required to start.",

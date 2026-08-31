@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     }),
   },
   twitter: { card: "summary_large_image" },
-  title: { absolute: "How Mantis Measures the Local Website Gap | Methodology" },
+  title: { absolute: "How Mantis Measures the Local Website Gap" },
   description:
     "Where the data comes from, how the website gap rate and Lead Score are calculated, what is excluded, and the threshold a page must clear before we publish it.",
   alternates: { canonical: `${COMPANY.site}/leads/methodology` },

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     }),
   },
   twitter: { card: "summary_large_image" },
-  title: { absolute: `Terms of Service | ${COMPANY.brandLong}` },
+  title: { absolute: `Terms of Service — ${COMPANY.brandLong}` },
   description: `The terms you agree to when using ${COMPANY.brandLong}, operated by ${COMPANY.legalName}: your account, acceptable use, credits, billing and cancellation.`,
   alternates: { canonical: `${COMPANY.site}/terms` },
 };
