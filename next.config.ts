@@ -29,13 +29,16 @@ const nextConfig: NextConfig = {
       // the pages claim to be, and a five-country section whose URLs cannot say which country a
       // city is in is not one.
       //
-      // Generated from the registry rather than hand-listed: the old flat space could only ever
-      // have contained Indian slugs, and missing one would 404 a page that used to work. `:path*`
+      // Generated from the registry rather than hand-listed, and covers every city -- not just the
+      // Indian ones that were actually live under the flat shape. The flat URL is what a person
+      // naturally guesses regardless of which country the city is in (a user did exactly this for
+      // London, which was never live flat), so restricting the rule to "cities that used to have
+      // this URL for real" protects nothing and 404s a guess that should just work. `:path*`
       // matches zero or more segments, so one rule per city covers the city page and everything
       // beneath it. Permanent, because the old shape is never coming back.
-      ...CITIES.filter((c) => c.countryCode === "in").map((c) => ({
+      ...CITIES.map((c) => ({
         source: `/leads/:service/${c.slug}/:path*`,
-        destination: `/leads/:service/in/${c.slug}/:path*`,
+        destination: `/leads/:service/${c.countryCode}/${c.slug}/:path*`,
         permanent: true,
       })),
     ];
