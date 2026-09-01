@@ -75,8 +75,13 @@ export const MIN_CATEGORIES = 5;
  */
 export const MIN_AREAS_BY_COUNTRY: Record<string, number> = {
   in: 3, gb: 3, au: 1, us: 1, ca: 1,
-  de: 1, fr: 1, es: 1, it: 1, nl: 1, pl: 1, at: 1, be: 1, ie: 1,
-  pt: 1, se: 1, dk: 1, ch: 1, cz: 1, hu: 1, gr: 1, ae: 1,
+  de: 1, fr: 1, es: 1, it: 1, nl: 1, pl: 1, at: 1, be: 1,
+  pt: 1, se: 1, dk: 1, ch: 1, cz: 1, hu: 1, gr: 1,
+  // Ireland's Eircode and the UAE have no area-extraction strategy at all (see AREA_STRATEGY in
+  // countries.ts) -- area_slug will be null on every lead from either, forever. Requiring even 1
+  // here would make their city pages fail the gate permanently regardless of how much data ever
+  // arrives, which is a bug wearing a threshold's clothes, not a quality bar.
+  ie: 0, ae: 0,
 };
 export const MIN_AREAS = 3;
 export const REQUIRED_PASS_STREAK = 2;

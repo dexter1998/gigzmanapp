@@ -110,24 +110,26 @@ export function postalCodeFromAddress(countryCode: string, address: string): str
     us: /\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b/,
     au: /\b(\d{4})\b(?=\s*,?\s*AUSTRALIA)/,
     in: /\b(\d{6})\b/,
-    // Continental Europe: gosom's address is "Street, City POSTAL, Country", so the postal code is
-    // whatever digit run sits directly in front of the country name -- anchoring there is what
-    // keeps a street number from being read as one. Length is what actually varies per country;
-    // the position in the string does not.
-    de: /(\d{5})\s*,?\s*GERMANY\b/, fr: /(\d{5})\s*,?\s*FRANCE\b/,
-    es: /(\d{5})\s*,?\s*SPAIN\b/, it: /(\d{5})\s*,?\s*ITALY\b/,
-    gr: /(\d{3}\s?\d{2})\s*,?\s*GREECE\b/,
-    at: /(\d{4})\s*,?\s*AUSTRIA\b/, be: /(\d{4})\s*,?\s*BELGIUM\b/,
-    dk: /(\d{4})\s*,?\s*DENMARK\b/, ch: /(\d{4})\s*,?\s*SWITZERLAND\b/,
-    hu: /(\d{4})\s*,?\s*HUNGARY\b/,
-    nl: /(\d{4}\s?[A-Z]{2})\s*,?\s*NETHERLANDS\b/,
-    pl: /(\d{2}-\d{3})\s*,?\s*POLAND\b/,
-    pt: /(\d{4}-\d{3})\s*,?\s*PORTUGAL\b/,
-    se: /(\d{3}\s?\d{2})\s*,?\s*SWEDEN\b/,
-    cz: /(\d{3}\s?\d{2})\s*,?\s*(?:CZECH REPUBLIC|CZECHIA)\b/,
+    // Continental Europe's actual shape, confirmed against real gosom output (measured, not
+    // assumed): "Street Number, POSTAL City[-District], Country" -- e.g.
+    // "Frauenstraße 17, 80469 München-Altstadt-Lehel, Germany". The postal code sits right after a
+    // comma and is immediately followed by the city name, NOT the country -- anchoring on the
+    // country name (an earlier version of this) matched nothing at all, because the city name sits
+    // in between. The comma before it is what a bare street number never has, which is what keeps
+    // "Frauenstraße 17" from being misread as a 2-digit code.
+    de: /,\s*(\d{5})\s+\S/, fr: /,\s*(\d{5})\s+\S/,
+    es: /,\s*(\d{5})\s+\S/, it: /,\s*(\d{5})\s+\S/, gr: /,\s*(\d{3}\s?\d{2})\s+\S/,
+    at: /,\s*(\d{4})\s+\S/, be: /,\s*(\d{4})\s+\S/,
+    dk: /,\s*(\d{4})\s+\S/, ch: /,\s*(\d{4})\s+\S/, hu: /,\s*(\d{4})\s+\S/,
+    nl: /,\s*(\d{4}\s?[A-Z]{2})\s+\S/,
+    pl: /,\s*(\d{2}-\d{3})\s+\S/,
+    pt: /,\s*(\d{4}-\d{3})\s+\S/,
+    se: /,\s*(\d{3}\s?\d{2})\s+\S/,
+    cz: /,\s*(\d{3}\s?\d{2})\s+\S/,
     // Ireland (Eircode) and the UAE have no address-embedded postal signal reliable enough to
-    // parse from free text -- deliberately absent, so a lead there gets no area rather than a
-    // wrong one.
+    // parse from free text -- confirmed for the UAE by inspecting real addresses, which carry no
+    // postal code at all ("Rolex Tower ..., Dubai, United Arab Emirates"). A lead there gets no
+    // area rather than a wrong one.
   };
   const m = pat[countryCode]?.exec(a);
   if (!m) return null;
@@ -162,7 +164,12 @@ export function areaTokenFromAddress(countryCode: string, address: string): stri
     const m = /,\s*([^,]+?)\s+(?:NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s+\d{4}\b/.exec(a);
     return m ? m[1].trim() : null;
   }
-  return null;
+  // Continental Europe: the area token IS the postal code (see postalCodeFromAddress) -- there is
+  // no separate neighbourhood name to extract from gosom's free-text address for any of these, so
+  // reusing that parser rather than duplicating its per-country regex is what keeps the two paths
+  // from silently drifting apart the way this one already had (it never had these cases at all
+  // until a real Munich scrape showed every German lead resolving to a city with no area).
+  return postalCodeFromAddress(countryCode, address);
 }
 
 export const COUNTRIES: Country[] = [
