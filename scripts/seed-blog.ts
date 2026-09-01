@@ -155,9 +155,9 @@ async function main() {
       hero_variant, read_minutes, body, faqs, status, featured, published_at, content_updated_at
     ) VALUES (
       ${slug},
-      ${"How to Find Businesses That Need a Website in 2026"},
+      ${"How to Find Businesses Without a Website in 2026"},
       ${"A practical playbook for finding local businesses with no website — why the databases you already pay for cannot see them, which gaps actually signal intent, and how to reach owners who never answer email."},
-      ${"Find local businesses that need a website. Why Apollo and ZoomInfo miss them, which website gaps signal real buying intent, and how to reach owners who never read email. Start free."},
+      ${"Find local businesses with no website. Why Apollo and ZoomInfo cannot see them, which gaps signal real intent, and how to reach owners who never read email."},
       ${"Lead Generation"}, ${"operations"},
       ${["Lead Generation", "Web Development", "Local SEO", "Sales Playbook"]},
       ${AUTHOR.slug}, ${"leads"}, ${12},
