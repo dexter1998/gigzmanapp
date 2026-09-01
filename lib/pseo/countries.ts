@@ -151,6 +151,23 @@ export const COUNTRIES: Country[] = [
   { code: "au", name: "Australia", googleCode: "AU", locale: "en-AU", demonym: "Australian", status: "draft" },
   { code: "gb", name: "United Kingdom", googleCode: "GB", locale: "en-GB", demonym: "British", status: "draft" },
   { code: "ca", name: "Canada", googleCode: "CA", locale: "en-CA", demonym: "Canadian", status: "draft" },
+  { code: "ae", name: "United Arab Emirates", googleCode: "AE", locale: "en-AE", demonym: "Emirati", status: "draft" },
+  { code: "fr", name: "France", googleCode: "FR", locale: "fr-FR", demonym: "French", status: "draft" },
+  { code: "de", name: "Germany", googleCode: "DE", locale: "de-DE", demonym: "German", status: "draft" },
+  { code: "nl", name: "Netherlands", googleCode: "NL", locale: "nl-NL", demonym: "Dutch", status: "draft" },
+  { code: "es", name: "Spain", googleCode: "ES", locale: "es-ES", demonym: "Spanish", status: "draft" },
+  { code: "it", name: "Italy", googleCode: "IT", locale: "it-IT", demonym: "Italian", status: "draft" },
+  { code: "pl", name: "Poland", googleCode: "PL", locale: "pl-PL", demonym: "Polish", status: "draft" },
+  { code: "at", name: "Austria", googleCode: "AT", locale: "de-AT", demonym: "Austrian", status: "draft" },
+  { code: "be", name: "Belgium", googleCode: "BE", locale: "nl-BE", demonym: "Belgian", status: "draft" },
+  { code: "ie", name: "Ireland", googleCode: "IE", locale: "en-IE", demonym: "Irish", status: "draft" },
+  { code: "pt", name: "Portugal", googleCode: "PT", locale: "pt-PT", demonym: "Portuguese", status: "draft" },
+  { code: "se", name: "Sweden", googleCode: "SE", locale: "sv-SE", demonym: "Swedish", status: "draft" },
+  { code: "dk", name: "Denmark", googleCode: "DK", locale: "da-DK", demonym: "Danish", status: "draft" },
+  { code: "ch", name: "Switzerland", googleCode: "CH", locale: "de-CH", demonym: "Swiss", status: "draft" },
+  { code: "cz", name: "Czech Republic", googleCode: "CZ", locale: "cs-CZ", demonym: "Czech", status: "draft" },
+  { code: "hu", name: "Hungary", googleCode: "HU", locale: "hu-HU", demonym: "Hungarian", status: "draft" },
+  { code: "gr", name: "Greece", googleCode: "GR", locale: "el-GR", demonym: "Greek", status: "draft" },
 ];
 
 export const COUNTRY_BY_CODE = new Map(COUNTRIES.map((c) => [c.code, c]));
