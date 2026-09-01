@@ -105,7 +105,7 @@ export default async function AreaIndex({ params }: Params) {
       </p>
 
       <p style={{ fontSize: 14, marginTop: 24 }}>
-        <Link href={cityPath(serviceSlug, citySlug)} style={{ color: "var(--g-green-text)" }}>
+        <Link href={cityPath(serviceSlug, citySlug)} style={{ color: "var(--g-green-text)", textDecoration: "underline" }}>
           ← All {service.name.toLowerCase()} leads in {city.name}
         </Link>
       </p>

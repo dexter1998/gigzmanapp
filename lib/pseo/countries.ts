@@ -83,10 +83,12 @@ export function areaStrategyFor(countryCode: string): AreaStrategy {
  * Returns null for anything that does not match that country's shape, so a malformed value becomes
  * no area rather than a fake one.
  */
+const WHOLE_CODE_COUNTRIES = new Set(["us", "de", "fr", "es", "it", "gr", "at", "be", "dk", "ch", "hu", "nl", "pl", "pt", "se", "cz"]);
+
 export function postalDistrict(postalCode: string | null | undefined, countryCode = "gb"): string | null {
   if (!postalCode) return null;
   const v = postalCode.trim().toUpperCase();
-  if (countryCode === "us") return /^\d{5}(-\d{4})?$/.test(v) ? v.slice(0, 5) : null;
+  if (WHOLE_CODE_COUNTRIES.has(countryCode)) return v.replace(/\s+/g, countryCode === "nl" ? " " : "");
   if (countryCode === "ca") { const m = /^([A-Z]\d[A-Z])\s*\d[A-Z]\d$/.exec(v); return m ? m[1] : null; }
   const m = /^([A-Z]{1,2}\d[A-Z\d]?)\s+\d[A-Z]{2}$/.exec(v);
   return m ? m[1] : null;
@@ -108,6 +110,24 @@ export function postalCodeFromAddress(countryCode: string, address: string): str
     us: /\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b/,
     au: /\b(\d{4})\b(?=\s*,?\s*AUSTRALIA)/,
     in: /\b(\d{6})\b/,
+    // Continental Europe: gosom's address is "Street, City POSTAL, Country", so the postal code is
+    // whatever digit run sits directly in front of the country name -- anchoring there is what
+    // keeps a street number from being read as one. Length is what actually varies per country;
+    // the position in the string does not.
+    de: /(\d{5})\s*,?\s*GERMANY\b/, fr: /(\d{5})\s*,?\s*FRANCE\b/,
+    es: /(\d{5})\s*,?\s*SPAIN\b/, it: /(\d{5})\s*,?\s*ITALY\b/,
+    gr: /(\d{3}\s?\d{2})\s*,?\s*GREECE\b/,
+    at: /(\d{4})\s*,?\s*AUSTRIA\b/, be: /(\d{4})\s*,?\s*BELGIUM\b/,
+    dk: /(\d{4})\s*,?\s*DENMARK\b/, ch: /(\d{4})\s*,?\s*SWITZERLAND\b/,
+    hu: /(\d{4})\s*,?\s*HUNGARY\b/,
+    nl: /(\d{4}\s?[A-Z]{2})\s*,?\s*NETHERLANDS\b/,
+    pl: /(\d{2}-\d{3})\s*,?\s*POLAND\b/,
+    pt: /(\d{4}-\d{3})\s*,?\s*PORTUGAL\b/,
+    se: /(\d{3}\s?\d{2})\s*,?\s*SWEDEN\b/,
+    cz: /(\d{3}\s?\d{2})\s*,?\s*(?:CZECH REPUBLIC|CZECHIA)\b/,
+    // Ireland (Eircode) and the UAE have no address-embedded postal signal reliable enough to
+    // parse from free text -- deliberately absent, so a lead there gets no area rather than a
+    // wrong one.
   };
   const m = pat[countryCode]?.exec(a);
   if (!m) return null;

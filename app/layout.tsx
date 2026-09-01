@@ -10,7 +10,14 @@ const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
-  display: "swap",
+  // "optional" over "swap": Lighthouse measured a real 0.213 CLS on a pSEO H1 (Faridabad, using
+  // this weight) caused by the swap-in reflow once the font finished loading -- next/font's
+  // automatic fallback-metric matching (adjustFontFallback) narrows that gap but doesn't close it
+  // for a bold heading weight. "optional" makes the browser commit to the fallback the instant the
+  // font isn't ready in time, so the swap that caused the shift simply never happens on that load.
+  // The cost is that a slow-loading first visit occasionally never gets the custom face at all --
+  // a real trade, and the right one for a page whose job is showing counts, not typography.
+  display: "optional",
   weight: ["400", "500", "600", "700", "800"],
 });
 
@@ -20,7 +27,9 @@ const jakarta = Plus_Jakarta_Sans({
 const fraunces = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
-  display: "swap",
+  // Same reasoning as jakarta above -- an italic display serif has less predictable fallback
+  // metrics than a sans body face, so it is the more likely of the two to shift on a slow load.
+  display: "optional",
   weight: ["500", "600"],
   style: ["normal", "italic"],
 });
@@ -30,7 +39,9 @@ const fraunces = Fraunces({
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  display: "swap",
+  // Used only for the wordmark (sidebar, login) -- a tiny, fixed-width span, so "optional" costs
+  // nothing here and keeps the policy consistent across all three fonts.
+  display: "optional",
   weight: ["500", "600", "700"],
 });
 

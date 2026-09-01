@@ -30,8 +30,15 @@ export default function PseoLayout({ children }: { children: ReactNode }) {
       {
         "@type": "Organization",
         "@id": `${COMPANY.site}/#organization`,
-        name: COMPANY.legalName,
-        alternateName: COMPANY.brandLong,
+        // Public-facing name, not the legal entity: this @id is shared with the marketing
+        // layout's own Organization node (see lib/company.ts), and every place THAT reads it
+        // (terms, privacy, the company page) already discloses COMPANY.legalName once, in the
+        // context that expects a registered entity name. Repeating it here, on every one of
+        // ~2,000 lead pages, put "Reverblunt Private Limited" in front of visitors who only ever
+        // asked to see "Mantis" -- the same brand-vs-legal-entity split the root layout's own
+        // title template already draws.
+        name: COMPANY.brandLong,
+        alternateName: COMPANY.brand,
         url: COMPANY.site,
         email: COMPANY.email,
       },

@@ -75,7 +75,7 @@ export default async function LeadMarketHub() {
       )}
 
       <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", marginTop: 34 }}>
-        <Link href="/leads/methodology" style={{ color: "var(--g-green-text)" }}>How these figures are produced</Link>
+        <Link href="/leads/methodology" style={{ color: "var(--g-green-text)", textDecoration: "underline" }}>How these figures are produced</Link>
       </p>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(crumbs, COMPANY.site)) }} />

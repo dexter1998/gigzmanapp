@@ -24,7 +24,7 @@ export function ProvenanceNote({ observedOn }: { observedOn: Date | null }) {
       Business names, categories, ratings and review counts originate from Google Maps listings
       {observedOn ? ` and were last observed by Mantis on ${observedOn.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}` : ""}.
       Website gap rates, area rankings, Lead Scores and coverage figures are Mantis&rsquo;s own
-      calculations — <Link href="/leads/methodology" style={{ color: "var(--g-green-text)" }}>see how they&rsquo;re produced</Link>.
+      calculations — <Link href="/leads/methodology" style={{ color: "var(--g-green-text)", textDecoration: "underline" }}>see how they&rsquo;re produced</Link>.
     </p>
   );
 }

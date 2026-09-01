@@ -41,7 +41,15 @@ export type GateInput = {
  * verified businesses — nothing here lets a page exist without data behind it — but a 10-lead
  * American page is a thinner page than a 25-lead Indian one, and no threshold hides that.
  */
-export const MIN_PUBLISH_LEADS_BY_COUNTRY: Record<string, number> = { in: 25, gb: 15, au: 10, us: 10, ca: 10 };
+export const MIN_PUBLISH_LEADS_BY_COUNTRY: Record<string, number> = {
+  in: 25, gb: 15, au: 10, us: 10, ca: 10,
+  // Batch 2 (2026-09-01): registered ahead of any scan. Set to the same 10 as AU/US/CA rather than
+  // India's 25 -- these are all higher-income economies where website penetration should sit closer
+  // to the 4-14% measured for AU/US/GB than to India's 37.5%, so the lower bar is the reasonable
+  // starting assumption. Adjust once a real scan measures each country's actual gap rate.
+  de: 10, fr: 10, es: 10, it: 10, nl: 10, pl: 10, at: 10, be: 10, ie: 10,
+  pt: 10, se: 10, dk: 10, ch: 10, cz: 10, hu: 10, gr: 10, ae: 10,
+};
 export const MIN_PUBLISH_LEADS = 25;
 
 /** Demotion sits below promotion on purpose: a page that hovers at the line would otherwise enter
@@ -65,7 +73,11 @@ export const MIN_CATEGORIES = 5;
  * enforce a standard, it just withholds every page in the country — and because a withheld city
  * page 404s its whole subtree, it withholds the category pages too.
  */
-export const MIN_AREAS_BY_COUNTRY: Record<string, number> = { in: 3, gb: 3, au: 1, us: 1, ca: 1 };
+export const MIN_AREAS_BY_COUNTRY: Record<string, number> = {
+  in: 3, gb: 3, au: 1, us: 1, ca: 1,
+  de: 1, fr: 1, es: 1, it: 1, nl: 1, pl: 1, at: 1, be: 1, ie: 1,
+  pt: 1, se: 1, dk: 1, ch: 1, cz: 1, hu: 1, gr: 1, ae: 1,
+};
 export const MIN_AREAS = 3;
 export const REQUIRED_PASS_STREAK = 2;
 
