@@ -25,8 +25,23 @@ export AWS_ACCESS_KEY_ID=$(grep -E '^AWS_ACCESS_KEY_ID=' .env.local | sed -E 's/
 export AWS_SECRET_ACCESS_KEY=$(grep -E '^AWS_SECRET_ACCESS_KEY=' .env.local | sed -E 's/^[^=]*=//; s/"//g')
 export AWS_DEFAULT_REGION=$REGION
 
-MAPS_KEY=$($AWS secretsmanager get-secret-value --secret-id gigzman/maps-browser-key --query SecretString --output text 2>/dev/null \
-  || grep -E '^NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=' .env.local | sed -E 's/^[^=]*=//; s/"//g')
+# The secret's SecretString is a JSON object ({"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "...", "note":
+# "..."}), not a bare key -- an earlier version of this script used the raw string directly, baking
+# the whole JSON blob (including the human-readable note) into three production builds in a row and
+# breaking Maps client-side with no server-side signal anywhere, because a browser rejecting an
+# invalid key never touches the server. Confirmed live: mantisai.in showed "Sorry! Something went
+# wrong. This page didn't load Google Maps correctly."
+#
+# .env.local's NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is NOT this key -- it is a separate, unrestricted
+# local-dev key with no mantisai.in referrer restriction, so it is a decoy fallback rather than a
+# safe one; if the secret is ever genuinely unreachable this must fail loudly, not silently ship a
+# key that produces the exact same bug.
+MAPS_KEY=$($AWS secretsmanager get-secret-value --secret-id gigzman/maps-browser-key --query SecretString --output text \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"])')
+if [ -z "$MAPS_KEY" ]; then
+  echo "could not read gigzman/maps-browser-key from Secrets Manager -- refusing to build with a fallback key" >&2
+  exit 1
+fi
 TAG=$(git rev-parse --short HEAD)
 
 echo "==> building ${REPO}:${TAG} (linux/amd64)"
