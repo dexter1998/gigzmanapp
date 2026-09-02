@@ -21,6 +21,11 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-sell-websites-to-restaurants", "/resources/whatsapp-outreach-local-business-india", "messaging owners on WhatsApp"],
   ["how-to-sell-websites-to-coaching-centres", "/resources/cold-call-script-selling-websites-local-businesses", "the call script"],
   ["we-already-have-a-facebook-page-objection", "/resources/how-to-sell-websites-to-restaurants", "the restaurant version of this objection"],
+  ["how-to-sell-websites-to-restaurants", "/resources/how-much-to-charge-for-a-website-india", "what to charge for the build"],
+  ["how-to-sell-websites-to-coaching-centres", "/resources/how-much-to-charge-for-a-website-india", "pricing the build"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/how-to-sell-websites-to-hardware-stores", "the hardware store playbook"],
+  ["how-much-to-charge-for-a-website-india", "/resources/website-maintenance-plans-what-to-charge", "what to charge for the care plan"],
+  ["apollo-alternative-local-business-leads", "/resources/how-to-sell-websites-to-hardware-stores", "a vertical no database covers"],
 ];
 
 async function main() {
