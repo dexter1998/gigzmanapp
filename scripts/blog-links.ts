@@ -81,6 +81,14 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["cold-call-script-selling-websites-local-businesses", "/resources/the-free-mockup-play-does-it-still-close", "the mockup close"],
   ["handling-we-dont-need-a-website", "/resources/the-free-mockup-play-does-it-still-close", "showing rather than arguing"],
   ["call-whatsapp-or-walk-in-indian-smbs", "/resources/how-to-take-advance-payment-from-indian-clients", "closing in the room"],
+
+  /* batch 11 — the India data reports */
+  ["how-many-local-businesses-have-no-website", "/resources/which-indian-cities-have-the-biggest-website-gap", "the same measurement by Indian city"],
+  ["how-many-local-businesses-have-no-website", "/resources/do-businesses-without-websites-get-fewer-reviews", "what else the listings show"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/do-businesses-without-websites-get-fewer-reviews", "the review finding"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/do-businesses-without-websites-get-fewer-reviews", "why the review filter works"],
+  ["territory-planning-splitting-a-city-between-reps", "/resources/which-indian-cities-have-the-biggest-website-gap", "picking the city first"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/tier-1-vs-tier-2-india-website-gap", "how the verticals split by city tier"],
 ];
 
 async function main() {

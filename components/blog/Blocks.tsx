@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Block } from "@/lib/blog/blocks";
 import { leadsForCity, cityLeadCount } from "@/lib/blog/db";
-import { indexStats, countryRows, fill } from "@/lib/blog/stats";
+import { indexStats, countryRows, cityRows, fill } from "@/lib/blog/stats";
 import { Icon } from "./icons";
 
 /** Turns "Very high" / "High" / "Medium" into the design's coloured intent chip. */
@@ -48,6 +48,33 @@ async function CountryTable({ note }: { note?: string }) {
                 <td>{r.checked.toLocaleString("en-US")}</td>
                 <td>{r.noSite.toLocaleString("en-US")}</td>
                 <td>{r.pct.toFixed(1)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{note}</p>}
+    </div>
+  );
+}
+
+/** The city gap table for one country, queried at render time. */
+async function CityTable({ country, min, limit, order, note }:
+  { country?: string; min?: number; limit?: number; order?: "gap" | "size"; note?: string }) {
+  const rows = await cityRows(country ?? "in", min ?? 400, limit ?? 15, order ?? "gap");
+  if (rows.length === 0) return null;
+  return (
+    <div>
+      <div className="rc-tablewrap">
+        <table className="rc-table">
+          <thead><tr><th>City</th><th>Checked</th><th>No website</th><th>Rate</th></tr></thead>
+          <tbody>
+            {rows.map((c) => (
+              <tr key={c.slug}>
+                <td>{c.name}</td>
+                <td>{c.checked.toLocaleString("en-US")}</td>
+                <td>{c.noSite.toLocaleString("en-US")}</td>
+                <td>{c.pct.toFixed(1)}%</td>
               </tr>
             ))}
           </tbody>
@@ -217,6 +244,9 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
             <cite>{b.href ? <a href={b.href} rel="noopener">{b.attribution}</a> : b.attribution}</cite>
           </blockquote>
         );
+        break;
+      case "citytable":
+        out.push(<CityTable key={i} country={b.country} min={b.min} limit={b.limit} order={b.order} note={b.note ? t(b.note) : undefined} />);
         break;
       case "countrytable":
         out.push(<CountryTable key={i} note={b.note} />);

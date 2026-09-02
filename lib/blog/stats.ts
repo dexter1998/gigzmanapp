@@ -71,6 +71,32 @@ export async function countryRows(min = 500): Promise<CountryRow[]> {
   }));
 }
 
+export type CityRow = { slug: string; name: string; checked: number; noSite: number; pct: number };
+
+/** City gap rows for one country, ordered by gap. Same reasoning as countryRows — these move
+ *  faster than any other figure in the corpus, because scanning adds cities continuously. */
+export async function cityRows(
+  country = "in", min = 400, limit = 15, order: "gap" | "size" = "gap",
+): Promise<CityRow[]> {
+  const rows = (await sql`
+    SELECT city_slug AS slug, count(*) AS checked,
+           count(*) FILTER (WHERE has_website IS FALSE) AS no_site,
+           round(100.0 * count(*) FILTER (WHERE has_website IS FALSE) / nullif(count(*), 0), 1) AS pct
+    FROM leads
+    WHERE has_website IS NOT NULL AND city_slug IS NOT NULL AND country_code = ${country}
+    GROUP BY city_slug HAVING count(*) >= ${min}
+    ORDER BY ${order === "gap"
+      ? sql`round(100.0 * count(*) FILTER (WHERE has_website IS FALSE) / nullif(count(*), 0), 1) DESC`
+      : sql`count(*) DESC`}
+    LIMIT ${limit}
+  `) as unknown as { slug: string; checked: string; no_site: string; pct: string }[];
+  return rows.map((r) => ({
+    slug: r.slug,
+    name: r.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    checked: Number(r.checked), noSite: Number(r.no_site), pct: Number(r.pct),
+  }));
+}
+
 /** Replaces {{token}} with the live figure. An unknown token is left alone rather than blanked —
  *  a visible {{typo}} in staging is better than a sentence that silently loses its number. */
 export function fill(text: string, s: IndexStats): string {

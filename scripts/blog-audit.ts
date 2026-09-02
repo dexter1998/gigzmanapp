@@ -66,7 +66,7 @@ async function main() {
       ["no title term absent from body", missing.length === 0, missing.join(",")],
       ["700–2,600 words", words >= 700 && words <= 2600, `${words}`],
       ["4+ FAQs", p.faqs.length >= 4, `${p.faqs.length}`],
-      ["has a data table", p.body.some((b) => b.type === "table"), ""],
+      ["has a data table", p.body.some((b) => b.type === "table" || b.type === "citytable" || b.type === "countrytable"), ""],
       ["has a product CTA", p.body.some((b) => b.type === "cta"), ""],
       ["2+ tags", p.tags.length >= 2, `${p.tags.length}`],
     ];
