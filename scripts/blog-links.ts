@@ -54,6 +54,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["qualifying-a-local-lead-before-you-call", "/resources/territory-planning-splitting-a-city-between-reps", "splitting the list between people"],
   ["which-local-verticals-actually-pay-for-a-website", "/resources/territory-planning-splitting-a-city-between-reps", "turning a vertical into a territory"],
   ["how-to-find-businesses-that-need-a-website", "/resources/scraping-google-maps-for-leads-what-breaks", "why the data is harder than the search"],
+
+  /* batch 8 — the invisible prospect, channels, the hardest objection */
+  ["we-already-have-a-facebook-page-objection", "/resources/why-facebook-only-businesses-are-your-best-prospects", "why these are your best prospects"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/why-facebook-only-businesses-are-your-best-prospects", "the prospects your filter hides"],
+  ["whatsapp-outreach-local-business-india", "/resources/call-whatsapp-or-walk-in-indian-smbs", "choosing the channel first"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/call-whatsapp-or-walk-in-indian-smbs", "whether to call at all"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/handling-we-dont-need-a-website", "the hardest objection on the call"],
+  ["handling-its-too-expensive-without-discounting", "/resources/handling-we-dont-need-a-website", "the other objection worth diagnosing"],
+  ["territory-planning-splitting-a-city-between-reps", "/resources/call-whatsapp-or-walk-in-indian-smbs", "why clustering matters for walk-ins"],
 ];
 
 async function main() {
