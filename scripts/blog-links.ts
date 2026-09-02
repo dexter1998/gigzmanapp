@@ -141,6 +141,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["building-a-weekly-prospecting-routine", "/resources/how-many-businesses-should-be-in-your-pipeline", "how many prospects the rhythm needs"],
   ["your-first-10-web-design-clients", "/resources/how-many-businesses-should-be-in-your-pipeline", "sizing the pipeline"],
   ["how-to-start-a-web-design-agency-in-india", "/resources/how-to-grow-a-web-agency-past-5-lakh-a-month", "where this goes"],
+
+  /* batch 18 — the lead-data cluster */
+  ["apollo-alternative-local-business-leads", "/resources/bought-database-vs-live-search", "why a file goes stale"],
+  ["apollo-alternative-local-business-leads", "/resources/why-tech-stack-filtering-misses-your-best-prospects", "the same blind spot in technographics"],
+  ["should-you-buy-web-design-leads", "/resources/bought-database-vs-live-search", "what you are actually buying"],
+  ["do-you-need-an-email-finder-for-local-businesses", "/resources/lead-generation-tools-that-work-outside-the-us", "the same gap internationally"],
+  ["scraping-google-maps-for-leads-what-breaks", "/resources/bought-database-vs-live-search", "why maintaining it is the cost"],
+  ["how-indian-agencies-win-uk-and-australian-clients", "/resources/lead-generation-tools-that-work-outside-the-us", "tooling for overseas markets"],
+  ["how-to-price-a-website-redesign", "/resources/why-tech-stack-filtering-misses-your-best-prospects", "finding redesign prospects"],
 ];
 
 async function main() {
