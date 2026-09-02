@@ -29,7 +29,7 @@ const posts: Post[] = [
       "Every outreach guide you will read was written for a market where email works. In India, for the businesses worth pitching, it mostly does not — and for the specific segment that has no website, there is often no email address to send to in the first place.",
       "The number on their Google listing is the contact that exists. On that number, a WhatsApp message gets read where a call gets ignored and an email was never delivered.",
     ]},
-    { type: "h2", id: "why", text: "Why the channel is not a preference here" },
+    { type: "h2", id: "why", text: "Why WhatsApp is not a preference here, it is the only channel" },
     { type: "prose", text: [
       "A business with no website has no domain, so it has no professional email address. What it has is a mobile number on its Maps listing, and that number is almost always the owner's.",
       "That single fact reorders everything. Cold email tooling — sequences, warm-up, deliverability — is built for a contact record you do not have. Meanwhile the channel you do have reaches the decision-maker directly, with read receipts, on a device they check constantly.",
@@ -40,7 +40,7 @@ const posts: Post[] = [
       { title: "Read, not delivered", detail: "you find out within minutes whether the message landed" },
       { title: "It survives the follow-up", detail: "the thread persists; an unanswered call leaves nothing behind" },
     ]},
-    { type: "h2", id: "first-message", text: "The first message" },
+    { type: "h2", id: "first-message", text: "The first WhatsApp message, word for word" },
     { type: "prose", text: [
       "Short, specific, and ending in a question they can answer in three words. Long messages read as a broadcast and get ignored.",
     ]},
@@ -75,8 +75,21 @@ const posts: Post[] = [
       { title: "Messaging outside 10am–8pm", detail: "the fastest way to be reported" },
       { title: "Using a personal number", detail: "use a WhatsApp Business profile — the name and category alone raise reply rates" },
     ]},
+    { type: "h2", id: "who", text: "Which numbers to message first" },
+    { type: "prose", text: [
+      "The list decides the reply rate more than the copy does. Three filters, applied before you write anything.",
+      "**Review count above fifty.** A business with eight reviews and no website is usually part-time or dormant; the message goes unread because the number belongs to someone who is not really running a business. Above fifty reviews you are messaging an operator with customers.",
+      "**Rating above four.** A badly-rated business has a problem that a website will not fix, and they know it. The conversation goes somewhere you cannot help with.",
+      "**Category with a real gap.** Messaging dentists about a first website wastes your time — nine in ten already have one. Hardware stores, guest houses and tailors are where the gap actually is, and [the category breakdown](/resources/which-business-types-least-likely-to-have-a-website) has the rates.",
+    ]},
+    { type: "h2", id: "hindi", text: "Writing the message in Hindi" },
+    { type: "prose", text: [
+      "If their listing name, reviews or posts are in Hindi, write in Hindi. Not translated-English Hindi — the way you would actually message someone.",
+      "The price line is where this matters most. *\"Pandrah se pachees hazaar, ek baar ka. Hosting alag se teen hazaar saal ka\"* reads as normal business talk. The same numbers in English read as a quote from an agency, and invite a negotiation rather than an answer.",
+      "The opener translates cleanly: *\"Aapki Google listing dekhi — 240 reviews, 4.4 rating, achha hai. Website link nahi dikhi. Jaan-boojhkar nahi banayi, ya bas reh gaya?\"* Same structure, same question at the end.",
+    ]},
     { type: "leads", city: "gurgaon", heading: "The kind of number worth messaging" },
-    { type: "h2", id: "scale", text: "What this looks like at any real volume" },
+    { type: "h2", id: "scale", text: "Running WhatsApp outreach at any real volume" },
     { type: "prose", text: [
       "Thirty to forty messages a day is the ceiling for one person doing this properly — which means reading each listing before writing. Beyond that the personalisation goes, and without it the reply rate collapses to the point where the extra volume gains you nothing.",
       "Expect somewhere between one in six and one in ten to reply. That is far above cold email in this market, and it is the entire argument for the channel.",
@@ -92,12 +105,12 @@ const posts: Post[] = [
     { q: "How many follow-ups should I send?", a: "One. Send the opener, wait two days, send a single follow-up, then leave it. A third message is what gets your number reported, and that costs you the channel for every future prospect." },
     { q: "Does this work better than cold email?", a: "For local businesses with no website, substantially — mostly because those businesses usually have no listed email at all. The comparison is not between two channels; it is between one that reaches them and one that does not." },
   ],
-  links: [["/resources/cold-call-script-selling-websites-local-businesses", "the phone version of this script"], ["/leads/website-development/in/gurgaon", "no-website businesses in Gurugram"]],
+  links: [["/resources/cold-call-script-selling-websites-local-businesses", "the phone version of this script"], ["/resources/we-already-have-a-facebook-page-objection", "handling the Facebook page objection"], ["/leads/website-development/in/gurgaon", "no-website businesses in Gurugram"]],
 },
 /* ────────────────────────────────────────────────────────── 2 */
 {
   slug: "we-already-have-a-facebook-page-objection",
-  title: "Handling \"We Already Have a Facebook Page\"",
+  title: "Handling the \"We Already Have a Facebook Page\" Objection",
   excerpt: "The most common objection in India, and the one agencies fumble worst. Telling them Facebook is not a website loses the sale. Here is what to say instead.",
   meta: "How to handle the \"we have a Facebook page\" objection when selling websites to local businesses — what not to say, and the reframe that works.",
   category: "Outreach", cluster: "operations", hero: "network", mins: 7,
@@ -107,7 +120,7 @@ const posts: Post[] = [
       "\"We already have a Facebook page.\" In India this is the objection you will hear most, and it is the one most agencies answer badly — usually by explaining that a Facebook page is not a website.",
       "They know. They are not confused about the difference. What they are telling you is that they already solved this problem, and your job is to show them which part is still unsolved without implying they were foolish.",
     ]},
-    { type: "h2", id: "wrong", text: "Why the obvious answer loses" },
+    { type: "h2", id: "wrong", text: "Why handling it the obvious way loses the sale" },
     { type: "prose", text: [
       "\"A Facebook page isn't really a website\" is true and useless. It contradicts a decision they made, offers nothing in return, and lands as condescension — which ends the conversation whether or not they say so.",
       "Worse, it is strategically wrong. A business with an active Facebook page is a **better** prospect than one with nothing, not a worse one. They have already accepted they should be findable online. They have already produced photos and posts. Someone has already done the hard part of persuading them that this matters.",
@@ -137,6 +150,18 @@ const posts: Post[] = [
       "\"We have Instagram\" is the same objection with one extra wrinkle: Instagram allows a single link, and they usually already know that link is doing work. Say so — \"you've got one link in your bio, and right now it goes nowhere\" — and you are describing a gap they have already noticed themselves.",
       "For restaurants and salons specifically, add the menu or price list. It is the single most-asked question in their DMs, and the fastest thing a site removes from their day.",
     ]},
+    { type: "h2", id: "why-it-comes", text: "Why this objection is so common in India specifically" },
+    { type: "prose", text: [
+      "Facebook and Instagram reached Indian small businesses before websites did, and they arrived free. A shop owner who set up a page in 2018 has had seven years of it working well enough — customers message, photos get seen, offers reach followers.",
+      "So the objection is not resistance to being online. It is a report that the problem was already solved once, cheaply. Any response that ignores that history sounds like it came from someone who has not looked at their business.",
+      "There is a second reason worth knowing. Many were sold a website years ago by someone who built it, took payment, and never touched it again. \"We already have Facebook\" is sometimes a polite version of \"the last person who sold me this disappeared.\" If you hear any hint of that, stop pitching and ask what happened — it is the most useful thing they can tell you.",
+    ]},
+    { type: "h2", id: "proof", text: "Show it rather than argue it" },
+    { type: "prose", text: [
+      "The fastest way to end this objection is to stop talking and search. Google their category and area on your own phone while you are with them, and show the results.",
+      "Their Facebook page will not be there. Three competitors with websites will be. That is one search, ten seconds, and no counter-argument — which is why it beats every sentence you could construct.",
+      "If they are not in front of you, describe it instead of claiming it: \"Search [category] in [their area] — the first three all have sites. Your Maps listing is there, but there's nowhere for people to go from it.\"",
+    ]},
     { type: "leads", city: "gurgaon", heading: "Businesses this objection comes from" },
     { type: "h2", id: "walk", text: "When to let it go" },
     { type: "prose", text: [
@@ -153,14 +178,14 @@ const posts: Post[] = [
     { q: "Are Facebook-only businesses good prospects?", a: "Better than businesses with no presence at all. They have already accepted that being findable matters and have already produced content, so the persuasion step is done." },
     { q: "What if they say Instagram instead?", a: "Same objection, and the bio link makes it easier — they usually already know that single link matters. For restaurants and salons, the menu or price list is the strongest specific hook." },
   ],
-  links: [["/resources/cold-call-script-selling-websites-local-businesses", "the full cold call script"], ["/resources/whatsapp-outreach-local-business-india", "the WhatsApp version"]],
+  links: [["/resources/cold-call-script-selling-websites-local-businesses", "the full cold call script"], ["/resources/whatsapp-outreach-local-business-india", "the WhatsApp version of this conversation"], ["/resources/which-business-types-least-likely-to-have-a-website", "which categories have the biggest gap"]],
 },
 /* ────────────────────────────────────────────────────────── 3 */
 {
   slug: "which-business-types-least-likely-to-have-a-website",
   title: "Which Business Types Are Least Likely to Have a Website",
   excerpt: "Every niche listicle ranks verticals by what they can pay and never checks whether the gap exists. We measured 152,311 businesses. Dentists — on every list — have almost no gap at all.",
-  meta: "Which local business categories actually lack websites, measured across 152,311 businesses. Guest houses 73%, dentists 11% — and why the niche lists are wrong.",
+  meta: "Which business types actually lack websites, measured across 152,311. Guest houses 73%, dentists 11% — and why every niche list gets this wrong.",
   category: "Website Gaps", cluster: "data", hero: "methodology", mins: 8,
   tags: ["Original Data", "Website Gaps", "Niche Selection"],
   body: [
@@ -168,7 +193,7 @@ const posts: Post[] = [
       "Open any list of the best web design niches and dental practices will be near the top. Law firms, medical clinics and car dealers will be there too.",
       "Those lists rank verticals by **ability to pay**. None of them checks whether the businesses in that vertical actually lack a website. We measured that across 152,311 local businesses, and the two rankings barely overlap.",
     ]},
-    { type: "h2", id: "highest", text: "Where the gap actually is" },
+    { type: "h2", id: "highest", text: "The business types least likely to have a website" },
     { type: "table", head: ["Category", "Checked", "No website", "Rate"], rows: [
       ["Guest houses", "740", "543", "73.4%"],
       ["Fast food outlets", "972", "700", "72.0%"],
@@ -184,7 +209,7 @@ const posts: Post[] = [
     { type: "prose", text: [
       "Not one of these appears on a typical best-niches list. Tailors and hardware stores in particular are invisible in that literature, and both sit around two-thirds with no site at all.",
     ]},
-    { type: "h2", id: "lowest", text: "Where it is not" },
+    { type: "h2", id: "lowest", text: "The business types most likely to already have one" },
     { type: "table", head: ["Category", "Checked", "No website", "Rate"], rows: [
       ["Moving companies", "898", "94", "10.5%"],
       ["Dentists", "1,465", "158", "10.8%"],
@@ -210,6 +235,13 @@ const posts: Post[] = [
       ["High", "Low", "Volume, productised packages", "Tailors, convenience stores"],
       ["Low", "High", "Redesign and retainers — slower", "Dentists, car dealers, jewellers"],
       ["Low", "Low", "Avoid", "—"],
+    ]},
+    { type: "h2", id: "why-gap", text: "Why some business types have no website and others all do" },
+    { type: "prose", text: [
+      "The pattern is not about money or sophistication. Hardware stores and jewellers sit at opposite ends of this table and both are ordinary retail businesses with similar revenue.",
+      "What separates them is **whether the customer researches before arriving**. Nobody compares three jewellers' websites before buying a chain, but they do look — jewellery is a considered purchase and the shop knows it. Nobody researches a hardware store at all; you go to the nearest one. So the hardware store never felt the absence.",
+      "The same logic explains the clinical categories. Dentists and skin care clinics are chosen after looking, so they built sites. Plumbers and electricians are called when something breaks, and the customer takes the first number that answers.",
+      "This matters for the pitch, not just the targeting. Selling a website to a hardware store means arguing that the customer behaviour is changing — that people now search before they drive. That is a harder conversation than selling to a category that already believes it, and you should price the effort accordingly.",
     ]},
     { type: "leads", city: "gurgaon", heading: "What the high-gap categories look like" },
     { type: "h2", id: "method", text: "How this was measured" },

@@ -308,3 +308,22 @@
 }
 .rc-byline a { color: var(--g-green-darker); font-weight: 700; text-decoration: none; }
 .rc-byline a:hover { text-decoration: underline; }
+
+/* ── figures ──
+   Article images: logos and screenshots of other companies' pages, self-hosted and credited.
+   Width/height are always set so the browser reserves the space before the file arrives — an
+   image that pushes the text down on load is the single commonest cause of layout shift. */
+.rc-figure { margin: 0 0 24px; }
+.rc-figure img {
+  border: 1px solid var(--g-border); border-radius: var(--radius-lg); background: var(--g-white);
+  display: block;
+}
+.rc-figure figcaption {
+  font-size: 12.5px; color: var(--g-gray-500); margin-top: 9px; line-height: 1.5;
+}
+.rc-figure .credit { color: var(--g-gray-500); font-style: italic; }
+/* Logo strips inside comparison posts — small, aligned, on their own white field. */
+.rc-logos { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 0 0 22px; }
+.rc-logos img {
+  height: 26px; width: auto; opacity: .85;
+}

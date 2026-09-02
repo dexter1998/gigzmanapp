@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Block } from "@/lib/blog/blocks";
 import { leadsForCity, cityLeadCount } from "@/lib/blog/db";
 import { Icon } from "./icons";
@@ -160,6 +161,20 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
               <Link href={b.href} className="rc-btn">{b.action} <Icon name="arrow" /></Link>
             </div>
           </div>
+        );
+        break;
+      case "image":
+        out.push(
+          <figure className="rc-figure" key={i}>
+            <Image src={b.src} alt={b.alt} width={b.width ?? 1200} height={b.height ?? 675}
+                   sizes="(max-width: 900px) 100vw, 720px" style={{ width: "100%", height: "auto" }} />
+            {(b.caption || b.credit) && (
+              <figcaption>
+                {b.caption}
+                {b.credit && <span className="credit">{b.caption ? " · " : ""}{b.credit}</span>}
+              </figcaption>
+            )}
+          </figure>
         );
         break;
       case "tip":

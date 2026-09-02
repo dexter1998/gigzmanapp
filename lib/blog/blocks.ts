@@ -26,6 +26,17 @@ export type Block =
   | { type: "cta"; variant: "map" | "table" | "leadcard"; title: string; detail: string; action: string; href: string }
   /** Live lead cards for a city, pulled at render time. */
   | { type: "leads"; city: string; heading: string; limit?: number; country?: string }
+  /**
+   * A figure. `alt` is required by the type, not optional — Google reads alt text as the anchor
+   * when an image is a link and as the image's description otherwise, and a decorative-only
+   * image has no business inside article prose.
+   *
+   * `credit` exists because the images that matter here are other companies' logos and
+   * screenshots of their pages: naming the source is both the honest thing and what keeps the
+   * use squarely in commentary. Self-host everything — hotlinking a logo out of image search
+   * breaks the first time they add hotlink protection.
+   */
+  | { type: "image"; src: string; alt: string; caption?: string; credit?: string; width?: number; height?: number }
   | { type: "tip"; title: string; text: string }
   | { type: "quote"; text: string; attribution: string; href?: string }
 

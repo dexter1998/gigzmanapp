@@ -36,6 +36,12 @@ const body: Block[] = [
     { title: "Phone, not email", detail: "the one contact field that does exist is the one these tools rank lowest" },
   ]},
 
+  { type: "image", src: "/resources/logos/apollo.png",
+    alt: "Apollo.io logo — one of the B2B contact databases that cannot index businesses without a website",
+    width: 200, height: 60,
+    caption: "Apollo indexes companies it can crawl. A business with no website, no LinkedIn page and no filings gives it nothing to land on.",
+    credit: "Logo: Apollo.io" },
+
   { type: "h2", id: "signals", text: "Which gaps actually signal buying intent" },
   { type: "prose", text: [
     "Not every gap is worth a call. A business with no website and no reviews is usually dormant. A business with no website and 200 reviews is a working business turning away online enquiries — that is the one to call first.",

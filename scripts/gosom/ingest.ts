@@ -54,8 +54,12 @@ async function main() {
     if (!t) continue;
     try {
       const parsed = JSON.parse(t);
-      if (Array.isArray(parsed)) recs.push(...parsed);
-      else recs.push(parsed);
+      // gosom occasionally emits a literal null inside a query's result array (a search that
+      // matched nothing meaningful) -- pushing that straight through crashed the whole ingest at
+      // the first `r.title` access, on whatever record happened to follow it. Filtering here means
+      // one bad entry costs nothing instead of costing every record after it in the file.
+      if (Array.isArray(parsed)) recs.push(...parsed.filter((x): x is Rec => x != null));
+      else if (parsed != null) recs.push(parsed);
     } catch { /* a truncated final line while the run is still writing */ }
   }
   console.log(`${recs.length} records in ${file}`);
@@ -70,6 +74,7 @@ async function main() {
 
   let inserted = 0, updated = 0, skippedType = 0, skippedLoc = 0, competitors = 0, filledWebsite = 0, matched = 0;
   const areaHits = new Map<string, { lat: number; lng: number; n: number }>();
+  const cityHits = { lat: 0, lng: 0, n: 0 };
 
   for (const r of recs) {
     if (!r.title || r.latitude == null || r.longitude == null) { skippedLoc++; continue; }
@@ -136,6 +141,7 @@ async function main() {
       const cur = areaHits.get(area) ?? { lat: 0, lng: 0, n: 0 };
       areaHits.set(area, { lat: cur.lat + r.latitude, lng: cur.lng + r.longitude, n: cur.n + 1 });
     }
+    cityHits.lat += r.latitude; cityHits.lng += r.longitude; cityHits.n++;
   }
 
   // One coverage row per area this sweep actually reached. gosom stops when a search stops
@@ -160,6 +166,32 @@ async function main() {
         updated_at = now()
     `;
     cells++;
+  }
+
+  // The gate's coverage check needs SOME area_type_scans row near a scope's leads to call it
+  // "exhausted" -- for a country with no area strategy at all (UAE), or a city thin enough that no
+  // area cluster ever reaches the n>=3 bar above, that condition can never be true no matter how
+  // real the sweep was, permanently failing every page including the city page itself. Confirmed
+  // live: Dubai (72 qualifying leads, 42 categories) and Dublin (49 qualifying) both failed on
+  // nothing but "no exhausted scan cell covering this area". One additional cell at the centroid of
+  // everything this run actually resolved covers the city-level scope the same way an area cell
+  // covers an area scope, without inventing coverage the sweep didn't earn.
+  if (cityHits.n >= 3) {
+    const lat = cityHits.lat / cityHits.n, lng = cityHits.lng / cityHits.n;
+    await pseoSql`
+      INSERT INTO area_type_scans (
+        cache_key, section, batch_index, center_lat, center_lng,
+        is_exhausted, result_count, top_level_count, last_verified_at
+      ) VALUES (
+        ${`${lat.toFixed(3)}_${lng.toFixed(3)}_${label}_citywide`}, ${label}, 0, ${lat}, ${lng},
+        true, ${cityHits.n}, ${cityHits.n}, now()
+      )
+      ON CONFLICT (cache_key) DO UPDATE SET
+        is_exhausted = true,
+        result_count = area_type_scans.result_count + EXCLUDED.result_count,
+        last_verified_at = now(),
+        updated_at = now()
+    `;
   }
 
   console.log(`\ninserted ${inserted} new leads, updated ${updated} existing`);
