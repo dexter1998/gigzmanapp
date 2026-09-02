@@ -63,6 +63,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["cold-call-script-selling-websites-local-businesses", "/resources/handling-we-dont-need-a-website", "the hardest objection on the call"],
   ["handling-its-too-expensive-without-discounting", "/resources/handling-we-dont-need-a-website", "the other objection worth diagnosing"],
   ["territory-planning-splitting-a-city-between-reps", "/resources/call-whatsapp-or-walk-in-indian-smbs", "why clustering matters for walk-ins"],
+
+  /* batch 9 — the tools and buying-decision cluster */
+  ["apollo-alternative-local-business-leads", "/resources/do-you-need-an-email-finder-for-local-businesses", "why email finders return blanks here"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/should-you-buy-web-design-leads", "when paying for leads makes sense"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/justdial-indiamart-as-lead-sources", "using directories as a prospect list"],
+  ["scraping-google-maps-for-leads-what-breaks", "/resources/should-you-buy-web-design-leads", "buying it instead of building it"],
+  ["how-much-to-charge-for-a-website-india", "/resources/should-you-buy-web-design-leads", "the ticket a lead price has to fit"],
+  ["call-whatsapp-or-walk-in-indian-smbs", "/resources/do-you-need-an-email-finder-for-local-businesses", "why email is not on this list"],
+  ["why-facebook-only-businesses-are-your-best-prospects", "/resources/justdial-indiamart-as-lead-sources", "the paid version of the same objection"],
 ];
 
 async function main() {
