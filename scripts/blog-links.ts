@@ -186,6 +186,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["india-vs-uk-vs-australia-website-adoption", "/resources/how-to-sell-websites-to-laundries", "a category where the US leads"],
   ["how-to-sell-websites-to-salons-and-barbershops", "/resources/how-to-sell-websites-to-laundries", "the other template vertical"],
   ["should-you-niche-down-what-the-data-says", "/resources/are-lawyers-and-accountants-a-good-web-design-niche", "checking a niche before committing"],
+
+  /* batch 23 — client acquisition */
+  ["how-to-find-businesses-that-need-a-website", "/resources/where-to-find-web-design-clients", "the other channels, ranked"],
+  ["your-first-10-web-design-clients", "/resources/where-to-find-web-design-clients", "which channels to use"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/what-to-say-to-a-business-with-no-website", "the opening line"],
+  ["the-first-call-10-questions-that-qualify-a-lead", "/resources/what-to-say-to-a-business-with-no-website", "how to open before the questions"],
+  ["where-to-find-web-design-clients", "/resources/how-to-find-clients-for-web-development", "if you sell development instead"],
+  ["how-to-price-a-website-redesign", "/resources/how-to-find-clients-for-web-development", "where functionality work comes from"],
+  ["how-to-sell-maintenance-plans-after-the-build", "/resources/how-to-find-clients-for-web-development", "what the base grows into"],
 ];
 
 async function main() {
