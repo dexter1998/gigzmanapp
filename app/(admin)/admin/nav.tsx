@@ -11,6 +11,7 @@ const ICONS: Record<string, React.ReactNode> = {
   pseo: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.8-3.8"/></svg>,
   health: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>,
   inbound: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 13l3-8h12l3 8"/><path d="M3 13v6h18v-6"/><path d="M3 13h5l2 3h4l2-3h5"/></svg>,
+  campaigns: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 11l18-7-7 18-3-8-8-3z"/></svg>,
 };
 
 const NAV: { group: string; items: { href: string; label: string; icon: string }[] }[] = [
@@ -26,6 +27,11 @@ const NAV: { group: string; items: { href: string; label: string; icon: string }
     { href: "/admin/health", label: "Health & Logs", icon: "health" },
   ]},
 ];
+
+// Separate from NAV/active-highlighting on purpose: this leaves the read-only console into the
+// mutating one (a different route group, its own gate), so it's never rendered as just another
+// analysis tab — the distinct color is the same "this one sends real email" signal as its rail.
+const CAMPAIGNS_LINK = { href: "/admin-campaigns", label: "Campaigns (sends email)", icon: "campaigns" };
 
 export function AdminNav() {
   const pathname = usePathname();
@@ -44,6 +50,10 @@ export function AdminNav() {
           })}
         </div>
       ))}
+      <div className="adm-nav-label">Outreach</div>
+      <a href={CAMPAIGNS_LINK.href} className="mut-link">
+        {ICONS[CAMPAIGNS_LINK.icon]}{CAMPAIGNS_LINK.label}
+      </a>
     </nav>
   );
 }

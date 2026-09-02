@@ -7,6 +7,7 @@ import { ogImageUrl, type OgVariant } from "@/lib/og";
 import { BLOG_CLUSTERS } from "@/lib/blog/blocks";
 import { getPost, linksFor, publishedSlugs, hubHrefFor } from "@/lib/blog/db";
 import { Blocks } from "@/components/blog/Blocks";
+import { indexStats, fill } from "@/lib/blog/stats";
 import { Icon } from "@/components/blog/icons";
 import Image from "next/image";
 import { OrigamiFloor } from "@/components/marketing/MarketingPieces";
@@ -76,6 +77,7 @@ export default async function ArticlePage({ params }: Props) {
   const post = await load(slug);
   if (!post) notFound();
 
+  const stats = await indexStats();
   const { explicit, siblings } = await linksFor(post.slug, post.cluster);
   const hub = BLOG_CLUSTERS[post.cluster];
   const hubHref = await hubHrefFor(post.cluster, hub.hub, post.category, post.slug);
@@ -173,8 +175,8 @@ export default async function ArticlePage({ params }: Props) {
                   <div className="rc-faq">
                     {post.faqs.map((f, i) => (
                       <details key={i}>
-                        <summary>{f.q}</summary>
-                        <p>{f.a}</p>
+                        <summary>{fill(f.q, stats)}</summary>
+                        <p>{fill(f.a, stats)}</p>
                       </details>
                     ))}
                   </div>

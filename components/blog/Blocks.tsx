@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Block } from "@/lib/blog/blocks";
 import { leadsForCity, cityLeadCount } from "@/lib/blog/db";
+import { indexStats, countryRows, fill } from "@/lib/blog/stats";
 import { Icon } from "./icons";
 
 /** Turns "Very high" / "High" / "Medium" into the design's coloured intent chip. */
@@ -12,7 +13,8 @@ function intentClass(v: string) {
 
 /** Inline markup inside prose: **bold** and [text](/href). Deliberately tiny — a full markdown
  *  parser would ship a dependency to render two constructs we control the input for. */
-function inline(text: string, key: number) {
+function inline(raw: string, key: number, t: (s: string) => string) {
+  const text = t(raw);
   const parts: React.ReactNode[] = [];
   const re = /\*\*(.+?)\*\*|\[(.+?)\]\((.+?)\)/g;
   let last = 0, m: RegExpExecArray | null, i = 0;
@@ -30,6 +32,32 @@ function inline(text: string, key: number) {
   return parts;
 }
 
+/** The country breakdown, read from the index at render time rather than pasted into a post. */
+async function CountryTable({ note }: { note?: string }) {
+  const rows = await countryRows();
+  if (rows.length === 0) return null;
+  return (
+    <div>
+      <div className="rc-tablewrap">
+        <table className="rc-table">
+          <thead><tr><th>Country</th><th>Checked</th><th>No website</th><th>Rate</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.code}>
+                <td>{r.name}</td>
+                <td>{r.checked.toLocaleString("en-US")}</td>
+                <td>{r.noSite.toLocaleString("en-US")}</td>
+                <td>{r.pct.toFixed(1)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{note}</p>}
+    </div>
+  );
+}
+
 /** India is the default because that is where the indexed cities are; a block for a UK or US
  *  city passes its own code. */
 async function LeadsBlock({ city, heading, limit, country = "in" }: { city: string; heading: string; limit?: number; country?: string }) {
@@ -40,7 +68,7 @@ async function LeadsBlock({ city, heading, limit, country = "in" }: { city: stri
     <>
       <h2 id={`leads-${city}`}>{heading}</h2>
       <p>
-        Live from the same index the product searches — {total.toLocaleString("en-IN")} businesses in{" "}
+        Live from the same index the product searches — {total.toLocaleString("en-US")} businesses in{" "}
         {cityName} currently have an active Google listing and no website.
       </p>
       <div className="rc-leads">
@@ -72,21 +100,23 @@ async function LeadsBlock({ city, heading, limit, country = "in" }: { city: stri
         ))}
       </div>
       <p>
-        <Link href={`/leads/website-development/${country}/${city}`}>See all {total.toLocaleString("en-IN")} in {cityName} →</Link>
+        <Link href={`/leads/website-development/${country}/${city}`}>See all {total.toLocaleString("en-US")} in {cityName} →</Link>
       </p>
     </>
   );
 }
 
 export async function Blocks({ blocks }: { blocks: Block[] }) {
+  const stats = await indexStats();
+  const t = (v: string) => fill(v, stats);
   const out: React.ReactNode[] = [];
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
     switch (b.type) {
-      case "h2": out.push(<h2 key={i} id={b.id}>{b.text}</h2>); break;
-      case "h3": out.push(<h3 key={i}>{b.text}</h3>); break;
+      case "h2": out.push(<h2 key={i} id={b.id}>{t(b.text)}</h2>); break;
+      case "h3": out.push(<h3 key={i}>{t(b.text)}</h3>); break;
       case "prose":
-        out.push(<div key={i}>{b.text.map((p, j) => <p key={j}>{inline(p, i * 100 + j)}</p>)}</div>);
+        out.push(<div key={i}>{b.text.map((p, j) => <p key={j}>{inline(p, i * 100 + j, t)}</p>)}</div>);
         break;
       case "checklist":
         out.push(
@@ -94,7 +124,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
             {b.items.map((it, j) => (
               <div className="rc-check" key={j}>
                 <span className="tick">✓</span>
-                <div><b>{it.title}</b>{it.detail && <span>: {it.detail}</span>}</div>
+                <div><b>{t(it.title)}</b>{it.detail && <span>: {t(it.detail)}</span>}</div>
               </div>
             ))}
           </div>
@@ -105,7 +135,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
           <div key={i}>
             <div className="rc-tablewrap">
               <table className="rc-table">
-                <thead><tr>{b.head.map((h, j) => <th key={j}>{h}</th>)}</tr></thead>
+                <thead><tr>{b.head.map((h, j) => <th key={j}>{t(h)}</th>)}</tr></thead>
                 <tbody>
                   {b.rows.map((r, j) => (
                     <tr key={j}>
@@ -113,7 +143,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
                         <td key={k}>
                           {k === r.length - 1 && /^(very high|high|medium|low)$/i.test(c)
                             ? <span className={`rc-intent ${intentClass(c)}`}>{c}</span>
-                            : c}
+                            : t(c)}
                         </td>
                       ))}
                     </tr>
@@ -121,7 +151,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
                 </tbody>
               </table>
             </div>
-            {b.note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{b.note}</p>}
+            {b.note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{t(b.note)}</p>}
           </div>
         );
         break;
@@ -131,8 +161,8 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
             {b.items.map((f, j) => (
               <div className="rc-feature" key={j}>
                 <span className="ico"><Icon name={f.icon} /></span>
-                <h4>{f.title}</h4>
-                <p>{f.detail}</p>
+                <h4>{t(f.title)}</h4>
+                <p>{t(f.detail)}</p>
               </div>
             ))}
           </div>
@@ -145,8 +175,8 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
               <div className="rc-step" key={j}>
                 <span className="num">{j + 1}</span>
                 <span className="ico"><Icon name={s.icon} /></span>
-                <h4>{s.title}</h4>
-                <p>{s.detail}</p>
+                <h4>{t(s.title)}</h4>
+                <p>{t(s.detail)}</p>
               </div>
             ))}
           </div>
@@ -156,8 +186,8 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
         out.push(
           <div className="rc-cta" key={i}>
             <div>
-              <h3>{b.title}</h3>
-              <p>{b.detail}</p>
+              <h3>{t(b.title)}</h3>
+              <p>{t(b.detail)}</p>
               <Link href={b.href} className="rc-btn">{b.action} <Icon name="arrow" /></Link>
             </div>
           </div>
@@ -178,15 +208,18 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
         );
         break;
       case "tip":
-        out.push(<div className="rc-tip" key={i}><h4>{b.title}</h4><p>{b.text}</p></div>);
+        out.push(<div className="rc-tip" key={i}><h4>{t(b.title)}</h4><p>{t(b.text)}</p></div>);
         break;
       case "quote":
         out.push(
           <blockquote className="rc-quote" key={i}>
-            <p>{b.text}</p>
+            <p>{t(b.text)}</p>
             <cite>{b.href ? <a href={b.href} rel="noopener">{b.attribution}</a> : b.attribution}</cite>
           </blockquote>
         );
+        break;
+      case "countrytable":
+        out.push(<CountryTable key={i} note={b.note} />);
         break;
       case "leads":
         out.push(<LeadsBlock key={i} city={b.city} heading={b.heading} limit={b.limit} country={b.country} />);

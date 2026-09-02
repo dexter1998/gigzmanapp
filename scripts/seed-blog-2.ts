@@ -11,7 +11,7 @@ import type { Block } from "@/lib/blog/blocks";
 
 const body: Block[] = [
   { type: "prose", text: [
-    "**32.8%.** Out of 152,311 local businesses we checked across 37 cities and five countries, 49,909 have an active Google listing and no website at all.",
+    "**{{pct}}.** Out of {{checked}} local businesses we checked across {{cities}} cities and {{countries}} countries, {{noSite}} have an active Google listing and no website at all.",
     "That number is measured, not surveyed. We did not ask business owners whether they have a website — we looked. Every other figure in circulation comes from asking, and most of them come from asking in 2019.",
   ]},
 
@@ -31,8 +31,8 @@ const body: Block[] = [
     "So this is a census of what we have indexed, not a random sample of all businesses on earth. That distinction matters and we will come back to it in the limitations.",
   ]},
   { type: "checklist", items: [
-    { title: "152,311 businesses", detail: "every one with a website field we could resolve either way" },
-    { title: "37 cities, 5 countries", detail: "India, United Kingdom, Australia, Canada, United States" },
+    { title: "{{checked}} businesses", detail: "every one with a website field we could resolve either way" },
+    { title: "{{cities}} cities, {{countries}} countries", detail: "weighted heavily toward India, where most of the indexed cities are" },
     { title: "Measured, not asked", detail: "presence of a website on the live listing, not the owner's recollection" },
     { title: "September 2026", detail: "the index refreshes continuously; this is the snapshot behind every figure below" },
   ]},
@@ -41,16 +41,10 @@ const body: Block[] = [
   { type: "prose", text: [
     "The single global figure hides the only thing that actually matters to an agency: where you are.",
   ]},
-  { type: "table", head: ["Country", "Businesses checked", "No website", "Rate"], rows: [
-    ["India", "84,219", "32,662", "38.8%"],
-    ["United Kingdom", "32,793", "5,585", "17.0%"],
-    ["Canada", "3,558", "565", "15.9%"],
-    ["Australia", "8,857", "497", "5.6%"],
-    ["United States", "3,062", "138", "4.5%"],
-  ], note: "Australia, Canada and the US samples are small and concentrated in a handful of cities — read those three as directional, not definitive." },
+  { type: "countrytable", note: "Read live from the index each time this page is built. Countries under 500 checked businesses are not shown; smaller samples here are concentrated in a handful of cities and should be read as directional." },
   { type: "prose", text: [
-    "India sits at nearly **39%** — more than twice the UK and close to nine times our US sample. If you are an agency in Gurugram or Surat, roughly two in five businesses on the map are a valid prospect for a first website. If you are in Austin, that pitch barely exists and you should be selling redesigns instead.",
-    "This is the practical reason the widely-quoted 27% is unhelpful: it is a US figure being applied globally, and our US sample suggests even that is now high.",
+    "India sits at **{{inPct}}** against the UK's **{{gbPct}}** — roughly double, on the same measurement. For an agency in Gurugram or Surat that means a large share of the businesses on the map are valid prospects for a first website. In a better-served market the same list is mostly redesign work, which is a different pitch, a different price and a different competitor.",
+    "This is the practical reason a single global figure is unhelpful. The widely-quoted 27% comes from US self-reported survey data, and what we measure ranges from {{gbPct}} to {{inPct}} depending on nothing but where you point it.",
   ]},
 
   { type: "h2", id: "by-vertical", text: "Which businesses actually lack websites" },
@@ -94,19 +88,19 @@ const body: Block[] = [
     "Stating the limits is the difference between a number people cite and a number people distrust, so here they are.",
   ]},
   { type: "checklist", items: [
-    { title: "It is our index, not the census", detail: "we cover 37 cities; a business we have never indexed is not in these figures" },
-    { title: "Coverage is uneven", detail: "84,219 Indian businesses versus 3,062 American ones — the US and Australia rates rest on thin, city-specific samples" },
+    { title: "It is our index, not the census", detail: "we cover {{cities}} cities; a business we have never indexed is not in these figures" },
+    { title: "Coverage is uneven", detail: "{{inChecked}} Indian businesses against {{usChecked}} American ones — countries lower down the table rest on thinner, city-specific samples" },
     { title: "\"Has a website\" is binary here", detail: "a dead one-page site from 2011 counts as having a website; this measures presence, not quality" },
     { title: "A Facebook page is not counted as a website", detail: "which is defensible, but it means some businesses here do have an online presence" },
     { title: "It moves", detail: "businesses open, close and build sites continuously — every figure carries its date for that reason" },
   ]},
 
-  { type: "leads", city: "gurgaon", heading: "What 38.8% looks like on the ground" },
+  { type: "leads", city: "gurgaon", heading: "What {{inPct}} looks like on the ground" },
 
   { type: "h2", id: "use", text: "What an agency should do with this" },
   { type: "prose", text: [
     "Three things follow from the numbers above, and none of them is \"buy a list\".",
-    "**Pick the geography before the vertical.** A 4.5% gap and a 38.8% gap are different businesses, not different territories. Your entire pitch changes.",
+    "**Pick the geography before the vertical.** A {{usPct}} gap and a {{inPct}} gap are different businesses, not different territories. Your entire pitch changes.",
     "**Check the gap before you commit to a niche.** The published niche lists are ranked by ticket size. Rank yours by ticket size and gap rate together, or you will spend a quarter pitching people who already bought.",
     "**Quote a number you can defend.** If you are opening a call with \"most businesses like yours don't have a website\", the owner knows their street better than you do. \"Two in five businesses in this area have no site\" survives the follow-up question.",
   ]},
@@ -123,7 +117,7 @@ const body: Block[] = [
 
 const faqs = [
   { q: "What percentage of small businesses have no website?",
-    a: "In our index of 152,311 local businesses across 37 cities, 32.8% have no website. The rate varies sharply by country: 38.8% in India, 17.0% in the UK, and 4.5% in our (small) US sample. The widely-quoted 27% figure comes from US self-reported survey data." },
+    a: "In our index of {{checked}} local businesses across {{cities}} cities, {{pct}} have no website. The rate varies sharply by country: {{inPct}} in India, {{gbPct}} in the UK, and {{usPct}} in the United States. The widely-quoted 27% figure comes from US self-reported survey data." },
   { q: "How is this different from the statistics I've seen elsewhere?",
     a: "Almost every published figure comes from surveying business owners — most from a 2019 Clutch survey of 529 people. Ours comes from checking live business listings, so it measures what is there rather than what owners recall." },
   { q: "Which business types are most likely to have no website?",
@@ -144,9 +138,9 @@ async function main() {
       hero_variant, read_minutes, body, faqs, status, featured, published_at, content_updated_at
     ) VALUES (
       ${slug},
-      ${"How Many Local Businesses Have No Website? 152,311 Checked"},
-      ${"We checked 152,311 local businesses across 37 cities instead of surveying them. 32.8% have no website — and the rate ranges from 4.5% to 38.8% depending on where you are."},
-      ${"32.8% of 152,311 local businesses we checked have no website. See the rate by country and by category — measured from live listings, not surveyed."},
+      ${"How Many Local Businesses Have No Website? We Measured It"},
+      ${"We check local business listings instead of surveying owners. The figures below are read from our live index, and the rate ranges from under 5% to nearly 40% depending on where you are."},
+      ${"How many local businesses have no website, measured from live listings rather than surveyed — with the current rate by country and by business category."},
       ${"Website Gaps"}, ${"data"},
       ${["Original Data", "Website Gaps", "Market Research"]},
       ${"tarun"}, ${"methodology"}, ${9},

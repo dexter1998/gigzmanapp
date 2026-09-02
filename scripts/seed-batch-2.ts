@@ -184,14 +184,14 @@ const posts: Post[] = [
 {
   slug: "which-business-types-least-likely-to-have-a-website",
   title: "Which Business Types Are Least Likely to Have a Website",
-  excerpt: "Every niche listicle ranks verticals by what they can pay and never checks whether the gap exists. We measured 152,311 businesses. Dentists — on every list — have almost no gap at all.",
-  meta: "Which business types actually lack websites, measured across 152,311. Guest houses 73%, dentists 11% — and why every niche list gets this wrong.",
+  excerpt: "Every niche listicle ranks verticals by what they can pay and never checks whether the gap exists. We measured {{checked}} businesses. Dentists — on every list — have almost no gap at all.",
+  meta: "Which business types actually lack websites, measured across {{checked}}. Guest houses 73%, dentists 11% — and why every niche list gets this wrong.",
   category: "Website Gaps", cluster: "data", hero: "methodology", mins: 8,
   tags: ["Original Data", "Website Gaps", "Niche Selection"],
   body: [
     { type: "prose", text: [
       "The business types least likely to have a website are not the ones on any published niche list. Open one and dental practices will be near the top; law firms, medical clinics and car dealers will be there too.",
-      "Those lists rank verticals by **ability to pay**, and none of them checks how likely that business type is to actually lack a website. We measured exactly that across 152,311 local businesses, and the two rankings barely overlap.",
+      "Those lists rank verticals by **ability to pay**, and none of them checks how likely that business type is to actually lack a website. We measured exactly that across {{checked}} local businesses, and the two rankings barely overlap.",
     ]},
     { type: "h2", id: "highest", text: "The business types least likely to have a website" },
     { type: "table", head: ["Category", "Checked", "No website", "Rate"], rows: [
@@ -246,7 +246,7 @@ const posts: Post[] = [
     { type: "leads", city: "gurgaon", heading: "What the high-gap categories look like" },
     { type: "h2", id: "method", text: "How this was measured" },
     { type: "prose", text: [
-      "152,311 local businesses across 37 cities and five countries, checked for the presence of a website on their live listing rather than surveyed. Categories with fewer than 600 businesses checked are excluded, because below that the rate moves too much to quote.",
+      "{{checked}} local businesses across {{cities}} cities and {{countries}} countries, checked for the presence of a website on their live listing rather than surveyed. Categories with fewer than 600 businesses checked are excluded, because below that the rate moves too much to quote.",
       "Full method and the country-level breakdown are in [the main report](/resources/how-many-local-businesses-have-no-website), including what this data cannot tell you.",
     ]},
     { type: "cta", variant: "map", title: "Check the gap in your own market.",
@@ -257,7 +257,7 @@ const posts: Post[] = [
     { q: "Which business type is least likely to have a website?", a: "In our index, guest houses (73.4%), fast food outlets (72.0%) and hardware stores (67.0%) have the highest share with no website. Moving companies (10.5%) and dentists (10.8%) have the lowest." },
     { q: "Are dentists a good web design niche?", a: "Not for first websites — only about one in nine has no site. They remain a good niche for redesigns, SEO and retainers, which is a slower sale into an existing relationship." },
     { q: "Why do the published niche lists disagree with this?", a: "They rank verticals by ability to pay and do not measure whether the gap exists. Both matter: ticket size tells you what a client is worth, gap rate tells you how many are available." },
-    { q: "How was this measured?", a: "By checking whether a website is present on the live listing for 152,311 businesses across 37 cities, rather than asking owners. Categories below 600 businesses checked are excluded." },
+    { q: "How was this measured?", a: "By checking whether a website is present on the live listing for {{checked}} businesses across {{cities}} cities, rather than asking owners. Categories below 600 businesses checked are excluded." },
   ],
   links: [["/resources/how-many-local-businesses-have-no-website", "the full website gap report"], ["/leads/website-development/in/gurgaon", "high-gap businesses in Gurugram"]],
 },

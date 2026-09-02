@@ -31,6 +31,10 @@
 .adm-nav a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 .adm-nav a.active { background: rgba(168, 213, 30, 0.14); color: var(--g-green); font-weight: 600; }
 .adm-nav a svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+/* The one link out of the read-only console into the mutating one — colored as a deliberate
+   "this is different" signal, not just another analysis tab. */
+.adm-nav a.mut-link { color: #ff8a65; }
+.adm-nav a.mut-link:hover { background: rgba(255, 138, 101, 0.14); color: #ffab91; }
 .adm-rail-foot {
   padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11.5px; color: #7d8b9d; line-height: 1.5;

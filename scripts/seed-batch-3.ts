@@ -56,7 +56,7 @@ const posts: P[] = [
 
     { type: "h2", id: "how-many", text: "How much of the market this actually excludes" },
     { type: "prose", text: [
-      "We checked 152,311 local businesses across 37 cities rather than surveying them. **32.8% have no website at all** — rising to 38.8% in India and falling to single digits in our US sample.",
+      "We checked {{checked}} local businesses across {{cities}} cities rather than surveying them. **{{pct}} have no website at all** — rising to {{inPct}} in India and falling to single digits in our US sample.",
       "So for an agency selling first websites in India, a crawler-built database is blind to roughly two in five of the market. The full breakdown by country and category is in [the website gap report](/resources/how-many-local-businesses-have-no-website).",
     ]},
     { type: "table", head: ["Category", "Checked", "No website", "Rate"], rows: [
@@ -101,7 +101,7 @@ const posts: P[] = [
     { q: "Can I filter Apollo for businesses with bad websites?", a: "Yes, using technographic filters — target dated stacks like WordPress or jQuery. It works for redesign prospects, but it requires a website to fingerprint, so it cannot surface businesses that have none." },
     { q: "What is the best Apollo alternative for a web design agency?", a: "Anything that reads live local sources and treats the absence of a website as a filter rather than a field to check afterwards. The specific requirement is phone-first contact data, because these businesses frequently have no listed email." },
     { q: "Should I cancel Apollo?", a: "Not if you also sell to companies that already operate online — it is better at that than a local index will be. They answer different questions and most agencies doing both kinds of work pay for both." },
-    { q: "How many local businesses does this affect?", a: "In our index of 152,311 businesses, 32.8% have no website at all, rising to 38.8% in India. For an agency selling first websites there, a crawler-built database is blind to roughly two in five of the market." },
+    { q: "How many local businesses does this affect?", a: "In our index of {{checked}} businesses, {{pct}} have no website at all, rising to {{inPct}} in India. For an agency selling first websites there, a crawler-built database is blind to roughly two in five of the market." },
   ],
   links: [["/resources/how-many-local-businesses-have-no-website", "the full website gap data"], ["/resources/how-to-find-businesses-that-need-a-website", "how to find these businesses instead"], ["/leads/website-development/in/gurgaon", "no-website businesses in Gurugram"]],
 },

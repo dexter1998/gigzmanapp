@@ -24,6 +24,8 @@ export type Block =
   | { type: "steps"; items: { title: string; detail: string; icon: string }[] }
   /** Inline product CTA — the map card and the leads-table card in the design. */
   | { type: "cta"; variant: "map" | "table" | "leadcard"; title: string; detail: string; action: string; href: string }
+  /** The country gap breakdown, queried at render time so it cannot go stale. */
+  | { type: "countrytable"; note?: string }
   /** Live lead cards for a city, pulled at render time. */
   | { type: "leads"; city: string; heading: string; limit?: number; country?: string }
   /**

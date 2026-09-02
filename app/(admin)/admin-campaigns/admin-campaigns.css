@@ -1,0 +1,26 @@
+/* Visual break from the read-only /admin console (dark ink rail) — this rail is warm/red so it
+   never gets mistaken for the read-only surface at a glance. */
+
+.camp-rail { background: #2a1414; }
+.camp-rail .adm-rail-brand .tag.camp-tag { color: #ff8a65; border-color: rgba(255, 138, 101, 0.45); }
+.camp-rail .adm-nav a.active { background: rgba(255, 138, 101, 0.16); color: #ff8a65; }
+
+.camp-banner {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 8px 14px;
+  background: var(--g-red-tint); color: var(--g-red-text); border-radius: var(--radius-md);
+  font-size: 12px; font-weight: 600;
+}
+
+.camp-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+.camp-form label { font-size: 12px; font-weight: 600; color: var(--g-gray-500); }
+.camp-form input, .camp-form select {
+  padding: 8px 10px; border: 1px solid var(--g-border); border-radius: var(--radius-md); font-size: 13px;
+}
+.camp-form button {
+  padding: 9px 14px; border-radius: var(--radius-md); border: none; font-size: 13px; font-weight: 700;
+  cursor: pointer; background: var(--g-red-text); color: #fff;
+}
+.camp-form button:disabled { background: var(--g-gray-300); cursor: not-allowed; }
+.camp-msg { font-size: 12px; margin-top: 4px; }
+.camp-msg.ok { color: var(--g-green-text); }
+.camp-msg.err { color: var(--g-red-text); }

@@ -43,6 +43,10 @@ export type BulkSend = {
   template: string;
   stream: string;
   leadId?: string | null;
+  /** Overrides SENDER for this message — cold campaigns send from a different verified domain
+   *  (blogyapp.com) than lifecycle mail (mantisai.in), so prospecting reputation can never touch
+   *  the domain that also carries sign-in codes. Omit for the existing lifecycle default. */
+  sender?: string;
 };
 
 export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; reason?: string }> {
@@ -66,7 +70,7 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
   const domain = new URL(COMPANY.site).hostname;
 
   const headers = [
-    `From: ${SENDER}`,
+    `From: ${msg.sender ?? SENDER}`,
     `To: ${msg.to}`,
     `Subject: ${encodeHeader(msg.subject)}`,
     `Date: ${new Date().toUTCString()}`,
