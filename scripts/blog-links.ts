@@ -89,6 +89,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["qualifying-a-local-lead-before-you-call", "/resources/do-businesses-without-websites-get-fewer-reviews", "why the review filter works"],
   ["territory-planning-splitting-a-city-between-reps", "/resources/which-indian-cities-have-the-biggest-website-gap", "picking the city first"],
   ["which-local-verticals-actually-pay-for-a-website", "/resources/tier-1-vs-tier-2-india-website-gap", "how the verticals split by city tier"],
+
+  /* batch 12 — the agency-building cluster */
+  ["how-to-find-businesses-that-need-a-website", "/resources/your-first-10-web-design-clients", "the plan for the first ten"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/your-first-10-web-design-clients", "what to do with the first list"],
+  ["how-much-to-charge-for-a-website-india", "/resources/how-to-start-a-web-design-agency-in-india", "starting from nothing"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/should-you-niche-down-what-the-data-says", "how big one vertical really is"],
+  ["territory-planning-splitting-a-city-between-reps", "/resources/should-you-niche-down-what-the-data-says", "how large a category actually is"],
+  ["hourly-project-or-value-pricing-model", "/resources/your-first-10-web-design-clients", "pricing the first ten"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/how-to-start-a-web-design-agency-in-india", "starting out"],
 ];
 
 async function main() {
