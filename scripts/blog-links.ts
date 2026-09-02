@@ -114,6 +114,24 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["your-first-10-web-design-clients", "/resources/building-a-weekly-prospecting-routine", "the weekly pace behind those numbers"],
   ["territory-planning-splitting-a-city-between-reps", "/resources/building-a-weekly-prospecting-routine", "turning a territory into a week"],
   ["qualifying-a-local-lead-before-you-call", "/resources/the-first-call-10-questions-that-qualify-a-lead", "what to ask once they answer"],
+
+  /* batch 15 — three more verticals */
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-electronics-stores", "the electronics retail playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-car-washes", "the car wash playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-salons-and-barbershops", "the salon playbook"],
+  ["india-vs-uk-vs-australia-website-adoption", "/resources/how-to-sell-websites-to-car-washes", "the clearest example of a travelling gap"],
+  ["how-to-sell-websites-to-hardware-stores", "/resources/how-to-sell-websites-to-electronics-stores", "the adjacent retail vertical"],
+  ["how-to-sell-websites-to-tailors", "/resources/how-to-sell-websites-to-salons-and-barbershops", "the other portfolio trade"],
+  ["how-indian-agencies-win-uk-and-australian-clients", "/resources/how-to-sell-websites-to-car-washes", "a UK vertical worth specialising in"],
+
+  /* batch 16 — retention, lifetime value, redesign */
+  ["website-maintenance-plans-what-to-charge", "/resources/how-to-sell-maintenance-plans-after-the-build", "selling it after launch"],
+  ["website-maintenance-plans-what-to-charge", "/resources/the-lifetime-value-of-one-local-client", "what the plan is worth over years"],
+  ["how-much-to-charge-for-a-website-india", "/resources/how-to-price-a-website-redesign", "pricing a redesign instead"],
+  ["should-you-buy-web-design-leads", "/resources/the-lifetime-value-of-one-local-client", "what a client is actually worth"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/the-lifetime-value-of-one-local-client", "picking for lifetime value"],
+  ["hourly-project-or-value-pricing-model", "/resources/how-to-sell-maintenance-plans-after-the-build", "attaching the monthly"],
+  ["which-indian-cities-have-the-biggest-website-gap", "/resources/how-to-price-a-website-redesign", "what to sell in a served market"],
 ];
 
 async function main() {
