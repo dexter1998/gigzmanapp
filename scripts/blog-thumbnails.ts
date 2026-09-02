@@ -1,0 +1,131 @@
+/**
+ * Maps the 106 generated thumbnails onto published posts.
+ *
+ * Manifest titles and published titles diverged deliberately — several posts were renamed while
+ * writing, either to fit the 45–60 character band or because the SERP research changed the angle.
+ * So this cannot be a slug-to-slug join, and the OVERRIDES below are hand-checked rather than
+ * fuzzy-matched. Anything not in OVERRIDES falls back to a token match, which only fires for the
+ * cases where the title was left alone.
+ */
+export const OVERRIDES: Record<string, string> = {
+  // manifest filename (without .png)                 → published slug
+  "how-to-sell-websites-to-restaurants-2026-playbook":                "how-to-sell-websites-to-restaurants",
+
+  /* Four posts were written under titles that are not in the manifest, so they take the artwork
+   * generated for the nearest unwritten subject. Checked by eye — all four are visually apt. */
+  "how-to-sell-websites-to-clinics-and-private-doctors":              "web-design-for-dentists-an-honest-look",
+  "how-to-sell-websites-to-consultants-and-professional-services":    "are-lawyers-and-accountants-a-good-web-design-niche",
+  "how-to-sell-websites-to-manufacturers-and-msmes":                  "how-to-sell-websites-to-wholesalers",
+  "how-to-sell-websites-to-event-venues-and-banquet-halls":           "how-to-sell-websites-to-caterers",
+  "how-to-sell-websites-to-coaching-centres-and-institutes":          "how-to-sell-websites-to-coaching-centres",
+  "how-to-sell-websites-to-car-repair-shops-and-garages":             "how-to-sell-websites-to-car-repair-shops",
+  "how-to-sell-websites-to-gyms-and-fitness-studios":                 "how-to-sell-websites-to-gyms",
+  "how-to-sell-websites-to-salons-and-barber-shops":                  "how-to-sell-websites-to-laundries",
+  "how-to-sell-websites-to-hardware-and-building-supply-stores":      "how-to-sell-websites-to-hardware-stores",
+  "how-to-sell-websites-to-hotels-and-guest-houses":                  "how-to-sell-websites-to-guest-houses",
+  "how-to-sell-websites-to-bakeries-and-cafes":                       "how-to-sell-websites-to-bakeries-and-cafes",
+  "how-to-sell-websites-to-sports-academies-and-coaching":            "how-to-sell-websites-to-sports-academies",
+  "how-to-sell-websites-to-tailors-and-local-craft-businesses":       "how-to-sell-websites-to-tailors",
+  "how-to-sell-websites-to-cell-phone-and-electronics-stores":        "how-to-sell-websites-to-electronics-stores",
+  "how-to-sell-websites-to-car-washes-and-detailing-shops":           "how-to-sell-websites-to-car-washes",
+  "how-to-sell-websites-to-clothing-and-retail-stores":               "how-to-sell-websites-to-salons-and-barbershops",
+  "how-to-sell-websites-to-plumbers-and-electricians":                "web-design-for-contractors-where-the-leads-are",
+  "which-local-verticals-actually-pay-for-a-website-ranked":          "which-local-verticals-actually-pay-for-a-website",
+
+  "how-to-find-businesses-without-a-website-2026":                    "how-to-find-businesses-that-need-a-website",
+  "how-to-find-clients-for-web-development-not-web-design":           "how-to-find-clients-for-web-development",
+  "google-maps-prospecting-for-web-designers":                        "google-maps-prospecting-for-web-designers",
+  "where-to-find-web-design-clients-in-2026":                         "where-to-find-web-design-clients",
+  "how-to-build-a-lead-list-for-a-web-design-agency":                 "how-to-build-a-lead-list-for-a-web-design-agency",
+  "businesses-near-me-without-a-website-how-to-actually-find-them":   "businesses-near-me-without-a-website",
+  "free-ways-to-find-businesses-without-websites-and-their-limits":   "free-ways-to-find-businesses-without-websites",
+  "how-to-find-small-businesses-without-a-website-in-india":          "how-to-find-small-businesses-without-a-website-in-india",
+  "scraping-google-maps-for-leads-what-breaks-at-scale":              "scraping-google-maps-for-leads-what-breaks",
+  "how-many-businesses-should-be-in-your-pipeline":                   "how-many-businesses-should-be-in-your-pipeline",
+  "qualifying-a-local-lead-before-you-call-4-checks":                 "qualifying-a-local-lead-before-you-call",
+  "why-facebook-only-businesses-are-your-best-prospects":             "why-facebook-only-businesses-are-your-best-prospects",
+  "territory-planning-splitting-a-city-between-reps":                 "territory-planning-splitting-a-city-between-reps",
+  "building-a-weekly-prospecting-routine-that-sticks":                "building-a-weekly-prospecting-routine",
+
+  "cold-call-script-for-selling-websites-to-local-businesses":        "cold-call-script-selling-websites-local-businesses",
+  "what-to-say-to-a-business-that-has-no-website-at-all":             "what-to-say-to-a-business-with-no-website",
+  "whatsapp-scripts-for-local-business-outreach-in-india":            "whatsapp-outreach-local-business-india",
+  "handling-we-already-have-a-facebook-page":                         "we-already-have-a-facebook-page-objection",
+  "handling-its-too-expensive-without-discounting":                  "handling-its-too-expensive-without-discounting",
+  "handling-we-dont-need-a-website":                                 "handling-we-dont-need-a-website",
+  "cold-email-templates-for-selling-websites-to-local-businesses":    "cold-email-for-local-businesses-when-it-works",
+  "does-cold-calling-still-work-for-web-design-in-2026":              "does-cold-calling-still-work-for-web-design",
+  "call-whatsapp-or-walk-in-what-works-for-indian-smbs":              "call-whatsapp-or-walk-in-indian-smbs",
+  "the-first-call-10-questions-that-qualify-or-kill-a-lead":          "the-first-call-10-questions-that-qualify-a-lead",
+  "how-many-touches-before-a-local-business-buys":                    "how-many-touches-before-a-local-business-buys",
+  "the-free-mockup-play-does-it-still-close-deals":                   "the-free-mockup-play-does-it-still-close",
+  "what-to-send-after-the-call":                                      "what-to-send-a-local-business-after-the-call",
+  "selling-in-hindi-what-changes-in-a-local-sales-call":              "selling-in-hindi-what-changes-in-a-sales-call",
+
+  "apollo-alternative-for-local-business-leads":                      "apollo-alternative-local-business-leads",
+  "why-apollo-and-zoominfo-cant-see-businesses-without-websites":    "why-apollo-and-zoominfo-miss-businesses-without-websites",
+  "why-tech-stack-filtering-misses-your-best-prospects":              "why-tech-stack-filtering-misses-your-best-prospects",
+  "best-lead-generation-tools-for-web-design-agencies":               "best-lead-generation-tools-for-web-design-agencies",
+  "best-lead-tools-for-indian-web-agencies":                          "best-lead-generation-tools-for-indian-agencies",
+  "should-you-buy-web-design-leads-an-honest-cost-breakdown":         "should-you-buy-web-design-leads",
+  "exclusive-leads-vs-your-own-list-what-youre-really-paying-for":   "exclusive-leads-vs-your-own-list",
+  "justdial-and-indiamart-as-lead-sources-an-honest-review":          "justdial-indiamart-as-lead-sources",
+  "google-maps-scrapers-compared":                                    "google-maps-scrapers-compared",
+  "bought-database-vs-live-search-which-leads-are-real":              "bought-database-vs-live-search",
+  "credit-based-vs-seat-based-lead-tools":                            "credit-based-vs-seat-based-lead-tools",
+  "do-you-need-an-email-finder-to-sell-to-local-businesses":          "do-you-need-an-email-finder-for-local-businesses",
+  "lead-tools-that-actually-work-outside-the-us":                     "lead-generation-tools-that-work-outside-the-us",
+
+  "how-much-to-charge-for-a-small-business-website-in-india":         "how-much-to-charge-for-a-website-india",
+  "website-maintenance-plans-what-to-charge-monthly":                 "website-maintenance-plans-what-to-charge",
+  "hourly-project-or-value-which-pricing-model-to-use":               "hourly-project-or-value-pricing-model",
+  "good-better-best-packaging-website-offers":                        "good-better-best-packaging-website-offers",
+  "taking-advance-payment-from-indian-clients":                       "how-to-take-advance-payment-from-indian-clients",
+  "what-to-charge-a-business-that-has-never-had-a-website":           "how-to-sell-websites-to-farms",
+  "which-verticals-pay-the-most-for-a-website":                       "which-retail-shops-actually-need-a-website",
+  "how-to-price-a-website-redesign":                                  "how-to-price-a-website-redesign",
+  "selling-maintenance-plans-after-the-build":                        "how-to-sell-maintenance-plans-after-the-build",
+  "the-lifetime-value-of-one-local-client":                           "the-lifetime-value-of-one-local-client",
+  "why-well-do-it-cheaper-is-a-losing-position":                     "why-well-do-it-cheaper-is-a-losing-position",
+
+  "how-many-local-businesses-have-no-website-2026-data":              "how-many-local-businesses-have-no-website",
+  "which-indian-cities-have-the-biggest-website-gap":                 "which-indian-cities-have-the-biggest-website-gap",
+  "which-business-types-are-least-likely-to-have-a-website":          "which-business-types-least-likely-to-have-a-website",
+  "tier-1-vs-tier-2-india-the-website-gap-compared":                  "tier-1-vs-tier-2-india-website-gap",
+  "tier-2-indian-cities-are-the-real-web-design-market":              "tier-2-indian-cities-are-the-real-web-design-market",
+  "india-vs-uk-vs-australia-small-business-website-adoption":         "india-vs-uk-vs-australia-website-adoption",
+  "do-businesses-without-websites-get-fewer-reviews":                 "do-businesses-without-websites-get-fewer-reviews",
+  "the-real-size-of-the-indian-web-design-market":                    "the-real-size-of-the-indian-web-design-market",
+  "state-of-local-lead-generation-2026-annual":                       "state-of-local-lead-generation-2026",
+  "why-every-businesses-without-websites-stat-youve-read-is-from-2019": "why-every-no-website-statistic-is-outdated",
+
+  "high-ticket-web-design-niches-in-india":                           "high-ticket-web-design-niches-in-india",
+  "should-you-niche-down-what-the-lead-data-says":                    "should-you-niche-down-what-the-data-says",
+  "your-first-10-web-design-clients-a-realistic-playbook":            "your-first-10-web-design-clients",
+  "how-to-start-a-web-design-agency-in-india":                        "how-to-start-a-web-design-agency-in-india",
+    "how-indian-agencies-win-uk-and-australian-clients":                "how-indian-agencies-win-uk-and-australian-clients",
+  "how-to-grow-a-web-agency-past-5-lakh-a-month":                     "how-to-grow-a-web-agency-past-5-lakh-a-month",
+};
+
+/** Manifest entries with no post, and why. Kept here so the decision is recorded rather than lost. */
+export const UNUSED: Record<string, string> = {
+  "the-india-website-gap-report-2026":                       "spare — covered by which-indian-cities + tier-1-vs-tier-2 + state-of",
+  "best-web-design-niches-for-2026-with-live-lead-counts":   "spare — covered by which-local-verticals + high-ticket-niches",
+  "how-to-sell-websites-to-law-firms-and-advocates":         "to write — India 35.3% of 872",
+  "how-to-sell-websites-to-accountants-and-ca-practices":    "to write — India 32.2%, and review counts do not qualify here",
+  "how-to-sell-websites-to-real-estate-agents":              "to write — India 32.9% of 745",
+  "how-to-sell-websites-to-veterinary-clinics":              "to write — 21.5% of 2,432, 256 avg reviews",
+  "web-design-retainer-pricing-that-doesnt-lose-money":     "to write — distinct from care plans",
+  "how-many-local-businesses-are-reachable-by-phone-but-not-email": "to write — the 95.6% / 0% finding deserves its own page",
+  "how-to-sell-websites-to-med-spas-and-wellness-centres":   "marginal — spa 13.6%, massage 15.0%. Thin gap.",
+  "what-weak-website-actually-means-7-measurable-signals":   "do not write — the product does not detect weak sites; lib/planner.ts forbids the claim",
+  "its-not-just-no-website-how-many-have-a-weak-one":       "do not write — same reason",
+  "find-businesses-with-no-website-or-a-weak-one":           "do not write — the weak half is unsupported; the rest duplicates blog 1",
+  "zoominfo-alternative-for-agencies-selling-local":         "covered — mechanism in why-apollo-and-zoominfo-miss + apollo-alternative",
+  "lusha-vs-hunter-for-local-leads-neither-finds-them":      "covered — same mechanism, would be a fourth telling",
+  "clay-alternative-for-agencies-without-a-data-team":       "covered — same",
+  "targetron-alternative-per-record-vs-a-real-index":        "covered — same",
+  "grapeleads-alternative-for-agencies":                     "covered — same",
+  "outscraper-and-apify-vs-a-maintained-lead-index":         "covered — google-maps-scrapers-compared",
+  "what-local-lead-data-costs-per-lead":                     "covered — should-you-buy + exclusive-leads + scrapers-compared",
+};

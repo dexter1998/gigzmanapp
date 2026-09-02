@@ -51,8 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: new Date(post.published_at).toISOString(),
       modifiedTime: new Date(post.content_updated_at ?? post.published_at).toISOString(),
       authors: [post.author.name],
+      // The on-page image is WebP at 16:9; social wants JPEG at 1.91:1, so a separate derivative
+      // sits beside it. Declaring the WebP as 1200×630 would have been a lie on both counts.
       images: [post.hero_image ? {
-        url: `${COMPANY.site}${post.hero_image}`, width: 1200, height: 630, alt: post.hero_alt ?? post.title,
+        url: `${COMPANY.site}${post.hero_image.replace(/\.webp$/, "-og.jpg")}`,
+        width: 1200, height: 630, alt: post.hero_alt ?? post.title,
       } : {
         url: ogImageUrl({
           v: (post.hero_variant as OgVariant) ?? "methodology",
