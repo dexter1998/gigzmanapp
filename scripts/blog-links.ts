@@ -159,6 +159,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["building-a-weekly-prospecting-routine", "/resources/how-many-touches-before-a-local-business-buys", "how many follow-ups a round generates"],
   ["the-free-mockup-play-does-it-still-close", "/resources/what-to-send-a-local-business-after-the-call", "sending the mockup"],
   ["how-many-businesses-should-be-in-your-pipeline", "/resources/how-many-touches-before-a-local-business-buys", "how long a prospect stays live"],
+
+  /* batch 20 — the three largest remaining verticals */
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-car-repair-shops", "the car repair playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-guest-houses", "the guest house playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-wholesalers", "the highest-ticket vertical"],
+  ["how-to-sell-websites-to-car-washes", "/resources/how-to-sell-websites-to-car-repair-shops", "the adjacent automotive trade"],
+  ["how-to-sell-websites-to-hardware-stores", "/resources/how-to-sell-websites-to-wholesalers", "selling further up the chain"],
+  ["how-to-sell-websites-to-restaurants", "/resources/how-to-sell-websites-to-guest-houses", "the accommodation version"],
+  ["india-vs-uk-vs-australia-website-adoption", "/resources/how-to-sell-websites-to-car-repair-shops", "the one category with a real US gap"],
 ];
 
 async function main() {
