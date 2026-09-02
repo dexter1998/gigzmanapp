@@ -282,3 +282,14 @@
   .rc-cta { grid-template-columns: 1fr; }
   .rc-body h2 { font-size: 21px; }
 }
+
+/* ── hero decoration ──
+   The standing mantis sits to the right of the article hero, the way it does on the marketing
+   heroes. Hidden below 900px: at phone width it would either crush the headline or crop to a
+   sliver, and it carries no information either way. */
+.rc-hero, .rc-article-hero { position: relative; overflow: hidden; }
+.rc-hero-mantis {
+  position: absolute; right: -10px; bottom: -8px; width: 190px; height: auto;
+  pointer-events: none; z-index: 0; opacity: .96;
+}
+@media (max-width: 900px) { .rc-hero-mantis { display: none; } }

@@ -8,7 +8,7 @@ export type Author = {
 
 export type Post = {
   slug: string; title: string; excerpt: string; meta_description: string | null;
-  category: string; cluster: BlogCluster; tags: string[]; hero_variant: string | null;
+  category: string; cluster: BlogCluster; tags: string[]; hero_variant: string | null; hero_image: string | null; hero_alt: string | null;
   read_minutes: number; body: Block[]; faqs: { q: string; a: string }[];
   featured: boolean; published_at: Date; content_updated_at: Date | null;
   author: Author;
@@ -16,7 +16,7 @@ export type Post = {
 
 const SELECT = sql`
   SELECT p.slug, p.title, p.excerpt, p.meta_description, p.category, p.cluster, p.tags,
-         p.hero_variant, p.read_minutes, p.body, p.faqs, p.featured,
+         p.hero_variant, p.hero_image, p.hero_alt, p.read_minutes, p.body, p.faqs, p.featured,
          p.published_at, p.content_updated_at,
          json_build_object('slug', a.slug, 'name', a.name, 'role', a.role, 'bio', a.bio,
                            'avatar_url', a.avatar_url, 'linkedin_url', a.linkedin_url) AS author

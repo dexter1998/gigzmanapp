@@ -8,6 +8,8 @@ import { BLOG_CLUSTERS } from "@/lib/blog/blocks";
 import { getPost, linksFor, publishedSlugs } from "@/lib/blog/db";
 import { Blocks } from "@/components/blog/Blocks";
 import { Icon } from "@/components/blog/icons";
+import Image from "next/image";
+import { OrigamiFloor } from "@/components/marketing/MarketingPieces";
 
 /** Prerendered, not dynamic. That one decision fixes four things at once: AI crawlers (which do
  *  not execute JavaScript) get complete HTML, metadata resolves into <head> instead of being
@@ -48,7 +50,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: new Date(post.published_at).toISOString(),
       modifiedTime: new Date(post.content_updated_at ?? post.published_at).toISOString(),
       authors: [post.author.name],
-      images: [{
+      images: [post.hero_image ? {
+        url: `${COMPANY.site}${post.hero_image}`, width: 1200, height: 630, alt: post.hero_alt ?? post.title,
+      } : {
         url: ogImageUrl({
           v: (post.hero_variant as OgVariant) ?? "methodology",
           eyebrow: post.category,
@@ -116,10 +120,18 @@ export default async function ArticlePage({ params }: Props) {
       <div className="rc-wrap">
         <article>
           <header className="rc-article-hero">
-            <div className="rc-eyebrow">{post.category}</div>
-            <h1>{post.title}</h1>
-            <p className="sub">{post.excerpt}</p>
-            <div className="rc-byline">
+            <OrigamiFloor height={200} opacity={0.7} />
+            {/* Same mark that floors the marketing heroes, so an article reads as part of the
+                site rather than a bolted-on blog. Decorative only. */}
+            <Image
+              aria-hidden="true" alt="" src="/landing/mantis-standing.png"
+              width={900} height={1200} priority
+              className="rc-hero-mantis"
+            />
+            <div className="rc-eyebrow" style={{ position: "relative", zIndex: 1 }}>{post.category}</div>
+            <h1 style={{ position: "relative", zIndex: 1 }}>{post.title}</h1>
+            <p className="sub" style={{ position: "relative", zIndex: 1 }}>{post.excerpt}</p>
+            <div className="rc-byline" style={{ position: "relative", zIndex: 1 }}>
               <span>By <b>{post.author.name}</b></span>
               <span>·</span>
               {/* Visible date, matching the JSON-LD exactly — Google reconciles the two and
@@ -130,7 +142,7 @@ export default async function ArticlePage({ params }: Props) {
               <span>{post.read_minutes} min read</span>
             </div>
             {post.tags.length > 0 && (
-              <div className="rc-tags">{post.tags.map((t) => <span className="rc-tag" key={t}>{t}</span>)}</div>
+              <div className="rc-tags" style={{ position: "relative", zIndex: 1 }}>{post.tags.map((t) => <span className="rc-tag" key={t}>{t}</span>)}</div>
             )}
           </header>
 
@@ -190,16 +202,6 @@ export default async function ArticlePage({ params }: Props) {
         </article>
       </div>
 
-      <section className="rc-close">
-        <div className="rc-wrap">
-          <h2>Your next clients are <em>already nearby.</em></h2>
-          <p>Find high-intent local businesses and grow your agency with confidence.</p>
-          <div className="row">
-            <Link href="/login" className="rc-btn">Get free access <Icon name="arrow" /></Link>
-            <Link href="/partner" className="rc-btn dark">Partner with us</Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

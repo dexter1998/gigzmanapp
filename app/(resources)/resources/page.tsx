@@ -4,7 +4,9 @@ import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
 import { BLOG_CATEGORIES } from "@/lib/blog/blocks";
 import { listPosts, countPosts, featuredPost } from "@/lib/blog/db";
+import Image from "next/image";
 import { Icon } from "@/components/blog/icons";
+import { OrigamiFloor } from "@/components/marketing/MarketingPieces";
 
 export const dynamic = "force-dynamic";
 
@@ -58,14 +60,20 @@ export default async function ResourcesIndex({ searchParams }: Props) {
   return (
     <div className="rc-wrap">
       <section className="rc-hero">
-        <div className="rc-eyebrow">Mantis Resources</div>
-        <h1>Playbooks to <em>find and close</em> local clients.</h1>
-        <p>Actionable guides and strategies for lead generation, web discovery, and contact enrichment.</p>
+        <OrigamiFloor height={180} opacity={0.6} />
+        <div className="rc-eyebrow" style={{ position: "relative", zIndex: 1 }}>Mantis Resources</div>
+        <h1 style={{ position: "relative", zIndex: 1 }}>Playbooks to <em>find and close</em> local clients.</h1>
+        <p style={{ position: "relative", zIndex: 1 }}>Actionable guides and strategies for lead generation, web discovery, and contact enrichment.</p>
       </section>
 
       {featured && (
         <Link href={`/resources/${featured.slug}`} className="rc-featured" style={{ textDecoration: "none" }}>
-          <div className="rc-featured-art" />
+          <div className="rc-featured-art">
+            {featured.hero_image && (
+              <Image src={featured.hero_image} alt={featured.hero_alt ?? ""} fill priority
+                     sizes="340px" style={{ objectFit: "cover" }} />
+            )}
+          </div>
           <div className="rc-featured-body">
             <span className="rc-badge">Featured</span>
             <h2>{featured.title}</h2>
@@ -98,7 +106,12 @@ export default async function ResourcesIndex({ searchParams }: Props) {
         <div className="rc-grid">
           {posts.map((p) => (
             <Link key={p.slug} href={`/resources/${p.slug}`} className="rc-card">
-              <div className="rc-card-art" />
+              <div className="rc-card-art">
+                {p.hero_image && (
+                  <Image src={p.hero_image} alt={p.hero_alt ?? ""} fill
+                         sizes="(max-width:640px) 100vw, 360px" style={{ objectFit: "cover" }} />
+                )}
+              </div>
               <div className="rc-card-body">
                 <div className="rc-cat">{p.category}</div>
                 <h3>{p.title}</h3>
