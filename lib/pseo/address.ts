@@ -218,13 +218,32 @@ export function parseIndianAddress(address: string): ParsedAddress {
  * Deliberately returns the same unit the components path would, so the two sources describe one set
  * of places rather than two overlapping ones.
  */
-function areaFromText(countryCode: string, address: string): string | null {
+function areaFromText(countryCode: string, address: string, cityName: string): string | null {
   if (!COUNTRY_BY_CODE.has(countryCode)) return null;
   const token = areaTokenFromAddress(countryCode, address);
   if (!token) return null;
-  // A named locality registered by hand wins; otherwise a postal district is derived. Australia
-  // reaches only the first branch, which is correct — its token is a suburb name, not a code.
-  return lookupAlias(countryCode, token)?.areaSlug ?? resolvePostalDistrictAlias(countryCode, token);
+
+  // A named locality registered by hand wins; a postal district is derived next for the countries
+  // that have one.
+  const registered = lookupAlias(countryCode, token)?.areaSlug ?? resolvePostalDistrictAlias(countryCode, token);
+  if (registered) return registered;
+
+  // Australia has neither: its area token is free-text suburb name, not a code, so there is no
+  // fixed alphabet to validate against the way a postcode's digit count does. Confirmed live
+  // (2026-09-02) against 941 Perth leads: every one carries a real suburb in its address ("North
+  // Perth", "Northbridge") and every one resolved to no area at all, because the only path that
+  // existed required the suburb to already be in the registry — which nothing populates for a city
+  // that has never been through the offline area-candidates review. Auto-slugifying is the same
+  // fallback every postal country gets automatically; the one thing worth guarding is a lead
+  // addressed to the city centre reporting the CITY's own name as its "suburb" ("326 Hay St, Perth
+  // WA 6000" — Perth is the city, not one of its areas), which would otherwise create a same-named
+  // area duplicating the city page.
+  if (countryCode === "au") {
+    if (normalizeToken(token) === normalizeToken(cityName)) return null;
+    const slug = normalizeToken(token).replace(/\s+/g, "-");
+    return slug || null;
+  }
+  return null;
 }
 
 /**
@@ -262,7 +281,7 @@ export function resolveLocation(
       ok: true,
       value: {
         countryCode: near.countryCode, citySlug: near.slug,
-        areaSlug: areaFromText(near.countryCode, address),
+        areaSlug: areaFromText(near.countryCode, address, near.name),
         state: parsed.state,
         postalCode: parsed.postalCode ?? postalCodeFromAddress(near.countryCode, address),
         via: "coordinates",
@@ -283,7 +302,7 @@ export function resolveLocation(
       (city.countryCode === "in" ? resolveSectorAlias(parsed.areaToken) : null) ??
       areaSlug;
   }
-  areaSlug = areaSlug ?? areaFromText(city.countryCode, address);
+  areaSlug = areaSlug ?? areaFromText(city.countryCode, address, city.name);
 
   return {
     ok: true,

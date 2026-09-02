@@ -1648,10 +1648,20 @@ export function resolvePostalDistrictAlias(countryCode: string, token: string): 
   if (FIVE_DIGIT_EUROPE.has(countryCode)) return /^\d{5}$/.test(t) ? t : null;
   if (FOUR_DIGIT_EUROPE.has(countryCode)) return /^\d{4}$/.test(t) ? t : null;
   if (countryCode === "gr") return /^\d{3}\s?\d{2}$/.test(t) ? t.replace(/\s+/g, "") : null;
-  if (countryCode === "nl") return /^\d{4}\s?[A-Z]{2}$/.test(t) ? t.replace(/\s+/g, "") : null;
-  if (countryCode === "pl") return /^\d{2}-\d{3}$/.test(t) ? t : null;
-  if (countryCode === "pt") return /^\d{4}-\d{3}$/.test(t) ? t : null;
-  if (countryCode === "se" || countryCode === "cz") return /^\d{3}\s?\d{2}$/.test(t) ? t.replace(/\s+/g, "") : null;
+  // The remaining five formats are compound codes whose second half addresses a single street or
+  // building, not a neighbourhood -- confirmed live (2026-09-02): using the whole code produced
+  // 1,250 distinct "areas" for Amsterdam alone, 0 of which held enough leads to matter, and
+  // dragged the daily refresh from ~40s to a 5-minute timeout evaluating them all. Truncating to
+  // the first half is the same move as GB's outward code, just for a country where the code is
+  // split by a literal character instead of a length convention. The full code is unaffected --
+  // it still lands on leads.postal_code -- only the AREA unit gets coarser.
+  if (countryCode === "nl") { const m = /^(\d{4})\s?[A-Z]{2}$/.exec(t); return m ? m[1] : null; }
+  if (countryCode === "pl") { const m = /^(\d{2})-\d{3}$/.exec(t); return m ? m[1] : null; }
+  if (countryCode === "pt") { const m = /^(\d{4})-\d{3}$/.exec(t); return m ? m[1] : null; }
+  if (countryCode === "se" || countryCode === "cz") {
+    const m = /^(\d{3})\s?\d{2}$/.exec(t);
+    return m ? m[1] : null;
+  }
   return null;
 }
 
@@ -1666,6 +1676,10 @@ export function areaDisplayName(slug: string): string {
   if (/^\d{5}$/.test(slug)) return slug;
   const m = /^sector-(\d{1,3})([a-z])?$/.exec(slug);
   if (m) return `Sector ${m[1]}${m[2] ? m[2].toUpperCase() : ""}`;
+  // Australia's auto-generated suburb slugs (see areaFromText in lib/pseo/address.ts) are the
+  // suburb's own words lowercased and hyphenated -- "north-perth" for "North Perth" -- so the
+  // display form is just undoing that, not looking anything up.
+  if (/^[a-z]+(-[a-z]+)+$/.test(slug)) return slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
   return slug;
 }
 
