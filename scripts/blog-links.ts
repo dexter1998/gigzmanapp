@@ -177,6 +177,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["which-indian-cities-have-the-biggest-website-gap", "/resources/how-to-find-small-businesses-without-a-website-in-india", "how to search them"],
   ["qualifying-a-local-lead-before-you-call", "/resources/how-to-build-a-lead-list-for-a-web-design-agency", "the list these checks feed"],
   ["bought-database-vs-live-search", "/resources/how-to-build-a-lead-list-for-a-web-design-agency", "maintaining what you build"],
+
+  /* batch 22 — three corrections */
+  ["how-many-local-businesses-have-no-website", "/resources/why-every-no-website-statistic-is-outdated", "why the circulating figures disagree"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/why-every-no-website-statistic-is-outdated", "why a single figure cannot work"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-laundries", "the laundry playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/are-lawyers-and-accountants-a-good-web-design-niche", "the niche everyone recommends"],
+  ["india-vs-uk-vs-australia-website-adoption", "/resources/how-to-sell-websites-to-laundries", "a category where the US leads"],
+  ["how-to-sell-websites-to-salons-and-barbershops", "/resources/how-to-sell-websites-to-laundries", "the other template vertical"],
+  ["should-you-niche-down-what-the-data-says", "/resources/are-lawyers-and-accountants-a-good-web-design-niche", "checking a niche before committing"],
 ];
 
 async function main() {
