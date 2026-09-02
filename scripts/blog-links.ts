@@ -195,6 +195,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["where-to-find-web-design-clients", "/resources/how-to-find-clients-for-web-development", "if you sell development instead"],
   ["how-to-price-a-website-redesign", "/resources/how-to-find-clients-for-web-development", "where functionality work comes from"],
   ["how-to-sell-maintenance-plans-after-the-build", "/resources/how-to-find-clients-for-web-development", "what the base grows into"],
+
+  /* batch 24 — retail triage, packaging, exclusivity */
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/which-retail-shops-actually-need-a-website", "retail, triaged by category"],
+  ["how-to-sell-websites-to-electronics-stores", "/resources/which-retail-shops-actually-need-a-website", "the rest of the retail street"],
+  ["how-much-to-charge-for-a-website-india", "/resources/good-better-best-packaging-website-offers", "presenting the number as options"],
+  ["handling-its-too-expensive-without-discounting", "/resources/good-better-best-packaging-website-offers", "packaging the ladder"],
+  ["should-you-buy-web-design-leads", "/resources/exclusive-leads-vs-your-own-list", "whether exclusivity is worth paying for"],
+  ["bought-database-vs-live-search", "/resources/exclusive-leads-vs-your-own-list", "bought against self-built"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/which-retail-shops-actually-need-a-website", "triaging a retail street"],
 ];
 
 async function main() {
