@@ -5,7 +5,7 @@ import { cache } from "react";
 import { COMPANY } from "@/lib/company";
 import { ogImageUrl, type OgVariant } from "@/lib/og";
 import { BLOG_CLUSTERS } from "@/lib/blog/blocks";
-import { getPost, linksFor, publishedSlugs } from "@/lib/blog/db";
+import { getPost, linksFor, publishedSlugs, hubHrefFor } from "@/lib/blog/db";
 import { Blocks } from "@/components/blog/Blocks";
 import { Icon } from "@/components/blog/icons";
 import Image from "next/image";
@@ -78,6 +78,7 @@ export default async function ArticlePage({ params }: Props) {
 
   const { explicit, siblings } = await linksFor(post.slug, post.cluster);
   const hub = BLOG_CLUSTERS[post.cluster];
+  const hubHref = await hubHrefFor(post.cluster, hub.hub, post.category, post.slug);
   const toc = post.body.filter((b): b is Extract<typeof b, { type: "h2" }> => b.type === "h2");
   const url = `${COMPANY.site}/resources/${post.slug}`;
 
@@ -117,10 +118,9 @@ export default async function ArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 
-      <div className="rc-wrap">
-        <article>
-          <header className="rc-article-hero">
-            <OrigamiFloor height={200} opacity={0.7} />
+      <header className="rc-article-hero">
+        <OrigamiFloor height={220} opacity={0.7} />
+        <div className="rc-wrap">
             {/* Same mark that floors the marketing heroes, so an article reads as part of the
                 site rather than a bolted-on blog. Decorative only. */}
             <Image
@@ -153,8 +153,11 @@ export default async function ArticlePage({ params }: Props) {
             {post.tags.length > 0 && (
               <div className="rc-tags" style={{ position: "relative", zIndex: 1 }}>{post.tags.map((t) => <span className="rc-tag" key={t}>{t}</span>)}</div>
             )}
-          </header>
+        </div>
+      </header>
 
+      <div className="rc-wrap">
+        <article>
           <div className="rc-article">
             <nav className="rc-toc" aria-label="On this page">
               <div className="label">On this page</div>
@@ -183,7 +186,7 @@ export default async function ArticlePage({ params }: Props) {
                   the link graph is the mechanism, not the label "topical authority". */}
               <h2 id="related">Related reading</h2>
               <div className="rc-related">
-                <Link href={hub.hub}>
+                <Link href={hubHref}>
                   <div className="rc-cat">{hub.label}</div>
                   <h4>Start here</h4>
                   <p>The hub for everything in this cluster.</p>

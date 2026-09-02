@@ -58,13 +58,17 @@ export default async function ResourcesIndex({ searchParams }: Props) {
   };
 
   return (
-    <div className="rc-wrap">
+    <>
       <section className="rc-hero">
-        <OrigamiFloor height={180} opacity={0.6} />
+        <OrigamiFloor height={200} opacity={0.6} />
+        <div className="rc-wrap">
         <div className="rc-eyebrow" style={{ position: "relative", zIndex: 1 }}>Mantis Resources</div>
         <h1 style={{ position: "relative", zIndex: 1 }}>Playbooks to <em>find and close</em> local clients.</h1>
         <p style={{ position: "relative", zIndex: 1 }}>Actionable guides and strategies for lead generation, web discovery, and contact enrichment.</p>
+        </div>
       </section>
+
+      <div className="rc-wrap">
 
       {featured && (
         <Link href={`/resources/${featured.slug}`} className="rc-featured" style={{ textDecoration: "none" }}>
@@ -151,6 +155,7 @@ export default async function ResourcesIndex({ searchParams }: Props) {
           <button className="rc-btn dark" type="submit">Subscribe</button>
         </form>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

@@ -92,6 +92,36 @@ export async function linksFor(slug: string, cluster: BlogCluster) {
   };
 }
 
+/**
+ * Where a cluster's "start here" link should point.
+ *
+ * The designated hub post may not be written yet — three of the four were not — so a hardcoded
+ * href 404s. This returns the hub if it exists, else the cluster's oldest published post, else
+ * the category listing, which always resolves.
+ */
+export async function hubHrefFor(cluster: BlogCluster, hubSlug: string, category: string, currentSlug: string) {
+  const wanted = hubSlug.replace("/resources/", "");
+  if (wanted !== currentSlug) {
+    const [hub] = await sql`
+      SELECT slug FROM blog_posts
+      WHERE slug = ${wanted} AND status = 'published' AND published_at <= now()
+    `;
+    if (hub) return `/resources/${hub.slug}`;
+  }
+
+  // The cluster's own hub post is itself, or isn't written yet — send the reader to the rest of
+  // the cluster rather than to a link that goes nowhere or loops back to this page.
+  const [oldest] = await sql`
+    SELECT slug FROM blog_posts
+    WHERE cluster = ${cluster} AND slug != ${currentSlug}
+      AND status = 'published' AND published_at <= now()
+    ORDER BY published_at ASC LIMIT 1
+  `;
+  if (oldest) return `/resources/${oldest.slug}`;
+
+  return `/resources?category=${encodeURIComponent(category)}`;
+}
+
 /** Live lead rows for an in-article card. Read-time so the figures never go stale in prose. */
 export async function leadsForCity(city: string, limit = 4) {
   const rows = await sql`
