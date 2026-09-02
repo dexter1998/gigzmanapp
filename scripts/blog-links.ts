@@ -26,6 +26,16 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["which-business-types-least-likely-to-have-a-website", "/resources/how-to-sell-websites-to-hardware-stores", "the hardware store playbook"],
   ["how-much-to-charge-for-a-website-india", "/resources/website-maintenance-plans-what-to-charge", "what to charge for the care plan"],
   ["apollo-alternative-local-business-leads", "/resources/how-to-sell-websites-to-hardware-stores", "a vertical no database covers"],
+
+  /* batch 5 — vertical playbooks */
+  ["which-business-types-least-likely-to-have-a-website", "/resources/how-to-sell-websites-to-tailors", "the tailoring playbook"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/how-to-sell-websites-to-bakeries-and-cafes", "bakeries and cafes"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/how-to-sell-websites-to-sports-academies", "sports academies and clubs"],
+  ["how-to-sell-websites-to-restaurants", "/resources/how-to-sell-websites-to-bakeries-and-cafes", "the bakery and cafe version"],
+  ["how-to-sell-websites-to-coaching-centres", "/resources/how-to-sell-websites-to-sports-academies", "how sports academies differ"],
+  ["how-to-sell-websites-to-hardware-stores", "/resources/how-to-sell-websites-to-tailors", "another vertical nobody pitches"],
+  ["how-much-to-charge-for-a-website-india", "/resources/how-to-sell-websites-to-sports-academies", "pricing against annual fees"],
+  ["website-maintenance-plans-what-to-charge", "/resources/how-to-sell-websites-to-tailors", "a vertical where the care plan sells itself"],
 ];
 
 async function main() {
