@@ -213,6 +213,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-sell-websites-to-sports-academies", "/resources/how-to-sell-websites-to-gyms", "how gyms differ"],
   ["how-to-sell-websites-to-guest-houses", "/resources/how-to-sell-websites-to-farms", "the agritourism parallel"],
   ["handling-we-dont-need-a-website", "/resources/how-to-sell-websites-to-farms", "a vertical where it is often true"],
+
+  /* batch 26 — the tools cluster */
+  ["apollo-alternative-local-business-leads", "/resources/best-lead-generation-tools-for-web-design-agencies", "the tools, by job"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/best-lead-generation-tools-for-web-design-agencies", "when free stops being enough"],
+  ["should-you-buy-web-design-leads", "/resources/credit-based-vs-seat-based-lead-tools", "which pricing model to buy"],
+  ["exclusive-leads-vs-your-own-list", "/resources/credit-based-vs-seat-based-lead-tools", "how tools in this category charge"],
+  ["justdial-indiamart-as-lead-sources", "/resources/best-lead-generation-tools-for-indian-agencies", "the wider Indian tooling picture"],
+  ["how-to-find-small-businesses-without-a-website-in-india", "/resources/best-lead-generation-tools-for-indian-agencies", "the tools for this market"],
+  ["lead-generation-tools-that-work-outside-the-us", "/resources/best-lead-generation-tools-for-web-design-agencies", "the tools, by job"],
 ];
 
 async function main() {
