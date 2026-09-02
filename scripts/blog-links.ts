@@ -231,6 +231,24 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-sell-websites-to-wholesalers", "/resources/high-ticket-web-design-niches-in-india", "where wholesalers rank on ticket"],
   ["how-to-sell-websites-to-car-repair-shops", "/resources/web-design-for-contractors-where-the-leads-are", "the adjacent trades"],
   ["how-much-to-charge-for-a-website-india", "/resources/high-ticket-web-design-niches-in-india", "which verticals support the top band"],
+
+  /* batch 28 — proximity, cold email, scrapers */
+  ["how-to-find-businesses-that-need-a-website", "/resources/businesses-near-me-without-a-website", "searching close in instead"],
+  ["google-maps-prospecting-for-web-designers", "/resources/businesses-near-me-without-a-website", "searching by area"],
+  ["do-you-need-an-email-finder-for-local-businesses", "/resources/cold-email-for-local-businesses-when-it-works", "whether to email at all"],
+  ["call-whatsapp-or-walk-in-indian-smbs", "/resources/cold-email-for-local-businesses-when-it-works", "why email is not on the list"],
+  ["scraping-google-maps-for-leads-what-breaks", "/resources/google-maps-scrapers-compared", "what the tools charge"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/google-maps-scrapers-compared", "when free stops being enough"],
+  ["territory-planning-splitting-a-city-between-reps", "/resources/businesses-near-me-without-a-website", "why proximity multiplies everything"],
+
+  /* batch 29 — the synthesis, the mechanism, the tier-2 argument */
+  ["how-many-local-businesses-have-no-website", "/resources/state-of-local-lead-generation-2026", "everything measured, in one place"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/state-of-local-lead-generation-2026", "the whole picture"],
+  ["apollo-alternative-local-business-leads", "/resources/why-apollo-and-zoominfo-miss-businesses-without-websites", "why the omission is structural"],
+  ["best-lead-generation-tools-for-web-design-agencies", "/resources/why-apollo-and-zoominfo-miss-businesses-without-websites", "the mechanism behind row two"],
+  ["tier-1-vs-tier-2-india-website-gap", "/resources/tier-2-indian-cities-are-the-real-web-design-market", "the argument for basing there"],
+  ["which-indian-cities-have-the-biggest-website-gap", "/resources/tier-2-indian-cities-are-the-real-web-design-market", "what the top of the table means"],
+  ["why-every-no-website-statistic-is-outdated", "/resources/state-of-local-lead-generation-2026", "the figures we do publish"],
 ];
 
 async function main() {
