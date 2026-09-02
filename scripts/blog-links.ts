@@ -204,6 +204,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["should-you-buy-web-design-leads", "/resources/exclusive-leads-vs-your-own-list", "whether exclusivity is worth paying for"],
   ["bought-database-vs-live-search", "/resources/exclusive-leads-vs-your-own-list", "bought against self-built"],
   ["qualifying-a-local-lead-before-you-call", "/resources/which-retail-shops-actually-need-a-website", "triaging a retail street"],
+
+  /* batch 25 — catering, gyms, farms */
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-caterers", "the catering playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-gyms", "the gym playbook"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/how-to-sell-websites-to-farms", "the vertical nobody pitches"],
+  ["how-to-sell-websites-to-restaurants", "/resources/how-to-sell-websites-to-caterers", "the higher-ticket food vertical"],
+  ["how-to-sell-websites-to-sports-academies", "/resources/how-to-sell-websites-to-gyms", "how gyms differ"],
+  ["how-to-sell-websites-to-guest-houses", "/resources/how-to-sell-websites-to-farms", "the agritourism parallel"],
+  ["handling-we-dont-need-a-website", "/resources/how-to-sell-websites-to-farms", "a vertical where it is often true"],
 ];
 
 async function main() {
