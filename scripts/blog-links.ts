@@ -132,6 +132,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["which-local-verticals-actually-pay-for-a-website", "/resources/the-lifetime-value-of-one-local-client", "picking for lifetime value"],
   ["hourly-project-or-value-pricing-model", "/resources/how-to-sell-maintenance-plans-after-the-build", "attaching the monthly"],
   ["which-indian-cities-have-the-biggest-website-gap", "/resources/how-to-price-a-website-redesign", "what to sell in a served market"],
+
+  /* batch 17 — the agency-growth cluster */
+  ["handling-its-too-expensive-without-discounting", "/resources/why-well-do-it-cheaper-is-a-losing-position", "when a cheaper quote is named"],
+  ["how-much-to-charge-for-a-website-india", "/resources/why-well-do-it-cheaper-is-a-losing-position", "holding the number"],
+  ["the-lifetime-value-of-one-local-client", "/resources/how-to-grow-a-web-agency-past-5-lakh-a-month", "what the base compounds into"],
+  ["how-to-sell-maintenance-plans-after-the-build", "/resources/how-to-grow-a-web-agency-past-5-lakh-a-month", "why the attach rate decides everything"],
+  ["building-a-weekly-prospecting-routine", "/resources/how-many-businesses-should-be-in-your-pipeline", "how many prospects the rhythm needs"],
+  ["your-first-10-web-design-clients", "/resources/how-many-businesses-should-be-in-your-pipeline", "sizing the pipeline"],
+  ["how-to-start-a-web-design-agency-in-india", "/resources/how-to-grow-a-web-agency-past-5-lakh-a-month", "where this goes"],
 ];
 
 async function main() {
