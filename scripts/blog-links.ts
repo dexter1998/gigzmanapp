@@ -106,6 +106,14 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-start-a-web-design-agency-in-india", "/resources/how-indian-agencies-win-uk-and-australian-clients", "selling overseas instead"],
   ["should-you-niche-down-what-the-data-says", "/resources/how-indian-agencies-win-uk-and-australian-clients", "why niching works overseas"],
   ["tier-1-vs-tier-2-india-website-gap", "/resources/the-real-size-of-the-indian-web-design-market", "sizing the pool"],
+
+  /* batch 14 — the sales-craft cluster */
+  ["cold-call-script-selling-websites-local-businesses", "/resources/the-first-call-10-questions-that-qualify-a-lead", "the questions inside the script"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/selling-in-hindi-what-changes-in-a-sales-call", "running the same call in Hindi"],
+  ["whatsapp-outreach-local-business-india", "/resources/selling-in-hindi-what-changes-in-a-sales-call", "the register to write in"],
+  ["your-first-10-web-design-clients", "/resources/building-a-weekly-prospecting-routine", "the weekly pace behind those numbers"],
+  ["territory-planning-splitting-a-city-between-reps", "/resources/building-a-weekly-prospecting-routine", "turning a territory into a week"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/the-first-call-10-questions-that-qualify-a-lead", "what to ask once they answer"],
 ];
 
 async function main() {
