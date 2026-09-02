@@ -72,6 +72,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-much-to-charge-for-a-website-india", "/resources/should-you-buy-web-design-leads", "the ticket a lead price has to fit"],
   ["call-whatsapp-or-walk-in-indian-smbs", "/resources/do-you-need-an-email-finder-for-local-businesses", "why email is not on this list"],
   ["why-facebook-only-businesses-are-your-best-prospects", "/resources/justdial-indiamart-as-lead-sources", "the paid version of the same objection"],
+
+  /* batch 10 — pricing model, getting paid, closing */
+  ["how-much-to-charge-for-a-website-india", "/resources/hourly-project-or-value-pricing-model", "choosing the model behind the number"],
+  ["how-much-to-charge-for-a-website-india", "/resources/how-to-take-advance-payment-from-indian-clients", "collecting what you quoted"],
+  ["website-maintenance-plans-what-to-charge", "/resources/hourly-project-or-value-pricing-model", "why the monthly matters more than the model"],
+  ["handling-its-too-expensive-without-discounting", "/resources/the-free-mockup-play-does-it-still-close", "making it concrete instead of cheaper"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/the-free-mockup-play-does-it-still-close", "the mockup close"],
+  ["handling-we-dont-need-a-website", "/resources/the-free-mockup-play-does-it-still-close", "showing rather than arguing"],
+  ["call-whatsapp-or-walk-in-indian-smbs", "/resources/how-to-take-advance-payment-from-indian-clients", "closing in the room"],
 ];
 
 async function main() {
