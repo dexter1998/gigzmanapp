@@ -10,7 +10,10 @@ import { OrigamiFloor } from "@/components/marketing/MarketingPieces";
 
 export const dynamic = "force-dynamic";
 
-const PER_PAGE = 6;
+/* Six was fine at twelve posts and is wrong at eighty-seven: it put the deepest post fifteen
+ * clicks from the hub, and click depth is one of the two things Google states it reads as
+ * relative importance. Twenty-four brings the whole corpus within four pages. */
+const PER_PAGE = 24;
 
 export const metadata: Metadata = {
   title: { absolute: `Resources — Playbooks for Finding Local Clients | ${COMPANY.brandLong}` },
