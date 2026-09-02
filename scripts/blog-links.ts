@@ -36,6 +36,16 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-sell-websites-to-hardware-stores", "/resources/how-to-sell-websites-to-tailors", "another vertical nobody pitches"],
   ["how-much-to-charge-for-a-website-india", "/resources/how-to-sell-websites-to-sports-academies", "pricing against annual fees"],
   ["website-maintenance-plans-what-to-charge", "/resources/how-to-sell-websites-to-tailors", "a vertical where the care plan sells itself"],
+
+  /* batch 6 — the ranking hub and the operations posts */
+  ["how-many-local-businesses-have-no-website", "/resources/which-local-verticals-actually-pay-for-a-website", "which of those verticals can actually pay"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/which-local-verticals-actually-pay-for-a-website", "the same categories ranked by what they pay"],
+  ["how-to-find-businesses-that-need-a-website", "/resources/qualifying-a-local-lead-before-you-call", "qualifying what you find"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/handling-its-too-expensive-without-discounting", "when they say it is too expensive"],
+  ["we-already-have-a-facebook-page-objection", "/resources/handling-its-too-expensive-without-discounting", "the price objection"],
+  ["how-much-to-charge-for-a-website-india", "/resources/handling-its-too-expensive-without-discounting", "defending the number without discounting"],
+  ["how-to-sell-websites-to-restaurants", "/resources/which-local-verticals-actually-pay-for-a-website", "how restaurants rank against other verticals"],
+  ["whatsapp-outreach-local-business-india", "/resources/qualifying-a-local-lead-before-you-call", "checks to run before you message"],
 ];
 
 async function main() {
