@@ -12,7 +12,7 @@ import type { Block } from "@/lib/blog/blocks";
 
 const body: Block[] = [
   { type: "prose", text: [
-    "The call that works on a business with no website is not the call that works on a business with a bad one. There is nothing to critique, no screenshot to send, and the owner has usually already decided they don't need one. You are not selling an upgrade — you are arguing with a decision they made years ago.",
+    "The cold call that works on a local business with no website is not the one that works on a business with a bad website. There is nothing to critique, no screenshot to send, and the owner has usually already decided they don't need one. You are not selling an upgrade — you are arguing with a decision they made years ago.",
     "This is the script we use, the eight things people say back, and what to do when the person answering isn't the owner. Everything below assumes you already have a filtered list; if you don't, [start there](/resources/how-to-find-businesses-that-need-a-website) first.",
   ]},
 
@@ -28,7 +28,7 @@ const body: Block[] = [
   { type: "tip", title: "Call the busy ones first",
     text: "Sort your list by review count, descending. A business with 8 reviews and no website is usually dormant or part-time. A business with 800 reviews and no website is turning away online enquiries every week and has the money to fix it. The second call is a different conversation entirely." },
 
-  { type: "h2", id: "opening", text: "The opening line" },
+  { type: "h2", id: "opening", text: "The opening line for a local business call" },
   { type: "prose", text: [
     "You have about six seconds. Do not introduce your agency, do not say \"how are you today\", and do not ask if it's a good time — it never is.",
   ]},

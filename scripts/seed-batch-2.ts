@@ -26,7 +26,7 @@ const posts: Post[] = [
   tags: ["Outreach", "India", "WhatsApp", "Sales Playbook"],
   body: [
     { type: "prose", text: [
-      "Every outreach guide you will read was written for a market where email works. In India, for the businesses worth pitching, it mostly does not — and for the specific segment that has no website, there is often no email address to send to in the first place.",
+      "Every outreach script you will read was written for a market where email works. In India, for the local businesses worth pitching, it mostly does not — and for the specific segment that has no website, there is often no email address to send to in the first place.",
       "The number on their Google listing is the contact that exists. On that number, a WhatsApp message gets read where a call gets ignored and an email was never delivered.",
     ]},
     { type: "h2", id: "why", text: "Why WhatsApp is not a preference here, it is the only channel" },
@@ -42,7 +42,7 @@ const posts: Post[] = [
     ]},
     { type: "h2", id: "first-message", text: "The first WhatsApp message, word for word" },
     { type: "prose", text: [
-      "Short, specific, and ending in a question they can answer in three words. Long messages read as a broadcast and get ignored.",
+      "Short, specific, and ending in a question they can answer in three words. Long messages read as a broadcast and get ignored — which is why the scripts below are two sentences, not two paragraphs.",
     ]},
     { type: "quote", text: "Hello — I saw your Google listing for [business]. 240 reviews at 4.4 is genuinely good. I noticed there's no website linked to it. Is that deliberate, or just something that never got done?",
       attribution: "The opener. Same logic as the phone script: it is a question, not a pitch." },
@@ -75,7 +75,7 @@ const posts: Post[] = [
       { title: "Messaging outside 10am–8pm", detail: "the fastest way to be reported" },
       { title: "Using a personal number", detail: "use a WhatsApp Business profile — the name and category alone raise reply rates" },
     ]},
-    { type: "h2", id: "who", text: "Which numbers to message first" },
+    { type: "h2", id: "who", text: "Which local businesses to message first" },
     { type: "prose", text: [
       "The list decides the reply rate more than the copy does. Three filters, applied before you write anything.",
       "**Review count above fifty.** A business with eight reviews and no website is usually part-time or dormant; the message goes unread because the number belongs to someone who is not really running a business. Above fifty reviews you are messaging an operator with customers.",
@@ -190,8 +190,8 @@ const posts: Post[] = [
   tags: ["Original Data", "Website Gaps", "Niche Selection"],
   body: [
     { type: "prose", text: [
-      "Open any list of the best web design niches and dental practices will be near the top. Law firms, medical clinics and car dealers will be there too.",
-      "Those lists rank verticals by **ability to pay**. None of them checks whether the businesses in that vertical actually lack a website. We measured that across 152,311 local businesses, and the two rankings barely overlap.",
+      "The business types least likely to have a website are not the ones on any published niche list. Open one and dental practices will be near the top; law firms, medical clinics and car dealers will be there too.",
+      "Those lists rank verticals by **ability to pay**, and none of them checks how likely that business type is to actually lack a website. We measured exactly that across 152,311 local businesses, and the two rankings barely overlap.",
     ]},
     { type: "h2", id: "highest", text: "The business types least likely to have a website" },
     { type: "table", head: ["Category", "Checked", "No website", "Rate"], rows: [
