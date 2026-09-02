@@ -150,6 +150,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["scraping-google-maps-for-leads-what-breaks", "/resources/bought-database-vs-live-search", "why maintaining it is the cost"],
   ["how-indian-agencies-win-uk-and-australian-clients", "/resources/lead-generation-tools-that-work-outside-the-us", "tooling for overseas markets"],
   ["how-to-price-a-website-redesign", "/resources/why-tech-stack-filtering-misses-your-best-prospects", "finding redesign prospects"],
+
+  /* batch 19 — the follow-up cluster */
+  ["the-first-call-10-questions-that-qualify-a-lead", "/resources/what-to-send-a-local-business-after-the-call", "what to send afterwards"],
+  ["cold-call-script-selling-websites-local-businesses", "/resources/does-cold-calling-still-work-for-web-design", "whether to call at all in 2026"],
+  ["call-whatsapp-or-walk-in-indian-smbs", "/resources/does-cold-calling-still-work-for-web-design", "what happened to call pickup rates"],
+  ["whatsapp-outreach-local-business-india", "/resources/what-to-send-a-local-business-after-the-call", "the follow-up message"],
+  ["building-a-weekly-prospecting-routine", "/resources/how-many-touches-before-a-local-business-buys", "how many follow-ups a round generates"],
+  ["the-free-mockup-play-does-it-still-close", "/resources/what-to-send-a-local-business-after-the-call", "sending the mockup"],
+  ["how-many-businesses-should-be-in-your-pipeline", "/resources/how-many-touches-before-a-local-business-buys", "how long a prospect stays live"],
 ];
 
 async function main() {
