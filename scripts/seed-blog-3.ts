@@ -176,7 +176,7 @@ async function main() {
   for (const [i, l] of [
     { href: "/resources/how-many-local-businesses-have-no-website", anchor: "how many businesses actually have no website", kind: "hub" },
     { href: "/resources/how-to-find-businesses-that-need-a-website", anchor: "building the list this script needs", kind: "sibling" },
-    { href: "/leads/web-development/gurgaon", anchor: "no-website businesses in Gurugram", kind: "lead_page" },
+    { href: "/leads/website-development/in/gurgaon", anchor: "no-website businesses in Gurugram", kind: "lead_page" },
   ].entries()) {
     await sql`INSERT INTO blog_links (from_slug, to_href, anchor, kind, position) VALUES (${slug}, ${l.href}, ${l.anchor}, ${l.kind}, ${i})`;
   }

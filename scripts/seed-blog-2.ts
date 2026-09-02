@@ -167,7 +167,7 @@ async function main() {
   await sql`DELETE FROM blog_links WHERE from_slug = ${slug}`;
   for (const [i, l] of [
     { href: "/resources/how-to-find-businesses-that-need-a-website", anchor: "how to find these businesses at scale", kind: "sibling" },
-    { href: "/leads/web-development/gurgaon", anchor: "businesses with no website in Gurugram", kind: "lead_page" },
+    { href: "/leads/website-development/in/gurgaon", anchor: "businesses with no website in Gurugram", kind: "lead_page" },
   ].entries()) {
     await sql`INSERT INTO blog_links (from_slug, to_href, anchor, kind, position) VALUES (${slug}, ${l.href}, ${l.anchor}, ${l.kind}, ${i})`;
   }

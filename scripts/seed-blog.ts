@@ -14,7 +14,8 @@ const AUTHOR = {
   // Only what is verifiable. An invented credential is a Low-quality signal in Google's own
   // rater guidelines, so this stays short rather than padded.
   bio: "Builds Mantis and runs Gigzman, a web design and software studio in Gurugram. Sells websites to local businesses for a living, which is where these playbooks come from.",
-  linkedin_url: null as string | null,
+  avatar_url: "/resources/author-tarun.png",
+  linkedin_url: "https://www.linkedin.com/in/tarunmottlia/",
 };
 
 const body: Block[] = [
@@ -143,9 +144,10 @@ const faqs = [
 
 async function main() {
   await sql`
-    INSERT INTO blog_authors (slug, name, role, bio, linkedin_url)
-    VALUES (${AUTHOR.slug}, ${AUTHOR.name}, ${AUTHOR.role}, ${AUTHOR.bio}, ${AUTHOR.linkedin_url})
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, bio = EXCLUDED.bio
+    INSERT INTO blog_authors (slug, name, role, bio, avatar_url, linkedin_url)
+    VALUES (${AUTHOR.slug}, ${AUTHOR.name}, ${AUTHOR.role}, ${AUTHOR.bio}, ${AUTHOR.avatar_url}, ${AUTHOR.linkedin_url})
+    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, bio = EXCLUDED.bio,
+      avatar_url = EXCLUDED.avatar_url, linkedin_url = EXCLUDED.linkedin_url
   `;
 
   const slug = "how-to-find-businesses-that-need-a-website";
@@ -176,7 +178,7 @@ async function main() {
   // Editorial links out. Descriptive anchors that make sense read alone, per Google's own test.
   await sql`DELETE FROM blog_links WHERE from_slug = ${slug}`;
   for (const [i, l] of [
-    { href: "/leads/web-development/gurgaon", anchor: "businesses with no website in Gurugram", kind: "lead_page" },
+    { href: "/leads/website-development/in/gurgaon", anchor: "businesses with no website in Gurugram", kind: "lead_page" },
     { href: "/pricing", anchor: "what lead credits cost", kind: "hub" },
   ].entries()) {
     await sql`

@@ -132,7 +132,16 @@ export default async function ArticlePage({ params }: Props) {
             <h1 style={{ position: "relative", zIndex: 1 }}>{post.title}</h1>
             <p className="sub" style={{ position: "relative", zIndex: 1 }}>{post.excerpt}</p>
             <div className="rc-byline" style={{ position: "relative", zIndex: 1 }}>
-              <span>By <b>{post.author.name}</b></span>
+              <span className="who">
+                {post.author.avatar_url && (
+                  <Image className="avatar" src={post.author.avatar_url} alt={post.author.name} width={34} height={34} />
+                )}
+                {/* The profile link is what Article.author.url points at, so the byline and the
+                    structured data name the same person rather than two different ones. */}
+                {post.author.linkedin_url
+                  ? <span>By <a href={post.author.linkedin_url} rel="author noopener" target="_blank">{post.author.name}</a></span>
+                  : <span>By <b>{post.author.name}</b></span>}
+              </span>
               <span>·</span>
               {/* Visible date, matching the JSON-LD exactly — Google reconciles the two and
                   prefers a date it can see on the page. */}

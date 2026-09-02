@@ -9,7 +9,21 @@ import type { Instrumentation } from "next";
  * The user comes from the Auth.js session cookie, decoded best-effort — attribution is the whole
  * point of app_errors over CloudWatch, but a decode failure must never eat the error row.
  */
+/**
+ * A client that goes away mid-response is not an application error.
+ *
+ * Next prefetches on hover, so a user moving the mouse across a list of links opens and abandons
+ * several streams a second; each one surfaces here as "aborted" or "The destination stream closed
+ * early". Twenty-five of them arrived in one three-minute window and filled the admin panel's
+ * error list, which is exactly how a real error gets missed.
+ */
+function isClientDisconnect(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /destination stream closed early|^aborted$|ECONNRESET|socket hang up|request aborted/i.test(msg);
+}
+
 export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
+  if (isClientDisconnect(err)) return;
   try {
     const { logAppError } = await import("@/lib/app-errors");
     let userEmail: string | null = null;

@@ -29,7 +29,9 @@ function inline(text: string, key: number) {
   return parts;
 }
 
-async function LeadsBlock({ city, heading, limit }: { city: string; heading: string; limit?: number }) {
+/** India is the default because that is where the indexed cities are; a block for a UK or US
+ *  city passes its own code. */
+async function LeadsBlock({ city, heading, limit, country = "in" }: { city: string; heading: string; limit?: number; country?: string }) {
   const [rows, total] = await Promise.all([leadsForCity(city, limit ?? 4), cityLeadCount(city)]);
   if (rows.length === 0) return null;
   const cityName = city.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -69,7 +71,7 @@ async function LeadsBlock({ city, heading, limit }: { city: string; heading: str
         ))}
       </div>
       <p>
-        <Link href={`/leads/web-development/${city}`}>See all {total.toLocaleString("en-IN")} in {cityName} →</Link>
+        <Link href={`/leads/website-development/${country}/${city}`}>See all {total.toLocaleString("en-IN")} in {cityName} →</Link>
       </p>
     </>
   );
@@ -172,7 +174,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
         );
         break;
       case "leads":
-        out.push(<LeadsBlock key={i} city={b.city} heading={b.heading} limit={b.limit} />);
+        out.push(<LeadsBlock key={i} city={b.city} heading={b.heading} limit={b.limit} country={b.country} />);
         break;
     }
   }

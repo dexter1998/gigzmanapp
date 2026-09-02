@@ -25,7 +25,7 @@ export type Block =
   /** Inline product CTA — the map card and the leads-table card in the design. */
   | { type: "cta"; variant: "map" | "table" | "leadcard"; title: string; detail: string; action: string; href: string }
   /** Live lead cards for a city, pulled at render time. */
-  | { type: "leads"; city: string; heading: string; limit?: number }
+  | { type: "leads"; city: string; heading: string; limit?: number; country?: string }
   | { type: "tip"; title: string; text: string }
   | { type: "quote"; text: string; attribution: string; href?: string }
 
