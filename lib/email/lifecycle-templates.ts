@@ -513,7 +513,7 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 <tr><td align="center" style="padding:16px 12px 15px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
  <img src="https://mantisai.in/email/v1/05-ben-3.jpg" width="34" height="34" alt="" style="display:block;border:0;width:34px;height:34px;max-width:100%;margin:0 auto 9px;">
  <div class="dmc-111315" style="font-size:14px;font-weight:750;color:#111315;line-height:1.3;">Website gap signals</div>
- <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:7px;">See who lacks a website, ranks weak, or shows high intent.</div>
+ <div class="dmc-687071" style="font-size:11.5px;line-height:1.45;color:#687071;padding-top:7px;">See who has no website, with ratings and review counts alongside.</div>
 </td></tr></table></td><td width="50%" valign="top" class="stack" style="width:50%;padding:5px;">
 <table class="dmk-dfe3d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe3d9;border-radius:13px;">
 <tr><td align="center" style="padding:16px 12px 15px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;">
