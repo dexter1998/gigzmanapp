@@ -168,6 +168,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-to-sell-websites-to-hardware-stores", "/resources/how-to-sell-websites-to-wholesalers", "selling further up the chain"],
   ["how-to-sell-websites-to-restaurants", "/resources/how-to-sell-websites-to-guest-houses", "the accommodation version"],
   ["india-vs-uk-vs-australia-website-adoption", "/resources/how-to-sell-websites-to-car-repair-shops", "the one category with a real US gap"],
+
+  /* batch 21 — the discovery cluster */
+  ["how-to-find-businesses-that-need-a-website", "/resources/google-maps-prospecting-for-web-designers", "using Maps specifically"],
+  ["how-to-find-businesses-that-need-a-website", "/resources/how-to-build-a-lead-list-for-a-web-design-agency", "turning that into a list"],
+  ["free-ways-to-find-businesses-without-websites", "/resources/google-maps-prospecting-for-web-designers", "the manual Maps method in detail"],
+  ["how-many-local-businesses-have-no-website", "/resources/how-to-find-small-businesses-without-a-website-in-india", "the Indian numbers, corrected"],
+  ["which-indian-cities-have-the-biggest-website-gap", "/resources/how-to-find-small-businesses-without-a-website-in-india", "how to search them"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/how-to-build-a-lead-list-for-a-web-design-agency", "the list these checks feed"],
+  ["bought-database-vs-live-search", "/resources/how-to-build-a-lead-list-for-a-web-design-agency", "maintaining what you build"],
 ];
 
 async function main() {
