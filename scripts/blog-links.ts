@@ -98,6 +98,14 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["territory-planning-splitting-a-city-between-reps", "/resources/should-you-niche-down-what-the-data-says", "how large a category actually is"],
   ["hourly-project-or-value-pricing-model", "/resources/your-first-10-web-design-clients", "pricing the first ten"],
   ["qualifying-a-local-lead-before-you-call", "/resources/how-to-start-a-web-design-agency-in-india", "starting out"],
+
+  /* batch 13 — the international cluster */
+  ["how-many-local-businesses-have-no-website", "/resources/india-vs-uk-vs-australia-website-adoption", "the three markets compared"],
+  ["which-business-types-least-likely-to-have-a-website", "/resources/india-vs-uk-vs-australia-website-adoption", "the same categories in developed markets"],
+  ["how-many-local-businesses-have-no-website", "/resources/the-real-size-of-the-indian-web-design-market", "what the Indian pool is worth"],
+  ["how-to-start-a-web-design-agency-in-india", "/resources/how-indian-agencies-win-uk-and-australian-clients", "selling overseas instead"],
+  ["should-you-niche-down-what-the-data-says", "/resources/how-indian-agencies-win-uk-and-australian-clients", "why niching works overseas"],
+  ["tier-1-vs-tier-2-india-website-gap", "/resources/the-real-size-of-the-indian-web-design-market", "sizing the pool"],
 ];
 
 async function main() {
