@@ -46,6 +46,14 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["how-much-to-charge-for-a-website-india", "/resources/handling-its-too-expensive-without-discounting", "defending the number without discounting"],
   ["how-to-sell-websites-to-restaurants", "/resources/which-local-verticals-actually-pay-for-a-website", "how restaurants rank against other verticals"],
   ["whatsapp-outreach-local-business-india", "/resources/qualifying-a-local-lead-before-you-call", "checks to run before you message"],
+
+  /* batch 7 — data engineering, free methods, territory */
+  ["apollo-alternative-local-business-leads", "/resources/scraping-google-maps-for-leads-what-breaks", "what building this yourself involves"],
+  ["how-to-find-businesses-that-need-a-website", "/resources/free-ways-to-find-businesses-without-websites", "the free methods, costed in hours"],
+  ["how-many-local-businesses-have-no-website", "/resources/scraping-google-maps-for-leads-what-breaks", "how the index is collected"],
+  ["qualifying-a-local-lead-before-you-call", "/resources/territory-planning-splitting-a-city-between-reps", "splitting the list between people"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/territory-planning-splitting-a-city-between-reps", "turning a vertical into a territory"],
+  ["how-to-find-businesses-that-need-a-website", "/resources/scraping-google-maps-for-leads-what-breaks", "why the data is harder than the search"],
 ];
 
 async function main() {
