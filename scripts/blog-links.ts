@@ -222,6 +222,15 @@ const EDGES: [from: string, to: string, anchor: string][] = [
   ["justdial-indiamart-as-lead-sources", "/resources/best-lead-generation-tools-for-indian-agencies", "the wider Indian tooling picture"],
   ["how-to-find-small-businesses-without-a-website-in-india", "/resources/best-lead-generation-tools-for-indian-agencies", "the tools for this market"],
   ["lead-generation-tools-that-work-outside-the-us", "/resources/best-lead-generation-tools-for-web-design-agencies", "the tools, by job"],
+
+  /* batch 27 — keyword-targeted honest answers */
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/web-design-for-dentists-an-honest-look", "the most recommended niche, checked"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/web-design-for-contractors-where-the-leads-are", "the trades, by country"],
+  ["which-local-verticals-actually-pay-for-a-website", "/resources/high-ticket-web-design-niches-in-india", "the same verticals ranked by ticket"],
+  ["are-lawyers-and-accountants-a-good-web-design-niche", "/resources/web-design-for-dentists-an-honest-look", "the same pattern in dentistry"],
+  ["how-to-sell-websites-to-wholesalers", "/resources/high-ticket-web-design-niches-in-india", "where wholesalers rank on ticket"],
+  ["how-to-sell-websites-to-car-repair-shops", "/resources/web-design-for-contractors-where-the-leads-are", "the adjacent trades"],
+  ["how-much-to-charge-for-a-website-india", "/resources/high-ticket-web-design-niches-in-india", "which verticals support the top band"],
 ];
 
 async function main() {
