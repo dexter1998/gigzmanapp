@@ -4,11 +4,15 @@ import { sendBulkEmail, fillTemplate } from "@/lib/email/send-bulk";
 import { recordCronRun } from "@/lib/cron-runs";
 
 /**
- * Advances every active campaign batch by whatever's due. Runs every 10 minutes rather than once
- * a day like the lifecycle cron: at ~14,225 recipients/day/batch and SES's confirmed 14/sec
- * account cap, a single daily tick can't fit the whole day's volume inside a 300s function.
- * Spreading the same total across ~144 ticks/day keeps each tick small (bounded by CHUNK_LIMIT)
- * and nowhere near the per-second cap.
+ * Advances every active campaign batch by whatever's due.
+ *
+ * Was every 10 minutes -- at ~14,225 recipients/day/batch and SES's confirmed 14/sec account cap,
+ * a single daily tick can't fit the whole day's volume inside a 300s function (300s at
+ * SEND_INTERVAL_MS below is ~2,300 sends, an order of magnitude short). Forced down to once daily
+ * (vercel.json) because Vercel's Hobby plan rejects any cron more frequent than daily outright --
+ * this account is on Hobby, not Pro. Until either the plan changes or this moves off the Vercel
+ * cron primitive (a queue + multiple invocations, or a longer-running worker), a large campaign
+ * batch will send across multiple days rather than the one this comment used to promise.
  *
  * Idempotent like the lifecycle cron: a tick that dies partway just gets picked up by the next
  * one, since sendBulkEmail's claim-then-send means nothing here can double-send. Pausing a

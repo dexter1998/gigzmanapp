@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/campaign-email",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/jobs-refresh",
