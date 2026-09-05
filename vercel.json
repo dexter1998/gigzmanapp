@@ -12,6 +12,14 @@
     {
       "path": "/api/cron/pseo",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/campaign-email",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/jobs-refresh",
+      "schedule": "0 2 * * *"
     }
   ]
 }

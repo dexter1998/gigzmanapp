@@ -1,15 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { BuildingIcon, UserIcon } from "@/components/icons";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BuildingIcon, UserIcon, TableIcon, SearchIcon } from "@/components/icons";
 
 type WorkMode = "company" | "independent";
+type ProductMode = "leads" | "jobs";
 
 export default function OnboardingPage() {
+  // useSearchParams needs a Suspense boundary in the app router.
+  return (
+    <Suspense fallback={null}>
+      <OnboardingFlow />
+    </Suspense>
+  );
+}
+
+function OnboardingFlow() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
+
+  /**
+   * Step and product mode move together, so they are one piece of state rather than three.
+   *
+   * The mode hint can only be read after mount (it may live in a cookie, and the server has no
+   * document), so seeding it in a lazy useState initializer would render step 1 on the server and
+   * step 2 on the client — a hydration mismatch. Syncing from the browser after mount is exactly
+   * the "subscribe to an external system" case an effect is for; keeping it to a single setState
+   * is what stops it cascading.
+   */
+  const [flow, setFlow] = useState<{ step: number; productMode: ProductMode | null; skippedProductStep: boolean }>({
+    step: 1,
+    productMode: null,
+    skippedProductStep: false,
+  });
+  const { step, productMode, skippedProductStep } = flow;
+  const setStep = (next: number) => setFlow((f) => ({ ...f, step: next }));
 
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -26,7 +53,22 @@ export default function OnboardingPage() {
   const [phoneError, setPhoneError] = useState("");
   const [phoneBusy, setPhoneBusy] = useState(false);
 
-  const totalSteps = hasPhone === false ? 3 : 2;
+  // The product step only counts toward the progress bar when it was actually shown.
+  const totalSteps = (skippedProductStep ? 2 : 3) + (hasPhone === false ? 1 : 0);
+
+  useEffect(() => {
+    // Query param first (a direct /onboarding?mode=… link), then the cookie the login page set
+    // before the OAuth round trip dropped the param.
+    const fromUrl = searchParams.get("mode");
+    const fromCookie = document.cookie.match(/(?:^|;\s*)mantis_mode=(jobs|leads)/)?.[1];
+    const mode = fromUrl ?? fromCookie;
+    if (mode !== "jobs" && mode !== "leads") return;
+    document.cookie = "mantis_mode=; path=/; max-age=0";
+    // Reads browser-only state after mount; doing it during render would desync hydration.
+    // See the note on `flow` above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFlow({ step: 2, productMode: mode, skippedProductStep: true });
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -45,9 +87,13 @@ export default function OnboardingPage() {
       .catch(() => setHasPhone(true)); // fail closed — don't block finishing onboarding over this
   }, []);
 
+  function selectProductMode(mode: ProductMode) {
+    setFlow((f) => ({ ...f, productMode: mode, step: 2 }));
+  }
+
   function selectWorkMode(mode: WorkMode) {
     setWorkMode(mode);
-    setStep(2);
+    setStep(3);
   }
 
   const step2Valid =
@@ -69,10 +115,22 @@ export default function OnboardingPage() {
           website: website || undefined,
         }),
       });
+      // Saved separately from the onboarding payload: dashboard_mode lives on user_profiles and
+      // the onboarding route writes the agency/freelancer profile tables, so folding it in there
+      // would mean teaching that route about a field it has nothing else to do with.
+      if (productMode) {
+        await fetch("/api/user/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dashboard_mode: productMode }),
+        }).catch(() => {
+          /* defaults to leads — recoverable from the settings dropdown */
+        });
+      }
       if (hasPhone === false) {
-        setStep(3);
+        setStep(4);
       } else {
-        router.push("/home");
+        router.push("/start");
       }
     } finally {
       setSubmitting(false);
@@ -93,7 +151,7 @@ export default function OnboardingPage() {
         setPhoneError(data.error ?? "Couldn't save that number");
         return;
       }
-      router.push("/home");
+      router.push("/start");
     } finally {
       setPhoneBusy(false);
     }
@@ -119,6 +177,30 @@ export default function OnboardingPage() {
         <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 32 }}>
           {step === 1 && (
             <>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>What are you here to find?</h1>
+              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
+                Mantis has two dashboards. You can switch between them any time from settings.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <WorkModeCard
+                  icon={<SearchIcon />}
+                  title="Leads"
+                  desc="Local businesses that need a website — for my agency or freelance work."
+                  onClick={() => selectProductMode("leads")}
+                />
+                <WorkModeCard
+                  icon={<TableIcon />}
+                  title="Jobs"
+                  desc="Open roles at businesses near me, with one-click applications."
+                  onClick={() => selectProductMode("jobs")}
+                />
+              </div>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
                 This helps us shape your workspace around how you actually operate.
@@ -141,7 +223,7 @@ export default function OnboardingPage() {
             </>
           )}
 
-          {step === 2 && workMode === "company" && (
+          {step === 3 && workMode === "company" && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Let&apos;s set up your workspace</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -163,7 +245,7 @@ export default function OnboardingPage() {
             </>
           )}
 
-          {step === 2 && workMode === "independent" && (
+          {step === 3 && workMode === "independent" && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Almost there</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -184,7 +266,7 @@ export default function OnboardingPage() {
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Add a mobile number?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -195,7 +277,7 @@ export default function OnboardingPage() {
               {phoneError && <p style={{ fontSize: 12, color: "#b45309", margin: "0 0 10px" }}>{phoneError}</p>}
 
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={() => router.push("/home")} style={secondaryBtn}>
+                <button type="button" onClick={() => router.push("/start")} style={secondaryBtn}>
                   Skip
                 </button>
                 <button

@@ -318,3 +318,28 @@ body {
   .leads-split { grid-template-columns: 1fr !important; }
   .pseo-searchbar { grid-template-columns: 1fr 1fr !important; }
 }
+
+/* Dashboard-mode badge (components/DashboardModeBadge.tsx). The dot pulses so a mode switch is
+   noticeable in peripheral vision without the badge itself moving or resizing — a pill that
+   changed size on a timer would shift the toolbar row it sits in. */
+.mode-badge-dot {
+  animation: mode-badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes mode-badge-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--g-green-mint);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-badge-dot {
+    animation: none;
+  }
+}

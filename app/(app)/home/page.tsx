@@ -8,6 +8,7 @@ import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/li
 import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
 import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
+import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { HeatGauge } from "@/components/HeatGauge";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 
@@ -1078,6 +1079,7 @@ export default function HomePage() {
         <ToolbarButton>
           <BellIcon />
         </ToolbarButton>
+        <DashboardModeBadge />
         <CreditsIndicator />
       </div>
 

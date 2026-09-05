@@ -680,3 +680,171 @@ ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS variables TEXT[] NOT NULL DEFAULT
 -- {{tag}} (fillTemplate leaves unknown tags alone, see lib/email/send-bulk.ts), visible in preview
 -- before anything sends.
 
+-- ============================================================================
+-- Jobs mode (2026-09-03)
+--
+-- A second product surface alongside Leads: the same map + chat discovery loop, but the thing
+-- discovered is an open role at a local business rather than a business that needs a website.
+-- It reuses the leads pipeline's shape deliberately -- same grid/bbox reads, same credit
+-- metering, same 10-day-style refresh cadence -- so there is one discovery architecture in this
+-- codebase, not two.
+-- ============================================================================
+
+-- Which dashboard a user lands on and sees in the nav. Not a plan/permission -- purely which of
+-- the two product surfaces this person came here for. Defaults to 'leads' so every existing
+-- account keeps exactly the app it has today.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS dashboard_mode TEXT NOT NULL DEFAULT 'leads';
+-- leads | jobs
+
+-- One row per company we have found a careers surface for. Kept separate from `leads` rather than
+-- bolted onto it with nullable columns: a job-bearing company is not necessarily a sellable lead
+-- (it may already have a great website -- in fact it almost always does, since having a careers
+-- page at all implies one), and the two tables' lifecycles and refresh cadences differ.
+CREATE TABLE IF NOT EXISTS job_companies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  domain TEXT NOT NULL UNIQUE,             -- registrable host, lowercased, no "www."
+  company_name TEXT,
+  -- Nullable link back to the Places row this company was discovered through. Nullable because a
+  -- company can also enter via a directory/ATS sweep that never touched Places.
+  lead_id UUID REFERENCES leads(id),
+  category TEXT,                           -- Places primary_type, when discovered via Places
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  city_slug TEXT,
+  country_code TEXT,
+  favicon_url TEXT,
+  careers_url TEXT,                        -- the careers/jobs page we resolved
+  -- How we got the listings for this company. Recorded because the three tiers have very
+  -- different trust levels and the UI grades confidence off this (see lib/jobs/scraper.ts).
+  extraction_method TEXT,                  -- jsonld_schema | ats_api | heuristic_html
+  ats_platform TEXT,                       -- greenhouse | lever | workable | keka | ... | null
+  -- Prestige tier. Drives the "golden opportunity" card treatment.
+  golden_tier TEXT,                        -- big_tech | yc | unicorn | null
+  -- 10-day refresh bookkeeping: scraped_at is when we last actually fetched, next_refresh_at is
+  -- what the cron sorts on so a backlog drains oldest-first instead of re-scraping the same rows.
+  scraped_at TIMESTAMPTZ,
+  next_refresh_at TIMESTAMPTZ,
+  scrape_status TEXT NOT NULL DEFAULT 'pending',   -- pending | ok | failed | no_careers_page
+  scrape_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_companies_latlng ON job_companies(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_job_companies_refresh ON job_companies(next_refresh_at)
+  WHERE scrape_status <> 'no_careers_page';
+CREATE INDEX IF NOT EXISTS idx_job_companies_city ON job_companies(city_slug);
+
+-- One row per open role. `source_hash` (not the URL) is the identity key: the same role often
+-- moves URL between refreshes on heuristic-scraped sites, and a plain URL key would resurrect it
+-- as a "new" job on every scrape.
+CREATE TABLE IF NOT EXISTS job_listings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL REFERENCES job_companies(id) ON DELETE CASCADE,
+  source_hash TEXT NOT NULL UNIQUE,        -- sha256(company_id + normalized title + location)
+  title TEXT NOT NULL,                     -- raw title exactly as scraped
+  apply_url TEXT,
+  location TEXT,                           -- raw location string as scraped
+  description TEXT,
+
+  -- Normalized fields. Derived at scrape time by lib/jobs/normalize.ts, stored rather than
+  -- computed on read so that filtering/sorting is an indexed column scan and so a later change to
+  -- the normalizer is visible as a data migration rather than silently reinterpreting old rows.
+  job_family TEXT,                         -- engineering | sales | marketing | ops | ...
+  seniority TEXT,                          -- intern | entry | mid | senior | staff | lead | manager | director
+  seniority_rank SMALLINT,                 -- 0..7, for range filters and ORDER BY
+  work_mode TEXT,                          -- remote | hybrid | onsite
+  employment_type TEXT,                    -- full_time | part_time | contract | internship
+  min_experience_years NUMERIC(4,1),
+  max_experience_years NUMERIC(4,1),
+
+  -- Compensation. `ctc_source` distinguishes a figure the employer actually published from a
+  -- market estimate we attached, because showing a scraped-from-elsewhere band as if the employer
+  -- quoted it would be a lie to the job seeker.
+  ctc_min_inr INTEGER,
+  ctc_max_inr INTEGER,
+  ctc_source TEXT,                         -- posting | ambitionbox_estimate | null
+  ctc_confidence TEXT,                     -- high | medium | low
+
+  posted_at TIMESTAMPTZ,
+  -- Soft-expiry: a listing that disappears from its source is marked closed, never deleted --
+  -- job_applications reference it, and "I applied to this and it's gone now" is information.
+  is_open BOOLEAN NOT NULL DEFAULT true,
+  closed_at TIMESTAMPTZ,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_listings_company ON job_listings(company_id);
+CREATE INDEX IF NOT EXISTS idx_job_listings_open ON job_listings(is_open) WHERE is_open = true;
+CREATE INDEX IF NOT EXISTS idx_job_listings_seniority ON job_listings(seniority_rank);
+CREATE INDEX IF NOT EXISTS idx_job_listings_family ON job_listings(job_family);
+
+-- The standardized application profile -- one row per user, filled once, replayed into every
+-- application form. Field set is the intersection of what Greenhouse/Lever/Workable actually ask
+-- for, plus the three fields every Indian employer asks for and no Western ATS has a slot for
+-- (current CTC, expected CTC, notice period). See lib/jobs/application-form.ts.
+CREATE TABLE IF NOT EXISTS applicant_profiles (
+  user_email TEXT PRIMARY KEY REFERENCES user_profiles(email),
+  first_name TEXT,
+  last_name TEXT,
+  phone TEXT,
+  city TEXT,
+  country_code TEXT,
+  resume_url TEXT,
+  resume_filename TEXT,
+  resume_text TEXT,                        -- parsed plaintext, used for the opportunity match score
+  linkedin_url TEXT,
+  portfolio_url TEXT,
+  total_experience_years NUMERIC(4,1),
+  current_ctc_inr INTEGER,
+  expected_ctc_inr INTEGER,
+  notice_period_days INTEGER,
+  job_family TEXT,                         -- the profile the seeker wants, normalized like listings
+  seniority TEXT,
+  preferred_work_mode TEXT,                -- remote | hybrid | onsite | any
+  cover_letter TEXT,
+  -- Gate for the locked opportunity-% on job cards: the score is only shown once there is enough
+  -- of a profile to compute one honestly. Set by the API, not the client.
+  is_complete BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Saved/applied tracking. The jobs-mode counterpart of `unlocks` -- but note this one is NOT a
+-- paywall: saving or marking-applied is free. Applications are the jobs dashboard's headline
+-- number the way unlocked leads are the leads dashboard's.
+CREATE TABLE IF NOT EXISTS job_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID NOT NULL REFERENCES job_listings(id) ON DELETE CASCADE,
+  user_email TEXT NOT NULL REFERENCES user_profiles(email),
+  status TEXT NOT NULL DEFAULT 'saved',    -- saved | applied | interviewing | rejected | offer
+  applied_at TIMESTAMPTZ,
+  notes TEXT,
+  -- Snapshot of the opportunity score at the moment of applying. Kept because both the listing and
+  -- the applicant profile drift, and "what did it say when I applied" is the useful number later.
+  match_score SMALLINT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (job_id, user_email)
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_applications_user ON job_applications(user_email, status);
+
+-- Company-level salary bands scraped from public salary aggregators. Company-level, not
+-- role-level, because that is the granularity the sources actually have for anything smaller than
+-- a household-name employer -- claiming role-level precision we do not have would be worse than
+-- showing an honest company-wide band.
+CREATE TABLE IF NOT EXISTS company_salary_bands (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_slug TEXT NOT NULL,              -- normalized company name, the lookup key
+  source TEXT NOT NULL,                    -- ambitionbox | glassdoor | ...
+  job_family TEXT,                         -- null = company-wide band
+  seniority TEXT,
+  ctc_min_inr INTEGER,
+  ctc_max_inr INTEGER,
+  sample_size INTEGER,                     -- self-reported datapoints behind the band
+  scraped_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (company_slug, source, job_family, seniority)
+);
+
+CREATE INDEX IF NOT EXISTS idx_company_salary_slug ON company_salary_bands(company_slug);

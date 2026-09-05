@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { googleSignIn, emailPasswordSignIn } from "./actions";
 import { AuthCarousel } from "@/components/auth/Carousel";
@@ -10,6 +10,16 @@ type Tab = "signin" | "signup";
 export default function LoginPage() {
   const [tab, setTab] = useState<Tab>("signin");
   const isSignup = tab === "signup";
+
+  // Someone arriving from the jobs landing page (/login?mode=jobs) has already said which
+  // dashboard they want. That answer has to survive an OAuth round trip, which drops query params,
+  // so it is parked in a short-lived cookie that the onboarding flow reads back.
+  useEffect(() => {
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    if (mode === "jobs" || mode === "leads") {
+      document.cookie = `mantis_mode=${mode}; path=/; max-age=1800; samesite=lax`;
+    }
+  }, []);
 
   // Email + password
   const [email, setEmail] = useState("");

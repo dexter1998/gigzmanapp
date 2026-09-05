@@ -40,6 +40,19 @@ export const CREDIT_COST = {
   verified_phone: 30,
   find_founder: 20,
   pitch_script: 10,
+
+  /* -------------------------------------------------------------- jobs mode
+   * Job discovery is materially cheaper for us than lead discovery: the careers-page scrape is
+   * our own HTTP traffic, not a metered Google Places call, so the only real cost is bandwidth
+   * and the refresh cadence. Priced to reflect that rather than mirrored off the leads rate card.
+   *
+   * Nothing on the seeker side of jobs is charged at all — saving a job, marking it applied, and
+   * seeing the opportunity match are free, deliberately: a job seeker is not the person who
+   * should be metered, and gating the match score behind credits (rather than behind filling in
+   * a profile, which is what actually makes the score computable) would be user-hostile. */
+  job_area_scan: 4,
+  /** Salary band lookup — one scrape of a public aggregator, cached per company for 30 days. */
+  salary_lookup: 3,
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COST;

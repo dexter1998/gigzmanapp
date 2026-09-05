@@ -5,20 +5,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
-import { HomeIcon, ChatBubbleIcon, TableIcon, WhatsAppIcon, PartnerIcon, SettingsIcon } from "./icons";
+import { HomeIcon, ChatBubbleIcon, TableIcon, WhatsAppIcon, PartnerIcon, SettingsIcon, UserIcon } from "./icons";
 
 type ChatSummary = { id: string; title: string };
 
-const NAV_ITEMS = [
+const LEADS_NAV = [
   { href: "/home", label: "Home", icon: HomeIcon },
   { href: "/chat", label: "Chat", icon: ChatBubbleIcon },
   { href: "/my-leads", label: "Leads", icon: TableIcon },
+] as const;
+
+/** Same three-slot shape as leads mode: a map, a working surface, and a saved list. */
+const JOBS_NAV = [
+  { href: "/jobs/map", label: "Jobs", icon: HomeIcon },
+  { href: "/jobs/applications", label: "Applications", icon: TableIcon },
+  { href: "/jobs/profile", label: "Job profile", icon: UserIcon },
 ] as const;
 
 export function AppSidebar({ name, email }: { name: string | null; email: string }) {
   const pathname = usePathname();
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [chats, setChats] = useState<ChatSummary[]>([]);
+  const [mode, setMode] = useState<"leads" | "jobs">("leads");
 
   useEffect(() => {
     fetch("/api/chats")
@@ -26,6 +34,18 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
       .then((data: { chats?: ChatSummary[] }) => setChats(data.chats ?? []))
       .catch(() => {});
   }, [pathname]);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => setMode(d?.profile?.dashboard_mode === "jobs" ? "jobs" : "leads"))
+      .catch(() => {
+        /* falls back to leads — the mode every existing account is already on */
+      });
+  }, [pathname]);
+
+  const isJobsMode = mode === "jobs";
+  const NAV_ITEMS = isJobsMode ? JOBS_NAV : LEADS_NAV;
 
   return (
     <>
@@ -49,7 +69,13 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {NAV_ITEMS.map((item) => {
-            const active = pathname?.startsWith(item.href);
+            // Exact match for the mode's root ("/jobs/map"), prefix match for the rest. A plain
+            // startsWith would light up "Jobs" while you are on /jobs/applications, marking two
+            // items active at once.
+            const active =
+              item.href === "/jobs/map" || item.href === "/home"
+                ? pathname === item.href
+                : pathname?.startsWith(item.href);
             const Icon = item.icon;
             const color = active ? "var(--g-green-text)" : "var(--g-ink-soft)";
             return (
@@ -76,7 +102,9 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
           })}
         </nav>
 
-        <div style={{ marginTop: 22 }}>
+        {/* Chat threads are a leads-mode surface — the chat planner only knows lead intents, so
+            listing threads in jobs mode would offer a tool that cannot answer a jobs question. */}
+        <div style={{ marginTop: 22, display: isJobsMode ? "none" : undefined }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "0 10px 8px" }}>
             Your chats
           </div>

@@ -3,7 +3,7 @@ import { sql } from "@/lib/db";
 /** One row per cron execution — the admin panel's "did last night's run happen" answer.
  * Best-effort writes; a bookkeeping failure must not fail the job. */
 export async function recordCronRun(
-  job: "enrich" | "lifecycle_email" | "pseo" | "campaign_email",
+  job: "enrich" | "lifecycle_email" | "pseo" | "campaign_email" | "jobs_refresh",
   startedAt: Date,
   ok: boolean,
   summary?: Record<string, unknown>,

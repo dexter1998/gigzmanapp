@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
+import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { DownloadIcon } from "@/components/icons";
 import { SECTION_NAMES, formatCategory } from "@/lib/categories";
 import { LeadsTable, type Lead } from "@/components/leads/LeadsTable";
@@ -128,7 +129,10 @@ export default function LeadsPage() {
     <div style={{ padding: "28px 24px 60px", maxWidth: 1280, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Leads</h1>
-        <CreditsIndicator />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <DashboardModeBadge />
+          <CreditsIndicator />
+        </div>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 14 }}>
