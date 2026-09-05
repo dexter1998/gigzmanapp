@@ -57,12 +57,12 @@ async function main() {
 
     const [out] = (await pseoSql`
       INSERT INTO leads (
-        place_id, business_name, category, address, lat, lng, phone, has_website,
+        place_id, business_name, category, address, lat, lng, phone, has_website, website_url,
         website_checked_at, is_competitor, rating, review_count,
         country_code, city_slug, area_slug, postal_code, location_via, location_resolved_at
       ) VALUES (
         ${r.place_id}, ${r.business_name}, ${r.primary_type}, ${r.address ?? null}, ${r.lat}, ${r.lng},
-        ${r.phone ?? null}, ${hasSite}, ${new Date()}, ${isCompetitor},
+        ${r.phone ?? null}, ${hasSite}, ${r.website ?? null}, ${new Date()}, ${isCompetitor},
         ${r.rating ?? null}, ${r.review_count ?? null},
         ${loc.value.countryCode}, ${loc.value.citySlug}, ${loc.value.areaSlug}, ${loc.value.postalCode},
         ${loc.value.via}, now()
@@ -79,6 +79,7 @@ async function main() {
         location_via    = COALESCE(leads.location_via, EXCLUDED.location_via),
         location_resolved_at = COALESCE(leads.location_resolved_at, now()),
         has_website     = CASE WHEN leads.has_website IS NULL THEN EXCLUDED.has_website ELSE leads.has_website END,
+        website_url     = CASE WHEN leads.website_url IS NULL THEN EXCLUDED.website_url ELSE leads.website_url END,
         website_checked_at = CASE WHEN leads.has_website IS NULL THEN now() ELSE leads.website_checked_at END
       RETURNING (xmax = 0) AS is_new
     `) as unknown as Array<{ is_new: boolean }>;

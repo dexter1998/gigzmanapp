@@ -848,3 +848,11 @@ CREATE TABLE IF NOT EXISTS company_salary_bands (
 );
 
 CREATE INDEX IF NOT EXISTS idx_company_salary_slug ON company_salary_bands(company_slug);
+
+-- 2026-09-05: jobs discovery was reading the lead's website from lead_enrichment.website_url,
+-- populated only by the separate paid per-lead enrichment flow -- so job discovery worked only
+-- for the small fraction of leads someone had already unlocked and enriched, not "any business
+-- with a website" as intended. Google Places already returns websiteUri in the very same
+-- discovery call that sets has_website (see app/api/leads/find/route.ts, scripts/places-ingest.ts)
+-- -- it was being read for a boolean and then thrown away. Stored properly instead of re-fetched.
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS website_url TEXT;

@@ -16,8 +16,14 @@ export const maxDuration = 60;
  * set for free and the only new cost is our own crawl. That is also why this charges a flat
  * `job_area_scan` rather than per-call — there are no metered upstream calls to pass through.
  *
+ * Reads leads.website_url directly rather than joining lead_enrichment. Google Places returns the
+ * actual URL in the same discovery call that sets has_website (see app/api/leads/find/route.ts,
+ * scripts/places-ingest.ts) -- lead_enrichment.website_url only gets populated by the separate,
+ * paid, opt-in per-lead enrichment flow, so joining it here meant job discovery only ever found
+ * candidates among the small fraction of leads someone had already unlocked and enriched.
+ *
  * Two filters are applied before anything is crawled, and both are deliberate:
- *   - has_website = true. No website means no careers page, by definition.
+ *   - website_url IS NOT NULL. No website means no careers page, by definition.
  *   - jobs-eligible category. See lib/jobs/categories.ts for why the leads allowlist is too broad.
  */
 
@@ -41,20 +47,18 @@ export async function POST(req: Request) {
   // Candidates already known to the leads pipeline for this viewport.
   const candidates = await sql`
     SELECT l.id, l.business_name, l.category, l.lat, l.lng, l.city_slug, l.country_code,
-           e.website_url
+           l.website_url
       FROM leads l
-      LEFT JOIN lead_enrichment e ON e.lead_id = l.id
-     WHERE l.has_website = true
+     WHERE l.website_url IS NOT NULL
        AND l.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
        AND l.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}
        AND l.category = ANY(${JOBS_ELIGIBLE_TYPES_SQL})
-       AND e.website_url IS NOT NULL
        -- Skip anything already registered: re-crawling on every pan would burn the crawl budget
        -- re-confirming what the 10-day refresh already keeps current.
        AND NOT EXISTS (
          SELECT 1 FROM job_companies jc
           WHERE jc.domain = regexp_replace(
-            regexp_replace(lower(e.website_url), '^https?://', ''), '^www\\.|/.*$', '', 'g')
+            regexp_replace(lower(l.website_url), '^https?://', ''), '^www\\.|/.*$', '', 'g')
        )
      ORDER BY ((l.lat - ${(swLat + neLat) / 2}) ^ 2 + (l.lng - ${(swLng + neLng) / 2}) ^ 2) ASC
      LIMIT ${MAX_COMPANIES_PER_SCAN}

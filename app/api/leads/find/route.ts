@@ -356,13 +356,16 @@ export async function POST(req: NextRequest) {
       if (!isCompetitor && !place.nationalPhoneNumber) continue;
 
       const [row] = await sql`
-        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, website_checked_at, is_competitor, rating, review_count)
+        INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, website_url, website_checked_at, is_competitor, rating, review_count)
         VALUES (
           ${scan.id}, ${place.id}, ${name}, ${place.primaryType ?? section},
           ${place.formattedAddress ?? null}, ${place.location?.latitude ?? null}, ${place.location?.longitude ?? null},
-          ${place.nationalPhoneNumber ?? null}, ${Boolean(place.websiteUri)}, now(), ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
+          ${place.nationalPhoneNumber ?? null}, ${Boolean(place.websiteUri)}, ${place.websiteUri ?? null}, now(), ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
         )
-        ON CONFLICT (place_id) DO UPDATE SET place_id = EXCLUDED.place_id
+        -- website_url backfills on a re-scanned row only when we didn't already have one --
+        -- never overwrites a URL enrichment may since have refined.
+        ON CONFLICT (place_id) DO UPDATE SET
+          website_url = CASE WHEN leads.website_url IS NULL THEN EXCLUDED.website_url ELSE leads.website_url END
         RETURNING id, lat, lng, is_competitor
       `;
       rows.push(row as { id: string; lat: number | null; lng: number | null; is_competitor: boolean });
