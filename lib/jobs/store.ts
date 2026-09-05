@@ -175,12 +175,20 @@ export async function refreshCompany(companyId: string, domain: string): Promise
   return { ...stats, status };
 }
 
-/** Companies whose listings are stale, oldest first. Used by the jobs cron. */
+/**
+ * Companies whose listings are stale, oldest first. Used by the jobs cron.
+ *
+ * Deliberately does NOT exclude scrape_status = 'failed'. A failure here is far more often a
+ * transient network blip (timeout, DNS hiccup, momentary rate limit) than a permanently dead
+ * domain -- excluding it forever meant one bad request on the very first crawl silently and
+ * permanently dropped a real company out of the pipeline. next_refresh_at already paces retries
+ * (10 days, same as a normal refresh -- see refreshCompany), so a domain that keeps genuinely
+ * failing just keeps costing one cheap retry per cycle rather than being blacklisted on attempt one.
+ */
 export async function dueForRefresh(limit: number): Promise<Array<{ id: string; domain: string }>> {
   const rows = await sql`
     SELECT id, domain FROM job_companies
-     WHERE (next_refresh_at IS NULL OR next_refresh_at <= now())
-       AND scrape_status <> 'failed'
+     WHERE next_refresh_at IS NULL OR next_refresh_at <= now()
      ORDER BY next_refresh_at NULLS FIRST
      LIMIT ${limit}
   `;
