@@ -35,7 +35,14 @@ export type MatchInput = {
 };
 
 export type MatchReason = { label: string; positive: boolean };
-export type MatchResult = { score: number; reasons: MatchReason[] };
+/**
+ * `scorable: false` is the one case score=0 does NOT mean "0% fit" -- it means no dimension had
+ * data on both sides to compare at all (a title-only heuristic-scraped listing, say). Every other
+ * 0 is a real, computed, truthful "this does not fit" and must be shown as a score, not hidden
+ * behind an "insufficient data" message -- conflating the two here previously made every genuine
+ * mismatch display as if the profile just needed more filling in, which it didn't.
+ */
+export type MatchResult = { score: number; scorable: boolean; reasons: MatchReason[] };
 
 /**
  * Weights sum to 100 only when every dimension is known. When the listing is missing a field
@@ -138,13 +145,17 @@ export function computeMatch({ job, profile }: MatchInput): MatchResult {
   }
 
   // Nothing comparable at all — a title-only listing against any profile. Returning 0 would read
-  // as "bad fit" when the truth is "not enough information", so this is surfaced as null-ish 0
-  // with an explicit reason and the UI shows "Not enough detail" rather than a percentage.
+  // as "bad fit" when the truth is "not enough information" — scorable: false is what lets the UI
+  // tell this apart from a real, computed 0% match.
   if (possible === 0) {
-    return { score: 0, reasons: [{ label: "Not enough detail in this listing to score it", positive: false }] };
+    return {
+      score: 0,
+      scorable: false,
+      reasons: [{ label: "Not enough detail in this listing to score it", positive: false }],
+    };
   }
 
-  return { score: Math.round((earned / possible) * 100), reasons };
+  return { score: Math.round((earned / possible) * 100), scorable: true, reasons };
 }
 
 function cap(s: string): string {

@@ -33,6 +33,7 @@ export type JobCardData = {
   confidence: "high" | "low";
   applicationStatus: string | null;
   matchScore: number | null;
+  matchScorable: boolean | null;
   matchReasons: Array<{ label: string; positive: boolean }> | null;
 };
 
@@ -132,7 +133,7 @@ export function JobCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <MatchPill score={job.matchScore} />
+        <MatchPill score={job.matchScore} scorable={job.matchScorable} />
         <button
           type="button"
           onClick={(e) => {
@@ -158,7 +159,7 @@ export function JobCard({
  * complete: there is genuinely nothing to show before then, and inventing a placeholder number
  * would teach people to distrust the real one.
  */
-function MatchPill({ score }: { score: number | null }) {
+function MatchPill({ score, scorable }: { score: number | null; scorable: boolean | null }) {
   if (score === null) {
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)" }}>
@@ -167,7 +168,10 @@ function MatchPill({ score }: { score: number | null }) {
       </span>
     );
   }
-  if (score === 0) {
+  // scorable === false is the only case a 0 means "nothing to compare", not "0% fit" -- a real
+  // computed 0 (a genuine mismatch, e.g. wrong job family) must still show as a score below,
+  // not read as if the profile just needs more filling in.
+  if (scorable === false) {
     return <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)" }}>Not enough detail to score</span>;
   }
   const band = matchBand(score);

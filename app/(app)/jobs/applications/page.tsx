@@ -191,6 +191,7 @@ export default function ApplicationsPage() {
                     confidence: "high",
                     applicationStatus: app.status,
                     matchScore: app.matchScore,
+                    matchScorable: true,
                     matchReasons: null,
                   })
                 }

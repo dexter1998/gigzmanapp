@@ -130,6 +130,10 @@ export async function GET(req: NextRequest) {
       confidence: r.extraction_method === "heuristic_html" ? "low" : "high",
       applicationStatus: r.application_status ?? null,
       matchScore: match?.score ?? null,
+      // Distinguishes a real, computed 0% match (a genuine mismatch — still shown as a score)
+      // from a listing with nothing to compare at all (heuristic-scraped, title-only). Both have
+      // matchScore 0; only the latter should render as "not enough detail" instead of "0% match".
+      matchScorable: match?.scorable ?? null,
       matchReasons: match?.reasons ?? null,
     };
   });
