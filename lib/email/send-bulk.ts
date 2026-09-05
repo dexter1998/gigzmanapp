@@ -78,6 +78,10 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
     `MIME-Version: 1.0`,
     `List-Unsubscribe: <${unsubUrl}>, <mailto:unsubscribe@${domain}?subject=unsubscribe>`,
     `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
+    // Only set once SES_CONFIGURATION_SET actually names a live configuration set -- SES rejects
+    // the whole send with ConfigurationSetDoesNotExist if this header names one that isn't real,
+    // so this must never be hardcoded to a default that might not exist in the account.
+    ...(process.env.SES_CONFIGURATION_SET ? [`X-SES-CONFIGURATION-SET: ${process.env.SES_CONFIGURATION_SET}`] : []),
     `X-Mantis-Campaign-Id: ${msg.campaignId}`,
     `X-Mantis-Step: ${msg.stepKey}`,
     // The dimensions SES splits its own open/click/bounce metrics on, so reporting lines up with

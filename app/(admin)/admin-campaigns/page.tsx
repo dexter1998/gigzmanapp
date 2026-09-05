@@ -23,7 +23,7 @@ export default async function CampaignsListPage() {
     <>
       <div className="adm-head">
         <h1>Campaigns</h1>
-        <span className="adm-asof">SES bulk/cold sends &mdash; mutating console</span>
+        <Link href="/admin-campaigns/new">+ New campaign</Link>
       </div>
       <div className="camp-banner">Har send yahan se real email bhejta hai. Naya campaign row seed karne ke liye db/migrations/2026-09-02-campaign-email.sql dekhein.</div>
       <Section title="All campaigns" note="Har campaign ka status, step aur recipient count.">

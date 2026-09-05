@@ -13,7 +13,7 @@ export type DueCampaignSend = {
 };
 
 /**
- * Recipient/step pairs that are due (batch start + the step's day offset has passed) and not yet
+ * Recipient/step pairs that are due (batch start + the step's minute offset has passed) and not yet
  * sent, oldest batch first, step order ascending so an earlier touch always sends before a later
  * one for the same recipient even after a cron gap. Suppression is checked here rather than by
  * the caller, so a suppressed pair never even counts toward the tick's limit.
@@ -30,7 +30,7 @@ export async function getDueCampaignSends(limit: number): Promise<DueCampaignSen
     LEFT JOIN email_sends es
       ON es.recipient = cr.email AND es.campaign_id = c.id AND es.step_key = cs.step_key
     WHERE es.id IS NULL
-      AND cbr.started_at + (cs.send_day_offset || ' days')::interval <= now()
+      AND cbr.started_at + (cs.send_offset_minutes || ' minutes')::interval <= now()
       AND NOT EXISTS (
         SELECT 1 FROM email_unsubscribes eu
         WHERE eu.email = cr.email AND eu.stream IN ('all', c.stream)

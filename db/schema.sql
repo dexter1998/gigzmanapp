@@ -595,3 +595,88 @@ CREATE TABLE IF NOT EXISTS prescanned_regions (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_prescanned_key ON prescanned_regions(city_slug, section);
 -- The route's lookup is "which region covers this point for this section", on every request.
 CREATE INDEX IF NOT EXISTS idx_prescanned_section ON prescanned_regions(section);
+
+-- ---------------------------------------------------------------------------------------------
+-- Campaign SES sends (2026-09-02). Deliberately separate from email_sends' lifecycle rules: a
+-- campaign is a named, admin-authored sequence of touches sent to an uploaded recipient list, not
+-- a behavior-triggered rule. email_sends (above) still carries the actual audit trail -- every
+-- campaign send goes through sendBulkEmail() and claims a row there exactly like lifecycle mail
+-- does, so "who got what, when" always lives in one place. See app/(admin)/admin-campaigns/.
+-- ---------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS campaigns (
+  id TEXT PRIMARY KEY,                  -- same value used as email_sends.campaign_id
+  name TEXT NOT NULL,
+  sender TEXT NOT NULL,                 -- e.g. 'Mantis Ai <hello@blogyapp.com>' -- campaign-level,
+                                         -- since cold outreach and lifecycle mail deliberately
+                                         -- send from different domains (see lib/ses.ts)
+  stream TEXT NOT NULL,                 -- matches email_sends.stream / email_unsubscribes.stream
+  status TEXT NOT NULL DEFAULT 'draft', -- draft | active | paused | done
+  created_by TEXT NOT NULL,             -- admin email, from requireAdmin()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per touch. subject/html/text carry {{placeholders}} filled per-recipient at send time
+-- via fillTemplate() (lib/email/send-bulk.ts).
+CREATE TABLE IF NOT EXISTS campaign_steps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+  step_key TEXT NOT NULL,               -- matches email_sends.step_key
+  step_order INT NOT NULL,              -- 1, 2, 3 ... display + send order
+  send_day_offset INT NOT NULL,         -- days after the recipient's batch start
+                                         -- (campaign_batch_runs.started_at)
+  subject TEXT NOT NULL,
+  html TEXT NOT NULL,
+  text TEXT NOT NULL,
+  UNIQUE (campaign_id, step_key)
+);
+CREATE INDEX IF NOT EXISTS idx_campaign_steps_campaign ON campaign_steps(campaign_id, step_order);
+
+-- Recipients + their per-row template values (a hook business name, a region + count). Imported
+-- once via CSV upload; the send loop reads from here and never re-derives content at send time,
+-- so what was previewed is exactly what goes out.
+CREATE TABLE IF NOT EXISTS campaign_recipients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+  email TEXT NOT NULL,
+  batch TEXT NOT NULL DEFAULT 'A',      -- e.g. 'A' / 'B', for staggered start dates
+  values JSONB NOT NULL DEFAULT '{}',   -- {{placeholder}} -> value, one row's worth
+  imported_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (campaign_id, email)
+);
+CREATE INDEX IF NOT EXISTS idx_campaign_recipients_campaign ON campaign_recipients(campaign_id, batch);
+
+-- The one manual trigger per (campaign, batch): admin types the campaign id to confirm, this row
+-- gets inserted, and every step's send_day_offset is measured from started_at from then on -- the
+-- cron in app/api/cron/campaign-email does the rest without any further manual click per step.
+-- started_at doubles as the scheduling mechanism: the start API lets an admin pass a future
+-- timestamp instead of "now", and getDueCampaignSends() (lib/campaigns.ts) already only picks up
+-- a step once `started_at + offset <= now()` -- a future started_at just makes every step wait,
+-- for free, with no separate "scheduled" state or extra cron logic.
+CREATE TABLE IF NOT EXISTS campaign_batch_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+  batch TEXT NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_by TEXT NOT NULL,
+  UNIQUE (campaign_id, batch)
+);
+
+-- 2026-09-03: finer-grained offsets (minutes, not days -- so a test sequence can space touches a
+-- minute apart instead of being forced into whole days), a cosmetic step_type for the flow
+-- diagram, and a per-campaign variable registry so the template editor can offer an insert-palette
+-- before any CSV has been imported. send_day_offset is left in place rather than renamed/dropped
+-- (this table has no real production data yet, but renaming would still fight this file's
+-- additive-only convention) -- every code path now reads/writes send_offset_minutes only.
+ALTER TABLE campaign_steps ALTER COLUMN send_day_offset DROP NOT NULL;
+ALTER TABLE campaign_steps ADD COLUMN IF NOT EXISTS send_offset_minutes INT NOT NULL DEFAULT 0;
+ALTER TABLE campaign_steps ADD COLUMN IF NOT EXISTS step_type TEXT NOT NULL DEFAULT 'single_lead';
+-- single_lead | multi_lead -- purely cosmetic (flow diagram label + which variable set a template
+-- author is nudged toward), not enforced against the actual template content.
+
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS variables TEXT[] NOT NULL DEFAULT '{}';
+-- Named {{placeholder}}s the template editor offers as an insert-palette. Independent of whatever
+-- columns a CSV import actually carries -- a mismatch just means a template ships with an unfilled
+-- {{tag}} (fillTemplate leaves unknown tags alone, see lib/email/send-bulk.ts), visible in preview
+-- before anything sends.
+

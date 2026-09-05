@@ -4,22 +4,35 @@ import { sql } from "@/lib/db";
 
 /**
  * The one mutation that starts a campaign batch. Every subsequent step for this batch fires
- * automatically off the cron in app/api/cron/campaign-email once its send_day_offset arrives —
- * this is deliberately the only manual click in the whole sequence, guarded by a typed
+ * automatically off the cron in app/api/cron/campaign-email once its send_offset_minutes arrives
+ * — this is deliberately the only manual click in the whole sequence, guarded by a typed
  * confirmation so a leaked/CSRF'd admin session can't trigger it with a bare request: a scripted
  * request still has to carry the campaign id as text, which a session cookie alone doesn't give
  * an attacker.
+ *
+ * Scheduling is `startAt` in the future rather than a separate concept: getDueCampaignSends()
+ * only ever picks up a step once `started_at + offset <= now()`, so a future started_at just
+ * means every step waits, for free — no separate "scheduled" status or extra cron logic needed.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const { batch, confirmText } = body as { batch?: string; confirmText?: string };
+  const { batch, confirmText, startAt } = body as { batch?: string; confirmText?: string; startAt?: string };
 
   if (confirmText !== id) {
     return NextResponse.json({ error: "confirmation text does not match the campaign id" }, { status: 400 });
   }
   if (!batch) return NextResponse.json({ error: "batch required" }, { status: 400 });
+
+  let startedAt = new Date();
+  if (startAt) {
+    const parsed = new Date(startAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return NextResponse.json({ error: "startAt is not a valid date" }, { status: 400 });
+    }
+    startedAt = parsed;
+  }
 
   const [campaign] = await sql`SELECT id, status FROM campaigns WHERE id = ${id}`;
   if (!campaign) return NextResponse.json({ error: "campaign not found" }, { status: 404 });
@@ -41,8 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   await sql`
-    INSERT INTO campaign_batch_runs (campaign_id, batch, started_by)
-    VALUES (${id}, ${batch}, ${admin})
+    INSERT INTO campaign_batch_runs (campaign_id, batch, started_at, started_by)
+    VALUES (${id}, ${batch}, ${startedAt}, ${admin})
   `;
-  return NextResponse.json({ started: true, batch });
+  return NextResponse.json({ started: true, batch, startedAt: startedAt.toISOString() });
 }

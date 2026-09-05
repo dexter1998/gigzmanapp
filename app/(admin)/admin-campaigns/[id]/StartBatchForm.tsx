@@ -12,9 +12,11 @@ import { useState } from "react";
 export function StartBatchForm({ campaignId, batch, recipientCount }: { campaignId: string; batch: string; recipientCount: number }) {
   const router = useRouter();
   const [confirmText, setConfirmText] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
+  const [startAt, setStartAt] = useState("");
   const [pending, setPending] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const canSubmit = confirmText === campaignId && !pending;
+  const canSubmit = confirmText === campaignId && !pending && (scheduleMode === "now" || startAt !== "");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,11 +27,20 @@ export function StartBatchForm({ campaignId, batch, recipientCount }: { campaign
       const res = await fetch(`/api/admin/campaigns/${campaignId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ batch, confirmText }),
+        body: JSON.stringify({
+          batch,
+          confirmText,
+          ...(scheduleMode === "later" && startAt ? { startAt: new Date(startAt).toISOString() } : {}),
+        }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "failed to start");
-      setMsg({ ok: true, text: "batch started — cron will send the due steps from here" });
+      setMsg({
+        ok: true,
+        text: scheduleMode === "later"
+          ? `scheduled — cron will start sending at ${new Date(data.startedAt ?? startAt).toLocaleString()}`
+          : "batch started — cron will send the due steps from here",
+      });
       router.refresh();
     } catch (err) {
       setMsg({ ok: false, text: err instanceof Error ? err.message : "failed to start" });
@@ -41,12 +52,24 @@ export function StartBatchForm({ campaignId, batch, recipientCount }: { campaign
   return (
     <form className="camp-form" onSubmit={submit}>
       <div style={{ fontSize: 12.5 }}>
-        Batch <strong>{batch}</strong> &middot; {recipientCount} recipients. Har step us din se
-        chalega jab yeh batch start hua, admin ko roz confirm nahi karna padega.
+        Batch <strong>{batch}</strong> &middot; {recipientCount} recipients. Har step apne
+        offset ke hisaab se khud chalega jab yeh batch start ho jaye, admin ko dobara confirm
+        nahi karna padega.
       </div>
-      <label htmlFor={`confirm-${batch}`}>Type the campaign id (<code>{campaignId}</code>) to start this batch</label>
+      <label>
+        <input type="radio" name={`when-${batch}`} checked={scheduleMode === "now"} onChange={() => setScheduleMode("now")} /> Start now
+      </label>
+      <label>
+        <input type="radio" name={`when-${batch}`} checked={scheduleMode === "later"} onChange={() => setScheduleMode("later")} /> Schedule for later
+      </label>
+      {scheduleMode === "later" && (
+        <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
+      )}
+      <label htmlFor={`confirm-${batch}`}>Type the campaign id (<code>{campaignId}</code>) to {scheduleMode === "later" ? "schedule" : "start"} this batch</label>
       <input id={`confirm-${batch}`} value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />
-      <button type="submit" disabled={!canSubmit}>{pending ? "Starting…" : `Start batch ${batch}`}</button>
+      <button type="submit" disabled={!canSubmit}>
+        {pending ? "Submitting…" : scheduleMode === "later" ? `Schedule batch ${batch}` : `Start batch ${batch}`}
+      </button>
       {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </form>
   );
