@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
   });
   const bounded = nums.every((n) => n !== null);
   const [swLat, swLng, neLat, neLng] = nums as [number, number, number, number];
+  // Midpoint of the viewport -- used to rank rows by proximity below. Squared Euclidean
+  // distance on raw lat/lng (no haversine, no cos-latitude correction) is fine here: viewports
+  // are city-block scale, not continent scale, so it orders the same as a true great-circle
+  // distance would, at a fraction of the cost.
+  const centerLat = bounded ? (swLat + neLat) / 2 : null;
+  const centerLng = bounded ? (swLng + neLng) / 2 : null;
 
   const rows = await sql`
     SELECT l.id, l.business_name, l.category, l.address, l.lat, l.lng, l.phone, l.email,
@@ -69,7 +75,18 @@ export async function GET(req: NextRequest) {
       ${category ? sql`AND l.category = ${category}` : sql``}
       AND (l.is_competitor = true OR l.category = ANY(${ALLOWED_LEAD_TYPES_SQL}))
       ${unlockedOnly ? sql`AND u.id IS NOT NULL` : sql``}
-    ORDER BY l.created_at DESC
+    -- Ranking by recency here (as this used to) means a dense, well-scanned neighborhood loses
+    -- its closest-to-center leads to whatever rows happen to be newest anywhere in the bounding
+    -- box -- often from a different tile/session entirely -- once the box holds more rows than
+    -- the limit. That's what made pins vanish/reshuffle on pan: every map idle event re-fires
+    -- this query with new bounds, and each time a different recency-based subset survives the
+    -- cut. Ordering by distance from the viewport's own center instead means the LIMIT always
+    -- keeps the leads nearest to what's actually on screen.
+    ORDER BY ${
+      bounded
+        ? sql`((l.lat - ${centerLat}) ^ 2 + (l.lng - ${centerLng}) ^ 2) ASC`
+        : sql`l.created_at DESC`
+    }
     LIMIT ${limit}
   `;
 
