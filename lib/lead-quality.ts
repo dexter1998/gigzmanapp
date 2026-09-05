@@ -36,6 +36,12 @@ export const EXCLUDED_PRIMARY_TYPES = new Set([
   "taxi_stand",
   "cemetery",
   "public_bathroom",
+  // Third wave (user report, 2026-09-03): a bank branch was reaching the map because "bank" sat
+  // in the Finance section of the allowlist next to "accounting". An accountant is a real
+  // web-design prospect; a branch of a national bank never buys a website from an agency, same
+  // reasoning as corporate_office above.
+  "bank",
+  "atm",
 ]);
 
 /**

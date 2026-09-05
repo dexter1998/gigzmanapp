@@ -34,7 +34,9 @@ export const CATEGORY_SECTIONS: Record<string, string[]> = {
     "wildlife_park", "zoo",
   ],
 
-  Finance: ["accounting", "bank"],
+  // "bank" removed (2026-09-03, user report): a bank branch reached the map as a Finance lead.
+  // Accountants and small finance practices buy websites; a branch of a national bank does not.
+  Finance: ["accounting"],
 
   "Food & Drink": [
     "acai_shop", "afghani_restaurant", "african_restaurant", "american_restaurant",
