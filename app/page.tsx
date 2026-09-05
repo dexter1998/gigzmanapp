@@ -8,6 +8,7 @@ import { LandingCapabilities } from "@/components/landing/LandingCapabilities";
 import { LandingPipeline } from "@/components/landing/LandingPipeline";
 import { LandingWebSearch } from "@/components/landing/LandingWebSearch";
 import { LandingEnrichment } from "@/components/landing/LandingEnrichment";
+import { LandingJobsSection } from "@/components/landing/LandingJobsSection";
 import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingFaq } from "@/components/landing/LandingFaq";
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
 
 export default async function RootPage() {
   const session = await auth();
-  if (session) redirect("/home");
+  if (session) redirect("/start");
 
   return (
     <>
@@ -86,6 +87,7 @@ export default async function RootPage() {
         <LandingPipeline />
         <LandingWebSearch />
         <LandingEnrichment />
+        <LandingJobsSection />
         <LandingTestimonials />
         <LandingPricing />
         <LandingFaq />

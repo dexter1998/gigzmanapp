@@ -10,6 +10,7 @@ import { ChevronDownIcon } from "@/components/icons";
 // of navigating home to that section.
 const NAV_LINKS = [
   { label: "Product", href: "/#capabilities" },
+  { label: "Jobs", href: "/jobs" },
   { label: "Use Cases", href: "/#testimonials" },
   { label: "Pricing", href: "/pricing" },
   { label: "Partner Access", href: "/partner" },
@@ -19,6 +20,11 @@ const NAV_LINKS = [
 
 export function LandingNav() {
   const pathname = usePathname();
+  // The jobs landing page's CTAs carry ?mode=jobs so onboarding can skip asking the question this
+  // page already answered (see app/(onboarding-flow)/onboarding/page.tsx) — the shared nav's login
+  // links need the same hint when rendered on that page, not just the page body's own buttons.
+  const isJobsPage = pathname === "/jobs";
+  const loginHref = isJobsPage ? "/login?mode=jobs" : "/login";
 
   return (
     <header
@@ -73,7 +79,7 @@ export function LandingNav() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link
-            href="/login"
+            href={loginHref}
             style={{
               padding: "11px 20px",
               borderRadius: "var(--radius-sm)",
@@ -88,7 +94,7 @@ export function LandingNav() {
             Log in
           </Link>
           <Link
-            href="/login"
+            href={loginHref}
             style={{
               display: "flex",
               alignItems: "center",
