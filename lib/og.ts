@@ -8,6 +8,7 @@ import { COMPANY } from "@/lib/company";
  */
 export const OG_BACKGROUNDS = {
   hero: "og-hero.jpg",
+  jobs: "og-jobs.jpg",
   leads: "og-leads.jpg",
   nearby: "og-nearby.jpg",
   methodology: "og-methodology.jpg",

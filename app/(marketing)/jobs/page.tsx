@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/jobs` },
   openGraph: {
     images: ogImageMeta({
-      v: "hero",
+      v: "jobs",
       eyebrow: "Mantis Jobs",
       t1: "Hot jobs near you.",
       t2: "Before everyone else.",

@@ -93,6 +93,9 @@ export async function GET(req: Request) {
   const bgFile = OG_BACKGROUNDS[variant as keyof typeof OG_BACKGROUNDS] ?? OG_BACKGROUNDS.hero;
   const bg = dataUri(readAsset(path.join("public/og", bgFile)), "image/jpeg");
   const logo = dataUri(readAsset("public/mantis-logo-wordmark.png"), "image/png");
+  // The jobs card advertises finding a role, not finding a client -- the one line of copy on
+  // every variant that isn't passed in per-page has to say which product this actually is.
+  const tagline = variant === "jobs" ? "AI-powered local job intelligence" : "AI-powered local lead intelligence";
 
   const [w500, w700, w800] = ["500", "700", "800"].map((w) =>
     readAsset(path.join("app/api/og/fonts", `pjs-${w}.woff`))
@@ -159,7 +162,7 @@ export async function GET(req: Request) {
             <div style={{ display: "flex", width: 26, height: 3, background: GREEN, marginBottom: 12 }} />
             <div style={{ display: "flex", fontSize: 15, fontWeight: 700, color: INK }}>{urlLabel}</div>
             <div style={{ display: "flex", fontSize: 13, fontWeight: 500, color: GREY, marginTop: 4 }}>
-              AI-powered local lead intelligence
+              {tagline}
             </div>
           </div>
         </div>
