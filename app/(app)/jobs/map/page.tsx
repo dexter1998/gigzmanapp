@@ -9,9 +9,6 @@ import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { JobCard, type JobCardData } from "@/components/jobs/JobCard";
 import { JobDetailPanel } from "@/components/jobs/JobDetailPanel";
 import { JOB_FAMILY_LABEL } from "@/lib/jobs/normalize";
-import { JOBS_ELIGIBLE_SECTIONS } from "@/lib/jobs/categories";
-
-const INDUSTRIES = Array.from(JOBS_ELIGIBLE_SECTIONS);
 
 /**
  * Jobs dashboard — the map half of jobs mode.
@@ -50,6 +47,13 @@ export default function JobsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [selected, setSelected] = useState<JobCardData | null>(null);
   const [filters, setFilters] = useState<Filters>({ family: "", industry: "", workMode: "", goldenOnly: false });
+  // What the dropdowns actually offer -- built from real open listings on screen (see
+  // /api/jobs's facet query), not the full static taxonomy. Accumulated across loads rather than
+  // replaced, so picking a filter doesn't shrink the other options out from under the dropdown the
+  // user is still looking at (the facet query itself ignores the current family/industry selection,
+  // but a pan to a new area should still only ever ADD options, not lose ones a prior area had).
+  const [availableFamilies, setAvailableFamilies] = useState<Set<string>>(new Set());
+  const [availableIndustries, setAvailableIndustries] = useState<Set<string>>(new Set());
   const idleSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const discoveringRef = useRef(false);
   // Company id + position, not a frozen jobs snapshot -- so clicking "Add" inside the card updates
@@ -92,6 +96,12 @@ export default function JobsPage() {
       const data = await res.json();
       setJobs(data.jobs ?? []);
       setProfileComplete(data.profileComplete !== false);
+      if (data.availableFamilies?.length) {
+        setAvailableFamilies((prev) => new Set([...prev, ...data.availableFamilies]));
+      }
+      if (data.availableIndustries?.length) {
+        setAvailableIndustries((prev) => new Set([...prev, ...data.availableIndustries]));
+      }
     } catch {
       setNotice("Could not load jobs. Try again.");
     } finally {
@@ -369,8 +379,8 @@ export default function JobsPage() {
               aria-label="Job profile"
             >
               <option value="">All job profiles</option>
-              {Object.entries(JOB_FAMILY_LABEL).map(([k, label]) => (
-                <option key={k} value={k}>{label}</option>
+              {Array.from(availableFamilies).map((k) => (
+                <option key={k} value={k}>{JOB_FAMILY_LABEL[k] ?? k}</option>
               ))}
             </select>
             <select
@@ -380,7 +390,7 @@ export default function JobsPage() {
               aria-label="Industry"
             >
               <option value="">All industries</option>
-              {INDUSTRIES.map((section) => (
+              {Array.from(availableIndustries).map((section) => (
                 <option key={section} value={section}>{section}</option>
               ))}
             </select>

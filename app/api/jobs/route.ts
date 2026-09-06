@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 import { computeMatch } from "@/lib/jobs/match";
 import { isProfileComplete } from "@/lib/jobs/application-form";
 import type { Seniority, WorkMode } from "@/lib/jobs/normalize";
-import { CATEGORY_SECTIONS } from "@/lib/categories";
+import { CATEGORY_SECTIONS, TYPE_TO_SECTION } from "@/lib/categories";
 
 /** Same reasoning as the leads route: a viewport shows a few dozen pins, not five hundred. */
 const DEFAULT_LIMIT = 120;
@@ -40,6 +40,31 @@ export async function GET(req: NextRequest) {
 
   const [profile] = await sql`SELECT * FROM applicant_profiles WHERE user_email = ${userEmail}`;
   const profileComplete = isProfileComplete(profile ?? null);
+
+  // Facets: what the Job Profile / Industry dropdowns actually offer. Bounded and is_open-scoped
+  // the same as the main query, but deliberately ignoring the family/industry filters themselves —
+  // a filter shows what else is available, not just what the current selection already narrowed to.
+  // Built from real scraped data on purpose (per product decision): a family with zero open
+  // listings anywhere on screen has nothing behind it and would just be a dead dropdown entry.
+  const facetRows = bounded
+    ? await sql`
+        SELECT DISTINCT j.job_family, c.category
+          FROM job_listings j
+          JOIN job_companies c ON c.id = j.company_id
+         WHERE j.is_open = true
+           AND c.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
+           AND c.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}
+      `
+    : await sql`
+        SELECT DISTINCT j.job_family, c.category
+          FROM job_listings j
+          JOIN job_companies c ON c.id = j.company_id
+         WHERE j.is_open = true
+      `;
+  const availableFamilies = Array.from(new Set(facetRows.map((r) => r.job_family).filter(Boolean)));
+  const availableIndustries = Array.from(
+    new Set(facetRows.map((r) => (r.category ? TYPE_TO_SECTION[r.category as string] : null)).filter(Boolean))
+  );
 
   const rows = await sql`
     SELECT j.id, j.title, j.apply_url, j.location, j.description,
@@ -145,5 +170,5 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ jobs, profileComplete });
+  return NextResponse.json({ jobs, profileComplete, availableFamilies, availableIndustries });
 }

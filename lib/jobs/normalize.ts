@@ -90,9 +90,24 @@ const FAMILY_PATTERNS: Array<[string, RegExp]> = [
   // "Engineering Manager" and "scien" has to match "Scientist". An earlier version anchored both
   // ends and silently classified every "...Engineering..." and "Data Scientist" title as unknown.
   ["data", /\b(data scien|data analyst|data engineer|machine learning|ml engineer|ai engineer|analytics|bi developer|statistician)/i],
-  ["engineering", /\b(engineer|developer|programmer|sde\b|swe\b|devops|sre\b|qa\b|tester|full[- ]?stack|frontend|front[- ]?end|backend|back[- ]?end|android|ios\b|mobile dev)/i],
+  // Engineering's sub-families are checked before the generic "engineering" catch-all below, same
+  // ordering trick as everywhere else in this list -- a title like "Frontend Developer" would
+  // otherwise be swallowed by the bare "developer" stem before it ever reached these. Kept as
+  // separate families (not a tag on top of "engineering") because the job-profile filter is meant
+  // to show what a scrape actually found -- "Frontend Developer" as its own dropdown entry, not
+  // buried inside an undifferentiated "Engineering" bucket alongside QA and mobile.
+  ["fullstack_engineering", /\bfull[- ]?stack\b/i],
+  ["frontend_engineering", /\b(frontend|front[- ]?end)\b/i],
+  ["backend_engineering", /\b(backend|back[- ]?end)\b/i],
+  ["mobile_engineering", /\b(android|ios\b|mobile (dev|engineer)|react native|flutter)\b/i],
+  ["devops_engineering", /\b(devops|sre\b|site reliability|infrastructure engineer|cloud engineer|platform engineer)\b/i],
+  ["qa_engineering", /\b(qa\b|quality assurance|sdet\b|test engineer|tester)\b/i],
+  ["engineering", /\b(engineer|developer|programmer|sde\b|swe\b)/i],
   ["design", /\b(designer|ux\b|ui\b|graphic|creative director|illustrator|animator|video editor)/i],
-  ["product", /\b(product manager|product owner|product analyst|business analyst)/i],
+  // Same reasoning as engineering above: "Product Manager"/"Product Owner" get their own family,
+  // checked first, so the generic "product" bucket is left for product analyst/business analyst.
+  ["product_manager", /\b(product (manager|owner)|\bapm\b|associate product manager)/i],
+  ["product", /\b(product analyst|business analyst)/i],
   ["healthcare", /\b(nurse|doctor|physician|dentist|dental|physiotherapist|therapist|pharmacist|lab technician|radiolog|medical officer|paramedic|caregiver|optometrist)\b/i],
   ["hospitality", /\b(chef|cook|waiter|waitress|steward|barista|bartender|kitchen|housekeep|front office|concierge|hotel|restaurant manager|captain|banquet)\b/i],
   ["trades", /\b(electrician|plumber|carpenter|welder|fitter|mechanic|technician|machinist|mason|painter|fabricator|installer|hvac|maintenance)\b/i],
@@ -112,9 +127,16 @@ const FAMILY_PATTERNS: Array<[string, RegExp]> = [
 ];
 
 export const JOB_FAMILY_LABEL: Record<string, string> = {
-  engineering: "Engineering",
+  engineering: "Software Engineer",
+  fullstack_engineering: "Full-Stack Developer",
+  frontend_engineering: "Frontend Developer",
+  backend_engineering: "Backend Developer",
+  mobile_engineering: "Mobile Developer",
+  devops_engineering: "DevOps Engineer",
+  qa_engineering: "QA Engineer",
   data: "Data & AI",
   design: "Design",
+  product_manager: "Product Manager",
   product: "Product",
   healthcare: "Healthcare",
   hospitality: "Hospitality & Food",
