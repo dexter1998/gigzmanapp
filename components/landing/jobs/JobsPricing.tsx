@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CREDIT_COST, CREDIT_PACKS, FREE_MONTHLY_CREDITS, formatINR, rupees } from "@/lib/credits/pricing";
+import { CREDIT_COST, CREDIT_PACKS, FREE_MONTHLY_CREDITS, JOB_SEEKER_DISCOUNT_PCT, formatINR, jobSeekerDiscountPctFor, jobSeekerPricePaise, rupees } from "@/lib/credits/pricing";
 import { CheckIcon, HelpIcon } from "@/components/icons";
 
 /**
@@ -11,16 +11,12 @@ import { CheckIcon, HelpIcon } from "@/components/icons";
  * source of truth for what anything costs; see LandingPricing.tsx and lib/credits/pricing.ts),
  * displayed with a 55%-off job-seeker discount.
  *
- * Display only, deliberately: this section shows the discounted price, but nothing here changes
- * what checkout actually charges. Wiring a real discount requires a promo-code path through
- * Cashfree checkout — a backend change, not a landing-page one — and is not done yet. Whoever
- * wires that should also re-check CREDIT_FLOOR_INR in lib/credits/pricing.ts first: 55% off the
- * 10k pack prices a credit at ~₹0.34, under the ₹0.385 floor that assertion exists to enforce, so
- * that pack cannot take the full 55% without either raising its price or accepting a loss on every
- * billed Places call it funds.
+ * The price shown here is the real one — jobSeekerPricePaise (lib/credits/pricing.ts) is the same
+ * function app/api/payments/order/route.ts charges through when a jobs-mode account checks out,
+ * so this can't drift from what checkout actually collects. It caps the 10k pack's discount below
+ * the flat 55% (JOB_SEEKER_DISCOUNT_PCT) to stay above CREDIT_FLOOR_INR — that pack cannot take
+ * the full 55% off without losing money on every billed Places call it funds.
  */
-const DISCOUNT_PCT = 55;
-
 const leadsFor = (credits: number) => Math.floor(credits / CREDIT_COST.lead_unlock);
 
 export function JobsPricing() {
@@ -46,7 +42,7 @@ export function JobsPricing() {
 
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 40, position: "relative" }}>
           <span style={{ fontSize: 13.5, fontWeight: 800, color: "#fff", background: "var(--g-green-darker)", padding: "6px 14px", borderRadius: "var(--radius-pill)" }}>
-            {DISCOUNT_PCT}% off every plan — job seekers only
+            Up to {JOB_SEEKER_DISCOUNT_PCT}% off every plan — job seekers only
           </span>
           <button
             type="button"
@@ -89,14 +85,15 @@ export function JobsPricing() {
             cta={{ label: "Get started free", href: "/login?mode=jobs" }}
           />
           {CREDIT_PACKS.map((pack) => {
-            const discounted = pack.pricePaise * (1 - DISCOUNT_PCT / 100);
+            const discountedPaise = jobSeekerPricePaise(pack);
+            const pctOff = jobSeekerDiscountPctFor(pack);
             return (
               <Card
                 key={pack.id}
                 title={pack.label}
                 fullPrice={formatINR(pack.pricePaise)}
-                price={formatINR(Math.round(discounted))}
-                priceNote={`₹${(rupees(discounted) / pack.credits).toFixed(2)} per credit`}
+                price={formatINR(discountedPaise)}
+                priceNote={`${pctOff}% off · ₹${(rupees(discountedPaise) / pack.credits).toFixed(2)} per credit`}
                 headline={`${pack.credits.toLocaleString("en-IN")} credits`}
                 badge={pack.badge}
                 highlighted={pack.badge === "Most popular"}

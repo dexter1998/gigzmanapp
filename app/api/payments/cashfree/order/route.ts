@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { COMPANY } from "@/lib/company";
-import { packById } from "@/lib/credits/pricing";
+import { packById, jobSeekerPricePaise } from "@/lib/credits/pricing";
 import { createOrder, newOrderId } from "@/lib/cashfree";
 
 /**
@@ -28,22 +28,26 @@ export async function POST(req: NextRequest) {
   const pack = packId ? packById(packId) : undefined;
   if (!pack) return NextResponse.json({ error: "unknown_pack" }, { status: 400 });
 
-  const [profile] = await sql`SELECT phone, name FROM user_profiles WHERE email = ${userEmail}`;
+  const [profile] = await sql`SELECT phone, name, dashboard_mode FROM user_profiles WHERE email = ${userEmail}`;
+  // Job-seeker pricing applies by account mode, not by request param — a client can't opt itself
+  // into the discount just by asking, since it never controls dashboard_mode.
+  const amountPaise = profile?.dashboard_mode === "jobs" ? jobSeekerPricePaise(pack) : pack.pricePaise;
 
   const orderId = newOrderId();
   const origin = req.nextUrl.origin;
 
-  // Credits and price are frozen onto the row now. The webhook grants whatever this row says, so
-  // a later change to CREDIT_PACKS can never retroactively alter what an in-flight order buys.
+  // Credits and the price actually charged are frozen onto the row now. The webhook grants
+  // whatever this row says, so a later change to CREDIT_PACKS (or a mode switch mid-checkout) can
+  // never retroactively alter what an in-flight order buys or costs.
   await sql`
     INSERT INTO payments (user_email, order_id, pack_id, credits, amount_paise, status)
-    VALUES (${userEmail}, ${orderId}, ${pack.id}, ${pack.credits}, ${pack.pricePaise}, 'created')
+    VALUES (${userEmail}, ${orderId}, ${pack.id}, ${pack.credits}, ${amountPaise}, 'created')
   `;
 
   try {
     const { paymentSessionId } = await createOrder({
       orderId,
-      amountPaise: pack.pricePaise,
+      amountPaise,
       customer: {
         // Cashfree's customer_id has the same charset limits as order_id, so the email can't be
         // used directly — a stable hash-free slug of it keeps repeat purchases on one customer.
@@ -62,7 +66,7 @@ export async function POST(req: NextRequest) {
       notifyUrl: `${COMPANY.site}/api/payments/cashfree/webhook`,
     });
 
-    return NextResponse.json({ orderId, paymentSessionId, amountPaise: pack.pricePaise, credits: pack.credits });
+    return NextResponse.json({ orderId, paymentSessionId, amountPaise, credits: pack.credits });
   } catch (err) {
     await sql`UPDATE payments SET status = 'failed', raw = ${sql.json({ error: String(err) })} WHERE order_id = ${orderId}`;
     console.error("Cashfree order creation failed", err);

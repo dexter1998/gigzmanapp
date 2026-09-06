@@ -6,7 +6,7 @@ import { ChevronRightIcon, ArrowRightIcon, LinkedInIcon, XSocialIcon, YouTubeIco
 // /pricing, /partner, /about and /contact too, where a bare "#capabilities" points at nothing on
 // the current page instead of navigating home to that section.
 const COLUMNS = [
-  { title: "Product", links: [["Features", "/#capabilities"], ["Lead Search", "/#capabilities"], ["Local Lead Market", "/leads"], ["Pricing", "/pricing"]] },
+  { title: "Product", links: [["Features", "/#capabilities"], ["Lead Search", "/#capabilities"], ["Local Lead Market", "/leads"], ["Jobs", "/jobs", "NEW"], ["Pricing", "/pricing"]] },
   { title: "Use Cases", links: [["Agencies", "/#testimonials"], ["Freelancers", "/#testimonials"], ["Consultants", "/#testimonials"]] },
   { title: "Resources", links: [["Help Center", "/#faq"], ["Guides", "/#faq"], ["Email Preferences", "/preferences"]] },
   { title: "Company", links: [["About Us", "/company"], ["Partner Access", "/partner"], ["Contact", "/contact"]] },
@@ -36,9 +36,15 @@ export function LandingFooter() {
             <div key={col.title}>
               <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--g-ink)", marginBottom: 16 }}>{col.title}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {col.links.map(([label, href]) => (
-                  <Link key={label} href={href} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13.5, color: "var(--g-ink-soft)", textDecoration: "none" }}>
-                    {label} <ChevronRightIcon size={12} color="var(--g-green-text)" />
+                {col.links.map(([label, href, badge]) => (
+                  <Link key={label} href={href} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "var(--g-ink-soft)", textDecoration: "none" }}>
+                    {label}
+                    {badge && (
+                      <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.04em", color: "#fff", background: "var(--g-ink)", borderRadius: "var(--radius-pill)", padding: "2px 6px" }}>
+                        {badge}
+                      </span>
+                    )}
+                    <ChevronRightIcon size={12} color="var(--g-green-text)" />
                   </Link>
                 ))}
               </div>

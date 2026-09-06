@@ -117,6 +117,31 @@ for (const pack of CREDIT_PACKS) {
   }
 }
 
+/* ------------------------------------------------------------------ job-seeker discount */
+
+/**
+ * Job seekers pay less for the same credits — leads-side buyers (agencies, freelancers) are
+ * spending to win client work; a job seeker is spending their own money to find work, and the
+ * jobs side of the product also costs us materially less to run (see CREDIT_COST.job_area_scan's
+ * comment: careers-page scraping is our own HTTP traffic, not a metered Google Places call).
+ *
+ * Capped per-pack rather than a flat 55%, because a flat 55% off the "Scale" 10k pack prices a
+ * credit at ~₹0.34 — under CREDIT_FLOOR_INR (~₹0.385) — meaning every billed Places call that pack
+ * funds (jobs mode still needs some, see the Places fallback in app/api/jobs/discover/route.ts)
+ * would lose money. Every OTHER pack clears the floor fine at the full 55%.
+ */
+export const JOB_SEEKER_DISCOUNT_PCT = 55;
+
+export function jobSeekerPricePaise(pack: CreditPack): number {
+  const targetPaise = pack.pricePaise * (1 - JOB_SEEKER_DISCOUNT_PCT / 100);
+  const floorPaise = CREDIT_FLOOR_INR * 100 * pack.credits;
+  return Math.round(Math.max(targetPaise, floorPaise));
+}
+
+export function jobSeekerDiscountPctFor(pack: CreditPack): number {
+  return Math.round((1 - jobSeekerPricePaise(pack) / pack.pricePaise) * 100);
+}
+
 /* ------------------------------------------------------------------ free allowance */
 
 /**

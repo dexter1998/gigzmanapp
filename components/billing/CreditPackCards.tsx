@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CREDIT_COST, CREDIT_PACKS, FREE_MONTHLY_CREDITS, formatINR, rupees } from "@/lib/credits/pricing";
-import { CheckIcon } from "@/components/icons";
+import { CREDIT_COST, CREDIT_PACKS, FREE_MONTHLY_CREDITS, JOB_SEEKER_DISCOUNT_PCT, formatINR, jobSeekerDiscountPctFor, jobSeekerPricePaise, rupees } from "@/lib/credits/pricing";
+import { CheckIcon, HelpIcon } from "@/components/icons";
 
 /**
  * The pack line-up, rendered identically wherever pricing is shown — landing page, /pricing, and
@@ -12,7 +13,23 @@ import { CheckIcon } from "@/components/icons";
  *
  * `onBuy` is what separates the surfaces: signed-in callers pass a handler that opens checkout,
  * logged-out ones leave it undefined and the cards link to sign-up instead.
+ *
+ * Checks the viewer's own dashboard_mode (not a prop) so every surface — landing page, /pricing,
+ * the in-app modal — shows the same real price a jobs-mode account would actually be charged (see
+ * jobSeekerPricePaise, wired into app/api/payments/order/route.ts). Fails silently to "no
+ * discount" for a logged-out visitor; showing the wrong price would be worse than showing the
+ * standard one.
  */
+function useJobSeekerDiscount(): boolean {
+  const [discount, setDiscount] = useState(false);
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setDiscount(d?.profile?.dashboard_mode === "jobs"))
+      .catch(() => {});
+  }, []);
+  return discount;
+}
 
 /** Credits are abstract; leads are not. Every card leads with how many leads it actually buys,
  * derived from the real rate card so the two can't drift apart. */
@@ -32,48 +49,98 @@ export function CreditPackCards({
   /** Narrower inside the modal, where three cards have to share less width than a page. */
   minCardWidth?: number;
 }) {
+  const jobSeekerDiscount = useJobSeekerDiscount();
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}px, 1fr))`, gap: 18, alignItems: "stretch", textAlign: "left" }}>
-      {showFree && (
-        <Card
-          title="Free"
-          price="₹0"
-          priceNote="every month, forever"
-          headline={`${FREE_MONTHLY_CREDITS} credits`}
-          features={[
-            `≈ ${leadsFor(FREE_MONTHLY_CREDITS)} leads with contact details`,
-            "Unlimited search in scanned areas",
-            "5 new-area searches a day",
-            "CSV export",
-          ]}
-          cta={onBuy ? null : { label: "Get started", href: "/login" }}
-        />
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {jobSeekerDiscount && <JobSeekerDiscountBadge />}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}px, 1fr))`, gap: 18, alignItems: "stretch", textAlign: "left" }}>
+        {showFree && (
+          <Card
+            title="Free"
+            price="₹0"
+            priceNote="every month, forever"
+            headline={`${FREE_MONTHLY_CREDITS} credits`}
+            features={[
+              `≈ ${leadsFor(FREE_MONTHLY_CREDITS)} leads with contact details`,
+              "Unlimited search in scanned areas",
+              "5 new-area searches a day",
+              "CSV export",
+            ]}
+            cta={onBuy ? null : { label: "Get started", href: "/login" }}
+          />
+        )}
+
+        {CREDIT_PACKS.map((pack) => {
+          const finalPaise = jobSeekerDiscount ? jobSeekerPricePaise(pack) : pack.pricePaise;
+          // Actual per-pack pct, not the flat headline number — the 10k pack's discount is capped
+          // below JOB_SEEKER_DISCOUNT_PCT to stay above CREDIT_FLOOR_INR (see jobSeekerPricePaise).
+          const pctOff = jobSeekerDiscount ? jobSeekerDiscountPctFor(pack) : 0;
+          return (
+            <Card
+              key={pack.id}
+              title={pack.label}
+              price={formatINR(finalPaise)}
+              fullPrice={jobSeekerDiscount ? formatINR(pack.pricePaise) : undefined}
+              priceNote={
+                jobSeekerDiscount
+                  ? `${pctOff}% off · ₹${(rupees(finalPaise) / pack.credits).toFixed(2)} per credit`
+                  : `₹${(rupees(finalPaise) / pack.credits).toFixed(2)} per credit`
+              }
+              headline={`${pack.credits.toLocaleString("en-IN")} credits`}
+              badge={pack.badge}
+              highlighted={pack.badge === "Most popular"}
+              features={[
+                `≈ ${leadsFor(pack.credits).toLocaleString("en-IN")} leads with contact details`,
+                "Unlimited search in scanned areas",
+                "Credits never expire",
+                "Buy again any time",
+                ...(pack.credits >= 10_000 ? ["Priority support"] : []),
+              ]}
+              cta={
+                onBuy
+                  ? { label: busyPackId === pack.id ? "Opening…" : "Buy credits", onClick: () => onBuy(pack.id), disabled }
+                  : { label: "Get started", href: "/login" }
+              }
+            />
+          );
+        })}
+
+      </div>
+    </div>
+  );
+}
+
+function JobSeekerDiscountBadge() {
+  const [showNote, setShowNote] = useState(false);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", background: "var(--g-green-darker)", padding: "5px 12px", borderRadius: "var(--radius-pill)" }}>
+        Up to {JOB_SEEKER_DISCOUNT_PCT}% off — job seekers only
+      </span>
+      <button
+        type="button"
+        aria-label="Why job seekers get this discount"
+        onMouseEnter={() => setShowNote(true)}
+        onMouseLeave={() => setShowNote(false)}
+        onClick={() => setShowNote((v) => !v)}
+        style={{ display: "inline-flex", background: "none", border: "none", cursor: "pointer", padding: 2 }}
+      >
+        <HelpIcon size={15} color="var(--g-gray-500)" />
+      </button>
+      {showNote && (
+        <div
+          role="tooltip"
+          style={{
+            position: "absolute", top: "calc(100% + 8px)", left: 0, width: 260, background: "var(--g-ink)",
+            color: "#fff", fontSize: 12, lineHeight: 1.5, padding: "10px 14px", borderRadius: "var(--radius-sm)",
+            zIndex: 5, textAlign: "left",
+          }}
+        >
+          Only for job seekers — your account is set to Jobs mode, so every pack here is discounted.
+          Agencies and freelancers on the leads side pay the standard rate card.
+        </div>
       )}
-
-      {CREDIT_PACKS.map((pack) => (
-        <Card
-          key={pack.id}
-          title={pack.label}
-          price={formatINR(pack.pricePaise)}
-          priceNote={`₹${(rupees(pack.pricePaise) / pack.credits).toFixed(2)} per credit`}
-          headline={`${pack.credits.toLocaleString("en-IN")} credits`}
-          badge={pack.badge}
-          highlighted={pack.badge === "Most popular"}
-          features={[
-            `≈ ${leadsFor(pack.credits).toLocaleString("en-IN")} leads with contact details`,
-            "Unlimited search in scanned areas",
-            "Credits never expire",
-            "Buy again any time",
-            ...(pack.credits >= 10_000 ? ["Priority support"] : []),
-          ]}
-          cta={
-            onBuy
-              ? { label: busyPackId === pack.id ? "Opening…" : "Buy credits", onClick: () => onBuy(pack.id), disabled }
-              : { label: "Get started", href: "/login" }
-          }
-        />
-      ))}
-
     </div>
   );
 }
@@ -131,6 +198,7 @@ type Cta = { label: string; href?: string; onClick?: () => void; disabled?: bool
 function Card({
   title,
   price,
+  fullPrice,
   priceNote,
   headline,
   features,
@@ -140,6 +208,10 @@ function Card({
 }: {
   title: string;
   price: string;
+  /** Present only when a job-seeker discount actually reduced the price — the 10k pack's real
+   * discount is capped below JOB_SEEKER_DISCOUNT_PCT (see jobSeekerPricePaise), so this is read
+   * from the price difference itself rather than assumed to always be the flat headline number. */
+  fullPrice?: string;
   priceNote: string;
   headline: string;
   features: string[];
@@ -182,8 +254,13 @@ function Card({
         {title}
       </div>
 
-      <div style={{ fontSize: 30, fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
-        {price}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontSize: 30, fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+          {price}
+        </span>
+        {fullPrice && (
+          <span style={{ fontSize: 15, color: "var(--g-gray-500)", textDecoration: "line-through" }}>{fullPrice}</span>
+        )}
       </div>
       <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 4, minHeight: 18 }}>{priceNote}</div>
 

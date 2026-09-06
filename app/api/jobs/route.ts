@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 import { computeMatch } from "@/lib/jobs/match";
 import { isProfileComplete } from "@/lib/jobs/application-form";
 import type { Seniority, WorkMode } from "@/lib/jobs/normalize";
+import { CATEGORY_SECTIONS } from "@/lib/categories";
 
 /** Same reasoning as the leads route: a viewport shows a few dozen pins, not five hundred. */
 const DEFAULT_LIMIT = 120;
@@ -20,6 +21,11 @@ export async function GET(req: NextRequest) {
   const workMode = params.get("work_mode");
   const goldenOnly = params.get("golden") === "true";
   const minRank = params.get("min_seniority_rank");
+  // Industry (what sector the company is in) is a separate dimension from `family` (what role you
+  // do) — a Sales role exists at both a restaurant chain and a SaaS startup. Reuses the leads
+  // product's own section grouping so "Food & Drink" etc. means the same thing everywhere.
+  const industry = params.get("industry");
+  const industryTypes = industry ? CATEGORY_SECTIONS[industry] ?? [] : null;
 
   const nums = ["sw_lat", "sw_lng", "ne_lat", "ne_lng"].map((k) => {
     const raw = params.get(k);
@@ -55,6 +61,7 @@ export async function GET(req: NextRequest) {
            : sql``
        }
        ${family ? sql`AND j.job_family = ${family}` : sql``}
+       ${industryTypes ? sql`AND c.category = ANY(${industryTypes})` : sql``}
        ${workMode ? sql`AND j.work_mode = ${workMode}` : sql``}
        ${goldenOnly ? sql`AND c.golden_tier IS NOT NULL` : sql``}
        ${minRank ? sql`AND j.seniority_rank >= ${Number(minRank)}` : sql``}

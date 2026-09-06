@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { logAppError } from "@/lib/app-errors";
-import { packById } from "@/lib/credits/pricing";
+import { packById, jobSeekerPricePaise } from "@/lib/credits/pricing";
 import { razorpayConfigured, createOrder as createRzpOrder } from "@/lib/razorpay";
 import { createOrder as createCfOrder, newOrderId } from "@/lib/cashfree";
 import { COMPANY } from "@/lib/company";
@@ -22,22 +22,28 @@ export async function POST(req: NextRequest) {
   const pack = packId ? packById(packId) : undefined;
   if (!pack) return NextResponse.json({ error: "unknown_pack" }, { status: 400 });
 
+  // By account mode, not by request param — a client never controls dashboard_mode itself, so it
+  // can't opt into the discount just by asking. Looked up once and reused for whichever gateway
+  // branch below actually runs.
+  const [modeRow] = await sql`SELECT dashboard_mode FROM user_profiles WHERE email = ${userEmail}`;
+  const amountPaise = modeRow?.dashboard_mode === "jobs" ? jobSeekerPricePaise(pack) : pack.pricePaise;
+
   const orderId = newOrderId();
 
   if (razorpayConfigured()) {
     await sql`
       INSERT INTO payments (user_email, provider, order_id, pack_id, credits, amount_paise, status)
-      VALUES (${userEmail}, 'razorpay', ${orderId}, ${pack.id}, ${pack.credits}, ${pack.pricePaise}, 'created')
+      VALUES (${userEmail}, 'razorpay', ${orderId}, ${pack.id}, ${pack.credits}, ${amountPaise}, 'created')
     `;
     try {
-      const rzp = await createRzpOrder({ receipt: orderId, amountPaise: pack.pricePaise, notes: { user: userEmail, pack: pack.id } });
+      const rzp = await createRzpOrder({ receipt: orderId, amountPaise, notes: { user: userEmail, pack: pack.id } });
       await sql`UPDATE payments SET raw = ${sql.json({ razorpay_order_id: rzp.id })} WHERE order_id = ${orderId}`;
       return NextResponse.json({
         provider: "razorpay",
         orderId,
         razorpayOrderId: rzp.id,
         keyId: process.env.RAZORPAY_KEY_ID,
-        amountPaise: pack.pricePaise,
+        amountPaise,
         credits: pack.credits,
         name: session.user.name ?? undefined,
         email: userEmail,
@@ -54,12 +60,12 @@ export async function POST(req: NextRequest) {
   const [profile] = await sql`SELECT phone, name FROM user_profiles WHERE email = ${userEmail}`;
   await sql`
     INSERT INTO payments (user_email, provider, order_id, pack_id, credits, amount_paise, status)
-    VALUES (${userEmail}, 'cashfree', ${orderId}, ${pack.id}, ${pack.credits}, ${pack.pricePaise}, 'created')
+    VALUES (${userEmail}, 'cashfree', ${orderId}, ${pack.id}, ${pack.credits}, ${amountPaise}, 'created')
   `;
   try {
     const { paymentSessionId } = await createCfOrder({
       orderId,
-      amountPaise: pack.pricePaise,
+      amountPaise,
       customer: {
         id: userEmail.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 50),
         email: userEmail,
@@ -69,7 +75,7 @@ export async function POST(req: NextRequest) {
       returnUrl: `${req.nextUrl.origin}/settings/billing/return?order_id=${orderId}`,
       notifyUrl: `${COMPANY.site}/api/payments/cashfree/webhook`,
     });
-    return NextResponse.json({ provider: "cashfree", orderId, paymentSessionId, amountPaise: pack.pricePaise, credits: pack.credits });
+    return NextResponse.json({ provider: "cashfree", orderId, paymentSessionId, amountPaise, credits: pack.credits });
   } catch (err) {
     await sql`UPDATE payments SET status = 'failed', raw = ${sql.json({ error: String(err) })} WHERE order_id = ${orderId}`;
     console.error("Cashfree order creation failed", err);

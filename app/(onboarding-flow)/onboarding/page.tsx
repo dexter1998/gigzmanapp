@@ -30,13 +30,16 @@ function OnboardingFlow() {
    * the "subscribe to an external system" case an effect is for; keeping it to a single setState
    * is what stops it cascading.
    */
-  const [flow, setFlow] = useState<{ step: number; productMode: ProductMode | null; skippedProductStep: boolean }>({
+  const [flow, setFlow] = useState<{ step: number; productMode: ProductMode | null }>({
     step: 1,
     productMode: null,
-    skippedProductStep: false,
   });
-  const { step, productMode, skippedProductStep } = flow;
+  const { step, productMode } = flow;
   const setStep = (next: number) => setFlow((f) => ({ ...f, step: next }));
+  // Step 1's own choice, separate from the flow's committed productMode -- lets ?mode=jobs arrive
+  // with Jobs already highlighted on step 1 (still showing both options, per the actual ask)
+  // without silently skipping the step the way the old skippedProductStep flag used to.
+  const [pendingProductMode, setPendingProductMode] = useState<ProductMode | null>(null);
 
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -53,8 +56,7 @@ function OnboardingFlow() {
   const [phoneError, setPhoneError] = useState("");
   const [phoneBusy, setPhoneBusy] = useState(false);
 
-  // The product step only counts toward the progress bar when it was actually shown.
-  const totalSteps = (skippedProductStep ? 2 : 3) + (hasPhone === false ? 1 : 0);
+  const totalSteps = 3 + (hasPhone === false ? 1 : 0);
 
   useEffect(() => {
     // Query param first (a direct /onboarding?mode=… link), then the cookie the login page set
@@ -67,7 +69,7 @@ function OnboardingFlow() {
     // Reads browser-only state after mount; doing it during render would desync hydration.
     // See the note on `flow` above.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFlow({ step: 2, productMode: mode, skippedProductStep: true });
+    setPendingProductMode(mode);
   }, [searchParams]);
 
   useEffect(() => {
@@ -87,8 +89,9 @@ function OnboardingFlow() {
       .catch(() => setHasPhone(true)); // fail closed — don't block finishing onboarding over this
   }, []);
 
-  function selectProductMode(mode: ProductMode) {
-    setFlow((f) => ({ ...f, productMode: mode, step: 2 }));
+  function confirmProductMode() {
+    if (!pendingProductMode) return;
+    setFlow({ step: 2, productMode: pendingProductMode });
   }
 
   function selectWorkMode(mode: WorkMode) {
@@ -101,6 +104,8 @@ function OnboardingFlow() {
       ? companyName.trim().length > 0 && name.trim().length > 0
       : personName.trim().length > 0;
 
+  const isJobs = productMode === "jobs";
+
   async function handleFinish() {
     setSubmitting(true);
     try {
@@ -112,7 +117,7 @@ function OnboardingFlow() {
           name: workMode === "company" ? name : personName,
           companyName: workMode === "company" ? companyName : undefined,
           personName: workMode === "independent" ? personName : undefined,
-          website: website || undefined,
+          website: isJobs ? undefined : website || undefined,
         }),
       });
       // Saved separately from the onboarding payload: dashboard_mode lives on user_profiles and
@@ -187,19 +192,30 @@ function OnboardingFlow() {
                   icon={<SearchIcon />}
                   title="Leads"
                   desc="Local businesses that need a website — for my agency or freelance work."
-                  onClick={() => selectProductMode("leads")}
+                  onClick={() => setPendingProductMode("leads")}
+                  selected={pendingProductMode === "leads"}
                 />
                 <WorkModeCard
                   icon={<TableIcon />}
                   title="Jobs"
                   desc="Open roles at businesses near me, with one-click applications."
-                  onClick={() => selectProductMode("jobs")}
+                  onClick={() => setPendingProductMode("jobs")}
+                  selected={pendingProductMode === "jobs"}
                 />
               </div>
+
+              <button
+                type="button"
+                disabled={!pendingProductMode}
+                onClick={confirmProductMode}
+                style={{ ...primaryBtn(!!pendingProductMode), width: "100%", marginTop: 20 }}
+              >
+                Continue →
+              </button>
             </>
           )}
 
-          {step === 2 && (
+          {step === 2 && !isJobs && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
@@ -220,6 +236,36 @@ function OnboardingFlow() {
                   onClick={() => selectWorkMode("independent")}
                 />
               </div>
+              <button type="button" onClick={() => setStep(1)} style={{ ...secondaryBtn, width: "100%", marginTop: 12 }}>
+                Back
+              </button>
+            </>
+          )}
+
+          {step === 2 && isJobs && (
+            <>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Where are you at?</h1>
+              <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
+                This just shapes how often we surface new roles — not who can see your profile.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <WorkModeCard
+                  icon={<SearchIcon />}
+                  title="Actively looking"
+                  desc="I want to apply soon — show me every good match."
+                  onClick={() => selectWorkMode("independent")}
+                />
+                <WorkModeCard
+                  icon={<UserIcon />}
+                  title="Just exploring"
+                  desc="I'm curious what's out there — no rush."
+                  onClick={() => selectWorkMode("independent")}
+                />
+              </div>
+              <button type="button" onClick={() => setStep(1)} style={{ ...secondaryBtn, width: "100%", marginTop: 12 }}>
+                Back
+              </button>
             </>
           )}
 
@@ -235,7 +281,7 @@ function OnboardingFlow() {
               <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourcompany.com" />
 
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={() => setStep(1)} style={secondaryBtn}>
+                <button type="button" onClick={() => setStep(2)} style={secondaryBtn}>
                   Back
                 </button>
                 <button type="button" disabled={!step2Valid || submitting} onClick={handleFinish} style={primaryBtn(step2Valid && !submitting)}>
@@ -253,10 +299,12 @@ function OnboardingFlow() {
               </p>
 
               <Field label="Your name" value={personName} onChange={setPersonName} required />
-              <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourwebsite.com" />
+              {!isJobs && (
+                <Field label="Website (optional)" value={website} onChange={setWebsite} placeholder="yourwebsite.com" />
+              )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={() => setStep(1)} style={secondaryBtn}>
+                <button type="button" onClick={() => setStep(2)} style={secondaryBtn}>
                   Back
                 </button>
                 <button type="button" disabled={!step2Valid || submitting} onClick={handleFinish} style={primaryBtn(step2Valid && !submitting)}>
@@ -297,7 +345,11 @@ function OnboardingFlow() {
   );
 }
 
-function WorkModeCard({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
+function WorkModeCard({
+  icon, title, desc, onClick, selected,
+}: {
+  icon: React.ReactNode; title: string; desc: string; onClick: () => void; selected?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -309,8 +361,8 @@ function WorkModeCard({ icon, title, desc, onClick }: { icon: React.ReactNode; t
         textAlign: "left",
         padding: "18px 20px",
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--g-border)",
-        background: "var(--g-white)",
+        border: selected ? "2px solid var(--g-green)" : "1px solid var(--g-border)",
+        background: selected ? "var(--g-green-mint)" : "var(--g-white)",
         cursor: "pointer",
       }}
     >
@@ -319,7 +371,7 @@ function WorkModeCard({ icon, title, desc, onClick }: { icon: React.ReactNode; t
           width: 36,
           height: 36,
           borderRadius: "var(--radius-sm)",
-          background: "var(--g-green-mint)",
+          background: selected ? "var(--g-white)" : "var(--g-green-mint)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

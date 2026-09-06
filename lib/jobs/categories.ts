@@ -39,7 +39,9 @@ export const JOBS_EXCLUDED_TYPES = new Set([
  * Sections that are structurally worth crawling — organisations large enough to have an HR
  * function. A type must be in one of these AND survive the exclusions above.
  */
-const JOBS_ELIGIBLE_SECTIONS = new Set([
+/** Exported for the industry filter on the jobs map — a distinct dimension from JOB_FAMILY_LABEL
+ * (what role you do vs. what sector the company is in). Same 14 sections that gate discovery. */
+export const JOBS_ELIGIBLE_SECTIONS = new Set([
   "Automotive",
   "Business & B2B",
   "Culture & Creative",

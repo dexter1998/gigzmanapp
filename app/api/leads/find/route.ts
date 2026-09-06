@@ -4,9 +4,9 @@ import { sql } from "@/lib/db";
 import { looksLikeCompetitor } from "@/lib/competitors";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
 import { isAllowedLeadType } from "@/lib/lead-quality";
-import { recordApiFailure } from "@/lib/api-alerts";
 import { allowanceFor, chargeCredits } from "@/lib/credits/server";
 import { CREDIT_COST } from "@/lib/credits/pricing";
+import { fetchNearbyBatch, splitIntoQuadrants, MIN_CELL_RADIUS_METERS, type PlacesResult, type Cell } from "@/lib/places/nearby-search";
 
 // Anti-abuse: a real discovery request (one that would actually call Places API) for the same
 // rounded area+category from the same user is throttled to once per this window — a user idling
@@ -35,9 +35,6 @@ const SESSION_RAW_REQUEST_CEILING = 1500;
 // computes from its viewport — user report: zooming out toward city/state/country scale must not
 // balloon into scanning that whole area. Enforced server-side so a client bug can't bypass it.
 const MAX_SEARCH_RADIUS_METERS = 3000;
-// Recursion floor for quadrant subdivision — below this, a capped cell is treated as exhausted
-// anyway rather than subdividing into circles too small to mean anything.
-const MIN_CELL_RADIUS_METERS = 150;
 // Exactly one grid cell processed per batch per request — keeps each POST fast (one Places API
 // call per type-batch) so the frontend can refresh pins after every request instead of a whole
 // section's grid finishing silently in one long call. How many requests a section needs to fully
@@ -49,87 +46,6 @@ const CELLS_PER_REQUEST_BUDGET = 1;
 // against whatever the normal section search already returned, not via a separate dedicated
 // search. A software/web/app dev shop showing up under "Business & B2B" (as corporate_office or
 // consultant, say) gets flagged here instead of treated as a lead.
-
-type PlacesResult = {
-  places?: Array<{
-    id: string;
-    displayName?: { text?: string };
-    formattedAddress?: string;
-    location?: { latitude?: number; longitude?: number };
-    nationalPhoneNumber?: string;
-    primaryType?: string;
-    rating?: number;
-    userRatingCount?: number;
-    websiteUri?: string;
-  }>;
-};
-
-type Cell = { lat: number; lng: number; radius: number };
-
-/** Every Places API call this process makes goes through here, so counting invocations of this
- * function is what "did this request actually cost money" means. See billed_places_calls. */
-async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ places: NonNullable<PlacesResult["places"]>; failed: boolean }> {
-  const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": process.env.GOOGLE_PLACES_API_KEY!,
-      // Nearby Search (New) has no pagination — its response only ever has a `places` array, no
-      // nextPageToken. Requesting that field (a leftover Text-Search-only assumption) made every
-      // single call here fail with INVALID_ARGUMENT, silently returning zero results — confirmed
-      // live via curl. Going past its flat 20-result cap now happens via quadrant subdivision
-      // (see splitIntoQuadrants) instead of pagination, since the API genuinely has none.
-      //
-      // websiteUri is included here rather than fetched separately per-lead (the old /enrich
-      // route) — confirmed against Google's own SKU tables that rating/userRatingCount/
-      // nationalPhoneNumber/websiteUri are ALL billed under the same "Nearby Search Enterprise"
-      // SKU ($35/1000 calls). Since this call already requests rating+userRatingCount+phone, it's
-      // already paying Enterprise-tier price; websiteUri rides along in that same tier for free.
-      // The old design paid an ADDITIONAL, separate Place Details Enterprise call ($20/1000) per
-      // lead just to learn one boolean — confirmed live (Speedomania's real website came back
-      // correctly in this same Nearby Search field mask) before removing the per-lead call.
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.primaryType,places.rating,places.userRatingCount,places.websiteUri",
-    },
-    body: JSON.stringify({
-      includedTypes: types,
-      maxResultCount: 20,
-      // Nearby Search (New) defaults to POPULARITY ranking, not distance — confirmed live: a
-      // business 400m away was getting pushed out of the 20-result cap by more "prominent"
-      // places 2-4km out. DISTANCE ranking fixes that, matching what "nearby" actually means.
-      rankPreference: "DISTANCE",
-      locationRestriction: { circle: { center: { latitude: cell.lat, longitude: cell.lng }, radius: cell.radius } },
-    }),
-  });
-  if (!res.ok) {
-    const bodyText = await res.text().catch(() => "");
-    await recordApiFailure("google_places", `HTTP ${res.status} from Nearby Search`, {
-      status: res.status,
-      body: bodyText.slice(0, 500),
-      types,
-      cell,
-    });
-    return { places: [], failed: true };
-  }
-  const data = (await res.json()) as PlacesResult;
-  return { places: data.places ?? [], failed: false };
-}
-
-/** Splits a capped circle into 4 overlapping quadrant sub-circles at half the radius — the
- * standard way to get past Nearby Search's flat 20-result cap without real pagination. Offsets
- * are converted from meters to degrees (111,320 m/deg latitude; longitude scaled by cos(lat)). */
-function splitIntoQuadrants(cell: Cell): Cell[] {
-  const subRadius = cell.radius / 2;
-  const offsetMeters = cell.radius / 2;
-  const dLat = offsetMeters / 111320;
-  const dLng = offsetMeters / (111320 * Math.cos((cell.lat * Math.PI) / 180));
-  return [
-    { lat: cell.lat + dLat, lng: cell.lng + dLng, radius: subRadius },
-    { lat: cell.lat + dLat, lng: cell.lng - dLng, radius: subRadius },
-    { lat: cell.lat - dLat, lng: cell.lng + dLng, radius: subRadius },
-    { lat: cell.lat - dLat, lng: cell.lng - dLng, radius: subRadius },
-  ];
-}
 
 /**
  * A bulk sweep (scripts/places-scan.ts) already covered this point for this section.
