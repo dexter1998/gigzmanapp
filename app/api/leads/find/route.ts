@@ -5,6 +5,8 @@ import { looksLikeCompetitor } from "@/lib/competitors";
 import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
 import { isAllowedLeadType } from "@/lib/lead-quality";
 import { recordApiFailure } from "@/lib/api-alerts";
+import { allowanceFor, chargeCredits } from "@/lib/credits/server";
+import { CREDIT_COST } from "@/lib/credits/pricing";
 
 // Anti-abuse: a real discovery request (one that would actually call Places API) for the same
 // rounded area+category from the same user is throttled to once per this window — a user idling
@@ -305,6 +307,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
   }
 
+  // Past the free daily/monthly allowance (see ALLOWANCE in lib/credits/pricing.ts), a billed scan
+  // must be paid for in credits rather than silently withheld -- previously this route had no
+  // credit logic at all, so map panning went free forever once the throttles above were the only
+  // gate. This pre-check only covers the *first* call of this request; the actual spend is settled
+  // below against however many calls the request ends up making.
+  const [profile] = await sql`SELECT plan, credits FROM user_profiles WHERE email = ${userEmail}`;
+  const plan = profile?.plan ?? "free";
+  const creditsBefore = profile?.credits ?? 0;
+  const allowance = await allowanceFor(userEmail, plan);
+  if (!allowance.covered && creditsBefore < CREDIT_COST.billed_places_call) {
+    return NextResponse.json(
+      { found: 0, leads: [], hasMore: false, throttled: "credits_required", credits: creditsBefore, required: CREDIT_COST.billed_places_call },
+      { status: 402 }
+    );
+  }
+
   const [scan] = await sql`
     INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, cache_key, status)
     VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cooldownKey}, 'discovering')
@@ -378,7 +396,18 @@ export async function POST(req: NextRequest) {
     WHERE id = ${scan.id}
   `;
 
+  // Settled against the calls this request actually made, not the pre-check estimate -- a request
+  // can span several batches (multiple category types), each good for its own billed call. A charge
+  // that fails here (balance drained by a concurrent request between the pre-check above and this
+  // settlement) does not undo the Places calls already made -- Google has already been paid, so the
+  // scan is returned regardless; the shortfall surfaces as insufficient_credits on the next request.
+  let creditsAfter = creditsBefore;
+  if (!allowance.covered && placesCalls > 0) {
+    const charge = await chargeCredits(userEmail, "billed_places_call", { units: placesCalls, ref: scan.id });
+    creditsAfter = charge.credits;
+  }
+
   // cached: this request cost nothing at Google. The client uses it to tell "still discovering"
   // apart from "this area is already fully scanned", so it can stop draining and stop refetching.
-  return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown, cached: placesCalls === 0 });
+  return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown, cached: placesCalls === 0, credits: creditsAfter });
 }

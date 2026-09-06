@@ -13,8 +13,7 @@
 #   ./scripts/deploy/deploy-app.sh
 set -euo pipefail
 
-S=/private/tmp/claude-501/-Users-dextermorgan-Desktop-Dhando/f4b8911d-8c40-4884-b910-f503393a74e8/scratchpad
-AWS=$S/awsvenv/bin/aws
+AWS="$HOME/claude-tools/aws/venv/bin/aws"
 ACCOUNT=248746142729
 REGION=ap-south-1
 REPO=gigzman-app

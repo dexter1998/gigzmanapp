@@ -122,10 +122,11 @@ for (const pack of CREDIT_PACKS) {
 /**
  * Free daily headroom, on every plan. Panning the map over ground we have already scanned is
  * unlimited and free (it costs us nothing), so this only ever counts calls that actually billed
- * Google. The monthly cap is the real guard: 5/day alone would be ₹460/month of exposure per user.
+ * Google. The monthly cap is the real guard: 10/day alone would be ~₹924/month of exposure per
+ * user, so billedCallsPerMonthFree (40 calls, ~₹123) is what actually bounds it in practice.
  */
 export const ALLOWANCE = {
-  billedCallsPerDay: 5,
+  billedCallsPerDay: 10,
   billedCallsPerMonthFree: 40,
   billedCallsPerMonthPaid: 60,
   chatTurnsPerDay: 5,

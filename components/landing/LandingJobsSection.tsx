@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { OrigamiDecoration } from "./OrigamiDecoration";
+import Image from "next/image";
 
 /**
  * The "there is a second product" section on the main landing page.
@@ -8,23 +8,61 @@ import { OrigamiDecoration } from "./OrigamiDecoration";
  * page has said what Mantis is forces a choice from someone who has no basis for making one, and
  * it is the first thing an ad-clicking visitor bounces off. By this point in the scroll they know
  * what the leads product does, so "there is also this" is a useful branch instead of a toll gate.
+ *
+ * Light, not the dark --g-ink band the rest of the marketing page uses for CTA sections — this one
+ * is its own product pitch with its own hero-style composition, so it reads as a distinct card
+ * rather than another dark closer stacked on the real one.
  */
+
+const FEATURES = [
+  { icon: "roles-near-you", title: "Roles near you" },
+  { icon: "meaningful-levels", title: "Meaningful levels" },
+  { icon: "opportunity-match", title: "Opportunity match" },
+  { icon: "apply-one-click", title: "Apply in one click" },
+] as const;
+
 export function LandingJobsSection() {
   return (
     <section
       id="jobs"
       style={{
         position: "relative",
-        padding: "96px 24px",
-        background: "var(--g-ink)",
-        color: "#fff",
+        padding: "88px 24px",
+        background: "var(--g-cream)",
         overflow: "hidden",
       }}
     >
-      <OrigamiDecoration />
+      <Image
+        aria-hidden="true"
+        alt=""
+        src="/landing/jobs/cross-sell/mountains-left.png"
+        width={1774}
+        height={887}
+        style={{ position: "absolute", left: 0, bottom: 0, width: "34vw", maxWidth: 480, height: "auto", opacity: 0.7, pointerEvents: "none", zIndex: 0 }}
+      />
+      <Image
+        aria-hidden="true"
+        alt=""
+        src="/landing/jobs/cross-sell/mountains-right.png"
+        width={1672}
+        height={941}
+        style={{ position: "absolute", right: 0, bottom: 0, width: "34vw", maxWidth: 480, height: "auto", opacity: 0.7, pointerEvents: "none", zIndex: 0 }}
+      />
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
-        <div style={{ maxWidth: 640, marginBottom: 44 }}>
+      <div
+        style={{
+          maxWidth: 1140,
+          margin: "0 auto",
+          position: "relative",
+          zIndex: 1,
+          display: "grid",
+          gridTemplateColumns: "minmax(280px, 460px) 1fr",
+          gap: 48,
+          alignItems: "center",
+        }}
+        className="jobs-cross-sell-grid"
+      >
+        <div>
           <span
             style={{
               display: "inline-block",
@@ -34,83 +72,101 @@ export function LandingJobsSection() {
               textTransform: "uppercase",
               padding: "5px 12px",
               borderRadius: "var(--radius-pill)",
-              background: "rgba(255,255,255,0.12)",
+              background: "var(--g-green-mint)",
+              color: "var(--g-green-text)",
               marginBottom: 18,
             }}
           >
-            Also on Mantis
+            Mantis Jobs
           </span>
           <h2
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(28px, 4vw, 42px)",
+              fontSize: "clamp(30px, 4vw, 44px)",
               fontWeight: 600,
               lineHeight: 1.15,
-              margin: "0 0 14px",
+              color: "var(--g-ink)",
+              margin: "0 0 16px",
             }}
           >
             Looking for a job, not clients?
           </h2>
-          <p style={{ fontSize: 15.5, lineHeight: 1.6, color: "rgba(255,255,255,0.72)", margin: 0 }}>
-            The same map, pointed the other way. Mantis crawls the careers pages of real businesses
-            around you and puts every open role on a map — with the level, the work mode, and the
-            pay band read out of the posting itself.
+          <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--g-gray-500)", margin: "0 0 28px" }}>
+            Discover fresh roles near you, understand the level and pay, match your profile, and
+            apply with confidence.
           </p>
+
+          <Link
+            href="/jobs"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "14px 26px",
+              borderRadius: "var(--radius-pill)",
+              background: "var(--g-green)",
+              color: "#fff",
+              fontSize: 14.5,
+              fontWeight: 700,
+              textDecoration: "none",
+              marginBottom: 36,
+            }}
+          >
+            Explore jobs on Mantis →
+          </Link>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {FEATURES.map((f) => (
+              <div
+                key={f.icon}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "14px 16px",
+                  background: "var(--g-white)",
+                  border: "1px solid var(--g-border)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <Image
+                  aria-hidden="true"
+                  alt=""
+                  src={`/landing/jobs/cross-sell/${f.icon}.png`}
+                  width={64}
+                  height={64}
+                  style={{ width: 34, height: 34, objectFit: "contain", flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>{f.title}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 18, marginBottom: 40 }}>
-          <Feature
-            title="Roles on a map"
-            body="See who is hiring within walking distance, not a feed of postings from three cities away."
+        <div style={{ position: "relative" }}>
+          <Image
+            src="/landing/jobs/cross-sell/jobs-map-composition.png"
+            alt="Map of open roles near Gurugram, with matching job cards and an opportunity-match score"
+            width={1536}
+            height={1024}
+            style={{ width: "100%", height: "auto" }}
           />
-          <Feature
-            title="Levels that mean something"
-            body="SDE I, SDE II, Senior, Staff — normalized, so filtering by level actually filters by level."
-          />
-          <Feature
-            title="Your opportunity match"
-            body="Add your resume once and every role shows how well it fits you, and why."
-          />
-          <Feature
-            title="One-click apply"
-            body="Your details travel with you. Review and submit on the employer's own form — never auto-sent."
+          <Image
+            aria-hidden="true"
+            alt=""
+            src="/landing/jobs/cross-sell/origami-mantis.png"
+            width={1536}
+            height={1024}
+            style={{ position: "absolute", top: "-14%", right: "2%", width: "26%", height: "auto", pointerEvents: "none" }}
           />
         </div>
-
-        <Link
-          href="/jobs"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "13px 26px",
-            borderRadius: "var(--radius-pill)",
-            background: "var(--g-green)",
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 700,
-            textDecoration: "none",
-          }}
-        >
-          Explore jobs on Mantis →
-        </Link>
       </div>
-    </section>
-  );
-}
 
-function Feature({ title, body }: { title: string; body: string }) {
-  return (
-    <div
-      style={{
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: "var(--radius-md)",
-        padding: 20,
-      }}
-    >
-      <h3 style={{ fontSize: 14.5, fontWeight: 800, margin: "0 0 7px" }}>{title}</h3>
-      <p style={{ fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.66)", margin: 0 }}>{body}</p>
-    </div>
+      <style>{`
+        @media (max-width: 860px) {
+          .jobs-cross-sell-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </section>
   );
 }
