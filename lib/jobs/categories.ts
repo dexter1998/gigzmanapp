@@ -39,23 +39,25 @@ export const JOBS_EXCLUDED_TYPES = new Set([
  * Sections that are structurally worth crawling — organisations large enough to have an HR
  * function. A type must be in one of these AND survive the exclusions above.
  */
-/** Exported for the industry filter on the jobs map — a distinct dimension from JOB_FAMILY_LABEL
- * (what role you do vs. what sector the company is in). Same 14 sections that gate discovery. */
+/**
+ * Exported for the industry filter on the jobs map — a distinct dimension from JOB_FAMILY_LABEL
+ * (what role you do vs. what sector the company is in).
+ *
+ * Narrowed from the original 14 sections (2026-09) after a live production discovery run on a
+ * fresh area found 6 real candidates — a confectionery, a fast-food stall, a restaurant, a general
+ * store, a wholesaler, a small services company — and every single one scored zero extractable
+ * jobs. Small owner-operated food/retail/personal-care/transport businesses essentially never run
+ * an HR function or publish structured openings; they cost a full Places sweep and a crawl each
+ * with a near-zero hit rate. What is left is the set of sections that plausibly employ enough
+ * people to have a careers page at all: offices, institutions, and larger service operations.
+ */
 export const JOBS_ELIGIBLE_SECTIONS = new Set([
-  "Automotive",
   "Business & B2B",
-  "Culture & Creative",
   "Education",
-  "Entertainment & Recreation",
   "Finance",
-  "Food & Drink",
   "Health & Wellness",
   "Hotels & Accommodation",
   "Professional Services",
-  "Personal Care & Local Services",
-  "Shopping & Retail",
-  "Sports & Fitness",
-  "Transportation Services",
 ]);
 
 export function isJobsEligibleType(primaryType: string | null | undefined): boolean {

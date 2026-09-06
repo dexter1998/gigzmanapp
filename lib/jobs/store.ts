@@ -145,11 +145,19 @@ export async function refreshCompany(companyId: string, domain: string): Promise
   const result = await scrapeCompanyJobs(domain);
   const now = new Date();
 
+  // `siteReachable` only reflects the initial domain check in findCareersUrl -- it stays true even
+  // when the SPECIFIC careers page fetch afterwards fails outright (result.error =
+  // "careers_page_fetch_failed"), which used to fall into this same "reachable, just empty" branch
+  // and get reported as a healthy "ok" scrape. Confirmed live: gurgaonchem.com recorded
+  // scrape_status='ok' alongside scrape_error='careers_page_fetch_failed' -- a real fetch failure
+  // masquerading as success. A genuine failed fetch belongs in "failed" (already retried on the
+  // normal 10-day cadence, see dueForRefresh -- it is not blacklisted), not conflated with the
+  // legitimately-empty case this branch exists for.
   const status = result.method
     ? "ok"
     : result.error === "no_careers_page"
       ? "no_careers_page"
-      : result.siteReachable
+      : result.siteReachable && result.error === null
         ? "ok" // reachable careers page that simply lists nothing right now — not a failure
         : "failed";
 
