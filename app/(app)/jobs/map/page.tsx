@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { LIGHT_MAP_STYLES } from "@/lib/pin-overlay";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
@@ -9,6 +10,7 @@ import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { JobCard, type JobCardData } from "@/components/jobs/JobCard";
 import { JobDetailPanel } from "@/components/jobs/JobDetailPanel";
 import { JOB_FAMILY_LABEL } from "@/lib/jobs/normalize";
+import { PinIcon, TableIcon, UserIcon, MapsPinIcon, SettingsIcon } from "@/components/icons";
 
 /**
  * Jobs dashboard — the map half of jobs mode.
@@ -49,28 +51,82 @@ type CompanyPin = {
  * cross-origin image (Google's own favicon service, a different origin from mantisai.in) referenced
  * from inside a data: URI SVG hits canvas tainting/CORS rules that a bare `icon: {url: ...}` on an
  * external image URL does not -- the latter is the same pattern the old 20px favicon dot already
- * used successfully. Splitting into a background disc (a vector Symbol, no external image, always
- * renders) plus the favicon as its own image marker on top (native external-URL icon, same as
- * before) sidesteps the whole problem. Both markers share one lat/lng; only the top one (favicon,
- * or the disc itself if there is no favicon) gets click/hover listeners.
+ * used successfully. Splitting into a background card (a plain SVG data URI with no external image
+ * inside it, so nothing to taint -- just a shape) plus the favicon as its own image marker on top
+ * (native external-URL icon) sidesteps the whole problem. Both markers share one lat/lng; only the
+ * top one (favicon, or the card itself if there is no favicon) gets click/hover listeners.
+ *
+ * Rounded-square card, not a circle -- matches the reference (nextdoor.company/discover) style of
+ * showing a company favicon in a small white card rather than a bare dot.
  */
-function backgroundDiscIcon(size: number, ringColor: string): google.maps.Symbol {
+function backgroundCardIcon(size: number, ringColor: string): google.maps.Icon {
+  const r = size * 0.24;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <rect x="2" y="2" width="${size - 4}" height="${size - 4}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2.5"/>
+  </svg>`;
   return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: size / 2,
-    fillColor: "#ffffff",
-    fillOpacity: 1,
-    strokeColor: ringColor,
-    strokeWeight: 2.5,
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2),
   };
 }
-function faviconOverlayIcon(faviconUrl: string, discSize: number): google.maps.Icon {
-  const inner = discSize - discSize * 0.34;
+function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.Icon {
+  const inner = cardSize - cardSize * 0.32;
   return {
     url: faviconUrl,
     scaledSize: new google.maps.Size(inner, inner),
     anchor: new google.maps.Point(inner / 2, inner / 2),
   };
+}
+/** Small red count badge for a cluster of 2+ companies at (near enough) the same spot -- offset to
+ * the card's top-right corner. Also a plain SVG with no external image, for the same canvas-taint
+ * reason as the card above. */
+function clusterBadgeIcon(count: number): google.maps.Icon {
+  const size = 22;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#e0483e" stroke="#ffffff" stroke-width="2"/>
+    <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">${count > 99 ? "99+" : count}</text>
+  </svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2),
+  };
+}
+
+/** Meters represented by one screen pixel at this latitude/zoom -- the standard Web Mercator
+ * approximation, used to cluster by an on-screen distance (a fixed pixel radius) rather than a
+ * fixed lat/lng distance that would look right at one zoom level and wrong at every other. */
+function metersPerPixel(lat: number, zoom: number): number {
+  return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom;
+}
+const CLUSTER_PIXEL_RADIUS = 26;
+
+function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+/** Groups items within CLUSTER_PIXEL_RADIUS screen pixels of each other at the given zoom --
+ * tighter as you zoom in (matches the reference's stacked-card-to-individual-cards behavior),
+ * looser zoomed out. Simple greedy single-pass grouping, fine at map-viewport marker counts. */
+function clusterByPixelDistance<T extends { lat: number; lng: number }>(items: T[], zoom: number): T[][] {
+  const clusters: T[][] = [];
+  for (const item of items) {
+    const home = clusters.find((c) => {
+      const rep = c[0];
+      const thresholdMeters = CLUSTER_PIXEL_RADIUS * metersPerPixel(rep.lat, zoom);
+      return haversineMeters(rep.lat, rep.lng, item.lat, item.lng) < thresholdMeters;
+    });
+    if (home) home.push(item);
+    else clusters.push([item]);
+  }
+  return clusters;
 }
 
 type SearchTile = { lat: number; lng: number };
@@ -136,6 +192,8 @@ export default function JobsPage() {
   // same nearest tiles.
   const tileQueueRef = useRef<{ centerKey: string; tiles: SearchTile[]; cursor: number } | null>(null);
   const [canFindMore, setCanFindMore] = useState(false);
+  const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
   // Company id + position, not a frozen jobs snapshot -- so clicking "Add" inside the card updates
   // its own label immediately (derived live from `jobs` below) instead of only after a re-hover.
   const [hovered, setHovered] = useState<{ companyId: string; x: number; y: number } | null>(null);
@@ -205,6 +263,7 @@ export default function JobsPage() {
         gestureHandling: "greedy",
       });
       mapRef.current = map;
+      map.addListener("zoom_changed", () => setMapZoom(map.getZoom() ?? DEFAULT_ZOOM));
       map.addListener("idle", () => {
         // Stored listings for the new viewport go up first — free, and shouldn't wait on the
         // debounce below (matches app/(app)/home/page.tsx's own leads-first-then-discover order).
@@ -233,7 +292,20 @@ export default function JobsPage() {
     if (mapRef.current) void loadJobs();
   }, [filters, loadJobs]);
 
+  /** Pixel-offset a lat/lng -- used to place a cluster's count badge at the card's corner rather
+   * than dead center, at whatever zoom is currently active. */
+  function offsetLatLng(lat: number, lng: number, dxPixels: number, dyPixels: number, zoom: number) {
+    const mpp = metersPerPixel(lat, zoom);
+    return {
+      lat: lat + (dyPixels * mpp) / 111320,
+      lng: lng + (dxPixels * mpp) / (111320 * Math.cos((lat * Math.PI) / 180)),
+    };
+  }
+
   // Pins follow whatever the list currently holds, so filtering the list filters the map too.
+  // Clustered by on-screen distance (see clusterByPixelDistance) so a dense cluster collapses into
+  // one card with a count badge at a wide zoom, same as the nextdoor.company reference, and
+  // separates into individual company cards once zoomed in enough to tell them apart.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -247,71 +319,112 @@ export default function JobsPage() {
       list.push(job);
       byCompany.set(job.company.id, list);
     }
+    const companies = Array.from(byCompany.values()).map((companyJobs) => ({
+      lat: companyJobs[0].company.lat as number,
+      lng: companyJobs[0].company.lng as number,
+      companyJobs,
+    }));
 
-    for (const [, companyJobs] of byCompany) {
-      const first = companyJobs[0];
+    for (const cluster of clusterByPixelDistance(companies, mapZoom)) {
+      // The most notable company in the cluster fronts the card -- golden first, then most roles.
+      const front = [...cluster].sort((a, b) => {
+        const aGold = a.companyJobs[0].company.goldenTier ? 1 : 0;
+        const bGold = b.companyJobs[0].company.goldenTier ? 1 : 0;
+        return bGold - aGold || b.companyJobs.length - a.companyJobs.length;
+      })[0];
+      const first = front.companyJobs[0];
       const golden = !!first.company.goldenTier;
-      const position = { lat: first.company.lat as number, lng: first.company.lng as number };
+      const position = { lat: front.lat, lng: front.lng };
       const size = golden ? 68 : 60;
       const ringColor = golden ? "#d4a72c" : "#1f8a54";
-      const title = `${first.company.name} — ${companyJobs.length} open role${companyJobs.length > 1 ? "s" : ""}`;
+      const totalRoles = cluster.reduce((n, c) => n + c.companyJobs.length, 0);
+      const title =
+        cluster.length > 1
+          ? `${cluster.length} companies here — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`
+          : `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`;
 
-      const disc = new google.maps.Marker({ position, map, zIndex: 1, icon: backgroundDiscIcon(size, ringColor) });
-      markersRef.current.push(disc);
+      const card = new google.maps.Marker({ position, map, zIndex: 1, icon: backgroundCardIcon(size, ringColor) });
+      markersRef.current.push(card);
 
       // Listeners go on whichever marker is visually on top -- the favicon if there is one,
-      // otherwise the disc itself.
+      // otherwise the card itself.
       const topMarker = first.company.faviconUrl
-        ? new google.maps.Marker({
-            position, map, title, zIndex: 2,
-            icon: faviconOverlayIcon(first.company.faviconUrl, size),
-          })
-        : disc;
-      if (topMarker !== disc) markersRef.current.push(topMarker);
+        ? new google.maps.Marker({ position, map, title, zIndex: 2, icon: faviconOverlayIcon(first.company.faviconUrl, size) })
+        : card;
+      if (topMarker !== card) markersRef.current.push(topMarker);
       topMarker.setTitle(title);
-      topMarker.addListener("click", () => setSelected(first));
-      // Hover shows a compact, scrollable list of this company's own roles (not the full detail
-      // panel — that stays a click-through action). `domEvent` is a plain MouseEvent on a classic
-      // Marker, so its client coordinates position the card without a separate projection lookup.
-      topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
-        clearHoverHide();
-        const box = mapDivRef.current?.getBoundingClientRect();
-        const dom = e.domEvent as MouseEvent | undefined;
-        if (!box || !dom) return;
-        setHovered({ companyId: first.company.id, x: dom.clientX - box.left, y: dom.clientY - box.top });
-      });
-      topMarker.addListener("mouseout", scheduleHoverHide);
-    }
-  }, [jobs]);
 
-  // Favicon-only dots for companies discovered but with zero open roles right now -- matches the
+      if (cluster.length > 1) {
+        // A cluster opens by zooming in on it rather than a full detail view -- there is no one
+        // company to show yet. Matches the reference's own click-to-zoom-in behavior on a stack.
+        topMarker.addListener("click", () => {
+          map.panTo(position);
+          map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
+        });
+        const badgeOffset = offsetLatLng(front.lat, front.lng, size * 0.36, -size * 0.36, mapZoom);
+        const badge = new google.maps.Marker({
+          position: badgeOffset, map, zIndex: 3, icon: clusterBadgeIcon(cluster.length), clickable: false,
+        });
+        markersRef.current.push(badge);
+      } else {
+        topMarker.addListener("click", () => setSelected(first));
+        // Hover shows a compact, scrollable list of this company's own roles (not the full detail
+        // panel — that stays a click-through action). `domEvent` is a plain MouseEvent on a classic
+        // Marker, so its client coordinates position the card without a separate projection lookup.
+        topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
+          clearHoverHide();
+          const box = mapDivRef.current?.getBoundingClientRect();
+          const dom = e.domEvent as MouseEvent | undefined;
+          if (!box || !dom) return;
+          setHovered({ companyId: first.company.id, x: dom.clientX - box.left, y: dom.clientY - box.top });
+        });
+        topMarker.addListener("mouseout", scheduleHoverHide);
+      }
+    }
+  }, [jobs, mapZoom]);
+
+  // Favicon-only cards for companies discovered but with zero open roles right now -- matches the
   // leads map showing a pin for every business found, has-website or not. Skips anything already
-  // covered by the circle markers above (hasOpenJobs=true there) so a company never gets two pins.
+  // covered by the cards above (hasOpenJobs=true there) so a company never gets two pins. Clustered
+  // the same way as the has-jobs cards above.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     companyMarkersRef.current.forEach((m) => m.setMap(null));
     companyMarkersRef.current = [];
 
-    for (const c of companyPins) {
-      if (c.hasOpenJobs || c.lat == null || c.lng == null) continue;
-      const position = { lat: c.lat, lng: c.lng };
-      const title = `${c.name} — no open roles right now`;
+    const withoutJobs = companyPins.filter((c) => !c.hasOpenJobs && c.lat != null && c.lng != null) as Array<
+      CompanyPin & { lat: number; lng: number }
+    >;
 
-      const disc = new google.maps.Marker({ position, map, zIndex: 1, opacity: 0.9, icon: backgroundDiscIcon(60, "#d8dcd0") });
-      companyMarkersRef.current.push(disc);
+    for (const cluster of clusterByPixelDistance(withoutJobs, mapZoom)) {
+      const front = cluster[0];
+      const position = { lat: front.lat, lng: front.lng };
+      const title =
+        cluster.length > 1 ? `${cluster.length} companies here — no open roles right now` : `${front.name} — no open roles right now`;
 
-      if (c.faviconUrl) {
-        const favicon = new google.maps.Marker({
-          position, map, title, zIndex: 2, opacity: 0.9,
-          icon: faviconOverlayIcon(c.faviconUrl, 60),
+      const card = new google.maps.Marker({ position, map, zIndex: 1, opacity: 0.9, icon: backgroundCardIcon(60, "#d8dcd0") });
+      companyMarkersRef.current.push(card);
+
+      const topMarker = front.faviconUrl
+        ? new google.maps.Marker({ position, map, title, zIndex: 2, opacity: 0.9, icon: faviconOverlayIcon(front.faviconUrl, 60) })
+        : card;
+      if (topMarker !== card) companyMarkersRef.current.push(topMarker);
+      topMarker.setTitle(title);
+
+      if (cluster.length > 1) {
+        topMarker.addListener("click", () => {
+          map.panTo(position);
+          map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
         });
-        companyMarkersRef.current.push(favicon);
-      } else {
-        disc.setTitle(title);
+        const badgeOffset = offsetLatLng(front.lat, front.lng, 60 * 0.36, -60 * 0.36, mapZoom);
+        const badge = new google.maps.Marker({
+          position: badgeOffset, map, zIndex: 3, opacity: 0.9, icon: clusterBadgeIcon(cluster.length), clickable: false,
+        });
+        companyMarkersRef.current.push(badge);
       }
     }
-  }, [companyPins]);
+  }, [companyPins, mapZoom]);
 
   // Hard ceiling on how many small crawl batches ONE tile will chase before moving on, in case
   // something upstream keeps claiming hasMore (a stuck company, a bug) -- caps worst-case latency
@@ -443,10 +556,85 @@ export default function JobsPage() {
     );
   }
 
+  const totalCompanies = companyPins.length;
+
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--g-cream)" }}>
+      <IconRail />
+
       <div style={{ position: "relative", flex: 1, minWidth: 0, height: "100%" }}>
         <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+
+        {/* Floating top bar: filters on the left, view toggle + credits on the right -- always
+            over the map so filtering doesn't require the list panel to be open. */}
+        <div style={{ position: "absolute", top: 14, left: 14, right: 14, zIndex: 5, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, pointerEvents: "none" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, pointerEvents: "auto" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <select value={filters.family} onChange={(e) => setFilters((f) => ({ ...f, family: e.target.value }))} style={floatingSelectStyle} aria-label="Job profile">
+                <option value="">All job profiles</option>
+                {Array.from(availableFamilies).map((k) => (
+                  <option key={k} value={k}>{JOB_FAMILY_LABEL[k] ?? k}</option>
+                ))}
+              </select>
+              <select value={filters.industry} onChange={(e) => setFilters((f) => ({ ...f, industry: e.target.value }))} style={floatingSelectStyle} aria-label="Industry">
+                <option value="">All industries</option>
+                {Array.from(availableIndustries).map((section) => (
+                  <option key={section} value={section}>{section}</option>
+                ))}
+              </select>
+              <select value={filters.workMode} onChange={(e) => setFilters((f) => ({ ...f, workMode: e.target.value }))} style={floatingSelectStyle}>
+                <option value="">Any mode</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">On-site</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setFilters((f) => ({ ...f, goldenOnly: !f.goldenOnly }))}
+                style={{ ...floatingSelectStyle, cursor: "pointer", background: filters.goldenOnly ? "#f5e6bf" : "var(--g-white)", color: filters.goldenOnly ? "#7a5c12" : "var(--g-ink)", fontWeight: 700 }}
+              >
+                ★ Golden only
+              </button>
+              <button
+                type="button"
+                onClick={discoverHere}
+                disabled={discovering}
+                style={{
+                  padding: "8px 16px", borderRadius: "var(--radius-pill)", border: "none",
+                  background: "var(--g-green-darker)", color: "#fff", fontSize: 12.5, fontWeight: 700,
+                  cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1, boxShadow: "var(--shadow-card)",
+                }}
+              >
+                {discovering
+                  ? `Finding ${filters.family ? `${JOB_FAMILY_LABEL[filters.family] ?? ""} ` : ""}jobs near you…`
+                  : canFindMore
+                    ? "Find more jobs"
+                    : "Find jobs here"}
+              </button>
+            </div>
+            {notice && (
+              <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-ink-soft)", background: "var(--g-white)", padding: "6px 12px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", margin: 0, maxWidth: 340 }}>
+                {notice}
+              </p>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
+            <div style={{ display: "flex", background: "var(--g-white)", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", padding: 3, gap: 2 }}>
+              <ViewToggleButton active={viewMode === "map"} onClick={() => setViewMode("map")} icon={<MapsPinIcon size={14} color={viewMode === "map" ? "#fff" : "var(--g-ink-soft)"} />} label="Map" />
+              <ViewToggleButton active={viewMode === "list"} onClick={() => setViewMode("list")} icon={<TableIcon size={14} color={viewMode === "list" ? "#fff" : "var(--g-ink-soft)"} />} label="List" />
+            </div>
+            <DashboardModeBadge />
+            <CreditsIndicator />
+          </div>
+        </div>
+
+        {/* Floating bottom-left stats pill -- what's actually on screen right now. */}
+        <div style={{ position: "absolute", bottom: 16, left: 14, zIndex: 5, display: "flex", gap: 8 }}>
+          <StatPill label={`${totalCompanies.toLocaleString("en-IN")} ${totalCompanies === 1 ? "company" : "companies"}`} />
+          <StatPill label={`${jobs.length.toLocaleString("en-IN")} ${jobs.length === 1 ? "job" : "jobs"}`} />
+        </div>
+
         {hovered && hoveredJobs.length > 0 && (
           <div
             onMouseEnter={clearHoverHide}
@@ -511,143 +699,134 @@ export default function JobsPage() {
         )}
       </div>
 
-      <aside
-        style={{
-          width: 420,
-          flexShrink: 0,
-          borderLeft: "1px solid var(--g-border)",
-          background: "var(--g-white)",
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
-      >
-        <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--g-border)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 12 }}>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 600, margin: 0, color: "var(--g-ink)" }}>
+      {viewMode === "list" && (
+        <aside
+          style={{
+            width: 420,
+            flexShrink: 0,
+            borderLeft: "1px solid var(--g-border)",
+            background: "var(--g-white)",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--g-border)" }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 600, margin: "0 0 10px", color: "var(--g-ink)" }}>
               Jobs
             </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <DashboardModeBadge />
-              <CreditsIndicator />
-            </div>
+            {!profileComplete && (
+              <Link
+                href="/jobs/profile"
+                style={{
+                  display: "block", padding: "9px 12px", borderRadius: "var(--radius-sm)",
+                  background: "var(--g-green-mint)", color: "var(--g-green-text)", textDecoration: "none",
+                  fontSize: 12.5, fontWeight: 700,
+                }}
+              >
+                Add your resume to unlock your match on every job →
+              </Link>
+            )}
           </div>
 
-          {!profileComplete && (
-            <Link
-              href="/jobs/profile"
-              style={{
-                display: "block", marginBottom: 10, padding: "9px 12px", borderRadius: "var(--radius-sm)",
-                background: "var(--g-green-mint)", color: "var(--g-green-text)", textDecoration: "none",
-                fontSize: 12.5, fontWeight: 700,
-              }}
-            >
-              Add your resume to unlock your match on every job →
-            </Link>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            <select
-              value={filters.family}
-              onChange={(e) => setFilters((f) => ({ ...f, family: e.target.value }))}
-              style={selectStyle}
-              aria-label="Job profile"
-            >
-              <option value="">All job profiles</option>
-              {Array.from(availableFamilies).map((k) => (
-                <option key={k} value={k}>{JOB_FAMILY_LABEL[k] ?? k}</option>
-              ))}
-            </select>
-            <select
-              value={filters.industry}
-              onChange={(e) => setFilters((f) => ({ ...f, industry: e.target.value }))}
-              style={selectStyle}
-              aria-label="Industry"
-            >
-              <option value="">All industries</option>
-              {Array.from(availableIndustries).map((section) => (
-                <option key={section} value={section}>{section}</option>
-              ))}
-            </select>
-            <select
-              value={filters.workMode}
-              onChange={(e) => setFilters((f) => ({ ...f, workMode: e.target.value }))}
-              style={selectStyle}
-            >
-              <option value="">Any mode</option>
-              <option value="remote">Remote</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="onsite">On-site</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => setFilters((f) => ({ ...f, goldenOnly: !f.goldenOnly }))}
-              style={{
-                ...selectStyle,
-                cursor: "pointer",
-                background: filters.goldenOnly ? "#f5e6bf" : "var(--g-white)",
-                color: filters.goldenOnly ? "#7a5c12" : "var(--g-ink)",
-                fontWeight: 700,
-              }}
-            >
-              ★ Golden only
-            </button>
+          <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+            {(loading || discovering) && !jobs.length && <Empty>{discovering ? "Searching this area…" : "Loading…"}</Empty>}
+            {!loading && !discovering && !jobs.length && (
+              <Empty>
+                No roles found here yet. Pan the map to where you want to work — Mantis searches
+                automatically as you move.
+              </Empty>
+            )}
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} onOpen={setSelected} onSave={toggleSave} />
+            ))}
           </div>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              type="button"
-              onClick={discoverHere}
-              disabled={discovering}
-              style={{
-                flex: 1, padding: "9px 0", borderRadius: "var(--radius-sm)", border: "none",
-                background: "var(--g-green-darker)", color: "#fff", fontSize: 12.5, fontWeight: 700,
-                cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1,
-              }}
-            >
-              {discovering
-                ? `Finding ${filters.family ? `${JOB_FAMILY_LABEL[filters.family] ?? ""} ` : ""}jobs near you…`
-                : canFindMore
-                  ? "Find more jobs"
-                  : "Find jobs here"}
-            </button>
-            <Link href="/jobs/applications" style={{ ...selectStyle, textDecoration: "none", fontWeight: 700, lineHeight: "20px" }}>
-              Applications
-            </Link>
-          </div>
-
-          {notice && (
-            <p style={{ fontSize: 11.5, color: "var(--g-gray-500)", margin: "10px 0 0" }}>{notice}</p>
-          )}
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-          {(loading || discovering) && !jobs.length && <Empty>{discovering ? "Searching this area…" : "Loading…"}</Empty>}
-          {!loading && !discovering && !jobs.length && (
-            <Empty>
-              No roles found here yet. Pan the map to where you want to work — Mantis searches
-              automatically as you move.
-            </Empty>
-          )}
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} onOpen={setSelected} onSave={toggleSave} />
-          ))}
-        </div>
-      </aside>
+        </aside>
+      )}
 
       {selected && <JobDetailPanel job={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
 
-const selectStyle: React.CSSProperties = {
-  padding: "6px 10px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--g-border)",
+/** Slim icon rail replacing the app-wide sidebar on this page (see components/AppSidebar.tsx,
+ * which returns null for /jobs/map) -- a full 240px nav column eats into the map real estate a
+ * full-bleed map view needs most, matching the nextdoor.company reference this page was redesigned
+ * against. */
+function IconRail() {
+  const items = [
+    { href: "/jobs/map", label: "Jobs", icon: PinIcon },
+    { href: "/jobs/applications", label: "Applications", icon: TableIcon },
+    { href: "/jobs/profile", label: "Job profile", icon: UserIcon },
+  ];
+  return (
+    <aside
+      style={{
+        width: 64, flexShrink: 0, height: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", gap: 6, padding: "16px 0", background: "var(--g-white)",
+        borderRight: "1px solid var(--g-border)",
+      }}
+    >
+      <Image src="/landing/jobs/mantis-compact-mascot.png" alt="Mantis" width={28} height={28} style={{ objectFit: "contain", marginBottom: 12 }} />
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          title={item.label}
+          style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+            width: 52, padding: "8px 0", borderRadius: "var(--radius-sm)", textDecoration: "none",
+            background: item.href === "/jobs/map" ? "var(--g-green-mint)" : "transparent",
+          }}
+        >
+          <item.icon size={17} color={item.href === "/jobs/map" ? "var(--g-green-text)" : "var(--g-ink-soft)"} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: item.href === "/jobs/map" ? "var(--g-green-text)" : "var(--g-gray-500)", textAlign: "center" }}>
+            {item.label}
+          </span>
+        </Link>
+      ))}
+      <div style={{ flex: 1 }} />
+      <Link href="/profile" title="Settings" style={{ padding: 10, borderRadius: "var(--radius-sm)" }}>
+        <SettingsIcon size={17} color="var(--g-ink-soft)" />
+      </Link>
+    </aside>
+  );
+}
+
+function ViewToggleButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+        borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
+        background: active ? "var(--g-green-darker)" : "transparent",
+        color: active ? "#fff" : "var(--g-ink-soft)", fontSize: 12, fontWeight: 700,
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function StatPill({ label }: { label: string }) {
+  return (
+    <span style={{ background: "var(--g-white)", padding: "7px 14px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", fontSize: 12, fontWeight: 700, color: "var(--g-ink)" }}>
+      {label}
+    </span>
+  );
+}
+
+const floatingSelectStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  borderRadius: "var(--radius-pill)",
+  border: "none",
   background: "var(--g-white)",
   color: "var(--g-ink)",
   fontSize: 12,
   fontFamily: "inherit",
+  boxShadow: "var(--shadow-card)",
 };
 
 function Empty({ children }: { children: React.ReactNode }) {
