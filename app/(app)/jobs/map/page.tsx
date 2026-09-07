@@ -43,35 +43,64 @@ type CompanyPin = {
   scrapeStatus: string | null; hasOpenJobs: boolean;
 };
 
-// On a white disc with a colored ring, so a dark or transparent-background favicon never
-// disappears against the map tiles behind it, and the ring communicates status at a glance (green
-// = open roles, gold = golden-tier company with open roles, gray = nothing open right now) the way
-// leads' pins carry a color without needing the card open. Built as an inline SVG data URI rather
-// than stacked markers -- one marker is one click/hover target, and Google Maps gives no reliable
-// z-index guarantee for two markers sharing a single lat/lng.
-function faviconMarkerIcon(
-  faviconUrl: string | null,
-  opts: { size: number; ringColor: string } = { size: 60, ringColor: "#d8dcd0" }
-): google.maps.Icon | google.maps.Symbol {
-  const { size, ringColor } = opts;
-  if (!faviconUrl) {
-    return {
-      path: google.maps.SymbolPath.CIRCLE, scale: size / 4,
-      fillColor: ringColor === "#d8dcd0" ? "#c7ccb8" : ringColor,
-      fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2,
-    };
-  }
-  const ringWidth = 2.5;
-  const inset = size * 0.17; // favicon diameter within the disc
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - ringWidth}" fill="#ffffff" stroke="${ringColor}" stroke-width="${ringWidth}"/>
-    <image href="${faviconUrl}" x="${inset}" y="${inset}" width="${size - inset * 2}" height="${size - inset * 2}"/>
-  </svg>`;
+/**
+ * Two markers, not an SVG with an embedded <image href> pointing at the favicon -- that was tried
+ * first and rendered nothing on screen. Google Maps rasterizes a marker icon via canvas, and a
+ * cross-origin image (Google's own favicon service, a different origin from mantisai.in) referenced
+ * from inside a data: URI SVG hits canvas tainting/CORS rules that a bare `icon: {url: ...}` on an
+ * external image URL does not -- the latter is the same pattern the old 20px favicon dot already
+ * used successfully. Splitting into a background disc (a vector Symbol, no external image, always
+ * renders) plus the favicon as its own image marker on top (native external-URL icon, same as
+ * before) sidesteps the whole problem. Both markers share one lat/lng; only the top one (favicon,
+ * or the disc itself if there is no favicon) gets click/hover listeners.
+ */
+function backgroundDiscIcon(size: number, ringColor: string): google.maps.Symbol {
   return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(size, size),
-    anchor: new google.maps.Point(size / 2, size / 2),
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: size / 2,
+    fillColor: "#ffffff",
+    fillOpacity: 1,
+    strokeColor: ringColor,
+    strokeWeight: 2.5,
   };
+}
+function faviconOverlayIcon(faviconUrl: string, discSize: number): google.maps.Icon {
+  const inner = discSize - discSize * 0.34;
+  return {
+    url: faviconUrl,
+    scaledSize: new google.maps.Size(inner, inner),
+    anchor: new google.maps.Point(inner / 2, inner / 2),
+  };
+}
+
+type SearchTile = { lat: number; lng: number };
+
+// Paired with MAX_FALLBACK_RADIUS_METERS (3000) in app/api/jobs/discover/route.ts -- tiles land
+// close enough together to not leave gaps between each one's search circle, without so much
+// overlap that neighboring tiles keep re-covering the same ground.
+const JOBS_GRID_STEP_DEG = 0.025;
+const TILES_PER_ROUND = 4;
+const TARGET_JOBS = 20;
+
+/** A 5x5 candidate grid around `center`, nearest-first -- same shape as home/page.tsx's own
+ * nearestSearchTiles, sized to comfortably cover several rounds of "Find more" (5x5 = 25 tiles,
+ * 4 at a time = 6+ rounds) before a viewport is genuinely exhausted. */
+function nearbyJobTiles(center: google.maps.LatLng): SearchTile[] {
+  const snap = (v: number) => Math.round(v / JOBS_GRID_STEP_DEG) * JOBS_GRID_STEP_DEG;
+  const centerLat = snap(center.lat());
+  const centerLng = snap(center.lng());
+  const candidates: SearchTile[] = [];
+  for (let dLat = -2; dLat <= 2; dLat++) {
+    for (let dLng = -2; dLng <= 2; dLng++) {
+      candidates.push({ lat: centerLat + dLat * JOBS_GRID_STEP_DEG, lng: centerLng + dLng * JOBS_GRID_STEP_DEG });
+    }
+  }
+  const { spherical } = google.maps.geometry;
+  return candidates.sort(
+    (a, b) =>
+      spherical.computeDistanceBetween(center, new google.maps.LatLng(a.lat, a.lng)) -
+      spherical.computeDistanceBetween(center, new google.maps.LatLng(b.lat, b.lng))
+  );
 }
 
 export default function JobsPage() {
@@ -80,6 +109,10 @@ export default function JobsPage() {
   const markersRef = useRef<google.maps.Marker[]>([]);
 
   const [jobs, setJobs] = useState<JobCardData[]>([]);
+  // Mirrors `jobs` synchronously for the discovery loop below -- setJobs's re-render isn't
+  // guaranteed to land before the loop's next await resumes, and checking a stale `jobs` closure
+  // against TARGET_JOBS would let the loop run past the target it's meant to stop at.
+  const jobsRef = useRef<JobCardData[]>([]);
   const [companyPins, setCompanyPins] = useState<CompanyPin[]>([]);
   const companyMarkersRef = useRef<google.maps.Marker[]>([]);
   const [profileComplete, setProfileComplete] = useState(true);
@@ -97,6 +130,12 @@ export default function JobsPage() {
   const [availableIndustries, setAvailableIndustries] = useState<Set<string>>(new Set());
   const idleSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const discoveringRef = useRef(false);
+  // The tile queue for wherever the map is centered right now -- reset whenever the center moves
+  // to a different snapped grid cell, otherwise consumed TILES_PER_ROUND at a time so a "Find
+  // more" click continues outward from where the last round left off instead of re-covering the
+  // same nearest tiles.
+  const tileQueueRef = useRef<{ centerKey: string; tiles: SearchTile[]; cursor: number } | null>(null);
+  const [canFindMore, setCanFindMore] = useState(false);
   // Company id + position, not a frozen jobs snapshot -- so clicking "Add" inside the card updates
   // its own label immediately (derived live from `jobs` below) instead of only after a re-hover.
   const [hovered, setHovered] = useState<{ companyId: string; x: number; y: number } | null>(null);
@@ -135,7 +174,8 @@ export default function JobsPage() {
     try {
       const res = await fetch(`/api/jobs?${params}`);
       const data = await res.json();
-      setJobs(data.jobs ?? []);
+      jobsRef.current = data.jobs ?? [];
+      setJobs(jobsRef.current);
       setCompanyPins(data.companies ?? []);
       setProfileComplete(data.profileComplete !== false);
       if (data.availableFamilies?.length) {
@@ -211,28 +251,36 @@ export default function JobsPage() {
     for (const [, companyJobs] of byCompany) {
       const first = companyJobs[0];
       const golden = !!first.company.goldenTier;
-      const marker = new google.maps.Marker({
-        position: { lat: first.company.lat as number, lng: first.company.lng as number },
-        map,
-        title: `${first.company.name} — ${companyJobs.length} open role${companyJobs.length > 1 ? "s" : ""}`,
-        icon: faviconMarkerIcon(first.company.faviconUrl, {
-          size: golden ? 68 : 60,
-          ringColor: golden ? "#d4a72c" : "#1f8a54",
-        }),
-      });
-      marker.addListener("click", () => setSelected(first));
+      const position = { lat: first.company.lat as number, lng: first.company.lng as number };
+      const size = golden ? 68 : 60;
+      const ringColor = golden ? "#d4a72c" : "#1f8a54";
+      const title = `${first.company.name} — ${companyJobs.length} open role${companyJobs.length > 1 ? "s" : ""}`;
+
+      const disc = new google.maps.Marker({ position, map, zIndex: 1, icon: backgroundDiscIcon(size, ringColor) });
+      markersRef.current.push(disc);
+
+      // Listeners go on whichever marker is visually on top -- the favicon if there is one,
+      // otherwise the disc itself.
+      const topMarker = first.company.faviconUrl
+        ? new google.maps.Marker({
+            position, map, title, zIndex: 2,
+            icon: faviconOverlayIcon(first.company.faviconUrl, size),
+          })
+        : disc;
+      if (topMarker !== disc) markersRef.current.push(topMarker);
+      topMarker.setTitle(title);
+      topMarker.addListener("click", () => setSelected(first));
       // Hover shows a compact, scrollable list of this company's own roles (not the full detail
       // panel — that stays a click-through action). `domEvent` is a plain MouseEvent on a classic
       // Marker, so its client coordinates position the card without a separate projection lookup.
-      marker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
+      topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
         clearHoverHide();
         const box = mapDivRef.current?.getBoundingClientRect();
         const dom = e.domEvent as MouseEvent | undefined;
         if (!box || !dom) return;
         setHovered({ companyId: first.company.id, x: dom.clientX - box.left, y: dom.clientY - box.top });
       });
-      marker.addListener("mouseout", scheduleHoverHide);
-      markersRef.current.push(marker);
+      topMarker.addListener("mouseout", scheduleHoverHide);
     }
   }, [jobs]);
 
@@ -247,37 +295,70 @@ export default function JobsPage() {
 
     for (const c of companyPins) {
       if (c.hasOpenJobs || c.lat == null || c.lng == null) continue;
-      const marker = new google.maps.Marker({
-        position: { lat: c.lat, lng: c.lng },
-        map,
-        title: `${c.name} — no open roles right now`,
-        icon: faviconMarkerIcon(c.faviconUrl, { size: 60, ringColor: "#d8dcd0" }),
-        opacity: 0.9,
-      });
-      companyMarkersRef.current.push(marker);
+      const position = { lat: c.lat, lng: c.lng };
+      const title = `${c.name} — no open roles right now`;
+
+      const disc = new google.maps.Marker({ position, map, zIndex: 1, opacity: 0.9, icon: backgroundDiscIcon(60, "#d8dcd0") });
+      companyMarkersRef.current.push(disc);
+
+      if (c.faviconUrl) {
+        const favicon = new google.maps.Marker({
+          position, map, title, zIndex: 2, opacity: 0.9,
+          icon: faviconOverlayIcon(c.faviconUrl, 60),
+        });
+        companyMarkersRef.current.push(favicon);
+      } else {
+        disc.setTitle(title);
+      }
     }
   }, [companyPins]);
 
-  // Hard ceiling on how many small crawl batches one trigger will chase before stopping, in case
+  // Hard ceiling on how many small crawl batches ONE tile will chase before moving on, in case
   // something upstream keeps claiming hasMore (a stuck company, a bug) -- caps worst-case latency
-  // at ~10 * CRAWL_BATCH_SIZE companies rather than looping indefinitely.
-  const MAX_DISCOVER_ROUNDS = 10;
+  // per tile rather than looping indefinitely.
+  const MAX_ROUNDS_PER_TILE = 10;
+
+  function currentTileQueue(center: google.maps.LatLng) {
+    const key = `${Math.round(center.lat() / JOBS_GRID_STEP_DEG)}_${Math.round(center.lng() / JOBS_GRID_STEP_DEG)}`;
+    if (tileQueueRef.current?.centerKey !== key) {
+      tileQueueRef.current = { centerKey: key, tiles: nearbyJobTiles(center), cursor: 0 };
+    }
+    return tileQueueRef.current;
+  }
+
+  /** A small bounds box around one tile, sized so the backend's own radius cap (3000m in
+   * app/api/jobs/discover/route.ts) is what actually bounds the search -- overshooting slightly
+   * here is fine since that cap clamps it back down. */
+  function tileBounds(tile: SearchTile) {
+    const radiusMeters = 3000;
+    const dLat = radiusMeters / 111320;
+    const dLng = radiusMeters / (111320 * Math.cos((tile.lat * Math.PI) / 180));
+    return { swLat: tile.lat - dLat, swLng: tile.lng - dLng, neLat: tile.lat + dLat, neLng: tile.lng + dLng };
+  }
 
   /**
    * The crawl. Fires automatically on pan (debounced, see the idle listener above) as well as from
-   * the manual button. Each call only registers+scrapes a couple of companies at a time (see
-   * CRAWL_BATCH_SIZE in app/api/jobs/discover/route.ts -- a single company's crawl can chain 10+
-   * sequential fetches and blew past the request timeout when done 25 at once), so this loops,
-   * refreshing the map after every round -- pins/favicon dots appear company by company as they're
-   * found, the same incremental feel as the leads map's per-tile requests, instead of one long
-   * silent wait that either times out or dumps everything at once at the end.
+   * the manual button, which doubles as "Find more" once a round finishes under TARGET_JOBS.
+   *
+   * Searches a handful of grid tiles around the map's center (same shape as home/page.tsx's own
+   * nearestSearchTiles), not the entire visible viewport in one shot -- a single 3km-radius circle
+   * at a zoomed-out center covered only a sliver of what was on screen, which is why a wide view of
+   * Delhi NCR was turning up almost nothing despite plenty of real businesses being visible. Each
+   * tile is searched (registering + crawling a couple of companies at a time, see CRAWL_BATCH_SIZE)
+   * until either its candidates run out or the running job count reaches TARGET_JOBS, at which
+   * point this stops and leaves the rest of the tile queue for an explicit "Find more" click --
+   * mirrors leads' own free-search-then-stop-at-a-count shape instead of unlimited auto-billing.
    */
   async function discoverHere() {
-    const bounds = mapRef.current?.getBounds();
-    if (!bounds || discoveringRef.current) return;
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-    const body = JSON.stringify({ swLat: sw.lat(), swLng: sw.lng(), neLat: ne.lat(), neLng: ne.lng() });
+    const map = mapRef.current;
+    if (!map || discoveringRef.current) return;
+    const center = map.getCenter();
+    if (!center) return;
+    const queue = currentTileQueue(center);
+    if (queue.cursor >= queue.tiles.length) {
+      setCanFindMore(false);
+      return;
+    }
 
     discoveringRef.current = true;
     setDiscovering(true);
@@ -287,49 +368,58 @@ export default function JobsPage() {
     let anyPlacesCalls = false;
     let anyCharged = false;
     try {
-      for (let round = 0; round < MAX_DISCOVER_ROUNDS; round++) {
-        const res = await fetch("/api/jobs/discover", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-        });
-        const data = await res.json();
-        if (res.status === 402 || data.throttled === "credits_required") {
-          setNotice("Not enough credits to search a new area.");
-          window.dispatchEvent(new Event("gigzman:open-plans"));
-          return;
-        }
-        if (!res.ok) {
-          setNotice("Job scan failed. Try again.");
-          return;
-        }
-        // area_cooldown/session_budget fire on nearly every idle while dragging across new ground —
-        // silent, matching how the leads map treats the same throttles, rather than flashing a
-        // message the user didn't ask for on every settle.
-        if (data.throttled === "area_cooldown" || data.throttled === "session_budget") {
-          return;
-        }
-        totalCompanies += data.companies ?? 0;
-        totalJobs += data.jobs ?? 0;
-        if (data.placesCalls > 0) anyPlacesCalls = true;
-        if (data.charged) anyCharged = true;
+      const roundTiles = queue.tiles.slice(queue.cursor, queue.cursor + TILES_PER_ROUND);
+      for (const tile of roundTiles) {
+        queue.cursor++;
+        const body = JSON.stringify(tileBounds(tile));
 
-        // Refresh after every round, not just at the end -- this is what makes discovery feel
-        // incremental instead of one long wait.
-        if (data.companies > 0 || data.placesCalls > 0) await loadJobs();
-        if (anyCharged) window.dispatchEvent(new Event("gigzman:credits-changed"));
+        for (let round = 0; round < MAX_ROUNDS_PER_TILE; round++) {
+          const res = await fetch("/api/jobs/discover", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+          });
+          const data = await res.json();
+          if (res.status === 402 || data.throttled === "credits_required") {
+            setNotice("Not enough credits to search a new area.");
+            window.dispatchEvent(new Event("gigzman:open-plans"));
+            return;
+          }
+          if (!res.ok) break; // one bad tile shouldn't stop the whole round
+          // area_cooldown/session_budget fire whenever a tile was already searched recently —
+          // silent, matching how the leads map treats the same throttles, rather than flashing a
+          // message for ground that's already covered.
+          if (data.throttled === "area_cooldown" || data.throttled === "session_budget") break;
 
-        if (!data.hasMore) break;
+          totalCompanies += data.companies ?? 0;
+          totalJobs += data.jobs ?? 0;
+          if (data.placesCalls > 0) anyPlacesCalls = true;
+          if (data.charged) anyCharged = true;
+
+          // Refresh after every round, not just at the end -- this is what makes discovery feel
+          // incremental instead of one long wait.
+          if (data.companies > 0 || data.placesCalls > 0) await loadJobs();
+          if (anyCharged) window.dispatchEvent(new Event("gigzman:credits-changed"));
+
+          if (!data.hasMore) break;
+          if (jobsRef.current.length >= TARGET_JOBS) break;
+        }
+        if (jobsRef.current.length >= TARGET_JOBS) break;
       }
 
-      if (totalCompanies === 0) {
+      setCanFindMore(queue.cursor < queue.tiles.length);
+      if (jobsRef.current.length >= TARGET_JOBS) {
+        setNotice(`Found ${jobsRef.current.length} roles nearby.`);
+      } else if (totalCompanies === 0 && !anyPlacesCalls) {
+        setNotice("Every business here has already been scanned. Listings refresh every 10 days.");
+      } else if (jobsRef.current.length === 0) {
         setNotice(
-          anyPlacesCalls
-            ? "No hiring businesses found in this area."
-            : "Every business here has already been scanned. Listings refresh every 10 days."
+          queue.cursor < queue.tiles.length
+            ? "No hiring businesses found yet — try Find more."
+            : "No hiring businesses found in this area."
         );
       } else {
-        setNotice(`Scanned ${totalCompanies} businesses · found ${totalJobs} new roles.`);
+        setNotice(`Found ${jobsRef.current.length} roles so far${queue.cursor < queue.tiles.length ? " — try Find more." : "."}`);
       }
     } finally {
       discoveringRef.current = false;
@@ -515,7 +605,11 @@ export default function JobsPage() {
                 cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1,
               }}
             >
-              {discovering ? "Scanning…" : "Find jobs here"}
+              {discovering
+                ? `Finding ${filters.family ? `${JOB_FAMILY_LABEL[filters.family] ?? ""} ` : ""}jobs near you…`
+                : canFindMore
+                  ? "Find more jobs"
+                  : "Find jobs here"}
             </button>
             <Link href="/jobs/applications" style={{ ...selectStyle, textDecoration: "none", fontWeight: 700, lineHeight: "20px" }}>
               Applications
