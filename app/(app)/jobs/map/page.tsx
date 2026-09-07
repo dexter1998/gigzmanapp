@@ -10,7 +10,7 @@ import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { JobCard, type JobCardData } from "@/components/jobs/JobCard";
 import { JobDetailPanel } from "@/components/jobs/JobDetailPanel";
 import { JOB_FAMILY_LABEL } from "@/lib/jobs/normalize";
-import { PinIcon, TableIcon, UserIcon, MapsPinIcon, SettingsIcon } from "@/components/icons";
+import { PinIcon, TableIcon, UserIcon, MapsPinIcon, SettingsIcon, XIcon } from "@/components/icons";
 
 /**
  * Jobs dashboard — the map half of jobs mode.
@@ -59,10 +59,41 @@ type CompanyPin = {
  * Rounded-square card, not a circle -- matches the reference (nextdoor.company/discover) style of
  * showing a company favicon in a small white card rather than a bare dot.
  */
-function backgroundCardIcon(size: number, ringColor: string): google.maps.Icon {
+function backgroundCardIcon(size: number, ringColor: string, elevated = false): google.maps.Icon {
+  const pad = 9;
+  const canvas = size + pad * 2;
+  const r = size * 0.24;
+  // A flat stroke read as a sticker; a soft gradient + drop shadow is what gives the card real
+  // depth (the "stroke and inside shadow, 3D effect" the reference's own favicon tiles have).
+  // `elevated` (hover) deepens both for a lift-off-the-map feel without changing the card's size.
+  const dy = elevated ? 3.5 : 1.5;
+  const blur = elevated ? 4.5 : 2;
+  const opacity = elevated ? 0.34 : 0.16;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas}" height="${canvas}">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="1" stop-color="#edefe6"/>
+      </linearGradient>
+      <filter id="s" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#16241a" flood-opacity="${opacity}"/>
+      </filter>
+    </defs>
+    <rect x="${pad}" y="${pad}" width="${size}" height="${size}" rx="${r}" fill="url(#g)" stroke="${ringColor}" stroke-width="2.5" filter="url(#s)"/>
+  </svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(canvas, canvas),
+    anchor: new google.maps.Point(canvas / 2, canvas / 2),
+  };
+}
+/** A background-only card (no gradient/shadow needed -- it's a shadow layer itself, sitting behind
+ * the front card) for the 2nd/3rd sliver of a fanned stack. Flat and slightly duller so it reads as
+ * "behind", not another real target. */
+function fanSliverIcon(size: number): google.maps.Icon {
   const r = size * 0.24;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <rect x="2" y="2" width="${size - 4}" height="${size - 4}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2.5"/>
+    <rect x="2" y="2" width="${size - 4}" height="${size - 4}" rx="${r}" fill="#f4f5ef" stroke="#dde0d4" stroke-width="1.5"/>
   </svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -70,6 +101,13 @@ function backgroundCardIcon(size: number, ringColor: string): google.maps.Icon {
     anchor: new google.maps.Point(size / 2, size / 2),
   };
 }
+/** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards -- a slight left/right/up
+ * spread, matching the reference's tiled-deck look rather than a dead-flat pile. */
+const FAN_OFFSETS = [
+  { dx: 0, dy: -3 }, // front -- gets the favicon
+  { dx: 11, dy: 6 }, // 2nd sliver, peeking right
+  { dx: -11, dy: 6 }, // 3rd sliver, peeking left
+];
 function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.Icon {
   const inner = cardSize - cardSize * 0.32;
   return {
@@ -176,6 +214,12 @@ export default function JobsPage() {
   const [discovering, setDiscovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [selected, setSelected] = useState<JobCardData | null>(null);
+  // Clicking a company pin opens this -- a right-docked panel listing ALL of that company's open
+  // roles (matching the reference's own click-to-detail panel), rather than jumping straight into
+  // one job's full-screen modal. `selected`/JobDetailPanel stays as the deeper "view this specific
+  // role" step, reached from a row inside this panel.
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const selectedCompanyJobs = selectedCompanyId ? jobs.filter((j) => j.company.id === selectedCompanyId) : [];
   const [filters, setFilters] = useState<Filters>({ family: "", industry: "", workMode: "", goldenOnly: false });
   // What the dropdowns actually offer -- built from real open listings on screen (see
   // /api/jobs's facet query), not the full static taxonomy. Accumulated across loads rather than
@@ -302,10 +346,83 @@ export default function JobsPage() {
     };
   }
 
+  /**
+   * Renders one always-individual company card (golden-tier companies, and any singleton cluster)
+   * with click -> the right-docked company panel (not the single-job modal -- there may be several
+   * open roles here) and a hover elevation (a deeper drop shadow, same card, no size change) that
+   * lifts it slightly off the map -- the "slight shadow highlight on hover" from the reference.
+   */
+  function renderIndividualCard(
+    refArr: google.maps.Marker[],
+    position: { lat: number; lng: number },
+    companyId: string,
+    faviconUrl: string | null,
+    size: number,
+    ringColor: string,
+    title: string,
+    map: google.maps.Map,
+  ) {
+    const card = new google.maps.Marker({ position, map, zIndex: 2, icon: backgroundCardIcon(size, ringColor) });
+    refArr.push(card);
+    const topMarker = faviconUrl
+      ? new google.maps.Marker({ position, map, title, zIndex: 3, icon: faviconOverlayIcon(faviconUrl, size) })
+      : card;
+    if (topMarker !== card) refArr.push(topMarker);
+    topMarker.setTitle(title);
+    topMarker.addListener("click", () => setSelectedCompanyId(companyId));
+    topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
+      card.setIcon(backgroundCardIcon(size, ringColor, true));
+      clearHoverHide();
+      const box = mapDivRef.current?.getBoundingClientRect();
+      const dom = e.domEvent as MouseEvent | undefined;
+      if (!box || !dom) return;
+      setHovered({ companyId, x: dom.clientX - box.left, y: dom.clientY - box.top });
+    });
+    topMarker.addListener("mouseout", () => {
+      card.setIcon(backgroundCardIcon(size, ringColor, false));
+      scheduleHoverHide();
+    });
+  }
+
+  /** A fanned stack (up to 3 offset slivers, matching the reference's tiled-deck look) for a
+   * cluster of 2+ ordinary (non-golden) companies too close together to tell apart at this zoom --
+   * clicking it zooms in rather than opening one company's detail, since there is no single company
+   * to show yet. Golden companies are never in this cluster to begin with (see the split below). */
+  function renderClusterFan(
+    refArr: google.maps.Marker[],
+    front: { lat: number; lng: number; faviconUrl: string | null },
+    count: number,
+    title: string,
+    map: google.maps.Map,
+  ) {
+    const size = 60;
+    const slivers = Math.min(count, 3);
+    for (let i = slivers - 1; i >= 1; i--) {
+      const offset = offsetLatLng(front.lat, front.lng, FAN_OFFSETS[i].dx, FAN_OFFSETS[i].dy, mapZoom);
+      refArr.push(new google.maps.Marker({ position: offset, map, zIndex: 1, clickable: false, icon: fanSliverIcon(size) }));
+    }
+    const frontOffset = offsetLatLng(front.lat, front.lng, FAN_OFFSETS[0].dx, FAN_OFFSETS[0].dy, mapZoom);
+    const card = new google.maps.Marker({ position: frontOffset, map, zIndex: 2, icon: backgroundCardIcon(size, "#1f8a54") });
+    refArr.push(card);
+    const topMarker = front.faviconUrl
+      ? new google.maps.Marker({ position: frontOffset, map, title, zIndex: 3, icon: faviconOverlayIcon(front.faviconUrl, size) })
+      : card;
+    if (topMarker !== card) refArr.push(topMarker);
+    topMarker.setTitle(title);
+    topMarker.addListener("click", () => {
+      map.panTo(frontOffset);
+      map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
+    });
+    const badgeOffset = offsetLatLng(frontOffset.lat, frontOffset.lng, size * 0.36, -size * 0.36, mapZoom);
+    refArr.push(new google.maps.Marker({ position: badgeOffset, map, zIndex: 4, icon: clusterBadgeIcon(count), clickable: false }));
+  }
+
   // Pins follow whatever the list currently holds, so filtering the list filters the map too.
-  // Clustered by on-screen distance (see clusterByPixelDistance) so a dense cluster collapses into
-  // one card with a count badge at a wide zoom, same as the nextdoor.company reference, and
-  // separates into individual company cards once zoomed in enough to tell them apart.
+  // Golden-tier companies never cluster -- they stay individually visible and clickable at every
+  // zoom (the reference's own "notable companies always shown individually" pattern; Anthropic,
+  // Figma etc. keep their own card even in a dense area). Everything else clusters by on-screen
+  // distance (see clusterByPixelDistance): a fanned stack + count badge at a wide zoom, separating
+  // into individual cards once zoomed in enough to tell them apart.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -324,69 +441,42 @@ export default function JobsPage() {
       lng: companyJobs[0].company.lng as number,
       companyJobs,
     }));
+    const golden = companies.filter((c) => c.companyJobs[0].company.goldenTier);
+    const ordinary = companies.filter((c) => !c.companyJobs[0].company.goldenTier);
 
-    for (const cluster of clusterByPixelDistance(companies, mapZoom)) {
-      // The most notable company in the cluster fronts the card -- golden first, then most roles.
-      const front = [...cluster].sort((a, b) => {
-        const aGold = a.companyJobs[0].company.goldenTier ? 1 : 0;
-        const bGold = b.companyJobs[0].company.goldenTier ? 1 : 0;
-        return bGold - aGold || b.companyJobs.length - a.companyJobs.length;
-      })[0];
+    for (const g of golden) {
+      const first = g.companyJobs[0];
+      const totalRoles = g.companyJobs.length;
+      renderIndividualCard(
+        markersRef.current, { lat: g.lat, lng: g.lng }, first.company.id, first.company.faviconUrl, 68, "#d4a72c",
+        `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+      );
+    }
+
+    for (const cluster of clusterByPixelDistance(ordinary, mapZoom)) {
+      const front = [...cluster].sort((a, b) => b.companyJobs.length - a.companyJobs.length)[0];
       const first = front.companyJobs[0];
-      const golden = !!first.company.goldenTier;
-      const position = { lat: front.lat, lng: front.lng };
-      const size = golden ? 68 : 60;
-      const ringColor = golden ? "#d4a72c" : "#1f8a54";
       const totalRoles = cluster.reduce((n, c) => n + c.companyJobs.length, 0);
-      const title =
-        cluster.length > 1
-          ? `${cluster.length} companies here — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`
-          : `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`;
-
-      const card = new google.maps.Marker({ position, map, zIndex: 1, icon: backgroundCardIcon(size, ringColor) });
-      markersRef.current.push(card);
-
-      // Listeners go on whichever marker is visually on top -- the favicon if there is one,
-      // otherwise the card itself.
-      const topMarker = first.company.faviconUrl
-        ? new google.maps.Marker({ position, map, title, zIndex: 2, icon: faviconOverlayIcon(first.company.faviconUrl, size) })
-        : card;
-      if (topMarker !== card) markersRef.current.push(topMarker);
-      topMarker.setTitle(title);
-
       if (cluster.length > 1) {
-        // A cluster opens by zooming in on it rather than a full detail view -- there is no one
-        // company to show yet. Matches the reference's own click-to-zoom-in behavior on a stack.
-        topMarker.addListener("click", () => {
-          map.panTo(position);
-          map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
-        });
-        const badgeOffset = offsetLatLng(front.lat, front.lng, size * 0.36, -size * 0.36, mapZoom);
-        const badge = new google.maps.Marker({
-          position: badgeOffset, map, zIndex: 3, icon: clusterBadgeIcon(cluster.length), clickable: false,
-        });
-        markersRef.current.push(badge);
+        renderClusterFan(
+          markersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: first.company.faviconUrl }, cluster.length,
+          `${cluster.length} companies here — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+        );
       } else {
-        topMarker.addListener("click", () => setSelected(first));
-        // Hover shows a compact, scrollable list of this company's own roles (not the full detail
-        // panel — that stays a click-through action). `domEvent` is a plain MouseEvent on a classic
-        // Marker, so its client coordinates position the card without a separate projection lookup.
-        topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
-          clearHoverHide();
-          const box = mapDivRef.current?.getBoundingClientRect();
-          const dom = e.domEvent as MouseEvent | undefined;
-          if (!box || !dom) return;
-          setHovered({ companyId: first.company.id, x: dom.clientX - box.left, y: dom.clientY - box.top });
-        });
-        topMarker.addListener("mouseout", scheduleHoverHide);
+        renderIndividualCard(
+          markersRef.current, { lat: front.lat, lng: front.lng }, first.company.id, first.company.faviconUrl, 60, "#1f8a54",
+          `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+        );
       }
     }
   }, [jobs, mapZoom]);
 
   // Favicon-only cards for companies discovered but with zero open roles right now -- matches the
   // leads map showing a pin for every business found, has-website or not. Skips anything already
-  // covered by the cards above (hasOpenJobs=true there) so a company never gets two pins. Clustered
-  // the same way as the has-jobs cards above.
+  // covered by the cards above (hasOpenJobs=true there) so a company never gets two pins. Same
+  // golden-never-clusters + fanned-stack rules as the has-jobs cards above. Still clickable (opens
+  // the company panel, which shows its empty state) -- the reference lets you open any company
+  // regardless of whether it's currently hiring.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -396,32 +486,28 @@ export default function JobsPage() {
     const withoutJobs = companyPins.filter((c) => !c.hasOpenJobs && c.lat != null && c.lng != null) as Array<
       CompanyPin & { lat: number; lng: number }
     >;
+    const golden = withoutJobs.filter((c) => c.goldenTier);
+    const ordinary = withoutJobs.filter((c) => !c.goldenTier);
 
-    for (const cluster of clusterByPixelDistance(withoutJobs, mapZoom)) {
+    for (const c of golden) {
+      renderIndividualCard(
+        companyMarkersRef.current, { lat: c.lat, lng: c.lng }, c.id, c.faviconUrl, 68, "#d4a72c",
+        `${c.name} — no open roles right now`, map,
+      );
+    }
+
+    for (const cluster of clusterByPixelDistance(ordinary, mapZoom)) {
       const front = cluster[0];
-      const position = { lat: front.lat, lng: front.lng };
-      const title =
-        cluster.length > 1 ? `${cluster.length} companies here — no open roles right now` : `${front.name} — no open roles right now`;
-
-      const card = new google.maps.Marker({ position, map, zIndex: 1, opacity: 0.9, icon: backgroundCardIcon(60, "#d8dcd0") });
-      companyMarkersRef.current.push(card);
-
-      const topMarker = front.faviconUrl
-        ? new google.maps.Marker({ position, map, title, zIndex: 2, opacity: 0.9, icon: faviconOverlayIcon(front.faviconUrl, 60) })
-        : card;
-      if (topMarker !== card) companyMarkersRef.current.push(topMarker);
-      topMarker.setTitle(title);
-
       if (cluster.length > 1) {
-        topMarker.addListener("click", () => {
-          map.panTo(position);
-          map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
-        });
-        const badgeOffset = offsetLatLng(front.lat, front.lng, 60 * 0.36, -60 * 0.36, mapZoom);
-        const badge = new google.maps.Marker({
-          position: badgeOffset, map, zIndex: 3, opacity: 0.9, icon: clusterBadgeIcon(cluster.length), clickable: false,
-        });
-        companyMarkersRef.current.push(badge);
+        renderClusterFan(
+          companyMarkersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: front.faviconUrl }, cluster.length,
+          `${cluster.length} companies here — no open roles right now`, map,
+        );
+      } else {
+        renderIndividualCard(
+          companyMarkersRef.current, { lat: front.lat, lng: front.lng }, front.id, front.faviconUrl, 60, "#d8dcd0",
+          `${front.name} — no open roles right now`, map,
+        );
       }
     }
   }, [companyPins, mapZoom]);
@@ -744,8 +830,99 @@ export default function JobsPage() {
         </aside>
       )}
 
+      {selectedCompanyId && selectedCompanyJobs.length > 0 && (
+        <CompanyJobsPanel
+          jobs={selectedCompanyJobs}
+          onClose={() => setSelectedCompanyId(null)}
+          onOpenJob={setSelected}
+          onSave={toggleSave}
+        />
+      )}
+
       {selected && <JobDetailPanel job={selected} onClose={() => setSelected(null)} />}
     </div>
+  );
+}
+
+/**
+ * Right-docked, all of a company's open roles at once -- what "click a pin" opens on the reference
+ * (a company bar with its openings listed), instead of jumping straight into one role's full-screen
+ * modal. A row's own "View details" step is what opens JobDetailPanel for a deeper look + apply.
+ */
+function CompanyJobsPanel({
+  jobs, onClose, onOpenJob, onSave,
+}: {
+  jobs: JobCardData[]; onClose: () => void; onOpenJob: (job: JobCardData) => void; onSave: (job: JobCardData) => void;
+}) {
+  const company = jobs[0].company;
+  const golden = !!company.goldenTier;
+  return (
+    <aside
+      style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, width: "min(400px, 100vw)", zIndex: 40,
+        background: "var(--g-white)", boxShadow: "-8px 0 24px rgba(20,32,20,0.12)",
+        display: "flex", flexDirection: "column",
+      }}
+    >
+      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : "var(--g-green-darker)" }}>
+        {golden ? "Golden opportunity" : "Hiring"}
+      </div>
+      <div style={{ padding: 16, borderBottom: "1px solid var(--g-border)", display: "flex", alignItems: "flex-start", gap: 12 }}>
+        {company.faviconUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- remote favicon, no loader needed
+          <img src={company.faviconUrl} alt="" width={40} height={40} style={{ borderRadius: 8, border: "1px solid var(--g-border)", flexShrink: 0 }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--g-ink)" }}>{company.name}</div>
+          <div style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
+            {jobs.length} open role{jobs.length > 1 ? "s" : ""}
+          </div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close" style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}>
+          <XIcon />
+        </button>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        {jobs.map((job) => (
+          <div key={job.id} style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 12 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+              {job.jobFamily && <ChipTag>{JOB_FAMILY_LABEL[job.jobFamily] ?? job.jobFamily}</ChipTag>}
+              {job.location && <ChipTag>{job.location}</ChipTag>}
+              {job.workMode && <ChipTag>{job.workMode.charAt(0).toUpperCase() + job.workMode.slice(1)}</ChipTag>}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => onOpenJob(job)}
+                style={{ flex: 1, padding: "8px 0", borderRadius: "var(--radius-sm)", border: "1px solid var(--g-border)", background: "var(--g-white)", color: "var(--g-ink)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+              >
+                View details
+              </button>
+              <button
+                type="button"
+                onClick={() => onSave(job)}
+                style={{
+                  padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
+                  background: job.applicationStatus ? "var(--g-green-mint)" : "var(--g-green-darker)",
+                  color: job.applicationStatus ? "var(--g-green-text)" : "#fff",
+                }}
+              >
+                {job.applicationStatus ? "Saved" : "Save"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function ChipTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-ink-soft)", background: "var(--g-cream)", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>
+      {children}
+    </span>
   );
 }
 
