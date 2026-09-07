@@ -59,27 +59,27 @@ type CompanyPin = {
  * Rounded-square card, not a circle -- matches the reference (nextdoor.company/discover) style of
  * showing a company favicon in a small white card rather than a bare dot.
  */
+// Measured directly off nextdoor.company/discover's own DOM (computed styles on its
+// `.company-marker` node, logged in via Playwright): a 60px card is a 12px border-radius --
+// 0.2 of the card's own size, not the rounder 0.24 first guessed. Its box-shadow is a single
+// `0 2px 4px rgba(0,0,0,0.3)` -- flatter than the gradient+deep-shadow tried here initially,
+// which read closer to a floating chip than the reference's own thin-card-with-real-edge look.
+const CARD_RADIUS_RATIO = 0.2;
+
 function backgroundCardIcon(size: number, ringColor: string, elevated = false): google.maps.Icon {
   const pad = 9;
   const canvas = size + pad * 2;
-  const r = size * 0.24;
-  // A flat stroke read as a sticker; a soft gradient + drop shadow is what gives the card real
-  // depth (the "stroke and inside shadow, 3D effect" the reference's own favicon tiles have).
-  // `elevated` (hover) deepens both for a lift-off-the-map feel without changing the card's size.
-  const dy = elevated ? 3.5 : 1.5;
-  const blur = elevated ? 4.5 : 2;
-  const opacity = elevated ? 0.34 : 0.16;
+  const r = size * CARD_RADIUS_RATIO;
+  const dy = elevated ? 4 : 2;
+  const blur = elevated ? 6 : 4;
+  const opacity = elevated ? 0.36 : 0.3;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas}" height="${canvas}">
     <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffffff"/>
-        <stop offset="1" stop-color="#edefe6"/>
-      </linearGradient>
       <filter id="s" x="-60%" y="-60%" width="220%" height="220%">
-        <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#16241a" flood-opacity="${opacity}"/>
+        <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#000000" flood-opacity="${opacity}"/>
       </filter>
     </defs>
-    <rect x="${pad}" y="${pad}" width="${size}" height="${size}" rx="${r}" fill="url(#g)" stroke="${ringColor}" stroke-width="2.5" filter="url(#s)"/>
+    <rect x="${pad}" y="${pad}" width="${size}" height="${size}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2" filter="url(#s)"/>
   </svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -91,7 +91,7 @@ function backgroundCardIcon(size: number, ringColor: string, elevated = false): 
  * the front card) for the 2nd/3rd sliver of a fanned stack. Flat and slightly duller so it reads as
  * "behind", not another real target. */
 function fanSliverIcon(size: number): google.maps.Icon {
-  const r = size * 0.24;
+  const r = size * CARD_RADIUS_RATIO;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
     <rect x="2" y="2" width="${size - 4}" height="${size - 4}" rx="${r}" fill="#f4f5ef" stroke="#dde0d4" stroke-width="1.5"/>
   </svg>`;
@@ -105,20 +105,42 @@ function fanSliverIcon(size: number): google.maps.Icon {
 const ORDINARY_CARD_SIZE = 105;
 const GOLDEN_CARD_SIZE = 120;
 
-/** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards -- a slight left/right/up
- * spread, matching the reference's tiled-deck look rather than a dead-flat pile. Scaled with
- * ORDINARY_CARD_SIZE so the slivers stay proportionally visible at the bigger card size. */
+/** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards. The reference's own stack
+ * (watched directly at nextdoor.company/discover, fully zoomed out) is a same-direction diagonal
+ * staircase -- each sliver behind the last one step further up-and-right -- not a symmetric V. */
 const FAN_OFFSETS = [
-  { dx: 0, dy: -5 }, // front -- gets the favicon
-  { dx: 19, dy: 10 }, // 2nd sliver, peeking right
-  { dx: -19, dy: 10 }, // 3rd sliver, peeking left
+  { dx: 0, dy: 0 }, // front -- gets the favicon
+  { dx: 14, dy: -12 }, // 2nd sliver, up-right
+  { dx: 28, dy: -24 }, // 3rd sliver, further up-right
 ];
+// 44/60 measured off the reference's own favicon <img> vs. its containing 60px card -- a fuller
+// fill than the 0.68 first guessed, which left the card reading mostly-empty around a small logo.
 function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.Icon {
-  const inner = cardSize - cardSize * 0.32;
+  const inner = cardSize * (44 / 60);
   return {
     url: faviconUrl,
     scaledSize: new google.maps.Size(inner, inner),
     anchor: new google.maps.Point(inner / 2, inner / 2),
+  };
+}
+/** A small white name-label pill under an individual (non-clustered) company card -- the reference
+ * shows one under every unlocked company ("Wingify", "Mintifi", "M2P Fintech" etc, confirmed via
+ * Playwright), not just on hover. Width is estimated from character count since this is a data-URI
+ * SVG icon, not real DOM text that can measure itself. */
+function nameLabelIcon(name: string): google.maps.Icon {
+  const label = name.length > 22 ? `${name.slice(0, 21)}…` : name;
+  const charWidth = 6.5;
+  const padX = 10;
+  const width = Math.round(label.length * charWidth + padX * 2);
+  const height = 20;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="${height / 2}" fill="#ffffff" stroke="#dde0d4" stroke-width="1" />
+    <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1c2b40">${label}</text>
+  </svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(width, height),
+    anchor: new google.maps.Point(width / 2, height / 2),
   };
 }
 /** Small red count badge for a cluster of 2+ companies at (near enough) the same spot -- offset to
@@ -371,6 +393,7 @@ export default function JobsPage() {
     ringColor: string,
     title: string,
     map: google.maps.Map,
+    name: string,
   ) {
     const card = new google.maps.Marker({ position, map, zIndex: 2, icon: backgroundCardIcon(size, ringColor) });
     refArr.push(card);
@@ -380,6 +403,10 @@ export default function JobsPage() {
     if (topMarker !== card) refArr.push(topMarker);
     topMarker.setTitle(title);
     topMarker.addListener("click", () => setSelectedCompanyId(companyId));
+    const labelPosition = offsetLatLng(position.lat, position.lng, 0, size / 2 + 14, mapZoom);
+    refArr.push(
+      new google.maps.Marker({ position: labelPosition, map, zIndex: 3, clickable: false, icon: nameLabelIcon(name) }),
+    );
     topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
       card.setIcon(backgroundCardIcon(size, ringColor, true));
       clearHoverHide();
@@ -459,7 +486,7 @@ export default function JobsPage() {
       const totalRoles = g.companyJobs.length;
       renderIndividualCard(
         markersRef.current, { lat: g.lat, lng: g.lng }, first.company.id, first.company.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
-        `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+        `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map, first.company.name,
       );
     }
 
@@ -475,7 +502,7 @@ export default function JobsPage() {
       } else {
         renderIndividualCard(
           markersRef.current, { lat: front.lat, lng: front.lng }, first.company.id, first.company.faviconUrl, ORDINARY_CARD_SIZE, "#1f8a54",
-          `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+          `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map, first.company.name,
         );
       }
     }
@@ -502,7 +529,7 @@ export default function JobsPage() {
     for (const c of golden) {
       renderIndividualCard(
         companyMarkersRef.current, { lat: c.lat, lng: c.lng }, c.id, c.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
-        `${c.name} — no open roles right now`, map,
+        `${c.name} — no open roles right now`, map, c.name,
       );
     }
 
@@ -516,7 +543,7 @@ export default function JobsPage() {
       } else {
         renderIndividualCard(
           companyMarkersRef.current, { lat: front.lat, lng: front.lng }, front.id, front.faviconUrl, ORDINARY_CARD_SIZE, "#d8dcd0",
-          `${front.name} — no open roles right now`, map,
+          `${front.name} — no open roles right now`, map, front.name,
         );
       }
     }
@@ -725,10 +752,21 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {/* Floating bottom-left stats pill -- what's actually on screen right now. */}
+        {/* Floating bottom-left stats pill -- what's actually on screen right now. A spinner +
+            "Loading…" while the count is still settling (matches the reference's own stat pills,
+            which show the same mid-fetch rather than jumping straight from blank to a number). */}
         <div style={{ position: "absolute", bottom: 16, left: 14, zIndex: 5, display: "flex", gap: 8 }}>
-          <StatPill label={`${totalCompanies.toLocaleString("en-IN")} ${totalCompanies === 1 ? "company" : "companies"}`} />
-          <StatPill label={`${jobs.length.toLocaleString("en-IN")} ${jobs.length === 1 ? "job" : "jobs"}`} />
+          {loading ? (
+            <>
+              <StatPill loading label="companies" />
+              <StatPill loading label="jobs" />
+            </>
+          ) : (
+            <>
+              <StatPill label={`${totalCompanies.toLocaleString("en-IN")} ${totalCompanies === 1 ? "company" : "companies"}`} />
+              <StatPill label={`${jobs.length.toLocaleString("en-IN")} ${jobs.length === 1 ? "job" : "jobs"}`} />
+            </>
+          )}
         </div>
 
         {hovered && hoveredJobs.length > 0 && (
@@ -997,11 +1035,25 @@ function ViewToggleButton({ active, onClick, icon, label }: { active: boolean; o
   );
 }
 
-function StatPill({ label }: { label: string }) {
+function StatPill({ label, loading }: { label: string; loading?: boolean }) {
   return (
-    <span style={{ background: "var(--g-white)", padding: "7px 14px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", fontSize: 12, fontWeight: 700, color: "var(--g-ink)" }}>
-      {label}
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--g-white)", padding: "7px 14px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", fontSize: 12, fontWeight: 700, color: loading ? "var(--g-gray-500)" : "var(--g-ink)" }}>
+      {loading && <Spinner />}
+      {loading ? `Loading ${label}…` : label}
     </span>
+  );
+}
+
+function Spinner() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 11, height: 11, borderRadius: "50%", flexShrink: 0,
+        border: "2px solid var(--g-border)", borderTopColor: "var(--g-gray-500)",
+        animation: "gigzman-spin 0.7s linear infinite",
+      }}
+    />
   );
 }
 

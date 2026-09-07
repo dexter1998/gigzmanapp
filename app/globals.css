@@ -164,6 +164,9 @@ body {
 @keyframes chat-border-spin {
   to { --border-angle: 360deg; }
 }
+@keyframes gigzman-spin {
+  to { transform: rotate(360deg); }
+}
 .chat-glow-border {
   position: relative;
   border-radius: var(--radius-lg);
