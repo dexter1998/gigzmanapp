@@ -101,12 +101,17 @@ function fanSliverIcon(size: number): google.maps.Icon {
     anchor: new google.maps.Point(size / 2, size / 2),
   };
 }
+// 1.75x the original 60/68px cards -- rounded to clean numbers.
+const ORDINARY_CARD_SIZE = 105;
+const GOLDEN_CARD_SIZE = 120;
+
 /** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards -- a slight left/right/up
- * spread, matching the reference's tiled-deck look rather than a dead-flat pile. */
+ * spread, matching the reference's tiled-deck look rather than a dead-flat pile. Scaled with
+ * ORDINARY_CARD_SIZE so the slivers stay proportionally visible at the bigger card size. */
 const FAN_OFFSETS = [
-  { dx: 0, dy: -3 }, // front -- gets the favicon
-  { dx: 11, dy: 6 }, // 2nd sliver, peeking right
-  { dx: -11, dy: 6 }, // 3rd sliver, peeking left
+  { dx: 0, dy: -5 }, // front -- gets the favicon
+  { dx: 19, dy: 10 }, // 2nd sliver, peeking right
+  { dx: -19, dy: 10 }, // 3rd sliver, peeking left
 ];
 function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.Icon {
   const inner = cardSize - cardSize * 0.32;
@@ -138,7 +143,12 @@ function clusterBadgeIcon(count: number): google.maps.Icon {
 function metersPerPixel(lat: number, zoom: number): number {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom;
 }
-const CLUSTER_PIXEL_RADIUS = 26;
+// Must be at least ORDINARY_CARD_SIZE -- two un-clustered card centers closer together than the
+// card's own width still visually overlap regardless of the clustering decision. The original 26px
+// was sized for the old 60px card and became the actual cause of the favicon-bleeding-onto-the-
+// next-card bug once cards grew to ORDINARY_CARD_SIZE: pairs between 26px and ~105px apart stayed
+// un-clustered (two separate full-size markers) while still being close enough on screen to overlap.
+const CLUSTER_PIXEL_RADIUS = ORDINARY_CARD_SIZE + 8;
 
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000;
@@ -395,7 +405,7 @@ export default function JobsPage() {
     title: string,
     map: google.maps.Map,
   ) {
-    const size = 60;
+    const size = ORDINARY_CARD_SIZE;
     const slivers = Math.min(count, 3);
     for (let i = slivers - 1; i >= 1; i--) {
       const offset = offsetLatLng(front.lat, front.lng, FAN_OFFSETS[i].dx, FAN_OFFSETS[i].dy, mapZoom);
@@ -448,7 +458,7 @@ export default function JobsPage() {
       const first = g.companyJobs[0];
       const totalRoles = g.companyJobs.length;
       renderIndividualCard(
-        markersRef.current, { lat: g.lat, lng: g.lng }, first.company.id, first.company.faviconUrl, 68, "#d4a72c",
+        markersRef.current, { lat: g.lat, lng: g.lng }, first.company.id, first.company.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
         `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
       );
     }
@@ -464,7 +474,7 @@ export default function JobsPage() {
         );
       } else {
         renderIndividualCard(
-          markersRef.current, { lat: front.lat, lng: front.lng }, first.company.id, first.company.faviconUrl, 60, "#1f8a54",
+          markersRef.current, { lat: front.lat, lng: front.lng }, first.company.id, first.company.faviconUrl, ORDINARY_CARD_SIZE, "#1f8a54",
           `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
         );
       }
@@ -491,7 +501,7 @@ export default function JobsPage() {
 
     for (const c of golden) {
       renderIndividualCard(
-        companyMarkersRef.current, { lat: c.lat, lng: c.lng }, c.id, c.faviconUrl, 68, "#d4a72c",
+        companyMarkersRef.current, { lat: c.lat, lng: c.lng }, c.id, c.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
         `${c.name} — no open roles right now`, map,
       );
     }
@@ -505,7 +515,7 @@ export default function JobsPage() {
         );
       } else {
         renderIndividualCard(
-          companyMarkersRef.current, { lat: front.lat, lng: front.lng }, front.id, front.faviconUrl, 60, "#d8dcd0",
+          companyMarkersRef.current, { lat: front.lat, lng: front.lng }, front.id, front.faviconUrl, ORDINARY_CARD_SIZE, "#d8dcd0",
           `${front.name} — no open roles right now`, map,
         );
       }
