@@ -66,6 +66,26 @@ export async function GET(req: NextRequest) {
     new Set(facetRows.map((r) => (r.category ? TYPE_TO_SECTION[r.category as string] : null)).filter(Boolean))
   );
 
+  // Every discovered company in view, not just ones with an open role -- mirrors the leads map,
+  // where a business gets a pin the moment it's found regardless of whether it turned out to need
+  // a website. Here that pin is the company's own favicon; hasOpenJobs decides whether it's the
+  // full green/gold marker (rendered from `jobs` below) or the plain "checked, nothing right now"
+  // dot the map falls back to. Without this a company with zero listings was invisible even though
+  // real crawl money had just been spent finding it.
+  const companies = bounded
+    ? await sql`
+        SELECT c.id, c.domain, c.company_name, c.favicon_url, c.lat, c.lng, c.golden_tier,
+               c.scrape_status, EXISTS (
+                 SELECT 1 FROM job_listings j WHERE j.company_id = c.id AND j.is_open = true
+               ) AS has_open_jobs
+          FROM job_companies c
+         WHERE c.lat IS NOT NULL AND c.lng IS NOT NULL
+           AND c.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
+           AND c.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}
+         LIMIT ${MAX_LIMIT}
+      `
+    : [];
+
   const rows = await sql`
     SELECT j.id, j.title, j.apply_url, j.location, j.description,
            j.job_family, j.seniority, j.seniority_rank, j.work_mode, j.employment_type,
@@ -170,5 +190,17 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ jobs, profileComplete, availableFamilies, availableIndustries });
+  const companyPins = companies.map((c) => ({
+    id: c.id,
+    domain: c.domain,
+    name: c.company_name ?? c.domain,
+    faviconUrl: c.favicon_url,
+    lat: c.lat,
+    lng: c.lng,
+    goldenTier: c.golden_tier,
+    scrapeStatus: c.scrape_status,
+    hasOpenJobs: c.has_open_jobs,
+  }));
+
+  return NextResponse.json({ jobs, profileComplete, availableFamilies, availableIndustries, companies: companyPins });
 }

@@ -35,12 +35,22 @@ const IDLE_SETTLE_MS = 1200;
 
 type Filters = { family: string; industry: string; workMode: string; goldenOnly: boolean };
 
+/** A discovered company with no open role yet -- the favicon-only dot, distinct from the green/
+ * gold circle markers `jobs` drives (those already imply at least one open role). */
+type CompanyPin = {
+  id: string; domain: string; name: string; faviconUrl: string | null;
+  lat: number | null; lng: number | null; goldenTier: string | null;
+  scrapeStatus: string | null; hasOpenJobs: boolean;
+};
+
 export default function JobsPage() {
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
 
   const [jobs, setJobs] = useState<JobCardData[]>([]);
+  const [companyPins, setCompanyPins] = useState<CompanyPin[]>([]);
+  const companyMarkersRef = useRef<google.maps.Marker[]>([]);
   const [profileComplete, setProfileComplete] = useState(true);
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
@@ -95,6 +105,7 @@ export default function JobsPage() {
       const res = await fetch(`/api/jobs?${params}`);
       const data = await res.json();
       setJobs(data.jobs ?? []);
+      setCompanyPins(data.companies ?? []);
       setProfileComplete(data.profileComplete !== false);
       if (data.availableFamilies?.length) {
         setAvailableFamilies((prev) => new Set([...prev, ...data.availableFamilies]));
@@ -198,54 +209,106 @@ export default function JobsPage() {
     }
   }, [jobs]);
 
+  // Favicon-only dots for companies discovered but with zero open roles right now -- matches the
+  // leads map showing a pin for every business found, has-website or not. Skips anything already
+  // covered by the circle markers above (hasOpenJobs=true there) so a company never gets two pins.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    companyMarkersRef.current.forEach((m) => m.setMap(null));
+    companyMarkersRef.current = [];
+
+    for (const c of companyPins) {
+      if (c.hasOpenJobs || c.lat == null || c.lng == null) continue;
+      const marker = new google.maps.Marker({
+        position: { lat: c.lat, lng: c.lng },
+        map,
+        title: `${c.name} — no open roles right now`,
+        icon: c.faviconUrl
+          ? { url: c.faviconUrl, scaledSize: new google.maps.Size(20, 20), anchor: new google.maps.Point(10, 10) }
+          : {
+              path: google.maps.SymbolPath.CIRCLE, scale: 5,
+              fillColor: "#c7ccb8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5,
+            },
+        opacity: 0.85,
+      });
+      companyMarkersRef.current.push(marker);
+    }
+  }, [companyPins]);
+
+  // Hard ceiling on how many small crawl batches one trigger will chase before stopping, in case
+  // something upstream keeps claiming hasMore (a stuck company, a bug) -- caps worst-case latency
+  // at ~10 * CRAWL_BATCH_SIZE companies rather than looping indefinitely.
+  const MAX_DISCOVER_ROUNDS = 10;
+
   /**
    * The crawl. Fires automatically on pan (debounced, see the idle listener above) as well as from
-   * the manual button. Charged and rate-limited per app/api/jobs/discover/route.ts — most calls hit
-   * the free "leads already has this area" path; a genuinely fresh area falls back to a real Places
-   * sweep there, billed in credits past the shared free allowance.
+   * the manual button. Each call only registers+scrapes a couple of companies at a time (see
+   * CRAWL_BATCH_SIZE in app/api/jobs/discover/route.ts -- a single company's crawl can chain 10+
+   * sequential fetches and blew past the request timeout when done 25 at once), so this loops,
+   * refreshing the map after every round -- pins/favicon dots appear company by company as they're
+   * found, the same incremental feel as the leads map's per-tile requests, instead of one long
+   * silent wait that either times out or dumps everything at once at the end.
    */
   async function discoverHere() {
     const bounds = mapRef.current?.getBounds();
     if (!bounds || discoveringRef.current) return;
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
+    const body = JSON.stringify({ swLat: sw.lat(), swLng: sw.lng(), neLat: ne.lat(), neLng: ne.lng() });
 
     discoveringRef.current = true;
     setDiscovering(true);
     setNotice(null);
+    let totalCompanies = 0;
+    let totalJobs = 0;
+    let anyPlacesCalls = false;
+    let anyCharged = false;
     try {
-      const res = await fetch("/api/jobs/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ swLat: sw.lat(), swLng: sw.lng(), neLat: ne.lat(), neLng: ne.lng() }),
-      });
-      const data = await res.json();
-      if (res.status === 402 || data.throttled === "credits_required") {
-        setNotice("Not enough credits to search a new area.");
-        window.dispatchEvent(new Event("gigzman:open-plans"));
-        return;
+      for (let round = 0; round < MAX_DISCOVER_ROUNDS; round++) {
+        const res = await fetch("/api/jobs/discover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+        const data = await res.json();
+        if (res.status === 402 || data.throttled === "credits_required") {
+          setNotice("Not enough credits to search a new area.");
+          window.dispatchEvent(new Event("gigzman:open-plans"));
+          return;
+        }
+        if (!res.ok) {
+          setNotice("Job scan failed. Try again.");
+          return;
+        }
+        // area_cooldown/session_budget fire on nearly every idle while dragging across new ground —
+        // silent, matching how the leads map treats the same throttles, rather than flashing a
+        // message the user didn't ask for on every settle.
+        if (data.throttled === "area_cooldown" || data.throttled === "session_budget") {
+          return;
+        }
+        totalCompanies += data.companies ?? 0;
+        totalJobs += data.jobs ?? 0;
+        if (data.placesCalls > 0) anyPlacesCalls = true;
+        if (data.charged) anyCharged = true;
+
+        // Refresh after every round, not just at the end -- this is what makes discovery feel
+        // incremental instead of one long wait.
+        if (data.companies > 0 || data.placesCalls > 0) await loadJobs();
+        if (anyCharged) window.dispatchEvent(new Event("gigzman:credits-changed"));
+
+        if (!data.hasMore) break;
       }
-      if (!res.ok) {
-        setNotice("Job scan failed. Try again.");
-        return;
-      }
-      // area_cooldown/session_budget fire on nearly every idle while dragging across new ground —
-      // silent, matching how the leads map treats the same throttles, rather than flashing a
-      // message the user didn't ask for on every settle.
-      if (data.throttled === "area_cooldown" || data.throttled === "session_budget") {
-        return;
-      }
-      if (data.scanned === 0) {
+
+      if (totalCompanies === 0) {
         setNotice(
-          data.placesCalls > 0
+          anyPlacesCalls
             ? "No hiring businesses found in this area."
             : "Every business here has already been scanned. Listings refresh every 10 days."
         );
       } else {
-        setNotice(`Scanned ${data.companies} businesses · found ${data.jobs} new roles.`);
+        setNotice(`Scanned ${totalCompanies} businesses · found ${totalJobs} new roles.`);
       }
-      if (data.charged) window.dispatchEvent(new Event("gigzman:credits-changed"));
-      await loadJobs();
     } finally {
       discoveringRef.current = false;
       setDiscovering(false);

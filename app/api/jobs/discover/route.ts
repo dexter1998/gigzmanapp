@@ -38,6 +38,15 @@ export const maxDuration = 60;
  */
 
 const MAX_COMPANIES_PER_SCAN = 25;
+// A single company's crawl (findCareersUrl + the careers page fetch itself) can chain 10+
+// sequential 8s-timeout fetches (robots.txt, up to 5 sitemap files, up to 3 candidate career URLs,
+// a canary probe, guess-path fallbacks) -- worst case, tens of seconds for ONE company. Crawling
+// the full MAX_COMPANIES_PER_SCAN in one request routinely blew past maxDuration and the whole
+// scan came back as nothing, with no partial progress saved. Two per request keeps a single POST
+// comfortably under the 60s ceiling even in a bad case, and the frontend loops (see
+// app/(app)/jobs/map/page.tsx's discoverHere) so pins still appear progressively, same shape as
+// the leads map's per-tile requests -- not one long silent wait.
+const CRAWL_BATCH_SIZE = 2;
 
 // Same anti-abuse shape as app/api/leads/find/route.ts, applied only to the new Places-fallback
 // path below — the free "read what leads already has" path stays completely unthrottled, since it
@@ -204,10 +213,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "insufficient_credits", credits: charge.credits }, { status: 402 });
   }
 
+  // Only this request's slice actually gets registered+crawled -- the rest stay uncrawled leads-
+  // table rows (no job_companies row yet), so the NEXT call's readCandidates() picks them up fresh
+  // instead of anything being skipped or double-counted.
+  const batch = candidates.slice(0, CRAWL_BATCH_SIZE);
+  const hasMore = candidates.length > CRAWL_BATCH_SIZE;
+
   let companiesRegistered = 0;
   let jobsFound = 0;
 
-  for (const c of candidates) {
+  for (const c of batch) {
     const domain = normalizeDomain(c.website_url as string);
     if (!domain) continue;
 
@@ -234,10 +249,11 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({
-    scanned: candidates.length,
+    scanned: batch.length,
     companies: companiesRegistered,
     jobs: jobsFound,
     placesCalls: placesCallsMade,
     charged: true,
+    hasMore,
   });
 }
