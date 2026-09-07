@@ -43,21 +43,28 @@ type CompanyPin = {
   scrapeStatus: string | null; hasOpenJobs: boolean;
 };
 
-// 1.5x the original 20px favicon dot, on a white disc so a dark favicon (or a favicon with a
-// transparent background) never disappears against the map tiles behind it. Built as an inline SVG
-// data URI rather than two stacked markers -- one marker is one click/hover target, and Google Maps
-// gives no reliable z-index guarantee for two markers sharing a single lat/lng.
-function faviconMarkerIcon(faviconUrl: string | null): google.maps.Icon | google.maps.Symbol {
-  const size = 30;
+// On a white disc with a colored ring, so a dark or transparent-background favicon never
+// disappears against the map tiles behind it, and the ring communicates status at a glance (green
+// = open roles, gold = golden-tier company with open roles, gray = nothing open right now) the way
+// leads' pins carry a color without needing the card open. Built as an inline SVG data URI rather
+// than stacked markers -- one marker is one click/hover target, and Google Maps gives no reliable
+// z-index guarantee for two markers sharing a single lat/lng.
+function faviconMarkerIcon(
+  faviconUrl: string | null,
+  opts: { size: number; ringColor: string } = { size: 60, ringColor: "#d8dcd0" }
+): google.maps.Icon | google.maps.Symbol {
+  const { size, ringColor } = opts;
   if (!faviconUrl) {
     return {
-      path: google.maps.SymbolPath.CIRCLE, scale: 7.5,
-      fillColor: "#c7ccb8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5,
+      path: google.maps.SymbolPath.CIRCLE, scale: size / 4,
+      fillColor: ringColor === "#d8dcd0" ? "#c7ccb8" : ringColor,
+      fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2,
     };
   }
-  const inset = 5; // favicon diameter within the white disc
+  const ringWidth = 2.5;
+  const inset = size * 0.17; // favicon diameter within the disc
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#ffffff" stroke="#d8dcd0" stroke-width="1.5"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - ringWidth}" fill="#ffffff" stroke="${ringColor}" stroke-width="${ringWidth}"/>
     <image href="${faviconUrl}" x="${inset}" y="${inset}" width="${size - inset * 2}" height="${size - inset * 2}"/>
   </svg>`;
   return {
@@ -208,14 +215,10 @@ export default function JobsPage() {
         position: { lat: first.company.lat as number, lng: first.company.lng as number },
         map,
         title: `${first.company.name} — ${companyJobs.length} open role${companyJobs.length > 1 ? "s" : ""}`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: golden ? 9 : 7,
-          fillColor: golden ? "#d4a72c" : "#1f8a54",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-        },
+        icon: faviconMarkerIcon(first.company.faviconUrl, {
+          size: golden ? 68 : 60,
+          ringColor: golden ? "#d4a72c" : "#1f8a54",
+        }),
       });
       marker.addListener("click", () => setSelected(first));
       // Hover shows a compact, scrollable list of this company's own roles (not the full detail
@@ -248,7 +251,7 @@ export default function JobsPage() {
         position: { lat: c.lat, lng: c.lng },
         map,
         title: `${c.name} — no open roles right now`,
-        icon: faviconMarkerIcon(c.faviconUrl),
+        icon: faviconMarkerIcon(c.faviconUrl, { size: 60, ringColor: "#d8dcd0" }),
         opacity: 0.9,
       });
       companyMarkersRef.current.push(marker);

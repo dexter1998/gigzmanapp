@@ -38,15 +38,14 @@ export const maxDuration = 60;
  */
 
 const MAX_COMPANIES_PER_SCAN = 25;
-// A single company's crawl (findCareersUrl + the careers page fetch itself) can chain 10+
-// sequential 8s-timeout fetches (robots.txt, up to 5 sitemap files, up to 3 candidate career URLs,
-// a canary probe, guess-path fallbacks) -- worst case, tens of seconds for ONE company. Crawling
-// the full MAX_COMPANIES_PER_SCAN in one request routinely blew past maxDuration and the whole
-// scan came back as nothing, with no partial progress saved. Two per request keeps a single POST
-// comfortably under the 60s ceiling even in a bad case, and the frontend loops (see
-// app/(app)/jobs/map/page.tsx's discoverHere) so pins still appear progressively, same shape as
-// the leads map's per-tile requests -- not one long silent wait.
-const CRAWL_BATCH_SIZE = 2;
+// Companies within a batch are crawled concurrently (see the Promise.all below), so a batch's
+// wall-clock time is the SLOWEST single company in it, not the sum -- raising this number no
+// longer multiplies latency the way it would with the sequential loop this replaced. Real domains
+// measured post scraper-parallelization (lib/jobs/scraper.ts) mostly land at 1-2s each, with
+// occasional 5-8s outliers on sites with large sitemaps or a slow endpoint; 5 keeps a bad-case
+// batch (one slow outlier among five quick ones) comfortably under the 60s route ceiling while
+// needing far fewer round trips than the original sequential design's safe batch size of 2.
+const CRAWL_BATCH_SIZE = 5;
 
 // Same anti-abuse shape as app/api/leads/find/route.ts, applied only to the new Places-fallback
 // path below — the free "read what leads already has" path stays completely unthrottled, since it
@@ -219,34 +218,41 @@ export async function POST(req: Request) {
   const batch = candidates.slice(0, CRAWL_BATCH_SIZE);
   const hasMore = candidates.length > CRAWL_BATCH_SIZE;
 
-  let companiesRegistered = 0;
-  let jobsFound = 0;
+  // Crawled concurrently, not one company after another -- each domain's scrape is fully
+  // independent (its own upsertJobCompany row, its own refreshCompany network calls), so the
+  // batch's wall-clock time is now the SLOWEST single company in it, not the sum of all of them.
+  // That is what makes CRAWL_BATCH_SIZE safe to raise: a 5-company batch where every company
+  // takes ~1-2s (measured against real domains post scraper-parallelization) finishes in ~1-2s
+  // total, the same as a 1-company batch would.
+  const results = await Promise.all(
+    batch.map(async (c) => {
+      const domain = normalizeDomain(c.website_url as string);
+      if (!domain) return { registered: false, inserted: 0 };
 
-  for (const c of batch) {
-    const domain = normalizeDomain(c.website_url as string);
-    if (!domain) continue;
+      const companyId = await upsertJobCompany({
+        domain,
+        companyName: c.business_name as string | null,
+        leadId: c.id as string,
+        category: c.category as string | null,
+        lat: c.lat as number | null,
+        lng: c.lng as number | null,
+        citySlug: c.city_slug as string | null,
+        countryCode: c.country_code as string | null,
+      });
+      if (!companyId) return { registered: false, inserted: 0 };
 
-    const companyId = await upsertJobCompany({
-      domain,
-      companyName: c.business_name as string | null,
-      leadId: c.id as string,
-      category: c.category as string | null,
-      lat: c.lat as number | null,
-      lng: c.lng as number | null,
-      citySlug: c.city_slug as string | null,
-      countryCode: c.country_code as string | null,
-    });
-    if (!companyId) continue;
-    companiesRegistered++;
-
-    // One bad domain must not abort the whole scan — the user has already been charged for it.
-    try {
-      const stats = await refreshCompany(companyId, domain);
-      jobsFound += stats.inserted;
-    } catch {
-      /* refreshCompany records its own failure status on the row */
-    }
-  }
+      // One bad domain must not abort the whole scan — the user has already been charged for it.
+      try {
+        const stats = await refreshCompany(companyId, domain);
+        return { registered: true, inserted: stats.inserted };
+      } catch {
+        /* refreshCompany records its own failure status on the row */
+        return { registered: true, inserted: 0 };
+      }
+    })
+  );
+  const companiesRegistered = results.filter((r) => r.registered).length;
+  const jobsFound = results.reduce((sum, r) => sum + r.inserted, 0);
 
   return NextResponse.json({
     scanned: batch.length,

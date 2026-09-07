@@ -181,29 +181,53 @@ async function findSitemaps(host: string): Promise<{ sitemaps: string[]; siteBas
 }
 
 /**
- * Fetches up to 5 sitemap files concurrently rather than one at a time -- these are independent
- * requests with nothing for one to learn from another, so awaiting them sequentially only ever
- * added latency (worst case, 5x this function's own timeout) for zero benefit. A company's total
- * crawl time is the sum of every sequential `await` in this pipeline, and this loop was one of the
- * largest single contributors on a slow or partially-unreachable site.
+ * A site's own sitemap names hint at what is inside without downloading it -- "sitemap-pages.xml"
+ * is a handful of URLs, "sitemap-products.xml" or "sitemap-blog.xml" can be tens or hundreds of
+ * thousands (confirmed live: postman.com's product/collection sitemap alone yielded 113,178 URLs,
+ * ~4.1s just to download and regex-parse, for a careers page that turned out to live in a small
+ * "pages" sitemap declared right alongside it). Sorting the deprioritized ones to the back means
+ * the common case -- careers lives in a small structural sitemap -- never pays for downloading the
+ * huge catalog one at all, since collectSitemapLocs below stops as soon as it finds a match.
+ */
+const SITEMAP_DEPRIORITIZE_RE = /(product|products|blog|post|posts|article|articles|news|category|categories|tag|tags|collection|collections)/i;
+
+function prioritizeSitemaps(urls: string[]): string[] {
+  return [...urls].sort((a, b) => Number(SITEMAP_DEPRIORITIZE_RE.test(a)) - Number(SITEMAP_DEPRIORITIZE_RE.test(b)));
+}
+
+/**
+ * Fetches sitemap files in small concurrent batches (not sequentially -- these are independent
+ * requests with nothing for one to learn from another) but stops as soon as a batch has already
+ * surfaced a career-shaped URL, rather than exhaustively working through every declared sitemap
+ * regardless of whether anything more is needed. Combined with prioritizeSitemaps, this is what
+ * lets a small "pages" sitemap short-circuit a huge "products" one sitting right next to it in
+ * robots.txt instead of downloading both.
  */
 async function collectSitemapLocs(sitemapUrls: string[], host: string, depth = 0): Promise<string[]> {
-  const results = await Promise.all(sitemapUrls.slice(0, 5).map((su) => fetchText(su, host)));
+  const ordered = depth === 0 ? prioritizeSitemaps(sitemapUrls) : sitemapUrls;
+  const capped = ordered.slice(0, 5);
+  const BATCH_SIZE = 2;
 
   const nestedIndexes: string[][] = [];
   let all: string[] = [];
-  for (const res of results) {
-    if (!res) continue;
-    const locs = extractLocs(res.text);
-    if (!locs.length) continue;
-    if (/<sitemapindex/i.test(res.text) && depth < 1) {
-      nestedIndexes.push(locs);
-    } else {
-      all = all.concat(locs);
+  for (let i = 0; i < capped.length; i += BATCH_SIZE) {
+    const batch = capped.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(batch.map((su) => fetchText(su, host)));
+    for (const res of results) {
+      if (!res) continue;
+      const locs = extractLocs(res.text);
+      if (!locs.length) continue;
+      if (/<sitemapindex/i.test(res.text) && depth < 1) {
+        nestedIndexes.push(locs);
+      } else {
+        all = all.concat(locs);
+      }
     }
+    if (all.some(isCareerUrl)) break;
   }
-  // Recursion still happens breadth-first-in-parallel rather than one nested index at a time.
-  if (nestedIndexes.length) {
+  // Recursion still happens breadth-first-in-parallel rather than one nested index at a time, and
+  // is skipped entirely if the batches above already found what this call exists to find.
+  if (nestedIndexes.length && !all.some(isCareerUrl)) {
     const nested = await Promise.all(nestedIndexes.map((locs) => collectSitemapLocs(locs, host, depth + 1)));
     for (const n of nested) all = all.concat(n);
   }
