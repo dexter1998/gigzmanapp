@@ -43,6 +43,30 @@ type CompanyPin = {
   scrapeStatus: string | null; hasOpenJobs: boolean;
 };
 
+// 1.5x the original 20px favicon dot, on a white disc so a dark favicon (or a favicon with a
+// transparent background) never disappears against the map tiles behind it. Built as an inline SVG
+// data URI rather than two stacked markers -- one marker is one click/hover target, and Google Maps
+// gives no reliable z-index guarantee for two markers sharing a single lat/lng.
+function faviconMarkerIcon(faviconUrl: string | null): google.maps.Icon | google.maps.Symbol {
+  const size = 30;
+  if (!faviconUrl) {
+    return {
+      path: google.maps.SymbolPath.CIRCLE, scale: 7.5,
+      fillColor: "#c7ccb8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5,
+    };
+  }
+  const inset = 5; // favicon diameter within the white disc
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#ffffff" stroke="#d8dcd0" stroke-width="1.5"/>
+    <image href="${faviconUrl}" x="${inset}" y="${inset}" width="${size - inset * 2}" height="${size - inset * 2}"/>
+  </svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2),
+  };
+}
+
 export default function JobsPage() {
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -224,13 +248,8 @@ export default function JobsPage() {
         position: { lat: c.lat, lng: c.lng },
         map,
         title: `${c.name} — no open roles right now`,
-        icon: c.faviconUrl
-          ? { url: c.faviconUrl, scaledSize: new google.maps.Size(20, 20), anchor: new google.maps.Point(10, 10) }
-          : {
-              path: google.maps.SymbolPath.CIRCLE, scale: 5,
-              fillColor: "#c7ccb8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5,
-            },
-        opacity: 0.85,
+        icon: faviconMarkerIcon(c.faviconUrl),
+        opacity: 0.9,
       });
       companyMarkersRef.current.push(marker);
     }

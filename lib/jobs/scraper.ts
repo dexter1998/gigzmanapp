@@ -155,38 +155,57 @@ function careerUrlScore(u: string): number {
 }
 
 async function findSitemaps(host: string): Promise<{ sitemaps: string[]; siteBase: string } | null> {
-  for (const base of [`https://${host}`, `http://${host}`]) {
-    const robots = await fetchText(`${base}/robots.txt`, host);
-    if (robots) {
-      const declared = robots.text
-        .split("\n")
-        .filter((l) => /^sitemap:/i.test(l.trim()))
-        .map((l) => l.split(":").slice(1).join(":").trim())
-        .filter(Boolean);
-      if (declared.length) return { sitemaps: declared, siteBase: base };
-      return { sitemaps: SITEMAP_GUESS_PATHS.map((p) => `${base}/${p}`), siteBase: base };
-    }
+  const bases = [`https://${host}`, `http://${host}`];
+  // https and http are tried together, not one after the other -- https succeeding is the common
+  // case, but a slow/hanging https endpoint used to cost a full timeout before http was even
+  // attempted. Order of preference (https wins if both answer) is kept by scanning results in the
+  // same order `bases` was declared, same trick as the two loops above.
+  const robotsResults = await Promise.all(bases.map((base) => fetchText(`${base}/robots.txt`, host)));
+  for (let i = 0; i < bases.length; i++) {
+    const robots = robotsResults[i];
+    if (!robots) continue;
+    const declared = robots.text
+      .split("\n")
+      .filter((l) => /^sitemap:/i.test(l.trim()))
+      .map((l) => l.split(":").slice(1).join(":").trim())
+      .filter(Boolean);
+    if (declared.length) return { sitemaps: declared, siteBase: bases[i] };
+    return { sitemaps: SITEMAP_GUESS_PATHS.map((p) => `${bases[i]}/${p}`), siteBase: bases[i] };
   }
   // No robots.txt on either scheme -- the site may still be up (plenty of small sites 404 it).
-  for (const base of [`https://${host}`, `http://${host}`]) {
-    const home = await fetchText(base, host);
-    if (home) return { sitemaps: SITEMAP_GUESS_PATHS.map((p) => `${base}/${p}`), siteBase: base };
+  const homeResults = await Promise.all(bases.map((base) => fetchText(base, host)));
+  for (let i = 0; i < bases.length; i++) {
+    if (homeResults[i]) return { sitemaps: SITEMAP_GUESS_PATHS.map((p) => `${bases[i]}/${p}`), siteBase: bases[i] };
   }
   return null;
 }
 
+/**
+ * Fetches up to 5 sitemap files concurrently rather than one at a time -- these are independent
+ * requests with nothing for one to learn from another, so awaiting them sequentially only ever
+ * added latency (worst case, 5x this function's own timeout) for zero benefit. A company's total
+ * crawl time is the sum of every sequential `await` in this pipeline, and this loop was one of the
+ * largest single contributors on a slow or partially-unreachable site.
+ */
 async function collectSitemapLocs(sitemapUrls: string[], host: string, depth = 0): Promise<string[]> {
+  const results = await Promise.all(sitemapUrls.slice(0, 5).map((su) => fetchText(su, host)));
+
+  const nestedIndexes: string[][] = [];
   let all: string[] = [];
-  for (const su of sitemapUrls.slice(0, 5)) {
-    const res = await fetchText(su, host);
+  for (const res of results) {
     if (!res) continue;
     const locs = extractLocs(res.text);
     if (!locs.length) continue;
     if (/<sitemapindex/i.test(res.text) && depth < 1) {
-      all = all.concat(await collectSitemapLocs(locs, host, depth + 1));
+      nestedIndexes.push(locs);
     } else {
       all = all.concat(locs);
     }
+  }
+  // Recursion still happens breadth-first-in-parallel rather than one nested index at a time.
+  if (nestedIndexes.length) {
+    const nested = await Promise.all(nestedIndexes.map((locs) => collectSitemapLocs(locs, host, depth + 1)));
+    for (const n of nested) all = all.concat(n);
   }
   return all;
 }
@@ -206,10 +225,13 @@ async function findCareersUrl(host: string): Promise<{ careersUrl: string | null
     .filter((c) => c.score > 0)
     .sort((a, b) => b.score - a.score);
   if (fromSitemap.length) {
-    for (const candidate of fromSitemap.slice(0, 3)) {
-      const page = await fetchText(candidate.u, host);
-      if (page) return { careersUrl: page.url, reachable: true };
-    }
+    // Verified concurrently, then the highest-scored one that actually came back wins -- fetched
+    // one at a time, a dead #1 candidate cost a full timeout before #2 was even tried; in parallel
+    // that wait only ever happens once, not once per failed candidate.
+    const top3 = fromSitemap.slice(0, 3);
+    const pages = await Promise.all(top3.map((c) => fetchText(c.u, host)));
+    const hit = pages.find((p) => p !== null);
+    if (hit) return { careersUrl: hit.url, reachable: true };
   }
   if (locs.length) return { careersUrl: null, reachable: true };
 
@@ -217,12 +239,16 @@ async function findCareersUrl(host: string): Promise<{ careersUrl: string | null
   // generic landing route instead of a 404 (e.g. /careers, /jobs and /join-us all quietly resolve
   // to /home), so probing one deliberately-nonsense path first fingerprints that catch-all and
   // lets a guess that lands on the identical URL be recognised as a miss. Checking only for "did
-  // it land on /" misses this whenever the fallback route is not literally the root.
-  const canary = await fetchText(`${sm.siteBase}/__mantis-canary-${Math.random().toString(36).slice(2)}__`, host);
+  // it land on /" misses this whenever the fallback route is not literally the root. The canary and
+  // the real guesses fire together (independent requests -- nothing here depends on the others'
+  // result), then the catch-all is filtered out of whichever guesses came back.
+  const [canary, ...guessPages] = await Promise.all([
+    fetchText(`${sm.siteBase}/__mantis-canary-${Math.random().toString(36).slice(2)}__`, host),
+    ...CAREER_PATH_GUESSES.map((path) => fetchText(`${sm.siteBase}/${path}`, host)),
+  ]);
   const catchAllUrl = canary?.url ?? null;
 
-  for (const path of CAREER_PATH_GUESSES) {
-    const page = await fetchText(`${sm.siteBase}/${path}`, host);
+  for (const page of guessPages) {
     if (!page) continue;
     let finalPath = "/";
     try {
