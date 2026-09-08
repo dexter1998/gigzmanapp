@@ -31,6 +31,18 @@ export type PhraseTier = "A" | "B" | "C";
  * whether that is wanted before widening further.
  *
  * Legal is the clear loser (lawyer 9%, criminal attorney 7%) and drops to C.
+ *
+ * Round 2 added the tier-B guesses (n >= 150 crawled each) and mostly disproved them. Education
+ * was the one real find and is promoted: international school 32%, college 29%, university 28%,
+ * private university 25%. Everything else guessed for B fell far below the tier-A floor and drops
+ * to C -- coworking space 3%, architecture firm 4%, hotel 5% (1,150 companies for 211 jobs),
+ * insurance agency 6%, medical centre 7%, pharma 9%, manufacturer 10%, logistics 11%. "web design
+ * company" goes with them: as a label, website designer returned 10% across 2,506 companies.
+ *
+ * Note the pattern in the losers -- they carry the highest noCar% (hotel 66%, architect 68%,
+ * coworking 67%). These are businesses that simply do not publish roles on their own site, which
+ * no amount of fetcher work fixes. That is a different failure from the ~2-4% shell% seen almost
+ * everywhere, which is JS-rendered pages we could read with a renderer.
  */
 export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
   // Measured top of round 1 -- promoted on evidence, not expectation.
@@ -45,7 +57,7 @@ export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
   { phrase: "information technology company", tier: "A" },
   { phrase: "software development company", tier: "A" },
   { phrase: "it services", tier: "A" },
-  { phrase: "web design company", tier: "A" },
+  { phrase: "web design company", tier: "C" },
   { phrase: "digital marketing agency", tier: "A" },
   { phrase: "advertising agency", tier: "C" }, // 11% in round 1
   { phrase: "management consultant", tier: "A" },
@@ -57,20 +69,20 @@ export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
   { phrase: "corporate office", tier: "A" },
 
   // B -- larger employers that hire steadily but publish roles less consistently.
-  { phrase: "hospital", tier: "B" },
-  { phrase: "medical center", tier: "B" },
-  { phrase: "university", tier: "B" },
-  { phrase: "college", tier: "B" },
-  { phrase: "school", tier: "B" },
-  { phrase: "hotel", tier: "B" },
-  { phrase: "bank", tier: "B" },
-  { phrase: "insurance agency", tier: "B" },
-  { phrase: "pharmaceutical company", tier: "B" },
-  { phrase: "manufacturer", tier: "B" },
-  { phrase: "logistics company", tier: "B" },
-  { phrase: "architecture firm", tier: "B" },
+  { phrase: "hospital", tier: "C" },
+  { phrase: "medical center", tier: "C" },
+  { phrase: "university", tier: "A" },
+  { phrase: "college", tier: "A" },
+  { phrase: "school", tier: "A" },
+  { phrase: "hotel", tier: "C" },
+  { phrase: "bank", tier: "C" },
+  { phrase: "insurance agency", tier: "C" },
+  { phrase: "pharmaceutical company", tier: "C" },
+  { phrase: "manufacturer", tier: "C" },
+  { phrase: "logistics company", tier: "C" },
+  { phrase: "architecture firm", tier: "C" },
   { phrase: "research institute", tier: "B" },
-  { phrase: "coworking space", tier: "B" },
+  { phrase: "coworking space", tier: "C" },
 
   // C -- unproven. Kept only until the yield report has enough volume to rule on them.
   { phrase: "real estate developer", tier: "C" },
