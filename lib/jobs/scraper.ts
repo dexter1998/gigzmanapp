@@ -565,6 +565,39 @@ function heuristicExtract(html: string, pageUrl: string): ScrapedJob[] {
 // entry point
 // ---------------------------------------------------------------------------------------------
 
+/** Rendered text length, script/style stripped -- an SPA careers route returns a near-empty shell
+ * (exactspace.co/careers is 703 bytes) and every extractor then finds nothing, which is a different
+ * problem from a page that genuinely has no openings and must not be reported as the same thing. */
+function visibleTextLength(html: string): number {
+  return html
+    .replace(/<(script|style|noscript)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim().length;
+}
+
+// Widgets that are never a job board, so following them is a wasted timeout each.
+const IFRAME_SKIP_RE = /youtube|youtu\.be|vimeo|google\.com\/maps|recaptcha|facebook|twitter|linkedin\.com\/embed|spotify|calendly/i;
+
+/** Job-board iframes embedded in an otherwise static careers page. vxceed.com/careers ships
+ * lorem-ipsum placeholders in its own HTML and loads the real roles into an iframe, so the outer
+ * page looks fetched-and-empty while the jobs sit one document away. */
+function iframeSrcs(html: string, base: string): string[] {
+  const out: string[] = [];
+  for (const m of html.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi)) {
+    const raw = m[1];
+    if (IFRAME_SKIP_RE.test(raw)) continue;
+    try {
+      const abs = new URL(raw, base);
+      if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
+      out.push(abs.toString());
+    } catch {
+      continue;
+    }
+  }
+  return out.slice(0, 3);
+}
+
 export async function scrapeCompanyJobs(domain: string): Promise<ScrapeResult> {
   const result: ScrapeResult = {
     domain,
@@ -617,7 +650,41 @@ export async function scrapeCompanyJobs(domain: string): Promise<ScrapeResult> {
     if (heuristicJobs.length) {
       result.method = "heuristic_html";
       result.jobs = heuristicJobs;
+      return result;
     }
+
+    // Nothing on the page itself. Before giving up, follow any embedded job-board iframe and run
+    // the same tiers against it -- a careers page can be a static shell around an embedded board.
+    for (const src of iframeSrcs(page.text, page.url)) {
+      const framed = await fetchText(src, domain);
+      if (!framed) continue;
+      const framedSchema = extractJsonLdJobs(framed.text);
+      if (framedSchema.length) {
+        result.method = "jsonld_schema";
+        result.jobs = framedSchema;
+        return result;
+      }
+      const framedSig = detectAts(framed.text, framed.url);
+      if (framedSig) {
+        result.atsPlatform ??= framedSig.name;
+        const framedAts = await tryAtsApi(framedSig, framed.text, framed.url);
+        if (framedAts.length) {
+          result.method = "ats_api";
+          result.jobs = framedAts;
+          return result;
+        }
+      }
+      const framedHeuristic = heuristicExtract(framed.text, framed.url);
+      if (framedHeuristic.length) {
+        result.method = "heuristic_html";
+        result.jobs = framedHeuristic;
+        return result;
+      }
+    }
+
+    // Still nothing. Say which kind of nothing it was, rather than leaving error null -- that would
+    // reach refreshCompany's ladder as plain "ok", the same way a real fetch failure once did.
+    result.error = visibleTextLength(page.text) < 400 ? "careers_page_empty_shell" : "no_roles_found";
     return result;
   } catch (e) {
     result.error = e instanceof Error ? e.message : String(e);

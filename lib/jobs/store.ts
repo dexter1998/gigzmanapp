@@ -155,13 +155,21 @@ export async function refreshCompany(companyId: string, domain: string): Promise
   // masquerading as success. A genuine failed fetch belongs in "failed" (already retried on the
   // normal 10-day cadence, see dueForRefresh -- it is not blacklisted), not conflated with the
   // legitimately-empty case this branch exists for.
+  //
+  // The scraper now names the two ways an extractor can come back empty, and they are not the same
+  // outcome. "no_roles_found" is a careers page we read fine that is simply not hiring today -- the
+  // legitimately-empty case, and still "ok". "careers_page_empty_shell" is a JS-rendered route
+  // whose HTML we could not read at all (exactspace.co/careers ships 703 bytes); we learned nothing
+  // about whether it is hiring, so calling that "ok" would be the same overstatement as above.
   const status = result.method
     ? "ok"
     : result.error === "no_careers_page"
       ? "no_careers_page"
-      : result.siteReachable && result.error === null
-        ? "ok" // reachable careers page that simply lists nothing right now — not a failure
-        : "failed";
+      : result.error === "no_roles_found"
+        ? "ok"
+        : result.siteReachable && result.error === null
+          ? "ok" // reachable careers page that simply lists nothing right now — not a failure
+          : "failed";
 
   const stats = await reconcileListings(companyId, result);
 

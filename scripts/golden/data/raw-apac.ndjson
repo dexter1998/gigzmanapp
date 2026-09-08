@@ -1,0 +1,475 @@
+{"name": "Canva", "domain": "canva.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "Blackbird Ventures,Sequoia China,Felicis", "source": "ANZ unicorn list"}
+{"name": "Atlassian", "domain": "atlassian.com", "country_code": "au", "hq_city": "Sydney", "tier": "big_tech", "investors": "Accel", "source": "ANZ big tech"}
+{"name": "Airwallex", "domain": "airwallex.com", "country_code": "au", "hq_city": "Melbourne", "tier": "unicorn", "investors": "Square Peg,Tencent,Sequoia", "source": "ANZ unicorn list"}
+{"name": "SafetyCulture", "domain": "safetyculture.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "Blackbird Ventures,TDM,Index Ventures", "source": "ANZ unicorn list"}
+{"name": "Culture Amp", "domain": "cultureamp.com", "country_code": "au", "hq_city": "Melbourne", "tier": "unicorn", "investors": "Blackbird Ventures,Felicis,Sequoia", "source": "ANZ unicorn list"}
+{"name": "Xero", "domain": "xero.com", "country_code": "nz", "hq_city": "Wellington", "tier": "big_tech", "investors": "", "source": "NZX/ASX listed tech"}
+{"name": "Rokt", "domain": "rokt.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "Square Peg,TDM", "source": "ANZ unicorn list"}
+{"name": "Immutable", "domain": "immutable.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "King River,Temasek,Tencent", "source": "ANZ unicorn list"}
+{"name": "Linktree", "domain": "linktr.ee", "country_code": "au", "hq_city": "Melbourne", "tier": "unicorn", "investors": "AirTree,Index Ventures,Coatue", "source": "AirTree portfolio"}
+{"name": "Employment Hero", "domain": "employmenthero.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "AirTree,SEEK,OneVentures", "source": "AirTree portfolio"}
+{"name": "Deputy", "domain": "deputy.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "OpenView,IVP", "source": "ANZ SaaS"}
+{"name": "Go1", "domain": "go1.com", "country_code": "au", "hq_city": "Brisbane", "tier": "unicorn", "investors": "AirTree,Blackbird Ventures,SEEK,Salesforce Ventures", "source": "AirTree portfolio"}
+{"name": "Octopus Deploy", "domain": "octopus.com", "country_code": "au", "hq_city": "Brisbane", "tier": "vc_backed", "investors": "Insight Partners", "source": "ANZ SaaS"}
+{"name": "Zeller", "domain": "myzeller.com", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Square Peg,Addition,Spark Capital", "source": "Square Peg portfolio"}
+{"name": "Judo Bank", "domain": "judo.bank", "country_code": "au", "hq_city": "Melbourne", "tier": "unicorn", "investors": "Bain Capital,Tikehau", "source": "ANZ fintech"}
+{"name": "Athena Home Loans", "domain": "athena.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Square Peg,AirTree,Hostplus", "source": "Square Peg portfolio"}
+{"name": "Pet Circle", "domain": "petcircle.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "TDM,AirTree,Prysm", "source": "AirTree portfolio"}
+{"name": "Eucalyptus", "domain": "eucalyptus.vc", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Blackbird Ventures,AirTree,W23", "source": "Blackbird portfolio"}
+{"name": "Sendle", "domain": "sendle.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "AP Ventures,Federation", "source": "ANZ logistics"}
+{"name": "Prospa", "domain": "prospa.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Square Peg,AirTree", "source": "Square Peg portfolio"}
+{"name": "Tyro Payments", "domain": "tyro.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "TDM,Tiger Global", "source": "ASX fintech"}
+{"name": "Afterpay", "domain": "afterpay.com", "country_code": "au", "hq_city": "Melbourne", "tier": "unicorn", "investors": "Matrix Partners,Coatue", "source": "ANZ fintech"}
+{"name": "Zip Co", "domain": "zip.co", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "Westpac,Tencent", "source": "ANZ fintech"}
+{"name": "Airtasker", "domain": "airtasker.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Exto Partners,Seven West", "source": "ANZ marketplace"}
+{"name": "Cover Genius", "domain": "covergenius.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "King River,Dawn Capital,GSquared", "source": "ANZ insurtech unicorn"}
+{"name": "Harrison.ai", "domain": "harrison.ai", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Blackbird Ventures,Horizons Ventures", "source": "Blackbird portfolio"}
+{"name": "Q-CTRL", "domain": "q-ctrl.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Main Sequence,Airbus Ventures", "source": "Main Sequence portfolio"}
+{"name": "Baraja", "domain": "baraja.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Blackbird Ventures,Main Sequence,Hitachi", "source": "Blackbird portfolio"}
+{"name": "v2food", "domain": "v2food.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Main Sequence,Hostplus", "source": "Main Sequence portfolio"}
+{"name": "Myriota", "domain": "myriota.com", "country_code": "au", "hq_city": "Adelaide", "tier": "vc_backed", "investors": "Main Sequence,Hostplus,In-Q-Tel", "source": "Main Sequence portfolio"}
+{"name": "Advanced Navigation", "domain": "advancednavigation.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "KKR", "source": "ANZ deeptech"}
+{"name": "Fivecast", "domain": "fivecast.com", "country_code": "au", "hq_city": "Adelaide", "tier": "vc_backed", "investors": "Ten Eleven Ventures,CSIRO", "source": "ANZ deeptech"}
+{"name": "Coviu", "domain": "coviu.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Main Sequence,EVP", "source": "Main Sequence portfolio"}
+{"name": "Dovetail", "domain": "dovetail.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Blackbird Ventures,Accel,Felicis", "source": "Blackbird portfolio"}
+{"name": "Mable", "domain": "mable.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "General Atlantic", "source": "ANZ marketplace"}
+{"name": "Simply Wall St", "domain": "simplywall.st", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Bailador", "source": "ANZ fintech"}
+{"name": "Shippit", "domain": "shippit.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "AirTree,Aura", "source": "AirTree portfolio"}
+{"name": "Ignition", "domain": "ignitionapp.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Insight Partners", "source": "ANZ SaaS"}
+{"name": "ROLLER", "domain": "roller.software", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Insight Partners", "source": "ANZ SaaS"}
+{"name": "Skedulo", "domain": "skedulo.com", "country_code": "au", "hq_city": "Brisbane", "tier": "vc_backed", "investors": "Blackbird Ventures,M12,Costanoa", "source": "Blackbird portfolio"}
+{"name": "Buildkite", "domain": "buildkite.com", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "OpenView", "source": "ANZ devtools"}
+{"name": "HotDoc", "domain": "hotdoc.com.au", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Ellerston", "source": "ANZ healthtech"}
+{"name": "Vervoe", "domain": "vervoe.com", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Bullpen Capital", "source": "ANZ HR tech"}
+{"name": "Amber Electric", "domain": "amber.com.au", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Square Peg,Main Sequence", "source": "Square Peg portfolio"}
+{"name": "Brighte", "domain": "brighte.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "AirTree,Grok Ventures", "source": "AirTree portfolio"}
+{"name": "Marketplacer", "domain": "marketplacer.com", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "Ellerston,Salesforce Ventures", "source": "ANZ ecommerce"}
+{"name": "Stake", "domain": "hellostake.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Tiger Global,DST Global", "source": "ANZ fintech"}
+{"name": "Spaceship", "domain": "spaceship.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "AirTree,Atlassian founders", "source": "AirTree portfolio"}
+{"name": "Superhero", "domain": "superhero.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Zip Co", "source": "ANZ fintech"}
+{"name": "SiteMinder", "domain": "siteminder.com", "country_code": "au", "hq_city": "Sydney", "tier": "unicorn", "investors": "TCV,Blackrock", "source": "ANZ SaaS"}
+{"name": "Nearmap", "domain": "nearmap.com", "country_code": "au", "hq_city": "Sydney", "tier": "big_tech", "investors": "Thoma Bravo", "source": "ANZ geospatial"}
+{"name": "WiseTech Global", "domain": "wisetechglobal.com", "country_code": "au", "hq_city": "Sydney", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "Altium", "domain": "altium.com", "country_code": "au", "hq_city": "Sydney", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "Megaport", "domain": "megaport.com", "country_code": "au", "hq_city": "Brisbane", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "Objective Corporation", "domain": "objective.com", "country_code": "au", "hq_city": "Sydney", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "TechnologyOne", "domain": "technologyonecorp.com", "country_code": "au", "hq_city": "Brisbane", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "PEXA", "domain": "pexa.com.au", "country_code": "au", "hq_city": "Melbourne", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "Iress", "domain": "iress.com", "country_code": "au", "hq_city": "Melbourne", "tier": "big_tech", "investors": "", "source": "ASX tech"}
+{"name": "Envato", "domain": "envato.com", "country_code": "au", "hq_city": "Melbourne", "tier": "big_tech", "investors": "", "source": "ANZ marketplace"}
+{"name": "Redbubble", "domain": "redbubble.com", "country_code": "au", "hq_city": "Melbourne", "tier": "big_tech", "investors": "Blackbird Ventures", "source": "ASX tech"}
+{"name": "Kogan.com", "domain": "kogan.com", "country_code": "au", "hq_city": "Melbourne", "tier": "big_tech", "investors": "", "source": "ASX ecommerce"}
+{"name": "Aussie Broadband", "domain": "aussiebroadband.com.au", "country_code": "au", "hq_city": "Morwell", "tier": "big_tech", "investors": "", "source": "ASX telco"}
+{"name": "Whispir", "domain": "whispir.com", "country_code": "au", "hq_city": "Melbourne", "tier": "vc_backed", "investors": "", "source": "ASX SaaS"}
+{"name": "Finder", "domain": "finder.com.au", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "", "source": "ANZ fintech"}
+{"name": "Koala", "domain": "koala.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Blackbird Ventures,Aura", "source": "Blackbird portfolio"}
+{"name": "me&u", "domain": "meandu.com", "country_code": "au", "hq_city": "Sydney", "tier": "vc_backed", "investors": "Tiger Global,Left Lane", "source": "ANZ hospitality tech"}
+{"name": "Hnry", "domain": "hnry.co.nz", "country_code": "nz", "hq_city": "Wellington", "tier": "vc_backed", "investors": "AirTree,Left Lane", "source": "AirTree portfolio"}
+{"name": "Sharesies", "domain": "sharesies.nz", "country_code": "nz", "hq_city": "Wellington", "tier": "vc_backed", "investors": "Icehouse Ventures", "source": "NZ fintech"}
+{"name": "Halter", "domain": "halterhq.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Blackbird Ventures,DCVC,Bessemer", "source": "Blackbird portfolio"}
+{"name": "Rocket Lab", "domain": "rocketlabusa.com", "country_code": "nz", "hq_city": "Auckland", "tier": "big_tech", "investors": "Khosla Ventures,Bessemer,DCVC", "source": "NZ deeptech"}
+{"name": "Dawn Aerospace", "domain": "dawnaerospace.com", "country_code": "nz", "hq_city": "Christchurch", "tier": "vc_backed", "investors": "Movac", "source": "NZ deeptech"}
+{"name": "Soul Machines", "domain": "soulmachines.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Temasek,Salesforce Ventures", "source": "NZ AI"}
+{"name": "Aroa Biosurgery", "domain": "aroabio.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "", "source": "NZX biotech"}
+{"name": "Tracksuit", "domain": "gotracksuit.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Blackbird Ventures,Icehouse Ventures", "source": "Blackbird portfolio"}
+{"name": "Auror", "domain": "auror.co", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "AirTree,Blackbird Ventures", "source": "AirTree portfolio"}
+{"name": "Crimson Education", "domain": "crimsoneducation.org", "country_code": "nz", "hq_city": "Auckland", "tier": "unicorn", "investors": "Tiger Global,Icehouse Ventures", "source": "NZ edtech"}
+{"name": "Education Perfect", "domain": "educationperfect.com", "country_code": "nz", "hq_city": "Dunedin", "tier": "vc_backed", "investors": "KKR", "source": "NZ edtech"}
+{"name": "Timely", "domain": "gettimely.com", "country_code": "nz", "hq_city": "Wellington", "tier": "vc_backed", "investors": "Movac", "source": "NZ SaaS"}
+{"name": "First AML", "domain": "firstaml.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Blackbird Ventures,Headline", "source": "Blackbird portfolio"}
+{"name": "Melodics", "domain": "melodics.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Icehouse Ventures", "source": "NZ consumer tech"}
+{"name": "PredictHQ", "domain": "predicthq.com", "country_code": "nz", "hq_city": "Auckland", "tier": "vc_backed", "investors": "Sutter Hill,Aspect Ventures", "source": "NZ data"}
+{"name": "Sea Group", "domain": "sea.com", "country_code": "sg", "hq_city": "Singapore", "tier": "big_tech", "investors": "Tencent", "source": "SEA big tech"}
+{"name": "Shopee", "domain": "shopee.sg", "country_code": "sg", "hq_city": "Singapore", "tier": "big_tech", "investors": "Tencent", "source": "Sea Group"}
+{"name": "Grab", "domain": "grab.com", "country_code": "sg", "hq_city": "Singapore", "tier": "big_tech", "investors": "SoftBank,Vertex Ventures,Didi", "source": "SEA decacorn"}
+{"name": "GoTo Group", "domain": "gotocompany.com", "country_code": "id", "hq_city": "Jakarta", "tier": "big_tech", "investors": "SoftBank,Sequoia India,Tencent", "source": "Indonesia big tech"}
+{"name": "Gojek", "domain": "gojek.com", "country_code": "id", "hq_city": "Jakarta", "tier": "big_tech", "investors": "Sequoia India,Google,Tencent", "source": "Indonesia big tech"}
+{"name": "Tokopedia", "domain": "tokopedia.com", "country_code": "id", "hq_city": "Jakarta", "tier": "big_tech", "investors": "SoftBank,Alibaba,East Ventures", "source": "East Ventures portfolio"}
+{"name": "Traveloka", "domain": "traveloka.com", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "East Ventures,Expedia,GIC", "source": "East Ventures portfolio"}
+{"name": "Bukalapak", "domain": "bukalapak.com", "country_code": "id", "hq_city": "Jakarta", "tier": "big_tech", "investors": "Emtek,GIC,Ant Group", "source": "Indonesia unicorn"}
+{"name": "Blibli", "domain": "blibli.com", "country_code": "id", "hq_city": "Jakarta", "tier": "big_tech", "investors": "Djarum", "source": "Indonesia ecommerce"}
+{"name": "Xendit", "domain": "xendit.co", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "Accel,Tiger Global,Y Combinator", "source": "YC / Indonesia unicorn"}
+{"name": "eFishery", "domain": "efishery.com", "country_code": "id", "hq_city": "Bandung", "tier": "unicorn", "investors": "Temasek,SoftBank,Northstar", "source": "Indonesia unicorn"}
+{"name": "Ajaib", "domain": "ajaib.co.id", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "DST Global,Ribbit Capital,Y Combinator", "source": "Indonesia fintech"}
+{"name": "Akulaku", "domain": "akulaku.com", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "Ant Group,Sequoia India", "source": "Indonesia fintech"}
+{"name": "Kredivo", "domain": "kredivo.com", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "Square Peg,Mirae Asset,Naver", "source": "Square Peg portfolio"}
+{"name": "Ruangguru", "domain": "ruangguru.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "GGV,Tiger Global,East Ventures", "source": "East Ventures portfolio"}
+{"name": "Halodoc", "domain": "halodoc.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Temasek,Bill & Melinda Gates Foundation,Openspace", "source": "Openspace portfolio"}
+{"name": "Alodokter", "domain": "alodokter.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Softbank Ventures Asia,Sequis", "source": "Indonesia healthtech"}
+{"name": "Sayurbox", "domain": "sayurbox.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Astra,Northstar,Openspace", "source": "Openspace portfolio"}
+{"name": "Waresix", "domain": "waresix.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "East Ventures,Jungle Ventures", "source": "East Ventures portfolio"}
+{"name": "Kargo Technologies", "domain": "kargo.tech", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Sequoia India,Tenaya", "source": "Indonesia logistics"}
+{"name": "Investree", "domain": "investree.id", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "SBI Holdings", "source": "Indonesia fintech"}
+{"name": "Amartha", "domain": "amartha.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "MDI Ventures,Women's World Banking", "source": "Indonesia fintech"}
+{"name": "DANA", "domain": "dana.id", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "Ant Group,Emtek", "source": "Indonesia fintech"}
+{"name": "OVO", "domain": "ovo.id", "country_code": "id", "hq_city": "Jakarta", "tier": "unicorn", "investors": "Grab,Tokopedia,Lippo", "source": "Indonesia fintech"}
+{"name": "LinkAja", "domain": "linkaja.id", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Telkomsel,Grab", "source": "Indonesia fintech"}
+{"name": "Bibit", "domain": "bibit.id", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Sequoia India,Prosus,East Ventures", "source": "East Ventures portfolio"}
+{"name": "Stockbit", "domain": "stockbit.com", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Sequoia India,East Ventures", "source": "East Ventures portfolio"}
+{"name": "Flip", "domain": "flip.id", "country_code": "id", "hq_city": "Jakarta", "tier": "vc_backed", "investors": "Sequoia India,Insight Partners", "source": "Indonesia fintech"}
+{"name": "Nium", "domain": "nium.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Vertex Ventures,Temasek,Riverwood", "source": "Vertex portfolio"}
+{"name": "Coda Payments", "domain": "codapayments.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "GIC,Insight Partners,Smash Capital", "source": "Singapore unicorn"}
+{"name": "Carousell", "domain": "carousell.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Sequoia India,Rakuten Capital,Naver", "source": "Singapore unicorn"}
+{"name": "Carro", "domain": "carro.co", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "SoftBank,EDBI,Insignia", "source": "Singapore unicorn"}
+{"name": "Ninja Van", "domain": "ninjavan.co", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "B Capital,GeoPost,Monk's Hill", "source": "Singapore unicorn"}
+{"name": "Lazada", "domain": "lazada.com", "country_code": "sg", "hq_city": "Singapore", "tier": "big_tech", "investors": "Alibaba", "source": "SEA ecommerce"}
+{"name": "PatSnap", "domain": "patsnap.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "SoftBank,Tencent,Sequoia China,Vertex Ventures", "source": "Vertex portfolio"}
+{"name": "ONE Championship", "domain": "onefc.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Sequoia India,Temasek", "source": "Singapore unicorn"}
+{"name": "Circles.Life", "domain": "circles.life", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Sequoia India,Warburg Pincus,EDBI", "source": "Singapore telco tech"}
+{"name": "Advance Intelligence Group", "domain": "advance.ai", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "SoftBank,Warburg Pincus", "source": "Singapore unicorn"}
+{"name": "Matrixport", "domain": "matrixport.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "DST Global,Dragonfly", "source": "Singapore fintech"}
+{"name": "Amber Group", "domain": "ambergroup.io", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Temasek,Sequoia China", "source": "Singapore fintech"}
+{"name": "Coinhako", "domain": "coinhako.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Tiger Global", "source": "Singapore crypto"}
+{"name": "StashAway", "domain": "stashaway.sg", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Sequoia India,Eight Roads", "source": "Singapore fintech"}
+{"name": "Endowus", "domain": "endowus.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "UBS,Prosus,Lightspeed", "source": "Singapore fintech"}
+{"name": "Syfe", "domain": "syfe.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Valar Ventures,Unbound", "source": "Singapore fintech"}
+{"name": "Aspire", "domain": "aspireapp.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Sequoia India,Y Combinator,Lightspeed", "source": "YC / Singapore fintech"}
+{"name": "Osome", "domain": "osome.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "AltaIR,Target Global", "source": "Singapore SaaS"}
+{"name": "Sleek", "domain": "sleek.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "White Star Capital", "source": "Singapore SaaS"}
+{"name": "Thunes", "domain": "thunes.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Insight Partners,Bessemer,Marshall Wace", "source": "Singapore fintech"}
+{"name": "Funding Societies", "domain": "fundingsocieties.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "SoftBank Ventures Asia,Sequoia India", "source": "Singapore fintech"}
+{"name": "Trax", "domain": "traxretail.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "SoftBank,Warburg Pincus,Hopu", "source": "Singapore unicorn"}
+{"name": "Biofourmis", "domain": "biofourmis.com", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "SoftBank,Openspace,General Atlantic", "source": "Openspace portfolio"}
+{"name": "Doctor Anywhere", "domain": "doctoranywhere.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Square Peg,Novo Holdings", "source": "Square Peg portfolio"}
+{"name": "Glints", "domain": "glints.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Monk's Hill,Persol", "source": "Singapore HR tech"}
+{"name": "ShopBack", "domain": "shopback.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Temasek,East Ventures,Rakuten Capital", "source": "East Ventures portfolio"}
+{"name": "Ohmyhome", "domain": "ohmyhome.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Golden Gate Ventures", "source": "Golden Gate Ventures portfolio"}
+{"name": "PropertyGuru", "domain": "propertyguru.com.sg", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "TPG,KKR", "source": "Singapore unicorn"}
+{"name": "99.co", "domain": "99.co", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Sequoia India,East Ventures,MindWorks", "source": "East Ventures portfolio"}
+{"name": "Razer", "domain": "razer.com", "country_code": "sg", "hq_city": "Singapore", "tier": "big_tech", "investors": "IDG,Intel Capital", "source": "Singapore big tech"}
+{"name": "Secretlab", "domain": "secretlab.co", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Heliconia", "source": "Singapore consumer"}
+{"name": "Tookitaki", "domain": "tookitaki.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Viola Fintech,Illuminate Financial", "source": "Singapore regtech"}
+{"name": "Silent Eight", "domain": "silenteight.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "TYH Ventures,OTB Ventures", "source": "Singapore regtech"}
+{"name": "Igloo", "domain": "iglooinsure.com", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Openspace,Cathay Innovation", "source": "Openspace portfolio"}
+{"name": "bolttech", "domain": "bolttech.io", "country_code": "sg", "hq_city": "Singapore", "tier": "unicorn", "investors": "Mitsubishi UFJ,Tokio Marine", "source": "Singapore insurtech unicorn"}
+{"name": "Antler", "domain": "antler.co", "country_code": "sg", "hq_city": "Singapore", "tier": "vc_backed", "investors": "Schroders", "source": "Singapore VC platform"}
+{"name": "Carsome", "domain": "carsome.my", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "unicorn", "investors": "Gobi Partners,Asia Partners,Catcha", "source": "Malaysia unicorn"}
+{"name": "AirAsia", "domain": "airasia.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "big_tech", "investors": "", "source": "Malaysia big employer"}
+{"name": "iPay88", "domain": "ipay88.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "NTT Data", "source": "Malaysia fintech"}
+{"name": "Aerodyne Group", "domain": "aerodyne.group", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "Kejora,Sunway", "source": "Malaysia deeptech"}
+{"name": "Fave", "domain": "myfave.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "Pine Labs", "source": "Malaysia fintech"}
+{"name": "BigPay", "domain": "bigpayme.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "Capital A,SK Group", "source": "Malaysia fintech"}
+{"name": "MyEG Services", "domain": "myeg.com.my", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "big_tech", "investors": "", "source": "Bursa listed tech"}
+{"name": "Supahands", "domain": "supahands.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "Vynn Capital,500 Global", "source": "Malaysia AI services"}
+{"name": "PolicyStreet", "domain": "policystreet.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "Altara Ventures,Khazanah", "source": "Malaysia insurtech"}
+{"name": "ViTrox", "domain": "vitrox.com", "country_code": "my", "hq_city": "Penang", "tier": "big_tech", "investors": "", "source": "Bursa listed tech"}
+{"name": "ZUS Coffee", "domain": "zuscoffee.com", "country_code": "my", "hq_city": "Kuala Lumpur", "tier": "vc_backed", "investors": "", "source": "Malaysia consumer tech"}
+{"name": "VNG Corporation", "domain": "vng.com.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "unicorn", "investors": "GIC,Temasek", "source": "Vietnam unicorn"}
+{"name": "VNPAY", "domain": "vnpay.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "unicorn", "investors": "SoftBank,GIC", "source": "Vietnam unicorn"}
+{"name": "MoMo", "domain": "momo.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "unicorn", "investors": "Warburg Pincus,Goodwater,Mizuho", "source": "Vietnam unicorn"}
+{"name": "Tiki", "domain": "tiki.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "JD.com,Northstar,STIC", "source": "Vietnam ecommerce"}
+{"name": "Sky Mavis", "domain": "skymavis.com", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "unicorn", "investors": "a16z,Paradigm,Accel", "source": "Vietnam unicorn"}
+{"name": "FPT Software", "domain": "fptsoftware.com", "country_code": "vn", "hq_city": "Hanoi", "tier": "big_tech", "investors": "", "source": "Vietnam big employer"}
+{"name": "FPT Corporation", "domain": "fpt.com.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "big_tech", "investors": "", "source": "Vietnam big employer"}
+{"name": "VinFast", "domain": "vinfast.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "big_tech", "investors": "Vingroup", "source": "Vietnam big employer"}
+{"name": "Viettel", "domain": "viettel.com.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "big_tech", "investors": "", "source": "Vietnam big employer"}
+{"name": "Base.vn", "domain": "base.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "Alpha JWC,FPT", "source": "Vietnam SaaS"}
+{"name": "KiotViet", "domain": "kiotviet.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "KKR,Jungle Ventures", "source": "Vietnam SaaS"}
+{"name": "Sendo", "domain": "sendo.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "SBI Holdings,FPT", "source": "Vietnam ecommerce"}
+{"name": "ELSA Speak", "domain": "elsaspeak.com", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "Gradient Ventures,Monk's Hill", "source": "Vietnam edtech"}
+{"name": "Trusting Social", "domain": "trustingsocial.com", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "Sequoia India,Masan", "source": "Vietnam fintech"}
+{"name": "Giao Hang Tiet Kiem", "domain": "giaohangtietkiem.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "Kerry Logistics", "source": "Vietnam logistics"}
+{"name": "Giao Hang Nhanh", "domain": "ghn.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "Seedcom", "source": "Vietnam logistics"}
+{"name": "Timo", "domain": "timo.vn", "country_code": "vn", "hq_city": "Ho Chi Minh City", "tier": "vc_backed", "investors": "Square Peg,Jungle Ventures", "source": "Square Peg portfolio"}
+{"name": "Finhay", "domain": "finhay.com.vn", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "Insignia,Jeff Bezos-backed Openspace", "source": "Vietnam fintech"}
+{"name": "Katalon", "domain": "katalon.com", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "Aquiline", "source": "Vietnam devtools"}
+{"name": "VinAI", "domain": "vinai.io", "country_code": "vn", "hq_city": "Hanoi", "tier": "vc_backed", "investors": "Vingroup", "source": "Vietnam AI"}
+{"name": "GCash", "domain": "gcash.com", "country_code": "ph", "hq_city": "Manila", "tier": "unicorn", "investors": "Ant Group,Bow Wave,Warburg Pincus", "source": "Philippines unicorn"}
+{"name": "Maya", "domain": "maya.ph", "country_code": "ph", "hq_city": "Manila", "tier": "unicorn", "investors": "KKR,Tencent,IFC", "source": "Philippines unicorn"}
+{"name": "Kumu", "domain": "kumu.ph", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Sumitomo,General Atlantic", "source": "Philippines consumer tech"}
+{"name": "Coins.ph", "domain": "coins.ph", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Naspers,Wavemaker", "source": "Philippines crypto"}
+{"name": "GrowSari", "domain": "growsari.com", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Temasek,KKR,Tencent", "source": "Philippines B2B"}
+{"name": "First Circle", "domain": "firstcircle.ph", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Sequoia India,Insignia", "source": "Philippines fintech"}
+{"name": "Sprout Solutions", "domain": "sprout.ph", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Openspace,Kaya Founders", "source": "Openspace portfolio"}
+{"name": "PayMongo", "domain": "paymongo.com", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Y Combinator,Stripe,JAM Fund", "source": "YC / Philippines fintech"}
+{"name": "Investagrams", "domain": "investagrams.com", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Kickstart Ventures", "source": "Philippines fintech"}
+{"name": "Angkas", "domain": "angkas.com", "country_code": "ph", "hq_city": "Manila", "tier": "vc_backed", "investors": "Wavemaker", "source": "Philippines mobility"}
+{"name": "TrueMoney", "domain": "truemoney.com", "country_code": "th", "hq_city": "Bangkok", "tier": "unicorn", "investors": "Ant Group,Bow Wave", "source": "Thailand fintech"}
+{"name": "Wongnai", "domain": "wongnai.com", "country_code": "th", "hq_city": "Bangkok", "tier": "vc_backed", "investors": "LINE,GMO", "source": "Thailand consumer tech"}
+{"name": "Flash Express", "domain": "flashexpress.com", "country_code": "th", "hq_city": "Bangkok", "tier": "unicorn", "investors": "SCB 10X,PTT Oil", "source": "Thailand unicorn"}
+{"name": "Bitkub", "domain": "bitkub.com", "country_code": "th", "hq_city": "Bangkok", "tier": "unicorn", "investors": "SCB", "source": "Thailand unicorn"}
+{"name": "Pomelo Fashion", "domain": "pomelofashion.com", "country_code": "th", "hq_city": "Bangkok", "tier": "vc_backed", "investors": "Central Group,JD.com", "source": "Thailand ecommerce"}
+{"name": "Agoda", "domain": "agoda.com", "country_code": "th", "hq_city": "Bangkok", "tier": "big_tech", "investors": "Booking Holdings", "source": "Thailand big employer"}
+{"name": "Ookbee", "domain": "ookbee.com", "country_code": "th", "hq_city": "Bangkok", "tier": "vc_backed", "investors": "Tencent,InVent", "source": "Thailand media tech"}
+{"name": "Builk One Group", "domain": "builk.com", "country_code": "th", "hq_city": "Bangkok", "tier": "vc_backed", "investors": "500 Global", "source": "Thailand SaaS"}
+{"name": "Omise", "domain": "omise.co", "country_code": "th", "hq_city": "Bangkok", "tier": "unicorn", "investors": "SBI Investment,Golden Gate Ventures", "source": "Golden Gate Ventures portfolio"}
+{"name": "SCB 10X", "domain": "scb10x.com", "country_code": "th", "hq_city": "Bangkok", "tier": "vc_backed", "investors": "SCB", "source": "Thailand corporate VC/tech"}
+{"name": "Careem", "domain": "careem.com", "country_code": "ae", "hq_city": "Dubai", "tier": "unicorn", "investors": "Uber,e& ,STV", "source": "MENA unicorn"}
+{"name": "Talabat", "domain": "talabat.com", "country_code": "ae", "hq_city": "Dubai", "tier": "big_tech", "investors": "Delivery Hero", "source": "MENA big tech"}
+{"name": "Property Finder", "domain": "propertyfinder.ae", "country_code": "ae", "hq_city": "Dubai", "tier": "unicorn", "investors": "General Atlantic,BlackRock", "source": "MENA unicorn"}
+{"name": "Kitopi", "domain": "kitopi.com", "country_code": "ae", "hq_city": "Dubai", "tier": "unicorn", "investors": "SoftBank,Knollwood", "source": "MENA unicorn"}
+{"name": "Swvl", "domain": "swvl.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "BECO Capital,Vostok", "source": "MENA mobility"}
+{"name": "Tabby", "domain": "tabby.ai", "country_code": "sa", "hq_city": "Riyadh", "tier": "unicorn", "investors": "Wellington,STV,Mubadala,PayPal Ventures", "source": "MENA unicorn"}
+{"name": "Wio Bank", "domain": "wio.io", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "vc_backed", "investors": "ADQ,Alpha Dhabi,e&", "source": "UAE fintech"}
+{"name": "Bayzat", "domain": "bayzat.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Mubadala,Point72 Ventures", "source": "UAE HR tech"}
+{"name": "Huspy", "domain": "huspy.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Sequoia,Balderton,Founders Fund", "source": "UAE proptech"}
+{"name": "Postpay", "domain": "postpay.io", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Afterwork Ventures", "source": "UAE fintech"}
+{"name": "Sarwa", "domain": "sarwa.co", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Mubadala,500 Global", "source": "UAE fintech"}
+{"name": "Ziina", "domain": "ziina.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Y Combinator,Altos Ventures,Avenir", "source": "YC / UAE fintech"}
+{"name": "Bayut", "domain": "bayut.com", "country_code": "ae", "hq_city": "Dubai", "tier": "big_tech", "investors": "Dubizzle Group", "source": "UAE marketplace"}
+{"name": "Dubizzle", "domain": "dubizzle.com", "country_code": "ae", "hq_city": "Dubai", "tier": "unicorn", "investors": "Affinity Partners,Blossom Capital", "source": "UAE marketplace"}
+{"name": "noon", "domain": "noon.com", "country_code": "ae", "hq_city": "Dubai", "tier": "unicorn", "investors": "PIF,Mohamed Alabbar", "source": "UAE ecommerce"}
+{"name": "Namshi", "domain": "namshi.com", "country_code": "ae", "hq_city": "Dubai", "tier": "big_tech", "investors": "noon", "source": "UAE ecommerce"}
+{"name": "Anghami", "domain": "anghami.com", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "vc_backed", "investors": "MBC,Shuaa", "source": "MENA music tech"}
+{"name": "Alef Education", "domain": "alefeducation.com", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "vc_backed", "investors": "", "source": "UAE edtech"}
+{"name": "e& (Etisalat Group)", "domain": "eand.com", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "big_tech", "investors": "", "source": "UAE big employer"}
+{"name": "G42", "domain": "g42.ai", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "big_tech", "investors": "Mubadala,Microsoft", "source": "UAE AI"}
+{"name": "Presight AI", "domain": "presight.ai", "country_code": "ae", "hq_city": "Abu Dhabi", "tier": "big_tech", "investors": "G42", "source": "UAE AI"}
+{"name": "Emirates", "domain": "emirates.com", "country_code": "ae", "hq_city": "Dubai", "tier": "big_tech", "investors": "", "source": "UAE big employer"}
+{"name": "TruKKer", "domain": "trukker.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "STV,Mubadala", "source": "MENA logistics"}
+{"name": "CAFU", "domain": "cafu.com", "country_code": "ae", "hq_city": "Dubai", "tier": "vc_backed", "investors": "Mubadala", "source": "UAE mobility"}
+{"name": "Tamara", "domain": "tamara.co", "country_code": "sa", "hq_city": "Riyadh", "tier": "unicorn", "investors": "SNB Capital,Checkout.com,Sanabil", "source": "Saudi unicorn"}
+{"name": "Foodics", "domain": "foodics.com", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "Sanabil,Prosus,STV", "source": "Saudi SaaS"}
+{"name": "Jahez", "domain": "jahez.net", "country_code": "sa", "hq_city": "Riyadh", "tier": "big_tech", "investors": "", "source": "Saudi listed tech"}
+{"name": "Nana", "domain": "nana.sa", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "STV,Sanabil", "source": "Saudi ecommerce"}
+{"name": "Unifonic", "domain": "unifonic.com", "country_code": "sa", "hq_city": "Riyadh", "tier": "unicorn", "investors": "SoftBank,Sanabil", "source": "Saudi unicorn"}
+{"name": "Salla", "domain": "salla.com", "country_code": "sa", "hq_city": "Jeddah", "tier": "vc_backed", "investors": "Investcorp,Sanabil", "source": "Saudi SaaS"}
+{"name": "Zid", "domain": "zid.sa", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "Sanabil,Impact46", "source": "Saudi SaaS"}
+{"name": "Sary", "domain": "sary.com", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "STV,Endeavor Catalyst", "source": "Saudi B2B"}
+{"name": "Mrsool", "domain": "mrsool.co", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "STV,Bayer Capital", "source": "Saudi delivery"}
+{"name": "HungerStation", "domain": "hungerstation.com", "country_code": "sa", "hq_city": "Riyadh", "tier": "big_tech", "investors": "Delivery Hero", "source": "Saudi delivery"}
+{"name": "Lean Technologies", "domain": "leantech.me", "country_code": "sa", "hq_city": "Riyadh", "tier": "vc_backed", "investors": "Sequoia,General Catalyst", "source": "Saudi fintech"}
+{"name": "stc", "domain": "stc.com.sa", "country_code": "sa", "hq_city": "Riyadh", "tier": "big_tech", "investors": "", "source": "Saudi big employer"}
+{"name": "Saudi Aramco", "domain": "aramco.com", "country_code": "sa", "hq_city": "Dhahran", "tier": "big_tech", "investors": "", "source": "Saudi big employer"}
+{"name": "Wix", "domain": "wix.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Bessemer,Insight Partners", "source": "Israeli tech"}
+{"name": "monday.com", "domain": "monday.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Insight Partners,Stripes", "source": "Israeli tech"}
+{"name": "Fiverr", "domain": "fiverr.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Bessemer,Accel", "source": "Israeli tech"}
+{"name": "JFrog", "domain": "jfrog.com", "country_code": "il", "hq_city": "Netanya", "tier": "big_tech", "investors": "Insight Partners,Scale Venture", "source": "Israeli tech"}
+{"name": "Lightricks", "domain": "lightricks.com", "country_code": "il", "hq_city": "Jerusalem", "tier": "unicorn", "investors": "Insight Partners,ClalTech", "source": "Israeli unicorn"}
+{"name": "Verbit", "domain": "verbit.ai", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sapphire,Vertex Ventures Israel,Third Point", "source": "Israeli unicorn"}
+{"name": "Riskified", "domain": "riskified.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Pitango,General Atlantic", "source": "Pitango portfolio"}
+{"name": "Payoneer", "domain": "payoneer.com", "country_code": "il", "hq_city": "Petah Tikva", "tier": "big_tech", "investors": "Greylock,Susquehanna", "source": "Israeli tech"}
+{"name": "Rapyd", "domain": "rapyd.net", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Target Global,General Catalyst,Tiger Global", "source": "Israeli unicorn"}
+{"name": "eToro", "domain": "etoro.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Spark Capital,BRM", "source": "Israeli unicorn"}
+{"name": "Lemonade", "domain": "lemonade.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Sequoia,SoftBank,Aleph", "source": "Aleph portfolio"}
+{"name": "Gong", "domain": "gong.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Battery,Wing", "source": "Israeli unicorn"}
+{"name": "Wiz", "domain": "wiz.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Index,Insight Partners,Cyberstarts", "source": "Israeli unicorn"}
+{"name": "Cato Networks", "domain": "catonetworks.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Aspect Ventures,Greylock,Lightspeed", "source": "Israeli unicorn"}
+{"name": "Armis", "domain": "armis.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Sequoia", "source": "Israeli unicorn"}
+{"name": "Cybereason", "domain": "cybereason.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "SoftBank,Lockheed Martin", "source": "Israeli unicorn"}
+{"name": "SentinelOne", "domain": "sentinelone.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Insight Partners,Tiger Global", "source": "Israeli-founded tech"}
+{"name": "Check Point Software", "domain": "checkpoint.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "", "source": "Israeli tech"}
+{"name": "CyberArk", "domain": "cyberark.com", "country_code": "il", "hq_city": "Petah Tikva", "tier": "big_tech", "investors": "Jerusalem Venture Partners", "source": "Israeli tech"}
+{"name": "Orca Security", "domain": "orca.security", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "GGV,ICONIQ,CapitalG", "source": "Israeli unicorn"}
+{"name": "Aqua Security", "domain": "aquasec.com", "country_code": "il", "hq_city": "Ramat Gan", "tier": "unicorn", "investors": "Insight Partners,Lightspeed,TLV Partners", "source": "Israeli unicorn"}
+{"name": "Claroty", "domain": "claroty.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Team8,SoftBank,Bessemer", "source": "Team8 portfolio"}
+{"name": "Transmit Security", "domain": "transmitsecurity.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,General Atlantic", "source": "Israeli unicorn"}
+{"name": "BigID", "domain": "bigid.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bessemer,Tiger Global,Advent", "source": "Israeli unicorn"}
+{"name": "Silverfort", "domain": "silverfort.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Greenfield Partners,Brighton Park", "source": "Israeli cyber"}
+{"name": "Axonius", "domain": "axonius.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bessemer,Lightspeed,Stripes", "source": "Israeli unicorn"}
+{"name": "Coralogix", "domain": "coralogix.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Greenfield Partners,Red Dot", "source": "Israeli unicorn"}
+{"name": "Logz.io", "domain": "logz.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "OpenView,Vintage Investment Partners", "source": "Vintage portfolio"}
+{"name": "Redis", "domain": "redis.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bain Capital Ventures,TCV,Viola", "source": "Israeli unicorn"}
+{"name": "Firebolt", "domain": "firebolt.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bessemer,Dawn Capital,Zeev Ventures", "source": "Israeli unicorn"}
+{"name": "Melio", "domain": "meliopayments.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Accel,Coatue,General Catalyst", "source": "Israeli unicorn"}
+{"name": "Tipalti", "domain": "tipalti.com", "country_code": "il", "hq_city": "Foster City", "tier": "unicorn", "investors": "Zeev Ventures,Durable Capital", "source": "Israeli-founded unicorn"}
+{"name": "Papaya Global", "domain": "papayaglobal.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Bessemer,Tiger Global", "source": "Israeli unicorn"}
+{"name": "HiBob", "domain": "hibob.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bessemer,Insight Partners", "source": "Israeli unicorn"}
+{"name": "Fireblocks", "domain": "fireblocks.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Paradigm,Coatue", "source": "Israeli unicorn"}
+{"name": "Kaltura", "domain": "kaltura.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Sapphire,Nokia Growth", "source": "Israeli tech"}
+{"name": "Taboola", "domain": "taboola.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Pitango,Evergreen", "source": "Pitango portfolio"}
+{"name": "Outbrain", "domain": "outbrain.com", "country_code": "il", "hq_city": "Netanya", "tier": "big_tech", "investors": "Carmel Ventures,Index", "source": "Israeli tech"}
+{"name": "Similarweb", "domain": "similarweb.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Viola,Naspers", "source": "Israeli tech"}
+{"name": "Playtika", "domain": "playtika.com", "country_code": "il", "hq_city": "Herzliya", "tier": "big_tech", "investors": "", "source": "Israeli gaming"}
+{"name": "Moon Active", "domain": "moonactive.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Sequoia", "source": "Israeli gaming unicorn"}
+{"name": "Plarium", "domain": "plarium.com", "country_code": "il", "hq_city": "Herzliya", "tier": "big_tech", "investors": "Aristocrat", "source": "Israeli gaming"}
+{"name": "AppsFlyer", "domain": "appsflyer.com", "country_code": "il", "hq_city": "Herzliya", "tier": "unicorn", "investors": "Salesforce Ventures,General Atlantic", "source": "Israeli unicorn"}
+{"name": "Bringg", "domain": "bringg.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Salesforce Ventures,Aleph", "source": "Aleph portfolio"}
+{"name": "Cellebrite", "domain": "cellebrite.com", "country_code": "il", "hq_city": "Petah Tikva", "tier": "big_tech", "investors": "", "source": "Israeli tech"}
+{"name": "Nayax", "domain": "nayax.com", "country_code": "il", "hq_city": "Herzliya", "tier": "big_tech", "investors": "", "source": "Israeli fintech"}
+{"name": "Via", "domain": "ridewithvia.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Pitango,Exor,83North", "source": "Pitango portfolio"}
+{"name": "Mobileye", "domain": "mobileye.com", "country_code": "il", "hq_city": "Jerusalem", "tier": "big_tech", "investors": "Intel", "source": "Israeli tech"}
+{"name": "Innoviz Technologies", "domain": "innoviz.tech", "country_code": "il", "hq_city": "Rosh HaAyin", "tier": "vc_backed", "investors": "Vertex Ventures Israel,Magma", "source": "Israeli deeptech"}
+{"name": "REE Automotive", "domain": "ree.auto", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Magna,Musashi", "source": "Israeli deeptech"}
+{"name": "Hailo", "domain": "hailo.ai", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Zisapel family,Gil Agmon", "source": "Israeli chip unicorn"}
+{"name": "Next Insurance", "domain": "nextinsurance.com", "country_code": "il", "hq_city": "Kfar Saba", "tier": "unicorn", "investors": "Munich Re,Battery,Ribbit", "source": "Israeli unicorn"}
+{"name": "VAST Data", "domain": "vastdata.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "NEA,Fidelity,Dell Technologies Capital", "source": "Israeli unicorn"}
+{"name": "WEKA", "domain": "weka.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Nvidia,Norwest,Key1", "source": "Israeli unicorn"}
+{"name": "Run:ai", "domain": "run.ai", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Insight Partners,TLV Partners", "source": "Israeli AI"}
+{"name": "AI21 Labs", "domain": "ai21.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Nvidia,Google,Pitango", "source": "Pitango portfolio"}
+{"name": "Pentera", "domain": "pentera.io", "country_code": "il", "hq_city": "Petah Tikva", "tier": "unicorn", "investors": "Insight Partners,K1,AWZ", "source": "Israeli unicorn"}
+{"name": "Island", "domain": "island.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Insight Partners,Stripes", "source": "Israeli unicorn"}
+{"name": "Descope", "domain": "descope.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Lightspeed,GGV", "source": "Israeli cyber"}
+{"name": "Torq", "domain": "torq.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Insight Partners,Bessemer,Evolution Equity", "source": "Israeli cyber"}
+{"name": "Cyera", "domain": "cyera.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Accel,Coatue", "source": "Israeli unicorn"}
+{"name": "Grip Security", "domain": "grip.security", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "YL Ventures,Third Point", "source": "Israeli cyber"}
+{"name": "Salt Security", "domain": "salt.security", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Advent,Sequoia,Y Combinator", "source": "Israeli unicorn"}
+{"name": "Immunai", "domain": "immunai.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Softbank Vision Fund,Viola", "source": "Israeli biotech AI"}
+{"name": "Aidoc", "domain": "aidoc.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "General Catalyst,Square Peg,TLV Partners", "source": "Square Peg portfolio"}
+{"name": "K Health", "domain": "khealth.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Valor,Mangrove,Anthem", "source": "Israeli unicorn"}
+{"name": "Sight Diagnostics", "domain": "sightdx.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Koch Disruptive,Longliv", "source": "Israeli medtech"}
+{"name": "Trigo", "domain": "trigoretail.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "83North,Vertex Ventures Israel,Tesco", "source": "Israeli retail tech"}
+{"name": "Gett", "domain": "gett.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Volkswagen,Access Industries", "source": "Israeli unicorn"}
+{"name": "Yotpo", "domain": "yotpo.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Bessemer,Vintage Investment Partners,Tiger Global", "source": "Vintage portfolio"}
+{"name": "Rivery", "domain": "rivery.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Tiger Global,State of Mind Ventures", "source": "Israeli data tech"}
+{"name": "Anodot", "domain": "anodot.com", "country_code": "il", "hq_city": "Ra'anana", "tier": "vc_backed", "investors": "Aleph,Redline Capital", "source": "Aleph portfolio"}
+{"name": "Optibus", "domain": "optibus.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Bessemer,Pitango", "source": "Pitango portfolio"}
+{"name": "Placer.ai", "domain": "placer.ai", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Josh Buckley,Lightspeed,Array Ventures", "source": "Israeli unicorn"}
+{"name": "WalkMe", "domain": "walkme.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "big_tech", "investors": "Insight Partners,Vitruvian", "source": "Israeli tech"}
+{"name": "Wiliot", "domain": "wiliot.com", "country_code": "il", "hq_city": "Caesarea", "tier": "vc_backed", "investors": "SoftBank,Amazon,Qualcomm Ventures", "source": "Israeli IoT"}
+{"name": "Augury", "domain": "augury.com", "country_code": "il", "hq_city": "Haifa", "tier": "unicorn", "investors": "Insight Partners,Eclipse,Lerer Hippeau", "source": "Israeli unicorn"}
+{"name": "SolarEdge", "domain": "solaredge.com", "country_code": "il", "hq_city": "Herzliya", "tier": "big_tech", "investors": "", "source": "Israeli tech"}
+{"name": "Forter", "domain": "forter.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Sequoia,Bessemer,Tiger Global", "source": "Israeli unicorn"}
+{"name": "Bizzabo", "domain": "bizzabo.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Insight Partners,Viola Growth", "source": "Israeli SaaS"}
+{"name": "Lusha", "domain": "lusha.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "PSG,ION Crossover", "source": "Israeli unicorn"}
+{"name": "Sisense", "domain": "sisense.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Insight Partners,Battery,DFJ Growth", "source": "Israeli unicorn"}
+{"name": "Explorium", "domain": "explorium.ai", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Insight Partners,Zeev Ventures", "source": "Israeli data tech"}
+{"name": "Perimeter 81", "domain": "perimeter81.com", "country_code": "il", "hq_city": "Tel Aviv", "tier": "vc_backed", "investors": "Insight Partners,B Capital", "source": "Israeli cyber"}
+{"name": "Snyk", "domain": "snyk.io", "country_code": "il", "hq_city": "Tel Aviv", "tier": "unicorn", "investors": "Accel,Boldstart,Tiger Global", "source": "Israeli-founded unicorn"}
+{"name": "Shopify", "domain": "shopify.com", "country_code": "ca", "hq_city": "Ottawa", "tier": "big_tech", "investors": "Bessemer,FirstMark,OMERS Ventures", "source": "Canada big tech"}
+{"name": "Wealthsimple", "domain": "wealthsimple.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Power Corp,Greylock,Meritech", "source": "Canada unicorn"}
+{"name": "Cohere", "domain": "cohere.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Index,Inovia,Nvidia,Oracle", "source": "Canada AI unicorn"}
+{"name": "Clio", "domain": "clio.com", "country_code": "ca", "hq_city": "Burnaby", "tier": "unicorn", "investors": "TCV,JMI,OMERS Ventures", "source": "OMERS Ventures portfolio"}
+{"name": "Hootsuite", "domain": "hootsuite.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "unicorn", "investors": "Insight Partners,OMERS Ventures,Accel", "source": "OMERS Ventures portfolio"}
+{"name": "1Password", "domain": "1password.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Accel,ICONIQ,Tiger Global", "source": "Canada unicorn"}
+{"name": "Ada", "domain": "ada.cx", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Spark Capital,Accel,Bessemer", "source": "Canada unicorn"}
+{"name": "Wattpad", "domain": "wattpad.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Tencent,OMERS Ventures", "source": "OMERS Ventures portfolio"}
+{"name": "ecobee", "domain": "ecobee.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Amazon Alexa Fund,Thomvest", "source": "Canada hardware"}
+{"name": "Coveo", "domain": "coveo.com", "country_code": "ca", "hq_city": "Quebec City", "tier": "big_tech", "investors": "OMERS Ventures,Elliott", "source": "OMERS Ventures portfolio"}
+{"name": "Lightspeed Commerce", "domain": "lightspeedhq.com", "country_code": "ca", "hq_city": "Montreal", "tier": "big_tech", "investors": "Inovia,Caisse de depot", "source": "Canada big tech"}
+{"name": "Nuvei", "domain": "nuvei.com", "country_code": "ca", "hq_city": "Montreal", "tier": "big_tech", "investors": "Advent", "source": "Canada fintech"}
+{"name": "Dialogue Health", "domain": "dialogue.co", "country_code": "ca", "hq_city": "Montreal", "tier": "vc_backed", "investors": "Caisse de depot,White Star", "source": "Canada healthtech"}
+{"name": "Hopper", "domain": "hopper.com", "country_code": "ca", "hq_city": "Montreal", "tier": "unicorn", "investors": "OMERS Ventures,Goldman Sachs,Capital One", "source": "OMERS Ventures portfolio"}
+{"name": "Wave Financial", "domain": "waveapps.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "OMERS Ventures,Social Capital,H&R Block", "source": "OMERS Ventures portfolio"}
+{"name": "Vidyard", "domain": "vidyard.com", "country_code": "ca", "hq_city": "Kitchener", "tier": "vc_backed", "investors": "Bessemer,OMERS Ventures,Y Combinator", "source": "YC / OMERS portfolio"}
+{"name": "Jobber", "domain": "getjobber.com", "country_code": "ca", "hq_city": "Edmonton", "tier": "unicorn", "investors": "General Atlantic,Summit Partners,Version One", "source": "Canada SaaS"}
+{"name": "Benevity", "domain": "benevity.com", "country_code": "ca", "hq_city": "Calgary", "tier": "unicorn", "investors": "Hg Capital,General Atlantic", "source": "Canada SaaS"}
+{"name": "Absolute Software", "domain": "absolute.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "big_tech", "investors": "Crosspoint", "source": "Canada cyber"}
+{"name": "D2L", "domain": "d2l.com", "country_code": "ca", "hq_city": "Kitchener", "tier": "big_tech", "investors": "OMERS Ventures,NEA", "source": "OMERS Ventures portfolio"}
+{"name": "Miovision", "domain": "miovision.com", "country_code": "ca", "hq_city": "Kitchener", "tier": "vc_backed", "investors": "Maverix,MacKinnon Bennett", "source": "Canada smart cities"}
+{"name": "Axonify", "domain": "axonify.com", "country_code": "ca", "hq_city": "Waterloo", "tier": "vc_backed", "investors": "Luminate Capital,JMI", "source": "Canada SaaS"}
+{"name": "ApplyBoard", "domain": "applyboard.com", "country_code": "ca", "hq_city": "Kitchener", "tier": "unicorn", "investors": "Ontario Teachers,BDC,Index", "source": "Canada unicorn"}
+{"name": "Neo Financial", "domain": "neofinancial.com", "country_code": "ca", "hq_city": "Calgary", "tier": "unicorn", "investors": "Valar Ventures,Golden Ventures", "source": "Canada fintech"}
+{"name": "KOHO", "domain": "koho.ca", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Drive Capital,Portage,TTV", "source": "Canada fintech"}
+{"name": "Borrowell", "domain": "borrowell.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Portag3,White Star,Equitable Bank", "source": "Canada fintech"}
+{"name": "Clearco", "domain": "clear.co", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "SoftBank,Inovia,Founders Fund", "source": "Canada fintech"}
+{"name": "League", "domain": "league.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "TDM,Workday Ventures,Wittington", "source": "Canada healthtech"}
+{"name": "Later", "domain": "later.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "vc_backed", "investors": "Summit Partners", "source": "Canada SaaS"}
+{"name": "Unbounce", "domain": "unbounce.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "vc_backed", "investors": "Cultivation Capital", "source": "Canada SaaS"}
+{"name": "Thinkific", "domain": "thinkific.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "big_tech", "investors": "Rhino Ventures", "source": "Canada SaaS"}
+{"name": "Article", "domain": "article.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "vc_backed", "investors": "", "source": "Canada ecommerce"}
+{"name": "Trulioo", "domain": "trulioo.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "unicorn", "investors": "TCV,Amex Ventures,Blumberg", "source": "Canada unicorn"}
+{"name": "Klue", "domain": "klue.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "vc_backed", "investors": "Tiger Global,Craft Ventures", "source": "Canada SaaS"}
+{"name": "Dapper Labs", "domain": "dapperlabs.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "unicorn", "investors": "a16z,Coatue,Union Square Ventures", "source": "Canada unicorn"}
+{"name": "Blockstream", "domain": "blockstream.com", "country_code": "ca", "hq_city": "Victoria", "tier": "unicorn", "investors": "Horizons Ventures,Real Ventures", "source": "Real Ventures portfolio"}
+{"name": "Tenstorrent", "domain": "tenstorrent.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Fidelity,Samsung,Hyundai,Real Ventures", "source": "Real Ventures portfolio"}
+{"name": "Xanadu", "domain": "xanadu.ai", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Bessemer,Georgian,Georgian Partners", "source": "Georgian portfolio"}
+{"name": "D-Wave", "domain": "dwavesys.com", "country_code": "ca", "hq_city": "Burnaby", "tier": "vc_backed", "investors": "PSP,BDC,Goldman Sachs", "source": "Canada deeptech"}
+{"name": "Sanctuary AI", "domain": "sanctuary.ai", "country_code": "ca", "hq_city": "Vancouver", "tier": "vc_backed", "investors": "Bell,Verizon Ventures,Workday Ventures", "source": "Canada robotics"}
+{"name": "Waabi", "domain": "waabi.ai", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Khosla Ventures,Uber,Nvidia", "source": "Canada AV"}
+{"name": "Kepler Communications", "domain": "kepler.space", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "IA Ventures,Costanoa,BDC", "source": "Canada space"}
+{"name": "MDA Space", "domain": "mda.space", "country_code": "ca", "hq_city": "Brampton", "tier": "big_tech", "investors": "Northern Private Capital", "source": "Canada space"}
+{"name": "TELUS", "domain": "telus.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "big_tech", "investors": "", "source": "Canada big employer"}
+{"name": "OpenText", "domain": "opentext.com", "country_code": "ca", "hq_city": "Waterloo", "tier": "big_tech", "investors": "", "source": "Canada big tech"}
+{"name": "Kinaxis", "domain": "kinaxis.com", "country_code": "ca", "hq_city": "Ottawa", "tier": "big_tech", "investors": "", "source": "Canada SaaS"}
+{"name": "Docebo", "domain": "docebo.com", "country_code": "ca", "hq_city": "Toronto", "tier": "big_tech", "investors": "Intercap", "source": "Canada SaaS"}
+{"name": "Q4 Inc.", "domain": "q4inc.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Ten Coves,TSX listing", "source": "Canada SaaS"}
+{"name": "Certn", "domain": "certn.co", "country_code": "ca", "hq_city": "Victoria", "tier": "vc_backed", "investors": "Inovia,Telstra Ventures", "source": "Canada HR tech"}
+{"name": "Flipp", "domain": "flipp.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "General Atlantic", "source": "Canada retail tech"}
+{"name": "Ritual", "domain": "ritual.co", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Greylock,Insight Partners", "source": "Canada consumer tech"}
+{"name": "SkipTheDishes", "domain": "skipthedishes.com", "country_code": "ca", "hq_city": "Winnipeg", "tier": "big_tech", "investors": "Just Eat Takeaway", "source": "Canada delivery"}
+{"name": "Jane App", "domain": "jane.app", "country_code": "ca", "hq_city": "North Vancouver", "tier": "vc_backed", "investors": "", "source": "Canada healthtech SaaS"}
+{"name": "PointClickCare", "domain": "pointclickcare.com", "country_code": "ca", "hq_city": "Mississauga", "tier": "unicorn", "investors": "Dragoneer,JMI", "source": "Canada healthtech"}
+{"name": "Verafin", "domain": "verafin.com", "country_code": "ca", "hq_city": "St. John's", "tier": "unicorn", "investors": "Spectrum Equity,Information Venture Partners", "source": "Canada fintech"}
+{"name": "Shakepay", "domain": "shakepay.com", "country_code": "ca", "hq_city": "Montreal", "tier": "vc_backed", "investors": "Y Combinator,Boost VC", "source": "YC / Canada crypto"}
+{"name": "Bitfarms", "domain": "bitfarms.com", "country_code": "ca", "hq_city": "Toronto", "tier": "big_tech", "investors": "", "source": "Canada crypto mining"}
+{"name": "Hut 8", "domain": "hut8.com", "country_code": "ca", "hq_city": "Miami", "tier": "big_tech", "investors": "", "source": "Canada crypto mining"}
+{"name": "Deep Genomics", "domain": "deepgenomics.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Khosla Ventures,SoftBank Vision Fund", "source": "Canada biotech AI"}
+{"name": "BenchSci", "domain": "benchsci.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Inovia,TCV,Golden Ventures,Gradient Ventures", "source": "Canada biotech AI"}
+{"name": "AbCellera", "domain": "abcellera.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "big_tech", "investors": "OrbiMed,Peter Thiel", "source": "Canada biotech"}
+{"name": "Zymeworks", "domain": "zymeworks.com", "country_code": "ca", "hq_city": "Vancouver", "tier": "big_tech", "investors": "BDC,Perceptive", "source": "Canada biotech"}
+{"name": "Solink", "domain": "solink.com", "country_code": "ca", "hq_city": "Ottawa", "tier": "vc_backed", "investors": "Goldman Sachs Growth,OMERS Ventures", "source": "OMERS Ventures portfolio"}
+{"name": "Rewind", "domain": "rewind.com", "country_code": "ca", "hq_city": "Ottawa", "tier": "vc_backed", "investors": "Inovia,FreshTracks", "source": "Canada SaaS"}
+{"name": "Tulip Retail", "domain": "tulip.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Kleiner Perkins", "source": "Canada retail tech"}
+{"name": "Relay", "domain": "relayfi.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Bain Capital Ventures,BTV", "source": "Canada fintech"}
+{"name": "nesto", "domain": "nesto.ca", "country_code": "ca", "hq_city": "Montreal", "tier": "vc_backed", "investors": "Diagram Ventures,Investissement Quebec", "source": "Canada fintech"}
+{"name": "Loopio", "domain": "loopio.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "OpenView", "source": "Canada SaaS"}
+{"name": "Achievers", "domain": "achievers.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Sequoia,Blockchain Capital", "source": "Canada HR tech"}
+{"name": "Influitive", "domain": "influitive.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Georgian,OMERS Ventures", "source": "Georgian portfolio"}
+{"name": "Top Hat", "domain": "tophat.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Georgian,Union Square Ventures", "source": "Georgian portfolio"}
+{"name": "Knix", "domain": "knix.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Acton Capital", "source": "Canada ecommerce"}
+{"name": "Vena Solutions", "domain": "venasolutions.com", "country_code": "ca", "hq_city": "Toronto", "tier": "unicorn", "investors": "Vista Equity,JMI,Centana", "source": "Canada SaaS"}
+{"name": "Uberflip", "domain": "uberflip.com", "country_code": "ca", "hq_city": "Toronto", "tier": "vc_backed", "investors": "Rhino Ventures", "source": "Canada martech"}
+{"name": "360insights", "domain": "360insights.com", "country_code": "ca", "hq_city": "Whitby", "tier": "vc_backed", "investors": "Novacap", "source": "Canada SaaS"}
+{"name": "Mercari", "domain": "mercari.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Globis,World Innovation Lab", "source": "Japan unicorn/listed"}
+{"name": "SmartNews", "domain": "smartnews.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "ACA,SMBC,Princeville", "source": "Japan unicorn"}
+{"name": "Preferred Networks", "domain": "preferred.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "Toyota,NTT,FANUC", "source": "Japan unicorn"}
+{"name": "Rakuten", "domain": "rakuten.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "LY Corporation", "domain": "lycorp.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "SoftBank,Naver", "source": "Japan big tech"}
+{"name": "CyberAgent", "domain": "cyberagent.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "DeNA", "domain": "dena.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "GREE", "domain": "gree.net", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "Sansan", "domain": "sansan.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Salesforce Ventures", "source": "Japan SaaS"}
+{"name": "freee", "domain": "freee.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "DCM,Infinity Venture Partners", "source": "Japan SaaS"}
+{"name": "Money Forward", "domain": "moneyforward.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan SaaS"}
+{"name": "SmartHR", "domain": "smarthr.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "Sequoia China,Light Street,KKR", "source": "Japan unicorn"}
+{"name": "Cybozu", "domain": "cybozu.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan SaaS"}
+{"name": "Visional", "domain": "visional.inc", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Polaris Capital", "source": "Japan HR tech"}
+{"name": "Wantedly", "domain": "wantedly.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "", "source": "Japan HR tech"}
+{"name": "Paidy", "domain": "paidy.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "PayPal,Soros,Itochu", "source": "Japan unicorn"}
+{"name": "Kyash", "domain": "kyash.co", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Greyhound,Goodwater,Mitsubishi UFJ", "source": "Japan fintech"}
+{"name": "Coincheck", "domain": "coincheck.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Monex Group", "source": "Japan crypto"}
+{"name": "bitFlyer", "domain": "bitflyer.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "SBI,Mitsubishi UFJ Capital", "source": "Japan crypto"}
+{"name": "Spiber", "domain": "spiber.inc", "country_code": "jp", "hq_city": "Tsuruoka", "tier": "unicorn", "investors": "Carlyle,Fidelity,Goldman Sachs", "source": "Japan deeptech unicorn"}
+{"name": "ispace", "domain": "ispace-inc.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "INCJ,Suzuki,Airbus Ventures", "source": "Japan space"}
+{"name": "Astroscale", "domain": "astroscale.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "INCJ,Mitsubishi,Seraphim", "source": "Japan space"}
+{"name": "Synspective", "domain": "synspective.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Sompo,JAFCO,Pale Blue Dot", "source": "Japan space"}
+{"name": "Sakana AI", "domain": "sakana.ai", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "Khosla Ventures,Lux Capital,Nvidia", "source": "Japan AI unicorn"}
+{"name": "Yappli", "domain": "yappli.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Globis,YJ Capital", "source": "Japan SaaS"}
+{"name": "Raksul", "domain": "raksul.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "Global Brain,WiL", "source": "Japan marketplace"}
+{"name": "STORES", "domain": "stores.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "Sequoia China,SBI", "source": "Japan ecommerce SaaS"}
+{"name": "Kakaku.com", "domain": "kakaku.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "Cookpad", "domain": "cookpad.com", "country_code": "jp", "hq_city": "Yokohama", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "Gunosy", "domain": "gunosy.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "KDDI", "source": "Japan media tech"}
+{"name": "MIXI", "domain": "mixi.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big tech"}
+{"name": "Nintendo", "domain": "nintendo.co.jp", "country_code": "jp", "hq_city": "Kyoto", "tier": "big_tech", "investors": "", "source": "Japan big employer"}
+{"name": "Sony", "domain": "sony.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big employer"}
+{"name": "SoftBank", "domain": "softbank.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big employer"}
+{"name": "Recruit Holdings", "domain": "recruit.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "big_tech", "investors": "", "source": "Japan big employer"}
+{"name": "PayPay", "domain": "paypay.ne.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "SoftBank,Z Holdings,Paytm", "source": "Japan fintech"}
+{"name": "Timee", "domain": "timee.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "unicorn", "investors": "Kaizen,Sumitomo Mitsui", "source": "Japan HR tech"}
+{"name": "Ubie", "domain": "ubie.life", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Salesforce Ventures,Keyrock", "source": "Japan healthtech"}
+{"name": "Nulab", "domain": "nulab.com", "country_code": "jp", "hq_city": "Fukuoka", "tier": "vc_backed", "investors": "", "source": "Japan SaaS"}
+{"name": "Treasure Data", "domain": "treasuredata.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Arm,SoftBank", "source": "Japan data tech"}
+{"name": "Autify", "domain": "autify.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Y Combinator,World Innovation Lab", "source": "YC / Japan devtools"}
+{"name": "LayerX", "domain": "layerx.co.jp", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "ANRI,Mitsui,YJ Capital", "source": "Japan SaaS"}
+{"name": "SNKRDUNK", "domain": "snkrdunk.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "SoftBank Ventures Asia,Altos Ventures", "source": "Japan marketplace"}
+{"name": "WHILL", "domain": "whill.inc", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "Daiwa,Innovation Network Corp", "source": "Japan mobility"}
+{"name": "Telexistence", "domain": "tx-inc.com", "country_code": "jp", "hq_city": "Tokyo", "tier": "vc_backed", "investors": "SoftBank Vision Fund,Foxconn", "source": "Japan robotics"}
+{"name": "Coupang", "domain": "coupang.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "SoftBank,Sequoia,BlackRock", "source": "Korea big tech"}
+{"name": "Toss (Viva Republica)", "domain": "toss.im", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "Altos Ventures,Goodwater,PayPal", "source": "Korea unicorn"}
+{"name": "Krafton", "domain": "krafton.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "Tencent", "source": "Korea gaming"}
+{"name": "Kakao", "domain": "kakaocorp.com", "country_code": "kr", "hq_city": "Jeju", "tier": "big_tech", "investors": "", "source": "Korea big tech"}
+{"name": "Naver", "domain": "navercorp.com", "country_code": "kr", "hq_city": "Seongnam", "tier": "big_tech", "investors": "", "source": "Korea big tech"}
+{"name": "Nexon", "domain": "nexon.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
+{"name": "NCSOFT", "domain": "ncsoft.com", "country_code": "kr", "hq_city": "Seongnam", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
+{"name": "Netmarble", "domain": "netmarble.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "Tencent", "source": "Korea gaming"}
+{"name": "Woowa Brothers", "domain": "woowahan.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "Delivery Hero,Goldman Sachs", "source": "Korea delivery"}
+{"name": "Yanolja", "domain": "yanolja.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "SoftBank Vision Fund,Booking Holdings", "source": "Korea unicorn"}
+{"name": "Karrot (Danggeun Market)", "domain": "daangn.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "GGV,Altos Ventures,DST Global", "source": "Korea unicorn"}
+{"name": "MUSINSA", "domain": "musinsa.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "Sequoia China,KKR,IMM", "source": "Korea unicorn"}
+{"name": "SOCAR", "domain": "socar.kr", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "SoftBank Ventures Asia,IMM", "source": "Korea unicorn"}
+{"name": "Kurly", "domain": "kurly.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "Hillhouse,Sequoia China,DST Global", "source": "Korea unicorn"}
+{"name": "Lunit", "domain": "lunit.io", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "Nvidia,Kakao Ventures", "source": "Korea medical AI"}
+{"name": "VUNO", "domain": "vuno.co", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "Korea Investment Partners", "source": "Korea medical AI"}
+{"name": "Hyperconnect", "domain": "hpcnt.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "Match Group", "source": "Korea consumer tech"}
+{"name": "Sendbird", "domain": "sendbird.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "ICONIQ,SoftBank Vision Fund,Y Combinator", "source": "YC / Korea unicorn"}
+{"name": "Channel Corp", "domain": "channel.io", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "Softbank Ventures Asia", "source": "Korea SaaS"}
+{"name": "Dunamu", "domain": "dunamu.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "Kakao,Hanwha", "source": "Korea fintech"}
+{"name": "Bithumb", "domain": "bithumb.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea crypto"}
+{"name": "Wadiz", "domain": "wadiz.kr", "country_code": "kr", "hq_city": "Seongnam", "tier": "vc_backed", "investors": "Shinhan,Korea Investment Partners", "source": "Korea fintech"}
+{"name": "Zigbang", "domain": "zigbang.com", "country_code": "kr", "hq_city": "Seoul", "tier": "unicorn", "investors": "Goldman Sachs,Altos Ventures", "source": "Korea proptech"}
+{"name": "Mathpresso (QANDA)", "domain": "mathpresso.com", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "SoftBank Ventures Asia,Goodwater", "source": "Korea edtech"}
+{"name": "CLASS101", "domain": "class101.net", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "Goodwater,SoftBank Ventures Asia", "source": "Korea edtech"}
+{"name": "Rebellions", "domain": "rebellions.ai", "country_code": "kr", "hq_city": "Seongnam", "tier": "unicorn", "investors": "KT,Temasek,Pegatron", "source": "Korea AI chips"}
+{"name": "FuriosaAI", "domain": "furiosa.ai", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "DSC Investment,Naver", "source": "Korea AI chips"}
+{"name": "Twelve Labs", "domain": "twelvelabs.io", "country_code": "kr", "hq_city": "Seoul", "tier": "vc_backed", "investors": "Nvidia,Index Ventures,Radical Ventures", "source": "Korea AI"}
+{"name": "Upstage", "domain": "upstage.ai", "country_code": "kr", "hq_city": "Yongin", "tier": "vc_backed", "investors": "SBVA,Korea Development Bank", "source": "Korea AI"}
+{"name": "Samsung Electronics", "domain": "samsung.com", "country_code": "kr", "hq_city": "Suwon", "tier": "big_tech", "investors": "", "source": "Korea big employer"}
+{"name": "LG Electronics", "domain": "lg.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea big employer"}
+{"name": "SK hynix", "domain": "skhynix.com", "country_code": "kr", "hq_city": "Icheon", "tier": "big_tech", "investors": "", "source": "Korea big employer"}
+{"name": "Hyundai Motor", "domain": "hyundai.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea big employer"}
+{"name": "Smilegate", "domain": "smilegate.com", "country_code": "kr", "hq_city": "Seongnam", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
+{"name": "Pearl Abyss", "domain": "pearlabyss.com", "country_code": "kr", "hq_city": "Anyang", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
+{"name": "Devsisters", "domain": "devsisters.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
+{"name": "Com2uS", "domain": "com2us.com", "country_code": "kr", "hq_city": "Seoul", "tier": "big_tech", "investors": "", "source": "Korea gaming"}
