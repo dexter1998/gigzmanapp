@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { pseoSql } from "../../lib/pseo/db";
 import { normalizeDomain } from "../../lib/jobs/golden";
+import { faviconFor } from "../../lib/jobs/store";
 
 /**
  * Loads a gosom run straight into `job_companies`, bypassing `leads` entirely.
@@ -86,15 +87,16 @@ async function main() {
     if (label) byCategory.set(label, (byCategory.get(label) ?? 0) + 1);
 
     const rows = await sql`
-      INSERT INTO job_companies (domain, company_name, category, lat, lng, city_slug, country_code, scrape_status)
-      VALUES (${domain}, ${r.title}, ${label}, ${r.latitude}, ${r.longitude}, ${citySlug}, ${countryCode}, 'pending')
+      INSERT INTO job_companies (domain, company_name, category, lat, lng, city_slug, country_code, favicon_url, scrape_status)
+      VALUES (${domain}, ${r.title}, ${label}, ${r.latitude}, ${r.longitude}, ${citySlug}, ${countryCode}, ${faviconFor(domain)}, 'pending')
       ON CONFLICT (domain) DO UPDATE SET
         company_name = COALESCE(job_companies.company_name, EXCLUDED.company_name),
         category     = COALESCE(job_companies.category, EXCLUDED.category),
         lat          = COALESCE(job_companies.lat, EXCLUDED.lat),
         lng          = COALESCE(job_companies.lng, EXCLUDED.lng),
         city_slug    = COALESCE(job_companies.city_slug, EXCLUDED.city_slug),
-        country_code = COALESCE(job_companies.country_code, EXCLUDED.country_code)
+        country_code = COALESCE(job_companies.country_code, EXCLUDED.country_code),
+        favicon_url  = COALESCE(job_companies.favicon_url, EXCLUDED.favicon_url)
       RETURNING (xmax = 0) AS is_new
     `;
     if (rows[0]?.is_new) inserted++;

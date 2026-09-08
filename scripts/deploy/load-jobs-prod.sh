@@ -97,9 +97,24 @@ ON CONFLICT (domain) DO UPDATE SET
   lng          = COALESCE(job_companies.lng, EXCLUDED.lng),
   city_slug    = COALESCE(job_companies.city_slug, EXCLUDED.city_slug),
   country_code = COALESCE(job_companies.country_code, EXCLUDED.country_code),
+  favicon_url  = COALESCE(job_companies.favicon_url, EXCLUDED.favicon_url),
   -- golden_tier is the one field the import is authoritative for: it comes from the curated
   -- research set, which prod's own crawl has no way to derive.
-  golden_tier  = COALESCE(EXCLUDED.golden_tier, job_companies.golden_tier);
+  golden_tier  = COALESCE(EXCLUDED.golden_tier, job_companies.golden_tier),
+  -- Crawl outcomes follow the machine that actually does the crawling, which is the local one at
+  -- ~143 companies/minute against prod's cron at 60 a DAY. Without this, a row imported as
+  -- 'pending' stays pending in prod for ever even after local has crawled it, and prod's cron
+  -- spends its whole daily budget re-doing work that is already done.
+  scrape_status     = CASE WHEN EXCLUDED.scrape_status <> 'pending'
+                           THEN EXCLUDED.scrape_status ELSE job_companies.scrape_status END,
+  scrape_error      = CASE WHEN EXCLUDED.scrape_status <> 'pending'
+                           THEN EXCLUDED.scrape_error ELSE job_companies.scrape_error END,
+  careers_url       = COALESCE(EXCLUDED.careers_url, job_companies.careers_url),
+  extraction_method = COALESCE(EXCLUDED.extraction_method, job_companies.extraction_method),
+  ats_platform      = COALESCE(EXCLUDED.ats_platform, job_companies.ats_platform),
+  scraped_at        = GREATEST(job_companies.scraped_at, EXCLUDED.scraped_at),
+  next_refresh_at   = CASE WHEN EXCLUDED.scrape_status <> 'pending'
+                           THEN EXCLUDED.next_refresh_at ELSE job_companies.next_refresh_at END;
 
 INSERT INTO job_listings (
   company_id, source_hash, title, apply_url, location, description, job_family, seniority,

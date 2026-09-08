@@ -3,6 +3,7 @@ import path from "node:path";
 import { pseoSql } from "../../lib/pseo/db";
 import { normalizeDomain, type GoldenTier } from "../../lib/jobs/golden";
 import { CITIES } from "../../lib/pseo/locations";
+import { faviconFor } from "../../lib/jobs/store";
 
 /**
  * Loads the curated golden-tier research set into job_companies.
@@ -123,13 +124,14 @@ async function main() {
   for (const r of rows) {
     const c = centroidFor(r);
     const result = await sql`
-      INSERT INTO job_companies (domain, company_name, lat, lng, country_code, golden_tier, scrape_status)
-      VALUES (${r.domain}, ${r.name}, ${c?.lat ?? null}, ${c?.lng ?? null}, ${r.country_code}, ${r.tier as GoldenTier}, 'pending')
+      INSERT INTO job_companies (domain, company_name, lat, lng, country_code, favicon_url, golden_tier, scrape_status)
+      VALUES (${r.domain}, ${r.name}, ${c?.lat ?? null}, ${c?.lng ?? null}, ${r.country_code}, ${faviconFor(r.domain)}, ${r.tier as GoldenTier}, 'pending')
       ON CONFLICT (domain) DO UPDATE SET
         company_name = COALESCE(job_companies.company_name, EXCLUDED.company_name),
         lat          = COALESCE(job_companies.lat, EXCLUDED.lat),
         lng          = COALESCE(job_companies.lng, EXCLUDED.lng),
         country_code = COALESCE(job_companies.country_code, EXCLUDED.country_code),
+        favicon_url  = COALESCE(job_companies.favicon_url, EXCLUDED.favicon_url),
         -- The one field this path exists to correct, so it overwrites rather than gap-fills.
         golden_tier  = EXCLUDED.golden_tier
       RETURNING (xmax = 0) AS is_new

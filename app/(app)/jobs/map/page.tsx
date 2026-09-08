@@ -64,6 +64,11 @@ type CompanyPin = {
 // which read closer to a floating chip than the reference's own thin-card-with-real-edge look.
 const CARD_RADIUS_RATIO = 12 / 48;
 
+/** Ring colours that earn a coloured halo: gold, and the green that means "has open roles". The
+ * grey no-roles ring deliberately gets none -- the glow is the signal that there is something here
+ * worth clicking, so putting it on every card would say nothing. */
+const GLOW_RINGS = new Set(["#d4a72c", "#1f8a54"]);
+
 function backgroundCardIcon(size: number, ringColor: string, elevated = false): google.maps.Icon {
   const pad = 9;
   const canvas = size + pad * 2;
@@ -71,10 +76,17 @@ function backgroundCardIcon(size: number, ringColor: string, elevated = false): 
   const dy = elevated ? 4 : 2;
   const blur = elevated ? 6 : 4;
   const opacity = elevated ? 0.36 : 0.3;
+  // A second, coloured shadow with no offset reads as a halo around the stroke rather than a
+  // drop shadow. Kept low-opacity and tight: at map density anything stronger turns into a smear
+  // where cards sit close together.
+  const glow = GLOW_RINGS.has(ringColor)
+    ? `<feDropShadow dx="0" dy="0" stdDeviation="${elevated ? 3 : 2}" flood-color="${ringColor}" flood-opacity="${elevated ? 0.75 : 0.55}"/>`
+    : "";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas}" height="${canvas}">
     <defs>
       <filter id="s" x="-60%" y="-60%" width="220%" height="220%">
         <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#000000" flood-opacity="${opacity}"/>
+        ${glow}
       </filter>
     </defs>
     <rect x="${pad}" y="${pad}" width="${size}" height="${size}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2" filter="url(#s)"/>
