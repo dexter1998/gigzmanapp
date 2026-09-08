@@ -301,8 +301,12 @@ export default function JobsPage() {
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   // Company id + position, not a frozen jobs snapshot -- so clicking "Add" inside the card updates
   // its own label immediately (derived live from `jobs` below) instead of only after a re-hover.
-  const [hovered, setHovered] = useState<{ companyId: string; x: number; y: number } | null>(null);
-  const hoveredJobs = hovered ? jobs.filter((j) => j.company.id === hovered.companyId) : [];
+  // A list, not one id: a fanned stack is several companies under one marker, and it had no hover
+  // behaviour at all because this could only ever describe a single company.
+  const [hovered, setHovered] = useState<{ companyIds: string[]; x: number; y: number } | null>(null);
+  const hoveredJobs = hovered?.companyIds.length === 1
+    ? jobs.filter((j) => j.company.id === hovered.companyIds[0])
+    : [];
   /**
    * Name/tier for any pin on the map, whether or not it currently has roles in `jobs`.
    *
@@ -317,7 +321,14 @@ export default function JobsPage() {
     for (const j of jobs) m.set(j.company.id, { name: j.company.name, goldenTier: j.company.goldenTier ?? null });
     return m;
   }, [companyPins, jobs]);
-  const hoveredCompany = hovered ? companyById.get(hovered.companyId) ?? null : null;
+  const hoveredCompany =
+    hovered?.companyIds.length === 1 ? companyById.get(hovered.companyIds[0]) ?? null : null;
+  /** Every company under a fanned stack, so the hover card can list them and let one be picked. */
+  const hoveredStack = hovered && hovered.companyIds.length > 1
+    ? hovered.companyIds
+        .map((id) => ({ id, ...(companyById.get(id) ?? { name: id, goldenTier: null }) }))
+        .map((c) => ({ ...c, roles: jobs.filter((j) => j.company.id === c.id).length }))
+    : [];
 
   useEffect(() => {
     if (!selectedCompanyId) {
@@ -502,7 +513,7 @@ export default function JobsPage() {
       const box = mapDivRef.current?.getBoundingClientRect();
       const dom = e.domEvent as MouseEvent | undefined;
       if (!box || !dom) return;
-      setHovered({ companyId, x: dom.clientX - box.left, y: dom.clientY - box.top });
+      setHovered({ companyIds: [companyId], x: dom.clientX - box.left, y: dom.clientY - box.top });
     });
     topMarker.addListener("mouseout", () => {
       card.setIcon(backgroundCardIcon(size, ringColor, false));
@@ -523,6 +534,7 @@ export default function JobsPage() {
     count: number,
     title: string,
     map: google.maps.Map,
+    memberIds: string[],
   ) {
     const size = ORDINARY_CARD_SIZE;
     const slivers = Math.min(count, 3);
@@ -541,6 +553,28 @@ export default function JobsPage() {
     topMarker.addListener("click", () => {
       map.panTo(frontOffset);
       map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
+    });
+    // A stack had no hover behaviour at all, so everything below individual-card zoom felt dead.
+    // It lists its companies instead of one company's roles -- there is no single company to show
+    // yet, and picking one from the list is the step that opens a panel.
+    topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
+      const grown = Math.round(size * HOVER_SCALE);
+      card.setIcon(backgroundCardIcon(grown, "#1f8a54", true));
+      if (topMarker !== card && front.faviconUrl) topMarker.setIcon(faviconOverlayIcon(front.faviconUrl, grown));
+      card.setZIndex(6);
+      topMarker.setZIndex(7);
+      clearHoverHide();
+      const box = mapDivRef.current?.getBoundingClientRect();
+      const dom = e.domEvent as MouseEvent | undefined;
+      if (!box || !dom) return;
+      setHovered({ companyIds: memberIds, x: dom.clientX - box.left, y: dom.clientY - box.top });
+    });
+    topMarker.addListener("mouseout", () => {
+      card.setIcon(backgroundCardIcon(size, "#1f8a54", false));
+      if (topMarker !== card && front.faviconUrl) topMarker.setIcon(faviconOverlayIcon(front.faviconUrl, size));
+      card.setZIndex(2);
+      topMarker.setZIndex(3);
+      scheduleHoverHide();
     });
     // Reference pins its badge at top:-8px right:-8px on a 48px card -- i.e. 20px out from centre.
     const badgeOffset = offsetLatLng(frontOffset.lat, frontOffset.lng, size * (20 / 48), -size * (20 / 48), mapZoom);
@@ -591,6 +625,7 @@ export default function JobsPage() {
         renderClusterFan(
           markersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: first.company.faviconUrl }, cluster.length,
           `${cluster.length} companies here — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
+          cluster.map((c) => c.companyJobs[0].company.id),
         );
       } else {
         renderIndividualCard(
@@ -632,6 +667,7 @@ export default function JobsPage() {
         renderClusterFan(
           companyMarkersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: front.faviconUrl }, cluster.length,
           `${cluster.length} companies here — no open roles right now`, map,
+          cluster.map((c) => c.id),
         );
       } else {
         renderIndividualCard(
@@ -860,6 +896,45 @@ export default function JobsPage() {
             </>
           )}
         </div>
+
+        {hovered && hoveredStack.length > 0 && (
+          <div
+            onMouseEnter={clearHoverHide}
+            onMouseLeave={scheduleHoverHide}
+            style={{
+              position: "absolute", left: hovered.x + 14, top: hovered.y - 10,
+              width: 250, maxHeight: 300, overflowY: "auto",
+              background: "var(--g-white)", border: "1px solid var(--g-border)",
+              borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)", zIndex: 10, padding: 10,
+            }}
+          >
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
+              {hoveredStack.length} companies here
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {hoveredStack.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCompanyId(c.id)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                    padding: "7px 9px", borderRadius: "var(--radius-sm)", cursor: "pointer",
+                    border: `1px solid ${c.goldenTier ? "#d4a72c" : "var(--g-border)"}`,
+                    background: "var(--g-white)", textAlign: "left", width: "100%",
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {c.name}
+                  </span>
+                  <span style={{ flexShrink: 0, fontSize: 10.5, color: "var(--g-gray-500)" }}>
+                    {c.roles > 0 ? `${c.roles} role${c.roles > 1 ? "s" : ""}` : "—"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {hovered && hoveredCompany && (
           <div
