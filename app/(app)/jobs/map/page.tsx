@@ -58,12 +58,11 @@ type CompanyPin = {
  * Rounded-square card, not a circle -- matches the reference (nextdoor.company/discover) style of
  * showing a company favicon in a small white card rather than a bare dot.
  */
-// Measured directly off nextdoor.company/discover's own DOM (computed styles on its
-// `.company-marker` node, logged in via Playwright): a 60px card is a 12px border-radius --
-// 0.2 of the card's own size, not the rounder 0.24 first guessed. Its box-shadow is a single
-// `0 2px 4px rgba(0,0,0,0.3)` -- flatter than the gradient+deep-shadow tried here initially,
+// Measured directly off nextdoor.company/discover's own `.company-marker` computed styles, logged
+// in via Playwright: a 48px card carries a 12px border-radius, 6px padding, and a single
+// `0 2px 4px rgba(0,0,0,0.3)` shadow -- flatter than the gradient+deep-shadow tried here initially,
 // which read closer to a floating chip than the reference's own thin-card-with-real-edge look.
-const CARD_RADIUS_RATIO = 0.2;
+const CARD_RADIUS_RATIO = 12 / 48;
 
 function backgroundCardIcon(size: number, ringColor: string, elevated = false): google.maps.Icon {
   const pad = 9;
@@ -100,22 +99,24 @@ function fanSliverIcon(size: number): google.maps.Icon {
     anchor: new google.maps.Point(size / 2, size / 2),
   };
 }
-// 1.75x the original 60/68px cards -- rounded to clean numbers.
-const ORDINARY_CARD_SIZE = 105;
-const GOLDEN_CARD_SIZE = 120;
+// The reference's own card is 48px (44px for one inside a stack). The 105/120px tried before was
+// far too heavy on a real viewport -- a handful of companies swallowed the map.
+const ORDINARY_CARD_SIZE = 48;
+const GOLDEN_CARD_SIZE = 56;
 
 /** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards. The reference's own stack
  * (watched directly at nextdoor.company/discover, fully zoomed out) is a same-direction diagonal
  * staircase -- each sliver behind the last one step further up-and-right -- not a symmetric V. */
 const FAN_OFFSETS = [
   { dx: 0, dy: 0 }, // front -- gets the favicon
-  { dx: 14, dy: -12 }, // 2nd sliver, up-right
-  { dx: 28, dy: -24 }, // 3rd sliver, further up-right
+  { dx: 6, dy: -5 }, // 2nd sliver, up-right
+  { dx: 12, dy: -10 }, // 3rd sliver, further up-right
 ];
-// 44/60 measured off the reference's own favicon <img> vs. its containing 60px card -- a fuller
-// fill than the 0.68 first guessed, which left the card reading mostly-empty around a small logo.
+// The reference's 48px card is border-box with a 2px border and 6px padding, leaving a 32px logo --
+// so the favicon fills 2/3 of the card, not the 44/60 measured earlier off the detail panel's own
+// (much larger) logo rather than the marker's.
 function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.Icon {
-  const inner = cardSize * (44 / 60);
+  const inner = cardSize * (32 / 48);
   return {
     url: faviconUrl,
     scaledSize: new google.maps.Size(inner, inner),
@@ -128,25 +129,37 @@ function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.I
  * SVG icon, not real DOM text that can measure itself. */
 function nameLabelIcon(name: string): google.maps.Icon {
   const label = name.length > 22 ? `${name.slice(0, 21)}…` : name;
-  const charWidth = 6.5;
-  const padX = 10;
+  // Reference values: 13px/500 on a 90%-white chip, 4px radius, 2px 6px padding, soft drop shadow
+  // (no border). A shadow rather than a stroke keeps the chip legible over both light and dark map
+  // tiles, which a 1px light-grey border does not.
+  const fontSize = 12;
+  const charWidth = fontSize * 0.55;
+  const padX = 6;
+  const pad = 4; // canvas breathing room so the shadow is not clipped
   const width = Math.round(label.length * charWidth + padX * 2);
-  const height = 20;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-    <rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="${height / 2}" fill="#ffffff" stroke="#dde0d4" stroke-width="1" />
-    <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1c2b40">${label}</text>
+  const height = 19;
+  const canvasW = width + pad * 2;
+  const canvasH = height + pad * 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}">
+    <defs>
+      <filter id="l" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.2"/>
+      </filter>
+    </defs>
+    <rect x="${pad}" y="${pad}" width="${width}" height="${height}" rx="4" fill="rgba(255,255,255,0.92)" filter="url(#l)" />
+    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="500" fill="#101214">${label}</text>
   </svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(width, height),
-    anchor: new google.maps.Point(width / 2, height / 2),
+    scaledSize: new google.maps.Size(canvasW, canvasH),
+    anchor: new google.maps.Point(canvasW / 2, canvasH / 2),
   };
 }
 /** Small red count badge for a cluster of 2+ companies at (near enough) the same spot -- offset to
  * the card's top-right corner. Also a plain SVG with no external image, for the same canvas-taint
  * reason as the card above. */
 function clusterBadgeIcon(count: number): google.maps.Icon {
-  const size = 22;
+  const size = 24; // reference's own badge diameter
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
     <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#e0483e" stroke="#ffffff" stroke-width="2"/>
     <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">${count > 99 ? "99+" : count}</text>
@@ -406,7 +419,8 @@ export default function JobsPage() {
     if (topMarker !== card) refArr.push(topMarker);
     topMarker.setTitle(title);
     topMarker.addListener("click", () => setSelectedCompanyId(companyId));
-    const labelPosition = offsetLatLng(position.lat, position.lng, 0, size / 2 + 14, mapZoom);
+    // Card edge, then the reference's 4px gap, then half the label chip's own height.
+    const labelPosition = offsetLatLng(position.lat, position.lng, 0, size / 2 + 4 + 13, mapZoom);
     refArr.push(
       new google.maps.Marker({ position: labelPosition, map, zIndex: 3, clickable: false, icon: nameLabelIcon(name) }),
     );
@@ -453,7 +467,8 @@ export default function JobsPage() {
       map.panTo(frontOffset);
       map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
     });
-    const badgeOffset = offsetLatLng(frontOffset.lat, frontOffset.lng, size * 0.36, -size * 0.36, mapZoom);
+    // Reference pins its badge at top:-8px right:-8px on a 48px card -- i.e. 20px out from centre.
+    const badgeOffset = offsetLatLng(frontOffset.lat, frontOffset.lng, size * (20 / 48), -size * (20 / 48), mapZoom);
     refArr.push(new google.maps.Marker({ position: badgeOffset, map, zIndex: 4, icon: clusterBadgeIcon(count), clickable: false }));
   }
 
