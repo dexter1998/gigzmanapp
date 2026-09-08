@@ -47,12 +47,6 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
   const isJobsMode = mode === "jobs";
   const NAV_ITEMS = isJobsMode ? JOBS_NAV : LEADS_NAV;
 
-  // The jobs map is a full-bleed map+list surface (matching the nextdoor.company reference this
-  // was redesigned against) -- a 240px persistent nav eats into exactly the screen space a map
-  // needs most. The map page's own slim rail (see app/(app)/jobs/map/page.tsx) replaces navigation
-  // here instead.
-  if (pathname === "/jobs/map") return <PartnerApplicationModal open={partnerOpen} onClose={() => setPartnerOpen(false)} />;
-
   return (
     <>
       <aside

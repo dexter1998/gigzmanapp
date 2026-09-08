@@ -71,9 +71,11 @@ export async function upsertJobCompany(input: UpsertCompanyInput): Promise<strin
   return row?.id ?? null;
 }
 
-/** Google's favicon service — avoids a per-company fetch just to draw a 16px icon. */
+/** Google's favicon service — avoids a per-company fetch just to draw the icon. 128px because the
+ * jobs map draws it at ~77px (and ~88px on a golden card); a 64px source upscales to a visibly
+ * blurry logo there. */
 function faviconFor(domain: string): string {
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
 
 export type ReconcileStats = { inserted: number; updated: number; closed: number };

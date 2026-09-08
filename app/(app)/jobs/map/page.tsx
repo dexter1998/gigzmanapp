@@ -2,15 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { loadGoogleMaps } from "@/lib/google-maps";
-import { LIGHT_MAP_STYLES } from "@/lib/pin-overlay";
+import { MAP_STYLES } from "@/lib/pin-overlay";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { JobCard, type JobCardData } from "@/components/jobs/JobCard";
 import { JobDetailPanel } from "@/components/jobs/JobDetailPanel";
 import { JOB_FAMILY_LABEL } from "@/lib/jobs/normalize";
-import { PinIcon, TableIcon, UserIcon, MapsPinIcon, SettingsIcon, XIcon } from "@/components/icons";
+import { TableIcon, MapsPinIcon, XIcon } from "@/components/icons";
 
 /**
  * Jobs dashboard — the map half of jobs mode.
@@ -170,7 +169,11 @@ function metersPerPixel(lat: number, zoom: number): number {
 // was sized for the old 60px card and became the actual cause of the favicon-bleeding-onto-the-
 // next-card bug once cards grew to ORDINARY_CARD_SIZE: pairs between 26px and ~105px apart stayed
 // un-clustered (two separate full-size markers) while still being close enough on screen to overlap.
-const CLUSTER_PIXEL_RADIUS = ORDINARY_CARD_SIZE + 8;
+// A fanned stack also spreads FAN_OFFSETS' full diagonal beyond its front card, and a golden card
+// is wider than an ordinary one -- so the separation has to clear the largest card plus that spread,
+// not just one ordinary card's width, or a neighbor still lands inside the stack's visual footprint.
+const FAN_SPREAD = Math.max(...FAN_OFFSETS.map((o) => Math.hypot(o.dx, o.dy)));
+const CLUSTER_PIXEL_RADIUS = GOLDEN_CARD_SIZE + FAN_SPREAD + 8;
 
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000;
@@ -333,7 +336,7 @@ export default function JobsPage() {
       const map = new google.maps.Map(mapDivRef.current, {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
-        styles: LIGHT_MAP_STYLES,
+        styles: MAP_STYLES,
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: "greedy",
@@ -683,7 +686,6 @@ export default function JobsPage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--g-cream)" }}>
-      <IconRail />
 
       <div style={{ position: "relative", flex: 1, minWidth: 0, height: "100%" }}>
         <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
@@ -974,49 +976,6 @@ function ChipTag({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Slim icon rail replacing the app-wide sidebar on this page (see components/AppSidebar.tsx,
- * which returns null for /jobs/map) -- a full 240px nav column eats into the map real estate a
- * full-bleed map view needs most, matching the nextdoor.company reference this page was redesigned
- * against. */
-function IconRail() {
-  const items = [
-    { href: "/jobs/map", label: "Jobs", icon: PinIcon },
-    { href: "/jobs/applications", label: "Applications", icon: TableIcon },
-    { href: "/jobs/profile", label: "Job profile", icon: UserIcon },
-  ];
-  return (
-    <aside
-      style={{
-        width: 64, flexShrink: 0, height: "100vh", display: "flex", flexDirection: "column",
-        alignItems: "center", gap: 6, padding: "16px 0", background: "var(--g-white)",
-        borderRight: "1px solid var(--g-border)",
-      }}
-    >
-      <Image src="/landing/jobs/mantis-compact-mascot.png" alt="Mantis" width={28} height={28} style={{ objectFit: "contain", marginBottom: 12 }} />
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          title={item.label}
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-            width: 52, padding: "8px 0", borderRadius: "var(--radius-sm)", textDecoration: "none",
-            background: item.href === "/jobs/map" ? "var(--g-green-mint)" : "transparent",
-          }}
-        >
-          <item.icon size={17} color={item.href === "/jobs/map" ? "var(--g-green-text)" : "var(--g-ink-soft)"} />
-          <span style={{ fontSize: 9, fontWeight: 700, color: item.href === "/jobs/map" ? "var(--g-green-text)" : "var(--g-gray-500)", textAlign: "center" }}>
-            {item.label}
-          </span>
-        </Link>
-      ))}
-      <div style={{ flex: 1 }} />
-      <Link href="/profile" title="Settings" style={{ padding: 10, borderRadius: "var(--radius-sm)" }}>
-        <SettingsIcon size={17} color="var(--g-ink-soft)" />
-      </Link>
-    </aside>
-  );
-}
 
 function ViewToggleButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
