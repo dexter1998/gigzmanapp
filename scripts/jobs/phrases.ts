@@ -57,8 +57,10 @@ export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
   { phrase: "information technology company", tier: "A" },
   { phrase: "software development company", tier: "A" },
   { phrase: "it services", tier: "A" },
-  { phrase: "web design company", tier: "C" },
+  { phrase: "web design company", tier: "A" },
   { phrase: "digital marketing agency", tier: "A" },
+  { phrase: "tech agency", tier: "A" },
+  { phrase: "website designer", tier: "A" },
   { phrase: "advertising agency", tier: "C" }, // 11% in round 1
   { phrase: "management consultant", tier: "A" },
   { phrase: "engineering consultant", tier: "A" },

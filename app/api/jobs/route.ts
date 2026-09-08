@@ -82,6 +82,16 @@ export async function GET(req: NextRequest) {
          WHERE c.lat IS NOT NULL AND c.lng IS NOT NULL
            AND c.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
            AND c.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}
+           -- These pins carried no filtering at all, so "Golden only" narrowed the job list while
+           -- every ordinary company kept its pin, and the filter read as broken on the map.
+           ${goldenOnly ? sql`AND c.golden_tier IS NOT NULL` : sql``}
+           -- A company with no open roles cannot satisfy a role filter either, so once the user is
+           -- filtering for specific roles these "found, not hiring" pins are noise, not coverage.
+           ${
+             family || workMode || industry
+               ? sql`AND EXISTS (SELECT 1 FROM job_listings j WHERE j.company_id = c.id AND j.is_open = true)`
+               : sql``
+           }
          LIMIT ${MAX_LIMIT}
       `
     : [];

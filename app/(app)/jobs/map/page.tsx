@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { MAP_STYLES } from "@/lib/pin-overlay";
@@ -103,6 +103,9 @@ function fanSliverIcon(size: number): google.maps.Icon {
 // far too heavy on a real viewport -- a handful of companies swallowed the map.
 const ORDINARY_CARD_SIZE = 48;
 const GOLDEN_CARD_SIZE = 56;
+// How much a card grows under the cursor. Small on purpose: enough to read as a lift, not enough to
+// shove neighbouring cards around at the zoom levels where they already nearly touch.
+const HOVER_SCALE = 1.18;
 
 /** Pixel offsets (front-to-back) for a fanned stack of up to 3 cards. The reference's own stack
  * (watched directly at nextdoor.company/discover, fully zoomed out) is a same-direction diagonal
@@ -267,7 +270,17 @@ export default function JobsPage() {
   // one job's full-screen modal. `selected`/JobDetailPanel stays as the deeper "view this specific
   // role" step, reached from a row inside this panel.
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  const selectedCompanyJobs = selectedCompanyId ? jobs.filter((j) => j.company.id === selectedCompanyId) : [];
+  /**
+   * The panel's roles come from the company endpoint, not from the viewport list.
+   *
+   * Filtering by `jobs` meant the panel could only ever show roles that survived the active
+   * family/work-mode filters and the list's own LIMIT -- never the "all of a company's open roles"
+   * it claims -- and companies absent from that array could not open at all.
+   */
+  const [companyDetail, setCompanyDetail] = useState<
+    { company: { id: string; name: string; faviconUrl: string | null; goldenTier: string | null; careersUrl: string | null }; jobs: JobCardData[] } | null
+  >(null);
+  const [companyLoading, setCompanyLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>({ family: "", industry: "", workMode: "", goldenOnly: false });
   // What the dropdowns actually offer -- built from real open listings on screen (see
   // /api/jobs's facet query), not the full static taxonomy. Accumulated across loads rather than
@@ -290,6 +303,58 @@ export default function JobsPage() {
   // its own label immediately (derived live from `jobs` below) instead of only after a re-hover.
   const [hovered, setHovered] = useState<{ companyId: string; x: number; y: number } | null>(null);
   const hoveredJobs = hovered ? jobs.filter((j) => j.company.id === hovered.companyId) : [];
+  /**
+   * Name/tier for any pin on the map, whether or not it currently has roles in `jobs`.
+   *
+   * The hover card and the detail panel both used to key off `jobs` alone, so the majority of pins
+   * -- the "found, not hiring right now" companies, which never appear in that array -- silently
+   * did nothing on hover or click. companyPins is the set that is actually rendered, so it is the
+   * right source for "what is this pin".
+   */
+  const companyById = useMemo(() => {
+    const m = new Map<string, { name: string; goldenTier: string | null }>();
+    for (const p of companyPins) m.set(p.id, { name: p.name, goldenTier: p.goldenTier });
+    for (const j of jobs) m.set(j.company.id, { name: j.company.name, goldenTier: j.company.goldenTier ?? null });
+    return m;
+  }, [companyPins, jobs]);
+  const hoveredCompany = hovered ? companyById.get(hovered.companyId) ?? null : null;
+
+  useEffect(() => {
+    if (!selectedCompanyId) {
+      setCompanyDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setCompanyLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/jobs/company?id=${encodeURIComponent(selectedCompanyId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const company = data.company;
+        // applicationStatus only exists on the viewport list (it is per-user state the company
+        // endpoint does not carry), so it is merged back in rather than lost on open.
+        const statusById = new Map(jobs.map((j) => [j.id, j.applicationStatus]));
+        setCompanyDetail({
+          company,
+          jobs: (data.jobs ?? []).map((j: Record<string, unknown>) => ({
+            ...j,
+            company,
+            applicationStatus: statusById.get(j.id as string) ?? null,
+          })) as JobCardData[],
+        });
+      } finally {
+        if (!cancelled) setCompanyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // `jobs` is intentionally not a dep: it changes on every pan, and re-fetching the open panel
+    // each time would fight the user's scroll position for no new information.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCompanyId]);
   const hoverHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clearHoverHide() {
@@ -425,7 +490,14 @@ export default function JobsPage() {
       new google.maps.Marker({ position: labelPosition, map, zIndex: 3, clickable: false, icon: nameLabelIcon(name) }),
     );
     topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
-      card.setIcon(backgroundCardIcon(size, ringColor, true));
+      // Grow the card and its logo slightly as well as deepening the shadow -- a shadow change
+      // alone is easy to miss on a busy map, and the lift should read as "this one is under the
+      // cursor" at a glance.
+      const grown = Math.round(size * HOVER_SCALE);
+      card.setIcon(backgroundCardIcon(grown, ringColor, true));
+      if (topMarker !== card && faviconUrl) topMarker.setIcon(faviconOverlayIcon(faviconUrl, grown));
+      card.setZIndex(6);
+      topMarker.setZIndex(7);
       clearHoverHide();
       const box = mapDivRef.current?.getBoundingClientRect();
       const dom = e.domEvent as MouseEvent | undefined;
@@ -434,6 +506,9 @@ export default function JobsPage() {
     });
     topMarker.addListener("mouseout", () => {
       card.setIcon(backgroundCardIcon(size, ringColor, false));
+      if (topMarker !== card && faviconUrl) topMarker.setIcon(faviconOverlayIcon(faviconUrl, size));
+      card.setZIndex(2);
+      topMarker.setZIndex(3);
       scheduleHoverHide();
     });
   }
@@ -786,7 +861,7 @@ export default function JobsPage() {
           )}
         </div>
 
-        {hovered && hoveredJobs.length > 0 && (
+        {hovered && hoveredCompany && (
           <div
             onMouseEnter={clearHoverHide}
             onMouseLeave={scheduleHoverHide}
@@ -806,8 +881,16 @@ export default function JobsPage() {
             }}
           >
             <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
-              {hoveredJobs[0].company.name} · {hoveredJobs.length} open role{hoveredJobs.length > 1 ? "s" : ""}
+              {hoveredCompany.name}
+              {hoveredJobs.length > 0
+                ? ` · ${hoveredJobs.length} open role${hoveredJobs.length > 1 ? "s" : ""}`
+                : ""}
             </div>
+            {hoveredJobs.length === 0 && (
+              <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", paddingLeft: 2, paddingBottom: 2 }}>
+                No open roles right now — click to see the company.
+              </div>
+            )}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {hoveredJobs.map((job) => (
                 <div
@@ -895,9 +978,11 @@ export default function JobsPage() {
         </aside>
       )}
 
-      {selectedCompanyId && selectedCompanyJobs.length > 0 && (
+      {selectedCompanyId && companyDetail && (
         <CompanyJobsPanel
-          jobs={selectedCompanyJobs}
+          company={companyDetail.company}
+          jobs={companyDetail.jobs}
+          loading={companyLoading}
           onClose={() => setSelectedCompanyId(null)}
           onOpenJob={setSelected}
           onSave={toggleSave}
@@ -915,11 +1000,15 @@ export default function JobsPage() {
  * modal. A row's own "View details" step is what opens JobDetailPanel for a deeper look + apply.
  */
 function CompanyJobsPanel({
-  jobs, onClose, onOpenJob, onSave,
+  company, jobs, loading, onClose, onOpenJob, onSave,
 }: {
-  jobs: JobCardData[]; onClose: () => void; onOpenJob: (job: JobCardData) => void; onSave: (job: JobCardData) => void;
+  company: { id: string; name: string; faviconUrl: string | null; goldenTier: string | null; careersUrl: string | null };
+  jobs: JobCardData[];
+  loading: boolean;
+  onClose: () => void; onOpenJob: (job: JobCardData) => void; onSave: (job: JobCardData) => void;
 }) {
-  const company = jobs[0].company;
+  // The company is passed in rather than read off jobs[0]: a pin with no open roles has no jobs to
+  // read it from, and those are the majority of pins on the map.
   const golden = !!company.goldenTier;
   return (
     <aside
@@ -929,8 +1018,8 @@ function CompanyJobsPanel({
         display: "flex", flexDirection: "column",
       }}
     >
-      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : "var(--g-green-darker)" }}>
-        {golden ? "Golden opportunity" : "Hiring"}
+      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : jobs.length ? "var(--g-green-darker)" : "var(--g-gray-500)" }}>
+        {golden ? "Golden opportunity" : jobs.length ? "Hiring" : "No open roles"}
       </div>
       <div style={{ padding: 16, borderBottom: "1px solid var(--g-border)", display: "flex", alignItems: "flex-start", gap: 12 }}>
         {company.faviconUrl && (
@@ -940,7 +1029,7 @@ function CompanyJobsPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--g-ink)" }}>{company.name}</div>
           <div style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
-            {jobs.length} open role{jobs.length > 1 ? "s" : ""}
+            {loading ? "Loading roles…" : `${jobs.length} open role${jobs.length === 1 ? "" : "s"}`}
           </div>
         </div>
         <button type="button" onClick={onClose} aria-label="Close" style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}>
@@ -948,6 +1037,20 @@ function CompanyJobsPanel({
         </button>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        {!loading && jobs.length === 0 && (
+          <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.6 }}>
+            Nothing open at {company.name} right now. Mantis re-checks this company on a schedule, so
+            it will appear here when it starts hiring.
+            {company.careersUrl && (
+              <>
+                {" "}
+                <a href={company.careersUrl} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)" }}>
+                  Careers page
+                </a>
+              </>
+            )}
+          </div>
+        )}
         {jobs.map((job) => (
           <div key={job.id} style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 12 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
