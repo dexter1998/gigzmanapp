@@ -23,6 +23,34 @@ import { phrasesForTiers, type PhraseTier } from "./phrases";
 
 const DATA_ROOT = process.env.GOSOM_DATA_DIR ?? path.join(process.env.HOME ?? "", "Desktop", "mantis-gosom-data");
 const LEDGER = path.join(DATA_ROOT, "jobs-ledger.ndjson");
+const GEONAMES = path.join(DATA_ROOT, "sweep-cities.json");
+
+type SweepCity = { slug: string; name: string; countryCode: string; centroid: { lat: number; lng: number } };
+
+/**
+ * Cities to sweep. lib/pseo/locations.ts holds only 108 -- it is the list of cities the public lead
+ * pages are published for, which is a much narrower question than where companies worth crawling
+ * are. Where a GeoNames city matches one of those by name and country it keeps the existing slug,
+ * so ledger entries written before this widening still count as done.
+ */
+function sweepCities(): SweepCity[] {
+  const pseoBySlug = new Map(CITIES.map((c) => [`${c.name.toLowerCase()}|${c.countryCode}`, c.slug]));
+  if (!fs.existsSync(GEONAMES)) {
+    return CITIES.map((c) => ({ slug: c.slug, name: c.name, countryCode: c.countryCode, centroid: c.centroid }));
+  }
+  const raw = JSON.parse(fs.readFileSync(GEONAMES, "utf8")) as Array<{ name: string; lat: number; lng: number; cc: string }>;
+  const seen = new Set<string>();
+  const out: SweepCity[] = [];
+  for (const r of raw) {
+    const key = `${r.name.toLowerCase()}|${r.cc}`;
+    // Birmingham exists in both gb and us, so the fallback slug carries the country.
+    const slug = pseoBySlug.get(key) ?? `${r.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${r.cc}`;
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    out.push({ slug, name: r.name, countryCode: r.cc, centroid: { lat: r.lat, lng: r.lng } });
+  }
+  return out;
+}
 
 type LedgerRow = { city: string; phrase: string; at: string; records: number };
 
@@ -65,10 +93,11 @@ function main() {
   const done = loadLedger();
 
   // Breadth-first: all countries' first city, then all countries' second city, and so on.
-  const byCountry = new Map<string, typeof CITIES>();
-  for (const c of countries) byCountry.set(c, CITIES.filter((city) => city.countryCode === c));
+  const allCities = sweepCities();
+  const byCountry = new Map<string, SweepCity[]>();
+  for (const c of countries) byCountry.set(c, allCities.filter((city) => city.countryCode === c));
   const maxCities = Math.max(...[...byCountry.values()].map((v) => v.length), 0);
-  const cityOrder: typeof CITIES = [];
+  const cityOrder: SweepCity[] = [];
   for (let i = 0; i < maxCities; i++) {
     for (const c of countries) {
       const city = byCountry.get(c)?.[i];
@@ -76,7 +105,7 @@ function main() {
     }
   }
 
-  const pairs: Array<{ city: (typeof CITIES)[number]; phrase: string }> = [];
+  const pairs: Array<{ city: SweepCity; phrase: string }> = [];
   for (const city of cityOrder) {
     for (const phrase of phrases) {
       if (done.has(`${city.slug}|${phrase}`)) continue;
@@ -91,8 +120,11 @@ function main() {
   for (const { city, phrase } of pairs) {
     if (ran >= limit) break;
     const country = city.countryCode.toUpperCase();
-    const queryFile = path.join(DATA_ROOT, "current-queries.txt");
-    const outFile = path.join(DATA_ROOT, "current-results.json");
+    // Per-process names: two sweeps sharing one "current-results.json" would overwrite each
+    // other's results between the gosom run and the ingest, silently loading one pair's output
+    // under another pair's city.
+    const queryFile = path.join(DATA_ROOT, `queries-${process.pid}.txt`);
+    const outFile = path.join(DATA_ROOT, `results-${process.pid}.json`);
     fs.writeFileSync(queryFile, `${phrase} in ${city.name}, ${country}\n`);
 
     process.stdout.write(`\n[${ran + 1}/${Math.min(pairs.length, limit)}] ${city.slug} :: ${phrase}\n`);
