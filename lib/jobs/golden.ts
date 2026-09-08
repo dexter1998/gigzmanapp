@@ -13,12 +13,16 @@
  * typed out here.
  */
 
-export type GoldenTier = "big_tech" | "unicorn" | "yc";
+// soonicorn and vc_backed only ever arrive from the curated multi-country research set that
+// scripts/golden/ingest-golden.ts loads; the two hardcoded lists below cannot produce them.
+export type GoldenTier = "big_tech" | "unicorn" | "soonicorn" | "yc" | "vc_backed";
 
 export const GOLDEN_TIER_LABEL: Record<GoldenTier, string> = {
   big_tech: "Big Tech",
   unicorn: "Unicorn",
+  soonicorn: "Soonicorn",
   yc: "Y Combinator",
+  vc_backed: "VC-backed",
 };
 
 /** Household-name global employers. */

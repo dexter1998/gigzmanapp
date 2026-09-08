@@ -1,0 +1,626 @@
+{"name":"Revolut","domain":"revolut.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Index Ventures,Balderton,DST Global","source":"European unicorn lists / company site"}
+{"name":"Monzo","domain":"monzo.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Accel,Passion Capital,General Catalyst","source":"European unicorn lists"}
+{"name":"Wise","domain":"wise.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Index Ventures,Balderton,Andreessen Horowitz","source":"Invest in Estonia unicorn list / LSE listing"}
+{"name":"Checkout.com","domain":"checkout.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Insight Partners,Tiger Global,Coatue","source":"European unicorn lists"}
+{"name":"Starling Bank","domain":"starlingbank.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Goldman Sachs,Qatar Investment Authority","source":"European unicorn lists"}
+{"name":"Deliveroo","domain":"deliveroo.co.uk","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Index Ventures,Accel,DST Global","source":"European unicorn lists"}
+{"name":"Darktrace","domain":"darktrace.com","country_code":"gb","hq_city":"Cambridge","tier":"big_tech","investors":"KKR,Thoma Bravo","source":"UK tech employers"}
+{"name":"Graphcore","domain":"graphcore.ai","country_code":"gb","hq_city":"Bristol","tier":"unicorn","investors":"Atomico,Sequoia,SoftBank","source":"Atomico portfolio"}
+{"name":"OakNorth","domain":"oaknorth.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"SoftBank Vision Fund,Clermont","source":"European unicorn lists"}
+{"name":"Zopa","domain":"zopa.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"SoftBank,Northzone","source":"UK fintech lists"}
+{"name":"GoCardless","domain":"gocardless.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Balderton,Accel,Index Ventures","source":"Balderton portfolio"}
+{"name":"Marshmallow","domain":"marshmallow.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Passion Capital,Portage","source":"UK unicorn lists"}
+{"name":"ClearBank","domain":"clear.bank","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Apax,CFFI","source":"UK fintech lists"}
+{"name":"Tide","domain":"tide.co","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Apax Digital,Augmentum","source":"UK fintech lists"}
+{"name":"Thought Machine","domain":"thoughtmachine.net","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Index Ventures,Lloyds,Nyca","source":"Index Ventures portfolio"}
+{"name":"10x Banking","domain":"10xbanking.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"BlackRock,JPMorgan","source":"UK fintech lists"}
+{"name":"Form3","domain":"form3.tech","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Goldman Sachs,Lloyds,Draper Esprit","source":"UK fintech lists"}
+{"name":"Yapily","domain":"yapily.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Sapphire Ventures,Lakestar","source":"Lakestar portfolio"}
+{"name":"TrueLayer","domain":"truelayer.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Northzone,Tiger Global,Tencent","source":"Northzone portfolio"}
+{"name":"PrimaryBid","domain":"primarybid.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"SoftBank,Fidelity","source":"UK fintech lists"}
+{"name":"Freetrade","domain":"freetrade.io","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Molten Ventures,L Catterton","source":"UK fintech lists"}
+{"name":"Moneybox","domain":"moneyboxapp.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Eight Roads,Fidelity","source":"UK fintech lists"}
+{"name":"Curve","domain":"curve.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"IDC Ventures,Fuel Ventures","source":"UK fintech lists"}
+{"name":"Zilch","domain":"zilch.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Gauss Ventures,Ventura Capital","source":"UK unicorn lists"}
+{"name":"Paddle","domain":"paddle.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"KKR,FTV Capital,Notion Capital","source":"UK unicorn lists"}
+{"name":"Payhawk","domain":"payhawk.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Lightspeed,Greenoaks,QED","source":"European unicorn lists"}
+{"name":"SumUp","domain":"sumup.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Bain Capital Tech,Goldman Sachs","source":"European unicorn lists"}
+{"name":"Rapyd","domain":"rapyd.net","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Target Global,General Catalyst,Tiger Global","source":"European unicorn lists"}
+{"name":"Ebury","domain":"ebury.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Santander,Vitruvian","source":"UK fintech lists"}
+{"name":"Onfido","domain":"onfido.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"TPG Growth,Salesforce Ventures","source":"UK tech lists"}
+{"name":"ComplyAdvantage","domain":"complyadvantage.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Index Ventures,Balderton,Goldman Sachs","source":"Index Ventures portfolio"}
+{"name":"Quantexa","domain":"quantexa.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Dawn Capital,Evolution Equity,GIC","source":"UK unicorn lists"}
+{"name":"Featurespace","domain":"featurespace.co.uk","country_code":"gb","hq_city":"Cambridge","tier":"vc_backed","investors":"Insight Partners,Highland Europe","source":"UK tech lists"}
+{"name":"Snyk","domain":"snyk.io","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Accel,Tiger Global,Boldstart","source":"Accel London portfolio"}
+{"name":"Tessian","domain":"tessian.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Sequoia,Accel,Balderton","source":"Accel London portfolio"}
+{"name":"Immersive Labs","domain":"immersivelabs.com","country_code":"gb","hq_city":"Bristol","tier":"vc_backed","investors":"Insight Partners,Goldman Sachs","source":"UK cyber lists"}
+{"name":"Tractable","domain":"tractable.ai","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Insight Partners,Georgian,Entrepreneur First","source":"Entrepreneur First alumni"}
+{"name":"Faculty","domain":"faculty.ai","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Apax Digital","source":"UK AI lists"}
+{"name":"Synthesia","domain":"synthesia.io","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Accel,Kleiner Perkins,GV,NVIDIA","source":"Accel London portfolio"}
+{"name":"ElevenLabs","domain":"elevenlabs.io","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Andreessen Horowitz,Sequoia,ICONIQ","source":"EU-Startups Poland/UK AI coverage"}
+{"name":"Stability AI","domain":"stability.ai","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Coatue,Lightspeed","source":"UK AI lists"}
+{"name":"PolyAI","domain":"poly.ai","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Khosla Ventures,NVentures","source":"UK AI lists"}
+{"name":"Wayve","domain":"wayve.ai","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"SoftBank,Microsoft,NVIDIA,Eclipse","source":"UK unicorn lists"}
+{"name":"Isomorphic Labs","domain":"isomorphiclabs.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"Alphabet,Thrive Capital","source":"UK AI lists"}
+{"name":"BenevolentAI","domain":"benevolent.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Temasek,Woodford","source":"UK AI lists"}
+{"name":"Cleo","domain":"meetcleo.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Balderton,EQT Ventures,Sofina","source":"Balderton portfolio"}
+{"name":"Bloom & Wild","domain":"bloomandwild.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"General Catalyst,Index Ventures","source":"UK ecommerce lists"}
+{"name":"Gousto","domain":"gousto.co.uk","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"SoftBank,Perwyn","source":"UK unicorn lists"}
+{"name":"Ocado Group","domain":"ocadogroup.com","country_code":"gb","hq_city":"Hatfield","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"ASOS","domain":"asos.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Farfetch","domain":"farfetch.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Coupang,Advent,Index Ventures","source":"Portugal.com unicorn coverage"}
+{"name":"Depop","domain":"depop.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Etsy,General Atlantic,Balderton","source":"UK marketplace lists"}
+{"name":"Trainline","domain":"thetrainline.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Skyscanner","domain":"skyscanner.net","country_code":"gb","hq_city":"Edinburgh","tier":"unicorn","investors":"Sequoia,Trip.com","source":"UK unicorn lists"}
+{"name":"Octopus Energy","domain":"octopus.energy","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Generation IM,Origin Energy,CPP Investments","source":"UK unicorn lists"}
+{"name":"Zoopla","domain":"zoopla.co.uk","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"Silver Lake","source":"Large UK tech employers"}
+{"name":"Rightmove","domain":"rightmove.co.uk","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Moonpig","domain":"moonpig.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Multiverse","domain":"multiverse.io","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"General Catalyst,D1 Capital,StepStone","source":"UK unicorn lists"}
+{"name":"Lendable","domain":"lendable.co.uk","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Ontario Teachers,Balderton","source":"UK unicorn lists"}
+{"name":"Zego","domain":"zego.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"DST Global,Balderton,Target Global","source":"Invest in Estonia unicorn list"}
+{"name":"Beauty Pie","domain":"beautypie.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Index Ventures,Insight Partners","source":"Index Ventures portfolio"}
+{"name":"Papier","domain":"papier.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Felix Capital,Index Ventures","source":"UK DTC lists"}
+{"name":"Peak","domain":"peak.ai","country_code":"gb","hq_city":"Manchester","tier":"vc_backed","investors":"SoftBank Vision Fund,Oxx","source":"UK AI lists"}
+{"name":"Matillion","domain":"matillion.com","country_code":"gb","hq_city":"Manchester","tier":"unicorn","investors":"General Atlantic,Battery Ventures","source":"UK unicorn lists"}
+{"name":"Flagstone","domain":"flagstoneim.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Estancia Capital","source":"UK fintech lists"}
+{"name":"Lightyear","domain":"lightyear.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Lightspeed,Virgin Group","source":"UK fintech lists"}
+{"name":"Griffin","domain":"griffin.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"MassMutual Ventures,NordicNinja","source":"UK fintech lists"}
+{"name":"Hokodo","domain":"hokodo.co","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Notion Capital,Korelya","source":"UK fintech lists"}
+{"name":"Habito","domain":"habito.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Augmentum,Ribbit Capital","source":"UK fintech lists"}
+{"name":"Congenica","domain":"congenica.com","country_code":"gb","hq_city":"Cambridge","tier":"vc_backed","investors":"Legal & General,Tencent","source":"UK biotech lists"}
+{"name":"Oxford Nanopore Technologies","domain":"nanoporetech.com","country_code":"gb","hq_city":"Oxford","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Arm","domain":"arm.com","country_code":"gb","hq_city":"Cambridge","tier":"big_tech","investors":"SoftBank","source":"Large UK tech employers"}
+{"name":"Dyson","domain":"dyson.com","country_code":"gb","hq_city":"Malmesbury","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Sage","domain":"sage.com","country_code":"gb","hq_city":"Newcastle upon Tyne","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"AVEVA","domain":"aveva.com","country_code":"gb","hq_city":"Cambridge","tier":"big_tech","investors":"Schneider Electric","source":"Large UK tech employers"}
+{"name":"Endava","domain":"endava.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large UK tech employers"}
+{"name":"Attest","domain":"askattest.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"NEA,Kismet","source":"UK SaaS lists"}
+{"name":"Beamery","domain":"beamery.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Ontario Teachers,Accel,M12","source":"Accel London portfolio"}
+{"name":"Cognism","domain":"cognism.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Viking Global,AXA Venture Partners","source":"UK SaaS lists"}
+{"name":"Signal AI","domain":"signal-ai.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Highland Europe,MCI","source":"UK AI lists"}
+{"name":"YuLife","domain":"yulife.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Target Global,Creandum","source":"Creandum portfolio"}
+{"name":"ManyPets","domain":"manypets.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"FTV Capital,Munich Re","source":"UK unicorn lists"}
+{"name":"Cazoo","domain":"cazoo.co.uk","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"D1 Capital,General Catalyst","source":"UK unicorn lists"}
+{"name":"Motorway","domain":"motorway.co.uk","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Index Ventures,ICONIQ,BMW i Ventures","source":"Index Ventures portfolio"}
+{"name":"Carwow","domain":"carwow.co.uk","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Balderton,Accel","source":"Balderton portfolio"}
+{"name":"Perlego","domain":"perlego.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Charlie Songhurst,Simplon","source":"UK edtech lists"}
+{"name":"Duffel","domain":"duffel.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Index Ventures,Benchmark,Blossom","source":"Index Ventures portfolio"}
+{"name":"Kaluza","domain":"kaluza.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"AGL Energy,Mitsubishi","source":"UK climate tech lists"}
+{"name":"Vertice","domain":"vertice.one","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Bessemer,66degrees","source":"UK SaaS lists"}
+{"name":"Ravelin","domain":"ravelin.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"BlackRock,Draper Esprit","source":"UK fintech lists"}
+{"name":"Sylvera","domain":"sylvera.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Index Ventures,Balderton,Insight Partners","source":"Index Ventures portfolio"}
+{"name":"Nothing","domain":"nothing.tech","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"GV,EQT Ventures,Highland Europe","source":"EQT Ventures portfolio"}
+{"name":"Quantinuum","domain":"quantinuum.com","country_code":"gb","hq_city":"Cambridge","tier":"big_tech","investors":"Honeywell,JPMorgan,NVIDIA","source":"UK quantum lists"}
+{"name":"Riverlane","domain":"riverlane.com","country_code":"gb","hq_city":"Cambridge","tier":"vc_backed","investors":"Molten Ventures,Planet First","source":"UK quantum lists"}
+{"name":"Oxford Quantum Circuits","domain":"oqc.tech","country_code":"gb","hq_city":"Reading","tier":"vc_backed","investors":"SBI Investment,Lansdowne","source":"UK quantum lists"}
+{"name":"Huma","domain":"huma.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Hitachi Ventures,Leaps by Bayer","source":"UK healthtech lists"}
+{"name":"Elvie","domain":"elvie.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"BGF,IPGL","source":"UK healthtech lists"}
+{"name":"Wagestream","domain":"wagestream.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Balderton,Northzone,Smash Capital","source":"Northzone portfolio"}
+{"name":"Kroo","domain":"kroo.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Karma Ventures","source":"UK fintech lists"}
+{"name":"Allica Bank","domain":"allica.bank","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Warwick Capital,TCV","source":"UK fintech lists"}
+{"name":"Atom Bank","domain":"atombank.co.uk","country_code":"gb","hq_city":"Durham","tier":"vc_backed","investors":"BBVA,Toscafund","source":"UK fintech lists"}
+{"name":"Monese","domain":"monese.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Investec,PayPal Ventures","source":"UK fintech lists"}
+{"name":"Aztec","domain":"aztec.network","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"a16z crypto,Paradigm","source":"UK crypto lists"}
+{"name":"Omnipresent","domain":"omnipresent.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Kinnevik,Episode 1","source":"UK HR tech lists"}
+{"name":"Ori","domain":"ori.co","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Octopus Ventures,Prosus Ventures","source":"UK AI infra lists"}
+{"name":"Peregrine","domain":"peregrine.io","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Amadeus Capital","source":"UK govtech lists"}
+{"name":"FACEIT","domain":"faceit.com","country_code":"gb","hq_city":"London","tier":"vc_backed","investors":"Anthos Capital,Savvy Games","source":"UK gaming lists"}
+{"name":"Soldo","domain":"soldo.com","country_code":"gb","hq_city":"London","tier":"unicorn","investors":"Accel,Dawn Capital,Temasek","source":"Accel London portfolio"}
+{"name":"Vodafone","domain":"vodafone.com","country_code":"gb","hq_city":"Newbury","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"BT Group","domain":"bt.com","country_code":"gb","hq_city":"London","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"SAP","domain":"sap.com","country_code":"de","hq_city":"Walldorf","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Siemens","domain":"siemens.com","country_code":"de","hq_city":"Munich","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Bosch","domain":"bosch.com","country_code":"de","hq_city":"Gerlingen","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Zalando","domain":"zalando.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Delivery Hero","domain":"deliveryhero.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"HelloFresh","domain":"hellofresh.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"N26","domain":"n26.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Index Ventures,Coatue,Tencent","source":"European unicorn lists"}
+{"name":"Trade Republic","domain":"traderepublic.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Sequoia,Accel,Founders Fund,Ontario Teachers","source":"European unicorn lists"}
+{"name":"Celonis","domain":"celonis.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Accel,ICONIQ,Arena Holdings","source":"Accel portfolio"}
+{"name":"Personio","domain":"personio.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Index Ventures,Accel,Northzone,HV Capital","source":"Index Ventures portfolio"}
+{"name":"Flix","domain":"flix.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"General Atlantic,Permira,HV Capital","source":"HV Capital portfolio"}
+{"name":"GetYourGuide","domain":"getyourguide.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SoftBank,KKR,Blue Pool","source":"European unicorn lists"}
+{"name":"Solaris","domain":"solarisgroup.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SBI Group,BBVA,HV Capital","source":"HV Capital portfolio"}
+{"name":"wefox","domain":"wefox.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Target Global,Mubadala,Eurazeo","source":"European unicorn lists"}
+{"name":"Raisin","domain":"raisin.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Index Ventures,PayPal Ventures,M&G","source":"Index Ventures portfolio"}
+{"name":"Scalable Capital","domain":"scalable.capital","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Balderton,Tencent,BlackRock","source":"Balderton portfolio"}
+{"name":"Contentful","domain":"contentful.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Sapphire Ventures,General Catalyst,Tiger Global","source":"European unicorn lists"}
+{"name":"Forto","domain":"forto.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SoftBank,Northzone,Citi Ventures","source":"Northzone portfolio"}
+{"name":"sennder","domain":"sennder.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Accel,Lakestar,Baillie Gifford","source":"Lakestar portfolio"}
+{"name":"Choco","domain":"choco.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Bessemer,Coatue,Insight Partners","source":"European unicorn lists"}
+{"name":"Flink","domain":"goflink.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Prosus,Mubadala,REWE","source":"European unicorn lists"}
+{"name":"Grover","domain":"getgrover.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Energy Impact Partners,Korelya","source":"European unicorn lists"}
+{"name":"Enpal","domain":"enpal.de","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SoftBank,HV Capital,Westly Group","source":"HV Capital portfolio"}
+{"name":"1Komma5 Grad","domain":"1komma5grad.com","country_code":"de","hq_city":"Hamburg","tier":"unicorn","investors":"G2 Venture Partners,Porsche Ventures","source":"German unicorn lists"}
+{"name":"Taxfix","domain":"taxfix.de","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Index Ventures,Valar Ventures,Teachers","source":"Index Ventures portfolio"}
+{"name":"Clark","domain":"clark.de","country_code":"de","hq_city":"Frankfurt","tier":"unicorn","investors":"Tencent,White Star Capital,Allianz X","source":"German insurtech lists"}
+{"name":"Billie","domain":"billie.io","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Klarna,Creandum,Speedinvest","source":"Creandum portfolio"}
+{"name":"Mondu","domain":"mondu.ai","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Valar Ventures,Cherry Ventures,FinTLV","source":"German fintech lists"}
+{"name":"Pitch","domain":"pitch.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Index Ventures,Tiger Global,Lakestar","source":"Index Ventures portfolio"}
+{"name":"DeepL","domain":"deepl.com","country_code":"de","hq_city":"Cologne","tier":"unicorn","investors":"Benchmark,IVP,ICONIQ","source":"German unicorn lists"}
+{"name":"Aleph Alpha","domain":"aleph-alpha.com","country_code":"de","hq_city":"Heidelberg","tier":"unicorn","investors":"Lakestar,Bosch Ventures,Schwarz Group","source":"Lakestar portfolio"}
+{"name":"Helsing","domain":"helsing.ai","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"General Catalyst,Prima Materia,Accel,Lightspeed","source":"European unicorn lists"}
+{"name":"Isar Aerospace","domain":"isaraerospace.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"HV Capital,Earlybird,Porsche SE","source":"HV Capital portfolio"}
+{"name":"Agile Robots","domain":"agile-robots.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"SoftBank Vision Fund,Sequoia China","source":"German unicorn lists"}
+{"name":"KONUX","domain":"konux.com","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"New Enterprise Associates,MIG","source":"German deep tech lists"}
+{"name":"Volocopter","domain":"volocopter.com","country_code":"de","hq_city":"Bruchsal","tier":"vc_backed","investors":"Geely,Daimler,Intel Capital","source":"German deep tech lists"}
+{"name":"Marvel Fusion","domain":"marvelfusion.com","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"EQT Ventures,b2venture","source":"EQT Ventures portfolio"}
+{"name":"Proxima Fusion","domain":"proximafusion.com","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"Cherry Ventures,Balderton,UVC","source":"Balderton portfolio"}
+{"name":"Ottobock","domain":"ottobock.com","country_code":"de","hq_city":"Duderstadt","tier":"big_tech","investors":"EQT","source":"Large German employers"}
+{"name":"TeamViewer","domain":"teamviewer.com","country_code":"de","hq_city":"Goppingen","tier":"big_tech","investors":"","source":"Large German tech employers"}
+{"name":"Software AG","domain":"softwareag.com","country_code":"de","hq_city":"Darmstadt","tier":"big_tech","investors":"Silver Lake","source":"Large German tech employers"}
+{"name":"Infineon Technologies","domain":"infineon.com","country_code":"de","hq_city":"Munich","tier":"big_tech","investors":"","source":"Large German tech employers"}
+{"name":"trivago","domain":"trivago.com","country_code":"de","hq_city":"Dusseldorf","tier":"big_tech","investors":"Expedia Group","source":"Large German tech employers"}
+{"name":"ABOUT YOU","domain":"aboutyou.com","country_code":"de","hq_city":"Hamburg","tier":"unicorn","investors":"Otto Group,Heartland","source":"German unicorn lists"}
+{"name":"Adjust","domain":"adjust.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Eurazeo,Highland Europe,AppLovin","source":"German adtech lists"}
+{"name":"Jimdo","domain":"jimdo.com","country_code":"de","hq_city":"Hamburg","tier":"vc_backed","investors":"Spectrum Equity","source":"German SaaS lists"}
+{"name":"SoundCloud","domain":"soundcloud.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Doughty Hanson,Union Square Ventures,Temasek","source":"Berlin tech lists"}
+{"name":"Babbel","domain":"babbel.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Reach Capital,Scottish Equity Partners","source":"Berlin tech lists"}
+{"name":"Ada Health","domain":"ada.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Leaps by Bayer,Samsung Catalyst","source":"Berlin healthtech lists"}
+{"name":"Medwing","domain":"medwing.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Northzone,Cherry Ventures","source":"Northzone portfolio"}
+{"name":"Vivid Money","domain":"vivid.money","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Ribbit Capital,SoftBank","source":"Berlin fintech lists"}
+{"name":"Moss","domain":"getmoss.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Tiger Global,Valar Ventures,Global Founders","source":"Berlin fintech lists"}
+{"name":"Pliant","domain":"getpliant.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Motive Ventures,PayPal Ventures","source":"Berlin fintech lists"}
+{"name":"Circula","domain":"circula.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Alstin Capital,Peak Capital","source":"Berlin SaaS lists"}
+{"name":"WorkMotion","domain":"workmotion.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"XAnge,Activant","source":"Berlin HR tech lists"}
+{"name":"Zenjob","domain":"zenjob.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Forestay,Aragon","source":"Berlin HR tech lists"}
+{"name":"Blinkist","domain":"blinkist.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Insight Partners,Greycroft","source":"Berlin tech lists"}
+{"name":"Mister Spex","domain":"misterspex.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"","source":"Large German tech employers"}
+{"name":"AUTO1 Group","domain":"auto1-group.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"SoftBank,Target Global","source":"Large German tech employers"}
+{"name":"IONOS","domain":"ionos.com","country_code":"de","hq_city":"Montabaur","tier":"big_tech","investors":"United Internet,Warburg Pincus","source":"Large German tech employers"}
+{"name":"EGYM","domain":"egym.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Affinity Partners,Mayfair Equity,HV Capital","source":"HV Capital portfolio"}
+{"name":"Urban Sports Club","domain":"urbansportsclub.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Verdane,HV Capital","source":"HV Capital portfolio"}
+{"name":"Wandelbots","domain":"wandelbots.com","country_code":"de","hq_city":"Dresden","tier":"vc_backed","investors":"Insight Partners,83North","source":"German robotics lists"}
+{"name":"Vay","domain":"vay.io","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Kinnevik,Coatue,Atomico","source":"Atomico portfolio"}
+{"name":"Emma Sleep","domain":"emma-sleep.com","country_code":"de","hq_city":"Frankfurt","tier":"big_tech","investors":"Haniel","source":"Large German ecommerce employers"}
+{"name":"tado","domain":"tado.com","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"Amazon Alexa Fund,Target Partners","source":"German IoT lists"}
+{"name":"CoachHub","domain":"coachhub.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SoftBank,Sofina,Speedinvest","source":"German unicorn lists"}
+{"name":"instagrid","domain":"instagrid.co","country_code":"de","hq_city":"Ludwigsburg","tier":"vc_backed","investors":"Energy Impact Partners,SET Ventures","source":"German climate tech lists"}
+{"name":"Ecosia","domain":"ecosia.org","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"","source":"Berlin tech lists"}
+{"name":"Parloa","domain":"parloa.com","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"Altimeter,General Catalyst,EQT Ventures","source":"EQT Ventures portfolio"}
+{"name":"Quantum Systems","domain":"quantum-systems.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Balderton,HV Capital,Peter Thiel","source":"Balderton portfolio"}
+{"name":"ARX Robotics","domain":"arx-robotics.com","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"HV Capital,Project A","source":"HV Capital portfolio"}
+{"name":"Tacto","domain":"tacto.ai","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"Index Ventures,Sequoia,Visionaries Club","source":"Index Ventures portfolio"}
+{"name":"Cognigy","domain":"cognigy.com","country_code":"de","hq_city":"Dusseldorf","tier":"vc_backed","investors":"Eurazeo,Insight Partners,DTCP","source":"German AI lists"}
+{"name":"Staffbase","domain":"staffbase.com","country_code":"de","hq_city":"Chemnitz","tier":"unicorn","investors":"General Atlantic,Insight Partners","source":"German unicorn lists"}
+{"name":"Camunda","domain":"camunda.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Insight Partners,Highland Europe","source":"German SaaS lists"}
+{"name":"commercetools","domain":"commercetools.com","country_code":"de","hq_city":"Munich","tier":"unicorn","investors":"Accel,Insight Partners","source":"Accel portfolio"}
+{"name":"Spryker","domain":"spryker.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"TCV,One Peak","source":"German SaaS lists"}
+{"name":"Sastrify","domain":"sastrify.com","country_code":"de","hq_city":"Cologne","tier":"vc_backed","investors":"Endeit Capital,HV Capital,Simon Capital","source":"HV Capital portfolio"}
+{"name":"everphone","domain":"everphone.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Signals Venture Capital,Cadence Growth","source":"Berlin tech lists"}
+{"name":"McMakler","domain":"mcmakler.de","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Israel Secondary Fund,Warburg Pincus","source":"Berlin proptech lists"}
+{"name":"Homeday","domain":"homeday.de","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Axel Springer,Purplebricks","source":"Berlin proptech lists"}
+{"name":"xentral","domain":"xentral.com","country_code":"de","hq_city":"Augsburg","tier":"vc_backed","investors":"Sequoia,Visionaries Club,Freigeist","source":"German SaaS lists"}
+{"name":"Seven Senders","domain":"sevensenders.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Digital+ Partners","source":"Berlin logistics lists"}
+{"name":"Alasco","domain":"alasco.de","country_code":"de","hq_city":"Munich","tier":"vc_backed","investors":"Insight Partners,Lakestar","source":"Lakestar portfolio"}
+{"name":"BRYTER","domain":"bryter.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"Accel,Tiger Global,Dawn Capital","source":"Accel portfolio"}
+{"name":"Wunderflats","domain":"wunderflats.com","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"DN Capital,Vorwerk Ventures","source":"Berlin proptech lists"}
+{"name":"Dance","domain":"dance.co","country_code":"de","hq_city":"Berlin","tier":"vc_backed","investors":"HV Capital,BlueYard,Eurazeo","source":"HV Capital portfolio"}
+{"name":"TIER Mobility","domain":"tier.app","country_code":"de","hq_city":"Berlin","tier":"unicorn","investors":"SoftBank,Mubadala,Northzone","source":"Northzone portfolio"}
+{"name":"DATEV","domain":"datev.de","country_code":"de","hq_city":"Nuremberg","tier":"big_tech","investors":"","source":"Large German tech employers"}
+{"name":"ZEISS","domain":"zeiss.com","country_code":"de","hq_city":"Oberkochen","tier":"big_tech","investors":"","source":"Large German employers"}
+{"name":"Continental","domain":"continental.com","country_code":"de","hq_city":"Hanover","tier":"big_tech","investors":"","source":"Large German employers"}
+{"name":"Deutsche Telekom","domain":"telekom.com","country_code":"de","hq_city":"Bonn","tier":"big_tech","investors":"","source":"Large German employers"}
+{"name":"OTTO","domain":"otto.de","country_code":"de","hq_city":"Hamburg","tier":"big_tech","investors":"","source":"Large German ecommerce employers"}
+{"name":"Rocket Internet","domain":"rocket-internet.com","country_code":"de","hq_city":"Berlin","tier":"big_tech","investors":"","source":"Large German tech employers"}
+{"name":"Mistral AI","domain":"mistral.ai","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Andreessen Horowitz,Lightspeed,General Catalyst,ASML","source":"European unicorn lists"}
+{"name":"Doctolib","domain":"doctolib.fr","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Accel,Eurazeo,General Atlantic","source":"Accel portfolio"}
+{"name":"Qonto","domain":"qonto.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Tiger Global,Tencent,Valar Ventures","source":"European unicorn lists"}
+{"name":"Alan","domain":"alan.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Index Ventures,Temasek,Coatue","source":"Index Ventures portfolio"}
+{"name":"Swile","domain":"swile.co","country_code":"fr","hq_city":"Montpellier","tier":"unicorn","investors":"SoftBank,Index Ventures,Bpifrance","source":"Index Ventures portfolio"}
+{"name":"PayFit","domain":"payfit.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Accel,Eurazeo,General Atlantic","source":"Accel portfolio"}
+{"name":"Spendesk","domain":"spendesk.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Index Ventures,General Atlantic,Eight Roads","source":"Index Ventures portfolio"}
+{"name":"Ledger","domain":"ledger.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"10T Holdings,Draper Esprit,Cathay","source":"European unicorn lists"}
+{"name":"Sorare","domain":"sorare.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"SoftBank,Benchmark,Accel","source":"Accel portfolio"}
+{"name":"BlaBlaCar","domain":"blablacar.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Accel,Index Ventures,Insight Partners","source":"Index Ventures portfolio"}
+{"name":"Back Market","domain":"backmarket.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Sprints Capital,Goldman Sachs,General Atlantic","source":"European unicorn lists"}
+{"name":"ManoMano","domain":"manomano.fr","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"General Atlantic,Temasek,Eurazeo","source":"European unicorn lists"}
+{"name":"Vestiaire Collective","domain":"vestiairecollective.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Kering,Tiger Global,Korelya","source":"European unicorn lists"}
+{"name":"Contentsquare","domain":"contentsquare.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"SoftBank,Eurazeo,Sixth Street","source":"European unicorn lists"}
+{"name":"Dataiku","domain":"dataiku.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Index Ventures,Battery Ventures,ICONIQ","source":"Index Ventures portfolio"}
+{"name":"Algolia","domain":"algolia.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Accel,Salesforce Ventures,Lone Pine","source":"Accel portfolio"}
+{"name":"Aircall","domain":"aircall.io","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Balderton,Goldman Sachs,DTCP","source":"Balderton portfolio"}
+{"name":"Younited","domain":"younited-credit.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Eurazeo,Bpifrance,Goldman Sachs","source":"French fintech lists"}
+{"name":"Lydia","domain":"lydia-app.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Tencent,Accel,Founders Fund","source":"Accel portfolio"}
+{"name":"Shift Technology","domain":"shift-technology.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Accel,Bessemer,Advent","source":"Accel portfolio"}
+{"name":"Exotec","domain":"exotec.com","country_code":"fr","hq_city":"Lille","tier":"unicorn","investors":"83North,Goldman Sachs,Dell Technologies Capital","source":"French unicorn lists"}
+{"name":"Ynsect","domain":"ynsect.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Astanor,Upfront Ventures","source":"French agritech lists"}
+{"name":"InnovaFeed","domain":"innovafeed.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Temasek,Creadev,ADM","source":"French agritech lists"}
+{"name":"EcoVadis","domain":"ecovadis.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"CVC Growth,GIC,Bpifrance","source":"French unicorn lists"}
+{"name":"Mirakl","domain":"mirakl.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Permira,83North,Silver Lake","source":"French unicorn lists"}
+{"name":"Voodoo","domain":"voodoo.io","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Tencent,Goldman Sachs","source":"French unicorn lists"}
+{"name":"Dental Monitoring","domain":"dentalmonitoring.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Vitruvian Partners","source":"French unicorn lists"}
+{"name":"Ivalua","domain":"ivalua.com","country_code":"fr","hq_city":"Massy","tier":"unicorn","investors":"Tiger Global,KKR,Ardian","source":"French unicorn lists"}
+{"name":"OVHcloud","domain":"ovhcloud.com","country_code":"fr","hq_city":"Roubaix","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Criteo","domain":"criteo.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Dassault Systemes","domain":"3ds.com","country_code":"fr","hq_city":"Velizy-Villacoublay","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Capgemini","domain":"capgemini.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Thales","domain":"thalesgroup.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Ubisoft","domain":"ubisoft.com","country_code":"fr","hq_city":"Saint-Mande","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Deezer","domain":"deezer.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"Access Industries","source":"Large French tech employers"}
+{"name":"Believe","domain":"believe.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"TCV","source":"Large French tech employers"}
+{"name":"Veepee","domain":"veepee.fr","country_code":"fr","hq_city":"La Plaine Saint-Denis","tier":"big_tech","investors":"","source":"Large French tech employers"}
+{"name":"Malt","domain":"malt.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"ISAI,Goldman Sachs,Eurazeo","source":"French unicorn lists"}
+{"name":"Pennylane","domain":"pennylane.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Sequoia,Meritech,Partech","source":"French unicorn lists"}
+{"name":"Agicap","domain":"agicap.com","country_code":"fr","hq_city":"Lyon","tier":"unicorn","investors":"Greenoaks,Partech,BlackFin","source":"French unicorn lists"}
+{"name":"Alma","domain":"getalma.eu","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Cathay Innovation,Eurazeo,Bpifrance","source":"French unicorn lists"}
+{"name":"Owkin","domain":"owkin.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Sanofi,Bpifrance,Fidelity","source":"French unicorn lists"}
+{"name":"Aqemia","domain":"aqemia.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Wille Finance,Bpifrance","source":"French biotech AI lists"}
+{"name":"Poolside","domain":"poolside.ai","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Bain Capital Ventures,NVIDIA,DST Global","source":"European AI unicorn lists"}
+{"name":"Hugging Face","domain":"huggingface.co","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Lux Capital,Sequoia,Coatue,Salesforce","source":"European AI unicorn lists"}
+{"name":"Photoroom","domain":"photoroom.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Balderton,Y Combinator,Aglae","source":"Y Combinator / Balderton portfolio"}
+{"name":"Dust","domain":"dust.tt","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Sequoia,XYZ Ventures","source":"French AI lists"}
+{"name":"Descartes Underwriting","domain":"descartesunderwriting.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Highland Europe,Blackfin,Serena","source":"French insurtech lists"}
+{"name":"Ankorstore","domain":"ankorstore.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Tiger Global,Bond,Index Ventures,Eurazeo","source":"Index Ventures portfolio"}
+{"name":"Matera","domain":"matera.eu","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Index Ventures,Bpifrance","source":"Index Ventures portfolio"}
+{"name":"Skello","domain":"skello.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Partech,Serena,XAnge","source":"French SaaS lists"}
+{"name":"Wandercraft","domain":"wandercraft.eu","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Bpifrance,Quadrant Management","source":"French robotics lists"}
+{"name":"Verkor","domain":"verkor.com","country_code":"fr","hq_city":"Grenoble","tier":"unicorn","investors":"EQT Ventures,Renault,Macquarie","source":"EQT Ventures portfolio"}
+{"name":"Electra","domain":"go-electra.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"PGGM,Eurazeo,RIVE Private Investment","source":"French climate tech lists"}
+{"name":"360Learning","domain":"360learning.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"SoftBank,Sumeru,Bpifrance","source":"French unicorn lists"}
+{"name":"Klaxoon","domain":"klaxoon.com","country_code":"fr","hq_city":"Rennes","tier":"vc_backed","investors":"Idinvest,Bpifrance","source":"French SaaS lists"}
+{"name":"Pigment","domain":"pigment.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"ICONIQ,IVP,Greenoaks,Felix Capital","source":"French unicorn lists"}
+{"name":"Qwant","domain":"qwant.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Caisse des Depots,Axel Springer","source":"French tech lists"}
+{"name":"Scaleway","domain":"scaleway.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"Iliad Group","source":"Large French tech employers"}
+{"name":"Shadow","domain":"shadow.tech","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"OVHcloud founder,Octave Klaba","source":"French tech lists"}
+{"name":"Withings","domain":"withings.com","country_code":"fr","hq_city":"Issy-les-Moulineaux","tier":"big_tech","investors":"Gilde,Idinvest","source":"French healthtech lists"}
+{"name":"Devialet","domain":"devialet.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"Ginko Ventures,Korelya","source":"French hardware lists"}
+{"name":"OpenClassrooms","domain":"openclassrooms.com","country_code":"fr","hq_city":"Paris","tier":"vc_backed","investors":"General Atlantic,Lumos Capital","source":"French edtech lists"}
+{"name":"Jellysmack","domain":"jellysmack.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"SoftBank,Oxx","source":"French unicorn lists"}
+{"name":"Meero","domain":"meero.com","country_code":"fr","hq_city":"Paris","tier":"unicorn","investors":"Prime Ventures,Eurazeo,Idinvest","source":"French unicorn lists"}
+{"name":"Vulog","domain":"vulog.com","country_code":"fr","hq_city":"Nice","tier":"vc_backed","investors":"Zouk Capital,Nordic Alpha","source":"French mobility lists"}
+{"name":"Schneider Electric","domain":"se.com","country_code":"fr","hq_city":"Rueil-Malmaison","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"Airbus","domain":"airbus.com","country_code":"fr","hq_city":"Toulouse","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"Atos","domain":"atos.net","country_code":"fr","hq_city":"Bezons","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"Sopra Steria","domain":"soprasteria.com","country_code":"fr","hq_city":"Paris","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"Worldline","domain":"worldline.com","country_code":"fr","hq_city":"Bezons","tier":"big_tech","investors":"","source":"Large European employers"}
+{"name":"Adyen","domain":"adyen.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Booking.com","domain":"booking.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"Booking Holdings","source":"Large European tech employers"}
+{"name":"Mollie","domain":"mollie.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"TCV,General Atlantic,Blackstone","source":"European unicorn lists"}
+{"name":"Backbase","domain":"backbase.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Motive Partners","source":"European unicorn lists"}
+{"name":"bunq","domain":"bunq.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Pollen Street Capital","source":"European unicorn lists"}
+{"name":"Bird","domain":"bird.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Accel,Atomico,Spark Capital","source":"Atomico portfolio"}
+{"name":"Picnic","domain":"picnic.app","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Bill Gates,NPM Capital,Edeka","source":"European unicorn lists"}
+{"name":"Just Eat Takeaway.com","domain":"justeattakeaway.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"Prosus","source":"Large European tech employers"}
+{"name":"ASML","domain":"asml.com","country_code":"nl","hq_city":"Veldhoven","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"NXP Semiconductors","domain":"nxp.com","country_code":"nl","hq_city":"Eindhoven","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Philips","domain":"philips.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"TomTom","domain":"tomtom.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Elastic","domain":"elastic.co","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"Index Ventures,Benchmark","source":"Index Ventures portfolio"}
+{"name":"Mambu","domain":"mambu.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"EQT Growth,Bessemer,TCV","source":"EQT portfolio"}
+{"name":"Dott","domain":"ridedott.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Sofina,EQT Ventures","source":"EQT Ventures portfolio"}
+{"name":"Framer","domain":"framer.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Atomico,AKQA Ventures","source":"Atomico portfolio"}
+{"name":"Miro","domain":"miro.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Accel,ICONIQ,a16z","source":"Accel portfolio"}
+{"name":"Castor","domain":"castoredc.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Eight Roads,F-Prime","source":"Dutch healthtech lists"}
+{"name":"Mews","domain":"mews.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Battery Ventures,Goldman Sachs,Kinnevik","source":"European unicorn lists"}
+{"name":"Otrium","domain":"otrium.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Index Ventures,Eurazeo,BOND","source":"Index Ventures portfolio"}
+{"name":"Sendcloud","domain":"sendcloud.com","country_code":"nl","hq_city":"Eindhoven","tier":"vc_backed","investors":"HPE Growth,L Catterton","source":"Dutch SaaS lists"}
+{"name":"Tiqets","domain":"tiqets.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Air Street,HPE Growth","source":"Dutch travel tech lists"}
+{"name":"Catawiki","domain":"catawiki.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Accel,Lead Edge,Permira","source":"Accel portfolio"}
+{"name":"Ebusco","domain":"ebusco.com","country_code":"nl","hq_city":"Deurne","tier":"big_tech","investors":"","source":"Dutch cleantech employers"}
+{"name":"Nedap","domain":"nedap.com","country_code":"nl","hq_city":"Groenlo","tier":"big_tech","investors":"","source":"Dutch tech employers"}
+{"name":"Exact","domain":"exact.com","country_code":"nl","hq_city":"Delft","tier":"big_tech","investors":"KKR","source":"Dutch tech employers"}
+{"name":"AFAS Software","domain":"afas.nl","country_code":"nl","hq_city":"Leusden","tier":"big_tech","investors":"","source":"Dutch tech employers"}
+{"name":"Bynder","domain":"bynder.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Insight Partners,Thomas H. Lee","source":"Dutch SaaS lists"}
+{"name":"Channable","domain":"channable.com","country_code":"nl","hq_city":"Utrecht","tier":"vc_backed","investors":"Partech","source":"Dutch SaaS lists"}
+{"name":"Studocu","domain":"studocu.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Partech,Point Nine","source":"Point Nine portfolio"}
+{"name":"Sana Commerce","domain":"sana-commerce.com","country_code":"nl","hq_city":"Rotterdam","tier":"vc_backed","investors":"Vista Equity","source":"Dutch SaaS lists"}
+{"name":"Meatable","domain":"meatable.com","country_code":"nl","hq_city":"Delft","tier":"vc_backed","investors":"Agronomics,DSM Venturing","source":"Dutch foodtech lists"}
+{"name":"Swapfiets","domain":"swapfiets.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Lightrock,Pon Holdings","source":"Dutch mobility lists"}
+{"name":"Crisp","domain":"crisp.nl","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Target Global,HV Capital","source":"HV Capital portfolio"}
+{"name":"Fourthline","domain":"fourthline.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Finch Capital,BlackFin","source":"Dutch fintech lists"}
+{"name":"Silverflow","domain":"silverflow.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Index Ventures,Crane Venture Partners","source":"Index Ventures portfolio"}
+{"name":"DataSnipper","domain":"datasnipper.com","country_code":"nl","hq_city":"Amsterdam","tier":"unicorn","investors":"Index Ventures,Insight Partners","source":"Index Ventures portfolio"}
+{"name":"Zivver","domain":"zivver.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"SmartFin,DN Capital","source":"Dutch cyber lists"}
+{"name":"Nebius","domain":"nebius.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"NVIDIA,Accel","source":"European AI infra lists"}
+{"name":"QuantWare","domain":"quantware.com","country_code":"nl","hq_city":"Delft","tier":"vc_backed","investors":"Forward.one,QDNL","source":"Dutch quantum lists"}
+{"name":"Coolblue","domain":"coolblue.nl","country_code":"nl","hq_city":"Rotterdam","tier":"big_tech","investors":"","source":"Large Dutch employers"}
+{"name":"bol","domain":"bol.com","country_code":"nl","hq_city":"Utrecht","tier":"big_tech","investors":"Ahold Delhaize","source":"Large Dutch employers"}
+{"name":"WeTransfer","domain":"wetransfer.com","country_code":"nl","hq_city":"Amsterdam","tier":"vc_backed","investors":"Highland Europe,Bending Spoons","source":"Dutch tech lists"}
+{"name":"Prosus","domain":"prosus.com","country_code":"nl","hq_city":"Amsterdam","tier":"big_tech","investors":"","source":"Large Dutch employers"}
+{"name":"Wolters Kluwer","domain":"wolterskluwer.com","country_code":"nl","hq_city":"Alphen aan den Rijn","tier":"big_tech","investors":"","source":"Large Dutch employers"}
+{"name":"Unit4","domain":"unit4.com","country_code":"nl","hq_city":"Utrecht","tier":"big_tech","investors":"TA Associates","source":"Large Dutch employers"}
+{"name":"Glovo","domain":"glovoapp.com","country_code":"es","hq_city":"Barcelona","tier":"unicorn","investors":"Delivery Hero,Lakestar,Idinvest","source":"Tracxn Spain unicorns"}
+{"name":"Cabify","domain":"cabify.com","country_code":"es","hq_city":"Madrid","tier":"unicorn","investors":"Rakuten,Orilla Asset Management","source":"Tracxn Spain unicorns"}
+{"name":"Jobandtalent","domain":"jobandtalent.com","country_code":"es","hq_city":"Madrid","tier":"unicorn","investors":"Atomico,SoftBank,Kinnevik","source":"Failory Spain unicorns"}
+{"name":"Factorial","domain":"factorialhr.com","country_code":"es","hq_city":"Barcelona","tier":"unicorn","investors":"Atomico,General Catalyst,Tiger Global","source":"Atomico portfolio"}
+{"name":"TravelPerk","domain":"travelperk.com","country_code":"es","hq_city":"Barcelona","tier":"unicorn","investors":"Kinnevik,SoftBank,Felix Capital,Target Global","source":"Failory Spain unicorns"}
+{"name":"Wallbox","domain":"wallbox.com","country_code":"es","hq_city":"Barcelona","tier":"big_tech","investors":"Iberdrola,Generac","source":"Spanish tech employers"}
+{"name":"Fever","domain":"feverup.com","country_code":"es","hq_city":"Madrid","tier":"unicorn","investors":"Goldman Sachs,Alignment Growth,Vitruvian","source":"Spanish unicorn lists"}
+{"name":"idealista","domain":"idealista.com","country_code":"es","hq_city":"Madrid","tier":"big_tech","investors":"EQT,Oakley Capital","source":"Spanish tech employers"}
+{"name":"Typeform","domain":"typeform.com","country_code":"es","hq_city":"Barcelona","tier":"unicorn","investors":"General Atlantic,Index Ventures,Sofina","source":"Index Ventures portfolio"}
+{"name":"Red Points","domain":"redpoints.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Northzone,Summit Partners","source":"Northzone portfolio"}
+{"name":"Paack","domain":"paack.co","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"SoftBank,Infravia","source":"Spanish logistics lists"}
+{"name":"Seedtag","domain":"seedtag.com","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Advent International,Oakley Capital","source":"Spanish adtech lists"}
+{"name":"Clarity AI","domain":"clarity.ai","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"SoftBank,Deutsche Bank,Kibo","source":"Spanish AI lists"}
+{"name":"Payflow","domain":"payflow.es","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Y Combinator,Cathay Innovation","source":"Y Combinator alumni"}
+{"name":"Capchase","domain":"capchase.com","country_code":"es","hq_city":"Madrid","tier":"unicorn","investors":"QED Investors,SoftBank,Bling Capital","source":"Spanish fintech lists"}
+{"name":"Exoticca","domain":"exoticca.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Quadrille Capital,Eurazeo","source":"Spanish travel tech lists"}
+{"name":"Holded","domain":"holded.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Visma,Lakestar","source":"Lakestar portfolio"}
+{"name":"Cobee","domain":"cobee.io","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Balderton,Target Global,Speedinvest","source":"Balderton portfolio"}
+{"name":"Sesame HR","domain":"sesamehr.com","country_code":"es","hq_city":"Valencia","tier":"vc_backed","investors":"PSG Equity","source":"Spanish SaaS lists"}
+{"name":"Genially","domain":"genially.com","country_code":"es","hq_city":"Cordoba","tier":"vc_backed","investors":"Insight Partners,Prosus Ventures","source":"Spanish SaaS lists"}
+{"name":"Amenitiz","domain":"amenitiz.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Eight Roads,Point Nine,Chalfen Ventures","source":"Point Nine portfolio"}
+{"name":"Ironhack","domain":"ironhack.com","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Endeavor Catalyst,Lumos Capital","source":"Spanish edtech lists"}
+{"name":"Devo","domain":"devo.com","country_code":"es","hq_city":"Madrid","tier":"unicorn","investors":"Insight Partners,TCV,Georgian","source":"Spanish unicorn lists"}
+{"name":"Multiverse Computing","domain":"multiversecomputing.com","country_code":"es","hq_city":"San Sebastian","tier":"vc_backed","investors":"Columbus Venture Partners,Forgepoint","source":"Spanish quantum lists"}
+{"name":"Sateliot","domain":"sateliot.space","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Cellnex,Global Portfolio Investments","source":"Spanish spacetech lists"}
+{"name":"PLD Space","domain":"pldspace.com","country_code":"es","hq_city":"Elche","tier":"vc_backed","investors":"Aciturri,GMV","source":"Spanish spacetech lists"}
+{"name":"Zeleros","domain":"zeleros.com","country_code":"es","hq_city":"Valencia","tier":"vc_backed","investors":"Angels Capital,Plug and Play","source":"Spanish deep tech lists"}
+{"name":"Signaturit","domain":"signaturit.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Providence Strategic Growth","source":"Spanish SaaS lists"}
+{"name":"The Colvin Co","domain":"thecolvinco.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Eurazeo,Milrud","source":"Spanish DTC lists"}
+{"name":"Freepik","domain":"freepik.com","country_code":"es","hq_city":"Malaga","tier":"big_tech","investors":"EQT","source":"Spanish tech employers"}
+{"name":"Cellnex","domain":"cellnex.com","country_code":"es","hq_city":"Barcelona","tier":"big_tech","investors":"","source":"Large Spanish employers"}
+{"name":"Amadeus IT Group","domain":"amadeus.com","country_code":"es","hq_city":"Madrid","tier":"big_tech","investors":"","source":"Large Spanish tech employers"}
+{"name":"Indra","domain":"indracompany.com","country_code":"es","hq_city":"Madrid","tier":"big_tech","investors":"","source":"Large Spanish tech employers"}
+{"name":"Telefonica","domain":"telefonica.com","country_code":"es","hq_city":"Madrid","tier":"big_tech","investors":"","source":"Large Spanish employers"}
+{"name":"Heura Foods","domain":"heurafoods.com","country_code":"es","hq_city":"Barcelona","tier":"vc_backed","investors":"Unovis,Upfield Ventures","source":"Spanish foodtech lists"}
+{"name":"Onum","domain":"onum.com","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Dawn Capital,Kibo Ventures","source":"Spanish SaaS lists"}
+{"name":"Embat","domain":"embat.io","country_code":"es","hq_city":"Madrid","tier":"vc_backed","investors":"Creandum,Samaipata","source":"Creandum portfolio"}
+{"name":"Preply","domain":"preply.com","country_code":"es","hq_city":"Barcelona","tier":"unicorn","investors":"Owl Ventures,Hoxton Ventures,Horizon Capital","source":"European edtech lists"}
+{"name":"Bending Spoons","domain":"bendingspoons.com","country_code":"it","hq_city":"Milan","tier":"unicorn","investors":"NB Renaissance,Baillie Gifford,Durable Capital","source":"Tracxn Italy unicorns"}
+{"name":"Satispay","domain":"satispay.com","country_code":"it","hq_city":"Milan","tier":"unicorn","investors":"Addition,Coatue,Greyhound Capital","source":"Tracxn Italy unicorns"}
+{"name":"Scalapay","domain":"scalapay.com","country_code":"it","hq_city":"Milan","tier":"unicorn","investors":"Tiger Global,Tencent,Willoughby","source":"Tracxn Italy unicorns"}
+{"name":"iGenius","domain":"igenius.ai","country_code":"it","hq_city":"Milan","tier":"unicorn","investors":"CDP Venture Capital,Angelini","source":"Tracxn Italy unicorns"}
+{"name":"Casavo","domain":"casavo.com","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"Exor,Greenoaks,Project A","source":"Italian proptech lists"}
+{"name":"Musixmatch","domain":"musixmatch.com","country_code":"it","hq_city":"Bologna","tier":"vc_backed","investors":"TPG,United Ventures","source":"Italian tech lists"}
+{"name":"Prima Assicurazioni","domain":"prima.it","country_code":"it","hq_city":"Milan","tier":"unicorn","investors":"Goldman Sachs,Blackstone,Carlyle","source":"Italian unicorn lists"}
+{"name":"Cortilia","domain":"cortilia.it","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"Red Circle,Five Seasons Ventures","source":"Italian foodtech lists"}
+{"name":"Everli","domain":"everli.com","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"Verlinvest,DN Capital,Luxor","source":"Italian tech lists"}
+{"name":"Talent Garden","domain":"talentgarden.com","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"Tamburi Investment Partners","source":"Italian tech lists"}
+{"name":"D-Orbit","domain":"dorbit.space","country_code":"it","hq_city":"Fino Mornasco","tier":"vc_backed","investors":"Marubeni,CDP Venture Capital","source":"Italian spacetech lists"}
+{"name":"Argotec","domain":"argotecgroup.com","country_code":"it","hq_city":"Turin","tier":"vc_backed","investors":"Neuberger Berman","source":"Italian spacetech lists"}
+{"name":"newcleo","domain":"newcleo.com","country_code":"it","hq_city":"Turin","tier":"vc_backed","investors":"Exor,Club degli Investitori","source":"Italian deep tech lists"}
+{"name":"Enel","domain":"enel.com","country_code":"it","hq_city":"Rome","tier":"big_tech","investors":"","source":"Large Italian employers"}
+{"name":"Leonardo","domain":"leonardo.com","country_code":"it","hq_city":"Rome","tier":"big_tech","investors":"","source":"Large Italian employers"}
+{"name":"Reply","domain":"reply.com","country_code":"it","hq_city":"Turin","tier":"big_tech","investors":"","source":"Large Italian tech employers"}
+{"name":"Nexi","domain":"nexigroup.com","country_code":"it","hq_city":"Milan","tier":"big_tech","investors":"","source":"Large Italian tech employers"}
+{"name":"Moneyfarm","domain":"moneyfarm.com","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"Allianz Asset Management,Poste Italiane","source":"Italian fintech lists"}
+{"name":"Young Platform","domain":"youngplatform.com","country_code":"it","hq_city":"Turin","tier":"vc_backed","investors":"United Ventures,Azimut","source":"Italian fintech lists"}
+{"name":"Translated","domain":"translated.com","country_code":"it","hq_city":"Rome","tier":"vc_backed","investors":"Ardian","source":"Italian AI lists"}
+{"name":"Credimi","domain":"credimi.com","country_code":"it","hq_city":"Milan","tier":"vc_backed","investors":"United Ventures,Vertis","source":"Italian fintech lists"}
+{"name":"Spotify","domain":"spotify.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Klarna","domain":"klarna.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Sequoia,Silver Lake,Northzone,Creandum","source":"Northzone portfolio"}
+{"name":"Truecaller","domain":"truecaller.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"Sequoia,Atomico","source":"Atomico portfolio"}
+{"name":"King","domain":"king.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"Microsoft","source":"Large Swedish tech employers"}
+{"name":"Ericsson","domain":"ericsson.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Kry","domain":"kry.se","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Index Ventures,Accel,Creandum","source":"Creandum portfolio"}
+{"name":"Voi Technology","domain":"voi.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Balderton,VNV Global,Raine","source":"Balderton portfolio"}
+{"name":"Einride","domain":"einride.tech","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"EQT Ventures,Northzone,Polar Structure","source":"EQT Ventures portfolio"}
+{"name":"Epidemic Sound","domain":"epidemicsound.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"EQT,Blackstone,Creandum","source":"Creandum portfolio"}
+{"name":"Tink","domain":"tink.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Visa,Dawn Capital,Creandum","source":"Creandum portfolio"}
+{"name":"Budbee","domain":"budbee.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Kinnevik,Air Street","source":"Swedish logistics lists"}
+{"name":"Instabee","domain":"instabee.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Kinnevik,EQT Ventures,Verdane","source":"EQT Ventures portfolio"}
+{"name":"Mentimeter","domain":"mentimeter.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Insight Partners,EQT Ventures","source":"EQT Ventures portfolio"}
+{"name":"Kognity","domain":"kognity.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Brighteye Ventures","source":"Swedish edtech lists"}
+{"name":"Sana Labs","domain":"sanalabs.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"EQT Ventures,Menlo Ventures,New Enterprise Associates","source":"EQT Ventures portfolio"}
+{"name":"Lovable","domain":"lovable.dev","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Accel,Creandum,20VC","source":"Creandum portfolio"}
+{"name":"Anyfin","domain":"anyfin.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Accel,Northzone,EQT Ventures","source":"Northzone portfolio"}
+{"name":"Juni","domain":"juni.co","country_code":"se","hq_city":"Gothenburg","tier":"vc_backed","investors":"Felix Capital,DST Global,Cherry Ventures","source":"Swedish fintech lists"}
+{"name":"Doconomy","domain":"doconomy.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"CommerzVentures,Mastercard","source":"Swedish fintech lists"}
+{"name":"Polestar","domain":"polestar.com","country_code":"se","hq_city":"Gothenburg","tier":"big_tech","investors":"Geely,Volvo Cars","source":"Large Swedish employers"}
+{"name":"Yubico","domain":"yubico.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Swedish tech employers"}
+{"name":"Detectify","domain":"detectify.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Balderton,Insight Partners","source":"Balderton portfolio"}
+{"name":"Fortnox","domain":"fortnox.se","country_code":"se","hq_city":"Vaxjo","tier":"big_tech","investors":"","source":"Swedish tech employers"}
+{"name":"Sinch","domain":"sinch.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Swedish tech employers"}
+{"name":"Storytel","domain":"storytel.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Swedish tech employers"}
+{"name":"Trustly","domain":"trustly.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Nordic Capital,BlackRock","source":"Swedish unicorn lists"}
+{"name":"Nordnet","domain":"nordnet.se","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Swedish fintech employers"}
+{"name":"Stegra","domain":"stegra.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Altor,Kinnevik,Hy24","source":"Swedish unicorn lists"}
+{"name":"Neko Health","domain":"nekohealth.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Lakestar,General Catalyst,Atomico","source":"Lakestar portfolio"}
+{"name":"Natural Cycles","domain":"naturalcycles.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Bonnier Ventures,Sustainable Future Ventures","source":"Swedish healthtech lists"}
+{"name":"Aira","domain":"airahome.com","country_code":"se","hq_city":"Stockholm","tier":"vc_backed","investors":"Altor,Kinnevik,Temasek","source":"Swedish climate tech lists"}
+{"name":"Legora","domain":"legora.com","country_code":"se","hq_city":"Stockholm","tier":"unicorn","investors":"Bessemer,ICONIQ,General Catalyst","source":"Swedish legal tech lists"}
+{"name":"Neo4j","domain":"neo4j.com","country_code":"se","hq_city":"Malmo","tier":"unicorn","investors":"Eurazeo,GV,Creandum","source":"Creandum portfolio"}
+{"name":"Hexagon","domain":"hexagon.com","country_code":"se","hq_city":"Stockholm","tier":"big_tech","investors":"","source":"Large Swedish tech employers"}
+{"name":"Logitech","domain":"logitech.com","country_code":"ch","hq_city":"Lausanne","tier":"big_tech","investors":"","source":"Large Swiss tech employers"}
+{"name":"Roche","domain":"roche.com","country_code":"ch","hq_city":"Basel","tier":"big_tech","investors":"","source":"Large Swiss employers"}
+{"name":"Novartis","domain":"novartis.com","country_code":"ch","hq_city":"Basel","tier":"big_tech","investors":"","source":"Large Swiss employers"}
+{"name":"ABB","domain":"abb.com","country_code":"ch","hq_city":"Zurich","tier":"big_tech","investors":"","source":"Large Swiss employers"}
+{"name":"On","domain":"on-running.com","country_code":"ch","hq_city":"Zurich","tier":"big_tech","investors":"","source":"Large Swiss employers"}
+{"name":"Scandit","domain":"scandit.com","country_code":"ch","hq_city":"Zurich","tier":"unicorn","investors":"Atomico,Forestay,Warburg Pincus","source":"Atomico portfolio"}
+{"name":"Nexthink","domain":"nexthink.com","country_code":"ch","hq_city":"Lausanne","tier":"unicorn","investors":"Highland Europe,PSG,Permira","source":"Swiss unicorn lists"}
+{"name":"SonarSource","domain":"sonarsource.com","country_code":"ch","hq_city":"Geneva","tier":"unicorn","investors":"Advent International,Insight Partners","source":"Swiss unicorn lists"}
+{"name":"Climeworks","domain":"climeworks.com","country_code":"ch","hq_city":"Zurich","tier":"unicorn","investors":"Partners Group,GIC,Baillie Gifford","source":"Swiss unicorn lists"}
+{"name":"ecoRobotix","domain":"ecorobotix.com","country_code":"ch","hq_city":"Yverdon-les-Bains","tier":"vc_backed","investors":"BASF Venture Capital,Capagro","source":"Swiss agritech lists"}
+{"name":"Flyability","domain":"flyability.com","country_code":"ch","hq_city":"Paudex","tier":"vc_backed","investors":"ETF Partners,Swisscom Ventures","source":"Swiss robotics lists"}
+{"name":"ANYbotics","domain":"anybotics.com","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Walden Catalyst,NGP Capital","source":"Swiss robotics lists"}
+{"name":"Yokoy","domain":"yokoy.io","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Sequoia,Balderton,Left Lane","source":"Sequoia Europe portfolio"}
+{"name":"Teylor","domain":"teylor.com","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Barclays,M&G","source":"Swiss fintech lists"}
+{"name":"Proton","domain":"proton.me","country_code":"ch","hq_city":"Geneva","tier":"big_tech","investors":"FONGIT","source":"Swiss tech employers"}
+{"name":"Kudelski Group","domain":"kudelski.com","country_code":"ch","hq_city":"Cheseaux-sur-Lausanne","tier":"big_tech","investors":"","source":"Swiss tech employers"}
+{"name":"Temenos","domain":"temenos.com","country_code":"ch","hq_city":"Geneva","tier":"big_tech","investors":"","source":"Swiss tech employers"}
+{"name":"Avaloq","domain":"avaloq.com","country_code":"ch","hq_city":"Zurich","tier":"big_tech","investors":"NEC","source":"Swiss tech employers"}
+{"name":"Beekeeper","domain":"beekeeper.io","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Energy Impact Partners,Thayer Ventures","source":"Swiss SaaS lists"}
+{"name":"Frontify","domain":"frontify.com","country_code":"ch","hq_city":"St. Gallen","tier":"vc_backed","investors":"EQT Growth,Blossom Capital","source":"EQT portfolio"}
+{"name":"LatticeFlow AI","domain":"latticeflow.ai","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Atlantic Bridge,OpenOcean","source":"Swiss AI lists"}
+{"name":"DeepJudge","domain":"deepjudge.ai","country_code":"ch","hq_city":"Zurich","tier":"vc_backed","investors":"Index Ventures,Sequoia","source":"Index Ventures portfolio"}
+{"name":"neustark","domain":"neustark.com","country_code":"ch","hq_city":"Bern","tier":"vc_backed","investors":"Decarbonization Partners,Verve Ventures","source":"Swiss climate tech lists"}
+{"name":"Planted","domain":"eatplanted.com","country_code":"ch","hq_city":"Kemptthal","tier":"vc_backed","investors":"Vorwerk Ventures,L Catterton","source":"Swiss foodtech lists"}
+{"name":"Distalmotion","domain":"distalmotion.com","country_code":"ch","hq_city":"Epalinges","tier":"vc_backed","investors":"Revival Healthcare Capital","source":"Swiss medtech lists"}
+{"name":"SOPHiA GENETICS","domain":"sophiagenetics.com","country_code":"ch","hq_city":"Rolle","tier":"big_tech","investors":"Generation IM,aMoon","source":"Swiss healthtech lists"}
+{"name":"MindMaze","domain":"mindmaze.com","country_code":"ch","hq_city":"Lausanne","tier":"unicorn","investors":"AlbaCore Capital,Hinduja Group","source":"Swiss unicorn lists"}
+{"name":"STMicroelectronics","domain":"st.com","country_code":"ch","hq_city":"Geneva","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Stripe","domain":"stripe.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Sequoia,Andreessen Horowitz,Thrive Capital","source":"Irish tech employers"}
+{"name":"Intercom","domain":"intercom.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Index Ventures,Bessemer,Kleiner Perkins","source":"Index Ventures portfolio"}
+{"name":"Workhuman","domain":"workhuman.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Intermediate Capital Group","source":"Irish unicorn lists"}
+{"name":"Flipdish","domain":"flipdish.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Tencent,Tiger Global","source":"Irish unicorn lists"}
+{"name":"Wayflyer","domain":"wayflyer.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"QED Investors,Tiger Global,DST Global","source":"Irish unicorn lists"}
+{"name":"LetsGetChecked","domain":"letsgetchecked.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"CommonFund Capital,Illumina Ventures","source":"Irish unicorn lists"}
+{"name":"Fenergo","domain":"fenergo.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Astorg,Bridgepoint","source":"Irish unicorn lists"}
+{"name":"Tines","domain":"tines.com","country_code":"ie","hq_city":"Dublin","tier":"unicorn","investors":"Accel,Felicis,Index Ventures","source":"Accel portfolio"}
+{"name":"Nuritas","domain":"nuritas.com","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Cleveland Avenue,Marc Benioff","source":"Irish biotech lists"}
+{"name":"Manna","domain":"manna.aero","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Coca-Cola HBC,Tapestry","source":"Irish drone lists"}
+{"name":"Cubic Telecom","domain":"cubictelecom.com","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Softbank,Qualcomm,CarSoftware","source":"Irish tech lists"}
+{"name":"Ryanair","domain":"ryanair.com","country_code":"ie","hq_city":"Dublin","tier":"big_tech","investors":"","source":"Large Irish employers"}
+{"name":"Kitman Labs","domain":"kitmanlabs.com","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Guggenheim,Bessemer","source":"Irish sportstech lists"}
+{"name":"Provizio","domain":"provizio.ai","country_code":"ie","hq_city":"Limerick","tier":"vc_backed","investors":"Bosch Ventures,ACT Venture Capital","source":"Irish deep tech lists"}
+{"name":"XOCEAN","domain":"xocean.com","country_code":"ie","hq_city":"Drogheda","tier":"vc_backed","investors":"Act Venture Capital,S2G","source":"Irish maritime tech lists"}
+{"name":"Datalex","domain":"datalex.com","country_code":"ie","hq_city":"Dublin","tier":"big_tech","investors":"","source":"Irish tech employers"}
+{"name":"Corlytics","domain":"corlytics.com","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Verdane","source":"Irish regtech lists"}
+{"name":"NearForm","domain":"nearform.com","country_code":"ie","hq_city":"Tramore","tier":"vc_backed","investors":"","source":"Irish tech services"}
+{"name":"Roomex","domain":"roomex.com","country_code":"ie","hq_city":"Dublin","tier":"vc_backed","investors":"Aliter Capital","source":"Irish travel tech lists"}
+{"name":"Everseen","domain":"everseen.com","country_code":"ie","hq_city":"Cork","tier":"vc_backed","investors":"Crosspoint Capital","source":"Irish AI lists"}
+{"name":"Teamwork.com","domain":"teamwork.com","country_code":"ie","hq_city":"Cork","tier":"vc_backed","investors":"Highland Europe","source":"Irish SaaS lists"}
+{"name":"Allegro","domain":"allegro.pl","country_code":"pl","hq_city":"Poznan","tier":"big_tech","investors":"","source":"Dealroom Poland unicorns"}
+{"name":"InPost","domain":"inpost.pl","country_code":"pl","hq_city":"Krakow","tier":"big_tech","investors":"Advent International","source":"Dealroom Poland unicorns"}
+{"name":"CD PROJEKT RED","domain":"cdprojektred.com","country_code":"pl","hq_city":"Warsaw","tier":"big_tech","investors":"","source":"Dealroom Poland unicorns"}
+{"name":"Docplanner","domain":"docplanner.com","country_code":"pl","hq_city":"Warsaw","tier":"unicorn","investors":"Goldman Sachs,One Peak,Point Nine","source":"Point Nine portfolio"}
+{"name":"Booksy","domain":"booksy.com","country_code":"pl","hq_city":"Warsaw","tier":"unicorn","investors":"Cat Rock Capital,Sprints Capital","source":"Dealroom Poland coverage"}
+{"name":"Ramp Network","domain":"ramp.network","country_code":"pl","hq_city":"Warsaw","tier":"unicorn","investors":"Balderton,NFX,Korelya","source":"Balderton portfolio"}
+{"name":"Brainly","domain":"brainly.com","country_code":"pl","hq_city":"Krakow","tier":"unicorn","investors":"Prosus,Naspers,Learn Capital","source":"Polish unicorn lists"}
+{"name":"Infermedica","domain":"infermedica.com","country_code":"pl","hq_city":"Wroclaw","tier":"vc_backed","investors":"One Peak,Karma Ventures","source":"EU-Startups Poland coverage"}
+{"name":"Nomagic","domain":"nomagic.ai","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"Khosla Ventures,Almaz Capital,European Investment Bank","source":"EU-Startups Poland coverage"}
+{"name":"Packhelp","domain":"packhelp.com","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"InfraVia,Speedinvest","source":"Polish startup lists"}
+{"name":"Tylko","domain":"tylko.com","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"EQT Ventures,Experior","source":"EQT Ventures portfolio"}
+{"name":"Autenti","domain":"autenti.com","country_code":"pl","hq_city":"Poznan","tier":"vc_backed","investors":"PKO VC,Innovation Nest","source":"Polish startup lists"}
+{"name":"SentiOne","domain":"sentione.com","country_code":"pl","hq_city":"Gdansk","tier":"vc_backed","investors":"Aper Ventures","source":"Polish startup lists"}
+{"name":"LiveChat","domain":"livechat.com","country_code":"pl","hq_city":"Wroclaw","tier":"big_tech","investors":"","source":"Polish tech employers"}
+{"name":"Ten Square Games","domain":"tensquaregames.com","country_code":"pl","hq_city":"Wroclaw","tier":"big_tech","investors":"","source":"Polish gaming employers"}
+{"name":"Techland","domain":"techland.net","country_code":"pl","hq_city":"Wroclaw","tier":"big_tech","investors":"Tencent","source":"Polish gaming employers"}
+{"name":"11 bit studios","domain":"11bitstudios.com","country_code":"pl","hq_city":"Warsaw","tier":"big_tech","investors":"","source":"Polish gaming employers"}
+{"name":"Huuuge Games","domain":"huuugegames.com","country_code":"pl","hq_city":"Warsaw","tier":"big_tech","investors":"","source":"Polish gaming employers"}
+{"name":"Comarch","domain":"comarch.com","country_code":"pl","hq_city":"Krakow","tier":"big_tech","investors":"","source":"Polish tech employers"}
+{"name":"Asseco","domain":"asseco.com","country_code":"pl","hq_city":"Rzeszow","tier":"big_tech","investors":"","source":"Polish tech employers"}
+{"name":"Netguru","domain":"netguru.com","country_code":"pl","hq_city":"Poznan","tier":"big_tech","investors":"","source":"Polish tech employers"}
+{"name":"STX Next","domain":"stxnext.com","country_code":"pl","hq_city":"Poznan","tier":"big_tech","investors":"","source":"Polish tech employers"}
+{"name":"Vue Storefront","domain":"vuestorefront.io","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"Creandum,SquareOne,Talent Ventures","source":"Creandum portfolio"}
+{"name":"Spacelift","domain":"spacelift.io","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"Blossom Capital,Endeavor","source":"Polish SaaS lists"}
+{"name":"Zowie","domain":"getzowie.com","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"Tiger Global,Inovo,10x Founders","source":"Polish SaaS lists"}
+{"name":"Symmetrical","domain":"symmetrical.ai","country_code":"pl","hq_city":"Warsaw","tier":"vc_backed","investors":"Global Founders Capital,FinTech Collective","source":"Polish fintech lists"}
+{"name":"Callstack","domain":"callstack.com","country_code":"pl","hq_city":"Wroclaw","tier":"vc_backed","investors":"","source":"Polish tech employers"}
+{"name":"OutSystems","domain":"outsystems.com","country_code":"pt","hq_city":"Lisbon","tier":"unicorn","investors":"KKR,Goldman Sachs,Guidepost","source":"Portugal.com unicorn coverage"}
+{"name":"Feedzai","domain":"feedzai.com","country_code":"pt","hq_city":"Lisbon","tier":"unicorn","investors":"KKR,Sapphire Ventures,Oak HC/FT","source":"Portugal.com unicorn coverage"}
+{"name":"Talkdesk","domain":"talkdesk.com","country_code":"pt","hq_city":"Lisbon","tier":"unicorn","investors":"Viking Global,TCV,Salesforce Ventures","source":"Portugal.com unicorn coverage"}
+{"name":"Sword Health","domain":"swordhealth.com","country_code":"pt","hq_city":"Porto","tier":"unicorn","investors":"General Catalyst,Khosla Ventures,Founders Fund","source":"Portugal.com unicorn coverage"}
+{"name":"Unbabel","domain":"unbabel.com","country_code":"pt","hq_city":"Lisbon","tier":"vc_backed","investors":"Notion Capital,Scale Venture Partners,Point72","source":"Portuguese startup lists"}
+{"name":"Tekever","domain":"tekever.com","country_code":"pt","hq_city":"Lisbon","tier":"unicorn","investors":"Ventura Capital,Baillie Gifford","source":"Portugal.com unicorn coverage"}
+{"name":"Remote","domain":"remote.com","country_code":"pt","hq_city":"Lisbon","tier":"unicorn","investors":"Sequoia,Index Ventures,Accel,SoftBank","source":"Index Ventures portfolio"}
+{"name":"Coverflex","domain":"coverflex.com","country_code":"pt","hq_city":"Braga","tier":"vc_backed","investors":"Indico Capital,Armilar","source":"Portuguese startup lists"}
+{"name":"Defined.ai","domain":"defined.ai","country_code":"pt","hq_city":"Lisbon","tier":"vc_backed","investors":"Semapa Next,Iberis Capital","source":"Portuguese startup lists"}
+{"name":"Uniplaces","domain":"uniplaces.com","country_code":"pt","hq_city":"Lisbon","tier":"vc_backed","investors":"Atomico,Octopus Ventures","source":"Atomico portfolio"}
+{"name":"Barkyn","domain":"barkyn.com","country_code":"pt","hq_city":"Porto","tier":"vc_backed","investors":"Indico Capital,Bynd","source":"Portuguese startup lists"}
+{"name":"Jscrambler","domain":"jscrambler.com","country_code":"pt","hq_city":"Porto","tier":"vc_backed","investors":"Sonae IM,Encode Ventures","source":"Portuguese startup lists"}
+{"name":"Infraspeak","domain":"infraspeak.com","country_code":"pt","hq_city":"Porto","tier":"vc_backed","investors":"Nauta Capital,Indico Capital","source":"Portuguese startup lists"}
+{"name":"Sensei","domain":"sensei.tech","country_code":"pt","hq_city":"Lisbon","tier":"vc_backed","investors":"Firstminute Capital,Metaplanet","source":"Portuguese startup lists"}
+{"name":"Critical Software","domain":"criticalsoftware.com","country_code":"pt","hq_city":"Coimbra","tier":"big_tech","investors":"","source":"Portuguese tech employers"}
+{"name":"Critical TechWorks","domain":"criticaltechworks.com","country_code":"pt","hq_city":"Porto","tier":"big_tech","investors":"BMW Group","source":"Portuguese tech employers"}
+{"name":"Bizay","domain":"bizay.com","country_code":"pt","hq_city":"Lisbon","tier":"vc_backed","investors":"Oxy Capital","source":"Portuguese startup lists"}
+{"name":"Prozis","domain":"prozis.com","country_code":"pt","hq_city":"Esposende","tier":"big_tech","investors":"","source":"Portuguese ecommerce employers"}
+{"name":"Pleo","domain":"pleo.io","country_code":"dk","hq_city":"Copenhagen","tier":"unicorn","investors":"Kinnevik,Bain Capital Ventures,Creandum,Seedcamp","source":"Creandum portfolio"}
+{"name":"Trustpilot","domain":"trustpilot.com","country_code":"dk","hq_city":"Copenhagen","tier":"big_tech","investors":"Northzone,Index Ventures","source":"Northzone portfolio"}
+{"name":"Lunar","domain":"lunar.app","country_code":"dk","hq_city":"Aarhus","tier":"unicorn","investors":"Heartland,Kinnevik,Tencent","source":"Danish unicorn lists"}
+{"name":"Templafy","domain":"templafy.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Insight Partners,Blue Cloud Ventures","source":"Danish SaaS lists"}
+{"name":"Corti","domain":"corti.ai","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Prosus Ventures,Atomico","source":"Atomico portfolio"}
+{"name":"Podimo","domain":"podimo.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Heartcore Capital,e.ventures","source":"Danish media tech lists"}
+{"name":"Dixa","domain":"dixa.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Notion Capital,General Atlantic","source":"Danish SaaS lists"}
+{"name":"Famly","domain":"famly.co","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Creandum,Kennet Partners","source":"Creandum portfolio"}
+{"name":"Monta","domain":"monta.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Creandum,Energize Capital,Headline","source":"Creandum portfolio"}
+{"name":"Vivino","domain":"vivino.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Sprints Capital,Balderton","source":"Balderton portfolio"}
+{"name":"Too Good To Go","domain":"toogoodtogo.com","country_code":"dk","hq_city":"Copenhagen","tier":"unicorn","investors":"Blisce,Creandum","source":"Danish unicorn lists"}
+{"name":"Netcompany","domain":"netcompany.com","country_code":"dk","hq_city":"Copenhagen","tier":"big_tech","investors":"","source":"Danish tech employers"}
+{"name":"Siteimprove","domain":"siteimprove.com","country_code":"dk","hq_city":"Copenhagen","tier":"big_tech","investors":"Nordic Capital","source":"Danish tech employers"}
+{"name":"Novo Nordisk","domain":"novonordisk.com","country_code":"dk","hq_city":"Bagsvaerd","tier":"big_tech","investors":"","source":"Large Danish employers"}
+{"name":"Vestas","domain":"vestas.com","country_code":"dk","hq_city":"Aarhus","tier":"big_tech","investors":"","source":"Large Danish employers"}
+{"name":"Maersk","domain":"maersk.com","country_code":"dk","hq_city":"Copenhagen","tier":"big_tech","investors":"","source":"Large Danish employers"}
+{"name":"Ageras","domain":"ageras.com","country_code":"dk","hq_city":"Copenhagen","tier":"vc_backed","investors":"Investcorp,Rabo Frontier","source":"Danish fintech lists"}
+{"name":"GomSpace","domain":"gomspace.com","country_code":"dk","hq_city":"Aalborg","tier":"big_tech","investors":"","source":"Danish spacetech employers"}
+{"name":"Danfoss","domain":"danfoss.com","country_code":"dk","hq_city":"Nordborg","tier":"big_tech","investors":"","source":"Large Danish employers"}
+{"name":"Nokia","domain":"nokia.com","country_code":"fi","hq_city":"Espoo","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Supercell","domain":"supercell.com","country_code":"fi","hq_city":"Helsinki","tier":"big_tech","investors":"Tencent","source":"Finnish tech employers"}
+{"name":"Rovio","domain":"rovio.com","country_code":"fi","hq_city":"Espoo","tier":"big_tech","investors":"Sega","source":"Finnish tech employers"}
+{"name":"Wolt","domain":"wolt.com","country_code":"fi","hq_city":"Helsinki","tier":"unicorn","investors":"DoorDash,ICONIQ,EQT Ventures","source":"EQT Ventures portfolio"}
+{"name":"RELEX Solutions","domain":"relexsolutions.com","country_code":"fi","hq_city":"Helsinki","tier":"unicorn","investors":"Blackstone,TCV,Summit Partners","source":"Finnish unicorn lists"}
+{"name":"ICEYE","domain":"iceye.com","country_code":"fi","hq_city":"Espoo","tier":"unicorn","investors":"Molten Ventures,Seraphim,Solidium","source":"Finnish unicorn lists"}
+{"name":"Aiven","domain":"aiven.io","country_code":"fi","hq_city":"Helsinki","tier":"unicorn","investors":"Atomico,IVP,Eurazeo,Earlybird","source":"Atomico portfolio"}
+{"name":"Swappie","domain":"swappie.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"Lifeline Ventures,Verdane,TESI","source":"Finnish startup lists"}
+{"name":"Oura","domain":"ouraring.com","country_code":"fi","hq_city":"Oulu","tier":"unicorn","investors":"Fidelity,Dexcom,Forerunner","source":"Finnish unicorn lists"}
+{"name":"Varjo","domain":"varjo.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"Atomico,EQT Ventures,Lifeline Ventures","source":"Atomico portfolio"}
+{"name":"Smartly","domain":"smartly.io","country_code":"fi","hq_city":"Helsinki","tier":"unicorn","investors":"Providence Equity","source":"Finnish tech lists"}
+{"name":"Solar Foods","domain":"solarfoods.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"Fazer,Agronomics","source":"Finnish foodtech lists"}
+{"name":"Enfuce","domain":"enfuce.com","country_code":"fi","hq_city":"Espoo","tier":"vc_backed","investors":"Vitruvian Partners,MasterCard","source":"Finnish fintech lists"}
+{"name":"Framery","domain":"frameryacoustics.com","country_code":"fi","hq_city":"Tampere","tier":"big_tech","investors":"Vaaka Partners","source":"Finnish tech employers"}
+{"name":"Metacore","domain":"metacoregames.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"Supercell","source":"Finnish gaming lists"}
+{"name":"KONE","domain":"kone.com","country_code":"fi","hq_city":"Espoo","tier":"big_tech","investors":"","source":"Large Finnish employers"}
+{"name":"Reaktor","domain":"reaktor.com","country_code":"fi","hq_city":"Helsinki","tier":"big_tech","investors":"","source":"Finnish tech employers"}
+{"name":"Futurice","domain":"futurice.com","country_code":"fi","hq_city":"Helsinki","tier":"big_tech","investors":"","source":"Finnish tech employers"}
+{"name":"Vaisala","domain":"vaisala.com","country_code":"fi","hq_city":"Vantaa","tier":"big_tech","investors":"","source":"Finnish tech employers"}
+{"name":"IQM Quantum Computers","domain":"meetiqm.com","country_code":"fi","hq_city":"Espoo","tier":"vc_backed","investors":"World Fund,Tencent,Ten Eleven","source":"Finnish quantum lists"}
+{"name":"Nightingale Health","domain":"nightingalehealth.com","country_code":"fi","hq_city":"Helsinki","tier":"big_tech","investors":"","source":"Finnish healthtech lists"}
+{"name":"Yousician","domain":"yousician.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"Atomico,Creandum","source":"Atomico portfolio"}
+{"name":"Sulapac","domain":"sulapac.com","country_code":"fi","hq_city":"Helsinki","tier":"vc_backed","investors":"CHANEL,Nordic Foodtech VC","source":"Finnish materials lists"}
+{"name":"Bolt","domain":"bolt.eu","country_code":"ee","hq_city":"Tallinn","tier":"unicorn","investors":"Sequoia,G Squared,Fidelity,Daimler","source":"Invest in Estonia unicorn list"}
+{"name":"Pipedrive","domain":"pipedrive.com","country_code":"ee","hq_city":"Tallinn","tier":"unicorn","investors":"Vista Equity,Bessemer,Atomico","source":"Invest in Estonia unicorn list"}
+{"name":"Veriff","domain":"veriff.com","country_code":"ee","hq_city":"Tallinn","tier":"unicorn","investors":"Tiger Global,Accel,Y Combinator","source":"Invest in Estonia unicorn list"}
+{"name":"Glia","domain":"glia.com","country_code":"ee","hq_city":"Tallinn","tier":"unicorn","investors":"Insight Partners,RingCentral Ventures","source":"Invest in Estonia unicorn list"}
+{"name":"Skeleton Technologies","domain":"skeletontech.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"Marubeni,Siemens","source":"Estonian deep tech lists"}
+{"name":"Starship Technologies","domain":"starship.xyz","country_code":"ee","hq_city":"Tallinn","tier":"unicorn","investors":"Plural,Iconical,Matrix Partners","source":"Estonian startup lists"}
+{"name":"Salv","domain":"salv.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"ffVC,Passion Capital","source":"Estonian fintech lists"}
+{"name":"Montonio","domain":"montonio.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"Karma Ventures,Fly Ventures","source":"Estonian fintech lists"}
+{"name":"Katana Cloud Inventory","domain":"katanamrp.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"Atomico,83North","source":"Atomico portfolio"}
+{"name":"Xolo","domain":"xolo.io","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"Karma Ventures,Vendep","source":"Estonian startup lists"}
+{"name":"Nortal","domain":"nortal.com","country_code":"ee","hq_city":"Tallinn","tier":"big_tech","investors":"","source":"Estonian tech employers"}
+{"name":"Playtech","domain":"playtech.com","country_code":"ee","hq_city":"Tallinn","tier":"big_tech","investors":"","source":"Invest in Estonia unicorn list"}
+{"name":"Elcogen","domain":"elcogen.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"HD Hyundai,Baker Hughes","source":"Estonian cleantech lists"}
+{"name":"Tuum","domain":"tuum.com","country_code":"ee","hq_city":"Tallinn","tier":"vc_backed","investors":"CommerzVentures,Karma Ventures","source":"Estonian fintech lists"}
+{"name":"UiPath","domain":"uipath.com","country_code":"ro","hq_city":"Bucharest","tier":"unicorn","investors":"Accel,Sequoia,CapitalG,Earlybird","source":"Accel portfolio"}
+{"name":"Bitdefender","domain":"bitdefender.com","country_code":"ro","hq_city":"Bucharest","tier":"big_tech","investors":"Vitruvian Partners","source":"Romanian tech employers"}
+{"name":"FintechOS","domain":"fintechos.com","country_code":"ro","hq_city":"Bucharest","tier":"vc_backed","investors":"Draper Esprit,OTB Ventures","source":"Romanian fintech lists"}
+{"name":"MultiversX","domain":"multiversx.com","country_code":"ro","hq_city":"Sibiu","tier":"vc_backed","investors":"Binance Labs,Electric Capital","source":"Romanian crypto lists"}
+{"name":"Bitpanda","domain":"bitpanda.com","country_code":"at","hq_city":"Vienna","tier":"unicorn","investors":"Valar Ventures,Peter Thiel,Alan Howard","source":"Austrian unicorn lists"}
+{"name":"GoStudent","domain":"gostudent.org","country_code":"at","hq_city":"Vienna","tier":"unicorn","investors":"SoftBank,Tencent,Prosus,DN Capital","source":"Austrian unicorn lists"}
+{"name":"Bitmovin","domain":"bitmovin.com","country_code":"at","hq_city":"Klagenfurt","tier":"vc_backed","investors":"Highland Europe,Atomico,Y Combinator","source":"Y Combinator alumni"}
+{"name":"Storyblok","domain":"storyblok.com","country_code":"at","hq_city":"Linz","tier":"vc_backed","investors":"HV Capital,Mubadala Capital","source":"HV Capital portfolio"}
+{"name":"TourRadar","domain":"tourradar.com","country_code":"at","hq_city":"Vienna","tier":"vc_backed","investors":"TCV,Cherry Ventures","source":"Austrian travel tech lists"}
+{"name":"refurbed","domain":"refurbed.com","country_code":"at","hq_city":"Vienna","tier":"vc_backed","investors":"Evli Growth,Almaz Capital","source":"Austrian ecommerce lists"}
+{"name":"Prewave","domain":"prewave.com","country_code":"at","hq_city":"Vienna","tier":"vc_backed","investors":"Hedosophia,Creandum,Ventech","source":"Creandum portfolio"}
+{"name":"Adverity","domain":"adverity.com","country_code":"at","hq_city":"Vienna","tier":"vc_backed","investors":"SingTel Innov8,Sapphire Ventures","source":"Austrian SaaS lists"}
+{"name":"Collibra","domain":"collibra.com","country_code":"be","hq_city":"Brussels","tier":"unicorn","investors":"Index Ventures,ICONIQ,Dawn Capital","source":"Index Ventures portfolio"}
+{"name":"Odoo","domain":"odoo.com","country_code":"be","hq_city":"Ramillies","tier":"unicorn","investors":"Summit Partners,Sofina,General Atlantic","source":"Belgian unicorn lists"}
+{"name":"Deliverect","domain":"deliverect.com","country_code":"be","hq_city":"Ghent","tier":"unicorn","investors":"Coatue,DST Global,Alta Ventures","source":"Belgian unicorn lists"}
+{"name":"Showpad","domain":"showpad.com","country_code":"be","hq_city":"Ghent","tier":"vc_backed","investors":"Insight Partners,Dawn Capital","source":"Belgian SaaS lists"}
+{"name":"Teamleader","domain":"teamleader.eu","country_code":"be","hq_city":"Ghent","tier":"vc_backed","investors":"Fortino Capital,KeenSight","source":"Belgian SaaS lists"}
+{"name":"Silverfin","domain":"silverfin.com","country_code":"be","hq_city":"Ghent","tier":"vc_backed","investors":"Hg Capital,Index Ventures","source":"Index Ventures portfolio"}
+{"name":"Materialise","domain":"materialise.com","country_code":"be","hq_city":"Leuven","tier":"big_tech","investors":"","source":"Belgian tech employers"}
+{"name":"Barco","domain":"barco.com","country_code":"be","hq_city":"Kortrijk","tier":"big_tech","investors":"","source":"Belgian tech employers"}
+{"name":"imec","domain":"imec-int.com","country_code":"be","hq_city":"Leuven","tier":"big_tech","investors":"","source":"Belgian research/tech employers"}
+{"name":"Cognite","domain":"cognite.com","country_code":"no","hq_city":"Oslo","tier":"vc_backed","investors":"Aker,TCV,Accel","source":"Accel portfolio"}
+{"name":"Oda","domain":"oda.com","country_code":"no","hq_city":"Oslo","tier":"vc_backed","investors":"Kinnevik,Prosus,Verdane","source":"Norwegian startup lists"}
+{"name":"Tibber","domain":"tibber.com","country_code":"no","hq_city":"Oslo","tier":"unicorn","investors":"Balderton,Eight Roads,Summa Equity","source":"Balderton portfolio"}
+{"name":"Kahoot","domain":"kahoot.com","country_code":"no","hq_city":"Oslo","tier":"big_tech","investors":"Goldman Sachs,SoftBank","source":"Norwegian tech employers"}
+{"name":"reMarkable","domain":"remarkable.com","country_code":"no","hq_city":"Oslo","tier":"vc_backed","investors":"Spark Capital","source":"Norwegian tech lists"}
+{"name":"Vipps MobilePay","domain":"vipps.no","country_code":"no","hq_city":"Oslo","tier":"big_tech","investors":"","source":"Norwegian fintech employers"}
+{"name":"Gelato","domain":"gelato.com","country_code":"no","hq_city":"Oslo","tier":"unicorn","investors":"SoftBank,Insight Partners,Dawn Capital","source":"Invest in Estonia unicorn list"}
+{"name":"Dune","domain":"dune.com","country_code":"no","hq_city":"Oslo","tier":"vc_backed","investors":"Coatue,Union Square Ventures","source":"Norwegian crypto lists"}
+{"name":"Nordic Semiconductor","domain":"nordicsemi.com","country_code":"no","hq_city":"Trondheim","tier":"big_tech","investors":"","source":"Norwegian tech employers"}
+{"name":"Adevinta","domain":"adevinta.com","country_code":"no","hq_city":"Oslo","tier":"big_tech","investors":"Permira,Blackstone","source":"Large European tech employers"}
+{"name":"Schibsted","domain":"schibsted.com","country_code":"no","hq_city":"Oslo","tier":"big_tech","investors":"","source":"Large European tech employers"}
+{"name":"Vinted","domain":"vinted.com","country_code":"lt","hq_city":"Vilnius","tier":"unicorn","investors":"Accel,Insight Partners,Lightspeed,Sprints Capital","source":"Accel portfolio"}
+{"name":"Nord Security","domain":"nordsecurity.com","country_code":"lt","hq_city":"Vilnius","tier":"unicorn","investors":"Novator Ventures,General Catalyst","source":"Lithuanian unicorn lists"}
+{"name":"Kilo Health","domain":"kilo.health","country_code":"lt","hq_city":"Vilnius","tier":"big_tech","investors":"","source":"Lithuanian tech employers"}
+{"name":"Interactio","domain":"interactio.io","country_code":"lt","hq_city":"Vilnius","tier":"vc_backed","investors":"Eight Roads,Tiger Global","source":"Lithuanian startup lists"}
+{"name":"Whatagraph","domain":"whatagraph.com","country_code":"lt","hq_city":"Vilnius","tier":"vc_backed","investors":"Karma Ventures,Practica Capital","source":"Lithuanian startup lists"}
+{"name":"Printify","domain":"printify.com","country_code":"lv","hq_city":"Riga","tier":"unicorn","investors":"Index Ventures,H&M Group,Virgin Group","source":"Index Ventures portfolio"}
+{"name":"Lokalise","domain":"lokalise.com","country_code":"lv","hq_city":"Riga","tier":"vc_backed","investors":"Prosus Ventures,Mubadala","source":"Latvian startup lists"}
+{"name":"Mintos","domain":"mintos.com","country_code":"lv","hq_city":"Riga","tier":"vc_backed","investors":"Grumpy Investments,Skillion Ventures","source":"Latvian fintech lists"}
+{"name":"Sonarworks","domain":"sonarworks.com","country_code":"lv","hq_city":"Riga","tier":"vc_backed","investors":"Karma Ventures,Change Ventures","source":"Latvian startup lists"}
+{"name":"Productboard","domain":"productboard.com","country_code":"cz","hq_city":"Prague","tier":"unicorn","investors":"Tiger Global,Sequoia,Index Ventures,Bessemer","source":"Index Ventures portfolio"}
+{"name":"Rohlik","domain":"rohlik.cz","country_code":"cz","hq_city":"Prague","tier":"unicorn","investors":"Index Ventures,Partech,Sofina","source":"Index Ventures portfolio"}
+{"name":"Kiwi.com","domain":"kiwi.com","country_code":"cz","hq_city":"Brno","tier":"big_tech","investors":"General Atlantic","source":"Czech tech employers"}
+{"name":"JetBrains","domain":"jetbrains.com","country_code":"cz","hq_city":"Prague","tier":"big_tech","investors":"","source":"Czech tech employers"}
+{"name":"Rossum","domain":"rossum.ai","country_code":"cz","hq_city":"Prague","tier":"vc_backed","investors":"United Ventures,LocalGlobe,Elad Gil","source":"LocalGlobe portfolio"}
+{"name":"Deepnote","domain":"deepnote.com","country_code":"cz","hq_city":"Prague","tier":"vc_backed","investors":"Index Ventures,Accel,Y Combinator","source":"Y Combinator alumni"}
+{"name":"ESET","domain":"eset.com","country_code":"sk","hq_city":"Bratislava","tier":"big_tech","investors":"","source":"Slovak tech employers"}
+{"name":"Sygic","domain":"sygic.com","country_code":"sk","hq_city":"Bratislava","tier":"big_tech","investors":"","source":"Slovak tech employers"}
+{"name":"Photoneo","domain":"photoneo.com","country_code":"sk","hq_city":"Bratislava","tier":"vc_backed","investors":"Sandberg Capital","source":"Slovak robotics lists"}
+{"name":"Bitrise","domain":"bitrise.io","country_code":"hu","hq_city":"Budapest","tier":"vc_backed","investors":"Insight Partners,Partech,OpenOcean","source":"Hungarian startup lists"}
+{"name":"SEON","domain":"seon.io","country_code":"hu","hq_city":"Budapest","tier":"unicorn","investors":"IVP,Creandum,PortfoLion","source":"Creandum portfolio"}
+{"name":"Prezi","domain":"prezi.com","country_code":"hu","hq_city":"Budapest","tier":"big_tech","investors":"Accel,Spectrum Equity","source":"Hungarian tech employers"}
+{"name":"Nexo","domain":"nexo.com","country_code":"bg","hq_city":"Sofia","tier":"vc_backed","investors":"Arrington Capital","source":"Bulgarian fintech lists"}
+{"name":"Quantive","domain":"quantive.com","country_code":"bg","hq_city":"Sofia","tier":"vc_backed","investors":"Insight Partners,Silver Lake Waterman","source":"Bulgarian SaaS lists"}
+{"name":"Viva.com","domain":"vivawallet.com","country_code":"gr","hq_city":"Athens","tier":"unicorn","investors":"JPMorgan,Hedosophia,Latsco","source":"Greek unicorn lists"}
+{"name":"Blueground","domain":"theblueground.com","country_code":"gr","hq_city":"Athens","tier":"unicorn","investors":"Prosus Ventures,WestCap,Susquehanna","source":"Greek unicorn lists"}
+{"name":"Skroutz","domain":"skroutz.gr","country_code":"gr","hq_city":"Athens","tier":"big_tech","investors":"CVC Capital","source":"Greek tech employers"}
+{"name":"Workable","domain":"workable.com","country_code":"gr","hq_city":"Athens","tier":"vc_backed","investors":"Zeev Ventures,14W,Notion Capital","source":"Greek SaaS lists"}
+{"name":"Netdata","domain":"netdata.cloud","country_code":"gr","hq_city":"Athens","tier":"vc_backed","investors":"Bain Capital Ventures,Bessemer,Marathon","source":"Greek SaaS lists"}
