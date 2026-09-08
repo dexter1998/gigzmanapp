@@ -892,5 +892,161 @@
   "hawthorne|us": {
     "lat": 33.9128272,
     "lng": -118.3426122
+  },
+  "long beach|us": {
+    "lat": 33.7690164,
+    "lng": -118.191604
+  },
+  "cedar park|us": {
+    "lat": 30.5217116,
+    "lng": -97.827833
+  },
+  "redondo beach|us": {
+    "lat": 33.8398289,
+    "lng": -118.3845942
+  },
+  "kent|us": {
+    "lat": 47.3826903,
+    "lng": -122.2270272
+  },
+  "berthoud|us": {
+    "lat": 40.329325,
+    "lng": -105.1258685
+  },
+  "devens|us": {
+    "lat": 42.5389512,
+    "lng": -71.6094356
+  },
+  "everett|us": {
+    "lat": 47.9793437,
+    "lng": -122.2127011
+  },
+  "foothill ranch|us": {
+    "lat": 33.6837644,
+    "lng": -117.662249
+  },
+  "rockville|us": {
+    "lat": 39.0817985,
+    "lng": -77.1516844
+  },
+  "somerville|us": {
+    "lat": 42.3875968,
+    "lng": -71.0994968
+  },
+  "carson city|us": {
+    "lat": 39.1663259,
+    "lng": -119.7670374
+  },
+  "alameda|us": {
+    "lat": 37.7652076,
+    "lng": -122.241635
+  },
+  "santa cruz|us": {
+    "lat": 36.9743626,
+    "lng": -122.0294673
+  },
+  "south san francisco|us": {
+    "lat": 37.6535403,
+    "lng": -122.4168664
+  },
+  "alpharetta|us": {
+    "lat": 34.0755962,
+    "lng": -84.2945964
+  },
+  "columbus|us": {
+    "lat": 39.9622601,
+    "lng": -83.0007065
+  },
+  "kirkland|us": {
+    "lat": 47.6765382,
+    "lng": -122.2070775
+  },
+  "eden prairie|us": {
+    "lat": 44.8546856,
+    "lng": -93.470786
+  },
+  "burlingame|us": {
+    "lat": 37.5780965,
+    "lng": -122.3473099
+  },
+  "salt lake city|us": {
+    "lat": 40.7596198,
+    "lng": -111.886797
+  },
+  "hayward|us": {
+    "lat": 37.6688205,
+    "lng": -122.080796
+  },
+  "delanco|us": {
+    "lat": 40.0506669,
+    "lng": -74.9535016
+  },
+  "culver city|us": {
+    "lat": 34.0211224,
+    "lng": -118.396466
+  },
+  "marina del rey|us": {
+    "lat": 33.9776848,
+    "lng": -118.448647
+  },
+  "lehi|us": {
+    "lat": 40.3881114,
+    "lng": -111.8486019
+  },
+  "cary|us": {
+    "lat": 35.7873617,
+    "lng": -78.7811623
+  },
+  "boulder|us": {
+    "lat": 40.0149856,
+    "lng": -105.270545
+  },
+  "cedar falls|us": {
+    "lat": 42.5361805,
+    "lng": -92.447758
+  },
+  "arlington|us": {
+    "lat": 32.7355816,
+    "lng": -97.1071186
+  },
+  "alexandria|us": {
+    "lat": 38.8051095,
+    "lng": -77.0470229
+  },
+  "washington|us": {
+    "lat": 38.8950982,
+    "lng": -77.0363849
+  },
+  "livingston|us": {
+    "lat": 30.711029,
+    "lng": -94.9329898
+  },
+  "cupertino|us": {
+    "lat": 37.3228934,
+    "lng": -122.0322895
+  },
+  "college park|us": {
+    "lat": 38.980666,
+    "lng": -76.9369189
+  },
+  "berkeley|us": {
+    "lat": 37.8708393,
+    "lng": -122.272863
+  },
+  "manchester|us": {
+    "lat": 42.9956397,
+    "lng": -71.4547891
+  },
+  "belmont|us": {
+    "lat": 37.5164926,
+    "lng": -122.2941914
+  },
+  "san ramon|us": {
+    "lat": 37.7648021,
+    "lng": -121.9544387
+  },
+  "incline village|us": {
+    "lat": 39.2501246,
+    "lng": -119.951909
   }
 }

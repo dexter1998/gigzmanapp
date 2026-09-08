@@ -16,7 +16,29 @@
 
 export type PhraseTier = "A" | "B" | "C";
 
+/**
+ * Round 1 measured 16,454 crawled companies. hit% = share that produced at least one open role:
+ *
+ *   HR consulting 44% · recruiter 43% · employment agency 40% · temp agency 37%
+ *   engineering consultant 33% · software company 27% (4,851 jobs, the volume leader)
+ *   business mgmt consultant 23% · corporate office 19% · computer support 18%
+ *   law firm 17% · marketing agency 17% · website designer 14% · advertising agency 11%
+ *   structural engineer 11% · lawyer 9% · criminal justice attorney 7%
+ *
+ * The staffing cluster came top and was not something round 1 asked for directly -- it surfaced
+ * from the raw labels. One caveat before leaning on it: agencies post roles on behalf of other
+ * employers, so those listings are real jobs but not necessarily the agency's own. Worth deciding
+ * whether that is wanted before widening further.
+ *
+ * Legal is the clear loser (lawyer 9%, criminal attorney 7%) and drops to C.
+ */
 export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
+  // Measured top of round 1 -- promoted on evidence, not expectation.
+  { phrase: "employment agency", tier: "A" },
+  { phrase: "recruiter", tier: "A" },
+  { phrase: "human resource consulting", tier: "A" },
+  { phrase: "temp agency", tier: "A" },
+
   // A -- software/IT and the professional firms around it. Highest expected density of both a
   // website and a real careers page.
   { phrase: "software company", tier: "A" },
@@ -25,11 +47,11 @@ export const JOB_PHRASES: Array<{ phrase: string; tier: PhraseTier }> = [
   { phrase: "it services", tier: "A" },
   { phrase: "web design company", tier: "A" },
   { phrase: "digital marketing agency", tier: "A" },
-  { phrase: "advertising agency", tier: "A" },
+  { phrase: "advertising agency", tier: "C" }, // 11% in round 1
   { phrase: "management consultant", tier: "A" },
   { phrase: "engineering consultant", tier: "A" },
   { phrase: "accounting firm", tier: "A" },
-  { phrase: "law firm", tier: "A" },
+  { phrase: "law firm", tier: "C" }, // 17% in round 1
   { phrase: "staffing agency", tier: "A" },
   { phrase: "business process outsourcing company", tier: "A" },
   { phrase: "corporate office", tier: "A" },
