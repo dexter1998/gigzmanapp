@@ -43,6 +43,21 @@ function loadEnvLocal() {
   }
 }
 
+/**
+ * Pulls the auth code out of whatever was pasted.
+ *
+ * Asking for the bare code invited a copy that starts one character too late: Google's codes look
+ * like "4/0AT...", the "4/" reads as part of the URL rather than the value, and dropping it fails
+ * with a misleading "Malformed auth code". Taking the whole URL removes the judgement call, and the
+ * value still needs decoding because the browser percent-encodes the slash.
+ */
+function extractCode(input: string): string {
+  const marker = input.indexOf("code=");
+  if (marker === -1) return input;
+  const raw = input.slice(marker + "code=".length).split("&")[0];
+  return decodeURIComponent(raw);
+}
+
 async function main() {
   loadEnvLocal();
   const id = process.env.GOOGLE_CLIENT_ID;
@@ -66,12 +81,14 @@ async function main() {
   console.log(url);
   console.log(
     "\n2. Approve. The browser lands on the redirect URI -- it does not need to load, and an error\n" +
-      "   page there is fine. Copy the `code` value out of the address bar.\n",
+      "   page there is fine. Paste the WHOLE address-bar URL below.\n",
   );
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const code = (await rl.question("code: ")).trim();
+  const answer = (await rl.question("paste redirect URL (or just the code): ")).trim();
   rl.close();
+
+  const code = extractCode(answer);
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
