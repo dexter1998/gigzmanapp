@@ -13,7 +13,18 @@ import { createInterface } from "readline/promises";
 import fs from "node:fs";
 import path from "node:path";
 
-const REDIRECT = "http://localhost:3000/oauth2callback";
+/**
+ * Must be a URI already registered on the OAuth client, or Google refuses with
+ * redirect_uri_mismatch before the consent screen even renders.
+ *
+ * This client is the app's own NextAuth Google provider (see auth.ts), so its sign-in callback is
+ * registered and is the one path here that needs no Cloud Console change. Nothing has to serve it
+ * successfully -- the code arrives as a query parameter, so even a dead port leaves it readable in
+ * the address bar. Override with --redirect=... after adding a dedicated URI.
+ */
+const DEFAULT_REDIRECT = "http://localhost:3000/api/auth/callback/google";
+const REDIRECT =
+  process.argv.find((a) => a.startsWith("--redirect="))?.slice("--redirect=".length) ?? DEFAULT_REDIRECT;
 
 /**
  * The client id and secret already live in .env.local, and tsx does not load it. This used to
@@ -49,9 +60,14 @@ async function main() {
       prompt: "consent", // forces a refresh_token even if this client was consented before
     });
 
-  console.log("\n1. Open this URL as the account that owns the Search Console property:\n");
+  console.log(`\nredirect_uri: ${REDIRECT}`);
+  console.log("(must be registered on this OAuth client, else Google returns redirect_uri_mismatch)\n");
+  console.log("1. Open this URL as the account that owns the Search Console property:\n");
   console.log(url);
-  console.log("\n2. Approve, then copy the `code` parameter from the redirected URL.\n");
+  console.log(
+    "\n2. Approve. The browser lands on the redirect URI -- it does not need to load, and an error\n" +
+      "   page there is fine. Copy the `code` value out of the address bar.\n",
+  );
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const code = (await rl.question("code: ")).trim();
