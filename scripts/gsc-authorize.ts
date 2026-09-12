@@ -5,15 +5,35 @@
  * webmasters.readonly scope, which requires a browser consent by an account that owns the property.
  * That can't be done headlessly, so this prints the URL and exchanges the code you paste back.
  *
- *   GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... npx tsx scripts/gsc-authorize.ts
+ *   npx tsx scripts/gsc-authorize.ts
  *
  * The client's authorised redirect URIs must include http://localhost:3000/oauth2callback.
  */
 import { createInterface } from "readline/promises";
+import fs from "node:fs";
+import path from "node:path";
 
 const REDIRECT = "http://localhost:3000/oauth2callback";
 
+/**
+ * The client id and secret already live in .env.local, and tsx does not load it. This used to
+ * require them on the command line, which put real credentials into shell history for a script
+ * that is run once -- so they are read from the file when the environment does not carry them.
+ */
+function loadEnvLocal() {
+  const file = path.join(__dirname, "..", ".env.local");
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
+    if (!m) continue;
+    const [, key, raw] = m;
+    if (process.env[key]) continue; // an explicitly exported value still wins
+    process.env[key] = raw.trim().replace(/^["'](.*)["']$/, "$1");
+  }
+}
+
 async function main() {
+  loadEnvLocal();
   const id = process.env.GOOGLE_CLIENT_ID;
   const secret = process.env.GOOGLE_CLIENT_SECRET;
   if (!id || !secret) throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required");
@@ -49,7 +69,7 @@ async function main() {
     throw new Error(`token exchange failed: ${data.error ?? res.status} ${data.error_description ?? ""}`);
   }
 
-  console.log("\nAdd this to Vercel as GSC_REFRESH_TOKEN (production):\n");
+  console.log("\nAdd this as GSC_REFRESH_TOKEN to .env.local and to the App Runner service config:\n");
   console.log(data.refresh_token);
 }
 
