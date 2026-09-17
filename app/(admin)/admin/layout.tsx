@@ -13,17 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const email = await requireAdmin();
   return (
     <div className="adm-shell">
-      <aside className="adm-rail">
-        <div className="adm-rail-brand">
-          <span className="name">Mantis</span>
-          <span className="tag">Admin</span>
-        </div>
-        <AdminNav />
-        <div className="adm-rail-foot">
-          {email}
-          <br />read-only console
-        </div>
-      </aside>
+      <AdminNav email={email} />
       <main className="adm-main">{children}</main>
     </div>
   );

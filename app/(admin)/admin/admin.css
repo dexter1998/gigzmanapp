@@ -7,22 +7,37 @@
 .adm-rail {
   width: 232px; flex-shrink: 0; background: #14202f; color: #ffffff;
   display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  transition: width 0.15s ease;
 }
+.adm-rail.is-collapsed { width: 64px; }
 .adm-rail-brand {
   display: flex; align-items: baseline; gap: 8px; padding: 22px 20px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+.adm-rail.is-collapsed .adm-rail-brand { padding: 22px 0 18px; justify-content: center; }
 .adm-rail-brand .name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
 .adm-rail-brand .tag {
   font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
   color: var(--g-green); border: 1px solid rgba(168, 213, 30, 0.45);
   border-radius: var(--radius-sm); padding: 1px 6px;
 }
-.adm-nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.adm-nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+
+/* Collapsible group header — a real button now (Radix Collapsible.Trigger), not decoration. */
 .adm-nav-label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
   color: #7d8b9d; padding: 14px 10px 6px;
 }
+.adm-nav-label.as-trigger {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: none; border: none; cursor: pointer; font: inherit; letter-spacing: 0.09em; text-transform: uppercase;
+}
+.adm-nav-label.as-trigger:hover { color: #c3ccd7; }
+.adm-nav-chev { transition: transform 0.15s ease; flex-shrink: 0; opacity: 0.8; }
+.adm-nav-chev.is-open { transform: rotate(180deg); }
+.adm-nav-collapsible { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.adm-nav-collapsible[data-state="closed"] { display: none; }
+
 .adm-nav a {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px;
   border-radius: var(--radius-md); font-size: 13.5px; font-weight: 500;
@@ -35,6 +50,25 @@
    "this is different" signal, not just another analysis tab. */
 .adm-nav a.mut-link { color: #ff8a65; }
 .adm-nav a.mut-link:hover { background: rgba(255, 138, 101, 0.14); color: #ffab91; }
+
+/* Icon rail (collapsed) — groups collapse to plain stacks with a hairline between them, labels
+   hidden, active/hover states unchanged so muscle memory (top=Overview, etc.) still works. */
+.adm-nav.is-collapsed a { justify-content: center; padding: 9px 0; }
+.adm-nav.is-collapsed .adm-nav-text { display: none; }
+.adm-nav-rail-group { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.adm-nav-rail-group:first-child { padding-top: 0; border-top: none; }
+
+.adm-nav-foot { padding: 6px 10px 10px; display: flex; flex-direction: column; gap: 2px; }
+.adm-nav-outreach { display: flex; flex-direction: column; gap: 2px; }
+.adm-nav-outreach.is-collapsed a { justify-content: center; padding: 9px 0; }
+.adm-rail-toggle {
+  display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 8px 10px;
+  border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.08); background: none;
+  color: #7d8b9d; font-size: 12px; font-weight: 500; cursor: pointer; justify-content: center;
+}
+.adm-rail-toggle:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.adm-rail.is-collapsed .adm-rail-toggle { padding: 8px; }
+
 .adm-rail-foot {
   padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11.5px; color: #7d8b9d; line-height: 1.5;
@@ -85,6 +119,17 @@ table.adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .adm-table td.wrap { white-space: normal; min-width: 220px; max-width: 420px; }
 .adm-table a { color: var(--g-green-darker); font-weight: 600; text-decoration: none; }
 .adm-table a:hover { text-decoration: underline; }
+.adm-rowlink {
+  display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 0;
+  color: var(--g-green-darker); font-weight: 600; font-size: inherit; font-variant-numeric: tabular-nums;
+  cursor: pointer; text-align: left;
+}
+.adm-rowlink:hover { text-decoration: underline; }
+.adm-modal-full-link {
+  display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--g-green-darker);
+  text-decoration: none; padding-top: 2px;
+}
+.adm-modal-full-link:hover { text-decoration: underline; }
 .adm-empty { padding: 22px 16px; font-size: 12.5px; color: var(--g-gray-500); }
 
 /* ── Pills & health ── */
@@ -122,8 +167,55 @@ table.adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 
 @media (max-width: 900px) {
   .adm-shell { flex-direction: column; }
-  .adm-rail { width: 100%; height: auto; position: static; }
-  .adm-nav { flex-direction: row; flex-wrap: wrap; }
+  .adm-rail, .adm-rail.is-collapsed { width: 100%; height: auto; position: static; }
+  .adm-nav { flex-direction: row; flex-wrap: wrap; overflow: visible; }
   .adm-nav-label { display: none; }
+  .adm-nav-collapsible[data-state="closed"] { display: flex; }
+  .adm-rail-toggle { display: none; }
   .adm-main { padding: 18px 14px 40px; }
 }
+
+/* ── Filter dropdowns ── */
+.adm-filterbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+.adm-filter-trigger {
+  display: flex; align-items: center; gap: 6px; background: var(--g-white); border: 1px solid var(--g-border);
+  border-radius: var(--radius-pill); padding: 6px 10px 6px 12px; font-size: 12.5px; color: var(--g-ink-soft);
+  cursor: pointer; line-height: 1;
+}
+.adm-filter-trigger:hover { border-color: var(--g-gray-300); }
+.adm-filter-trigger.is-set { border-color: var(--g-green); background: var(--g-green-mint); color: var(--g-green-text); }
+.adm-filter-trigger .k { font-weight: 600; color: var(--g-gray-500); }
+.adm-filter-trigger.is-set .k { color: var(--g-green-text); opacity: 0.75; }
+.adm-filter-trigger .v { font-weight: 600; }
+.adm-filter-trigger .chev { opacity: 0.6; }
+.adm-filter-menu {
+  background: var(--g-white); border: 1px solid var(--g-border); border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(20, 32, 47, 0.12); padding: 4px; min-width: 160px; z-index: 60;
+}
+.adm-filter-item {
+  padding: 7px 10px; font-size: 12.5px; color: var(--g-ink-soft); border-radius: var(--radius-sm);
+  cursor: pointer; outline: none;
+}
+.adm-filter-item[data-highlighted] { background: var(--g-gray-100); }
+.adm-filter-item.is-active { color: var(--g-green-text); font-weight: 600; }
+
+/* ── Modal (row quick-view) ── */
+.adm-modal-overlay { position: fixed; inset: 0; background: rgba(20, 32, 47, 0.45); z-index: 70; animation: adm-fade 0.12s ease; }
+.adm-modal-content {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(640px, calc(100vw - 32px)); max-height: min(80vh, 720px); overflow-y: auto;
+  background: var(--g-white); border-radius: var(--radius-lg); border: 1px solid var(--g-border);
+  box-shadow: 0 24px 64px rgba(20, 32, 47, 0.22); z-index: 71; padding: 0 20px 20px;
+}
+.adm-modal-head {
+  position: sticky; top: 0; background: var(--g-white); display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px; padding: 18px 0 12px; border-bottom: 1px solid var(--g-border); margin-bottom: 14px;
+}
+.adm-modal-title { font-size: 15px; font-weight: 700; color: var(--g-ink); }
+.adm-modal-sub { font-size: 12px; color: var(--g-gray-500); margin-top: 2px; }
+.adm-modal-close {
+  background: var(--g-gray-100); border: none; border-radius: var(--radius-sm); padding: 6px;
+  color: var(--g-gray-500); cursor: pointer; flex-shrink: 0;
+}
+.adm-modal-close:hover { color: var(--g-ink); background: var(--g-gray-100); }
+@keyframes adm-fade { from { opacity: 0; } to { opacity: 1; } }
