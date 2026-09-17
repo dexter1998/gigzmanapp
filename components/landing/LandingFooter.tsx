@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRightIcon, ArrowRightIcon, LinkedInIcon, XSocialIcon, YouTubeIcon } from "@/components/icons";
+import { FooterBadges } from "./FooterBadges";
 
 // Root-relative fragments ("/#capabilities") rather than bare ones — this footer now renders on
 // /pricing, /partner, /about and /contact too, where a bare "#capabilities" points at nothing on
@@ -14,11 +15,16 @@ const COLUMNS = [
 ] as const;
 
 /** Icon-only links announce as "link" to a screen reader unless they carry a name of their own. */
+/**
+ * Only profiles that actually exist. An icon linking to a guessed handle is worse than no icon:
+ * it sends people to someone else's account, or to a 404 with our name on it. Fill the URL in and
+ * the icon appears; leave it empty and it does not render.
+ */
 const SOCIALS = [
-  { Icon: LinkedInIcon, label: "LinkedIn" },
-  { Icon: XSocialIcon, label: "X" },
-  { Icon: YouTubeIcon, label: "YouTube" },
-] as const;
+  { Icon: LinkedInIcon, label: "LinkedIn", href: "https://www.linkedin.com/company/mantis-leads" },
+  { Icon: XSocialIcon, label: "X", href: "https://x.com/mantisleads" },
+  { Icon: YouTubeIcon, label: "YouTube", href: "" }, // not created yet
+].filter((s) => s.href);
 
 export function LandingFooter() {
   return (
@@ -30,6 +36,25 @@ export function LandingFooter() {
             <p style={{ fontSize: 13.5, color: "var(--g-ink-soft)", lineHeight: 1.55, maxWidth: 230 }}>
               AI-powered local lead intelligence for agencies and consultants.
             </p>
+
+            {/* Socials sit with the brand rather than in the bottom bar — the block reads as one
+                identity: who we are, where to find us, and who lists us. */}
+            <div style={{ display: SOCIALS.length ? "flex" : "none", gap: 12, marginTop: 18 }}>
+              {SOCIALS.map(({ Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={`Mantis Ai on ${label}`}
+                  style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icon size={16} />
+                </a>
+              ))}
+            </div>
+
+            <FooterBadges />
           </div>
 
           {COLUMNS.map((col) => (
@@ -67,13 +92,7 @@ export function LandingFooter() {
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginTop: 44, paddingTop: 24, borderTop: "1px solid rgba(20,32,51,0.12)" }}>
           <span style={{ fontSize: 13, color: "var(--g-ink-soft)" }}>© {new Date().getFullYear()} Mantis Ai. All rights reserved.</span>
-          <div style={{ display: "flex", gap: 12 }}>
-            {SOCIALS.map(({ Icon, label }) => (
-              <a key={label} href="#" aria-label={`Mantis Ai on ${label}`} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--g-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon size={16} />
-              </a>
-            ))}
-          </div>
+
         </div>
       </div>
     </footer>
