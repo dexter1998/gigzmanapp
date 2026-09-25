@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Fraunces, Poppins } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
+import { AnalyticsScripts } from "@/components/AnalyticsScripts";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
 
@@ -81,17 +82,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${jakarta.variable} ${fraunces.variable} ${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
-        {/* afterInteractive: loads once the page is interactive, matching Next.js's own
-            recommendation for analytics scripts that don't need to block rendering. */}
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="lazyOnload" />
-        <Script id="ga-init" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        <AnalyticsScripts measurementId={GA_MEASUREMENT_ID} />
+        <CookieConsent />
       </body>
     </html>
   );

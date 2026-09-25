@@ -1,0 +1,4 @@
+Contact: mailto:tarun@gigzman.com
+Expires: 2027-09-21T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://mantisai.in/.well-known/security.txt

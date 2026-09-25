@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Table, Pill, StatCard, fmtAgo, fmtDT, fmtN } from "../ui";
-import { Dialog, DialogHeader, FilterDropdown } from "../primitives";
+import { Dialog, DialogHeader, FilterDropdown, SearchInput } from "../primitives";
 
 export type UserRow = {
   email: string;
@@ -35,6 +35,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
   const [mode, setMode] = useState(ALL);
   const [plan, setPlan] = useState(ALL);
   const [country, setCountry] = useState(ALL);
+  const [query, setQuery] = useState("");
   const [active, setActive] = useState<UserRow | null>(null);
 
   const plans = useMemo(() => Array.from(new Set(users.map((u) => u.plan))).sort(), [users]);
@@ -43,16 +44,19 @@ export function UsersTable({ users }: { users: UserRow[] }) {
     [users]
   );
 
+  const q = query.trim().toLowerCase();
   const filtered = users.filter((u) => {
     if (mode !== ALL && u.dashboardMode !== mode) return false;
     if (plan !== ALL && u.plan !== plan) return false;
     if (country !== ALL && (u.country ?? "Unknown") !== country) return false;
+    if (q && !u.email.toLowerCase().includes(q) && !(u.businessType ?? "").toLowerCase().includes(q)) return false;
     return true;
   });
 
   return (
     <>
       <div className="adm-filterbar">
+        <SearchInput value={query} onChange={setQuery} placeholder="Search email or business type…" />
         <FilterDropdown
           label="Mode"
           active={mode}
@@ -71,8 +75,8 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           onSelect={setCountry}
           options={[{ value: ALL, label: "All" }, ...countries.map((c) => ({ value: c, label: c }))]}
         />
-        {(mode !== ALL || plan !== ALL || country !== ALL) && (
-          <span style={{ fontSize: 12, color: "var(--g-gray-500)", alignSelf: "center" }}>
+        {(mode !== ALL || plan !== ALL || country !== ALL || q) && (
+          <span className="adm-filter-count">
             {filtered.length} / {users.length}
           </span>
         )}
@@ -81,8 +85,8 @@ export function UsersTable({ users }: { users: UserRow[] }) {
       <Table
         head={["Email", "Mode", "Plan", { label: "Credits", num: true }, { label: "Unlocks", num: true }, { label: "Scans", num: true }, { label: "Apps", num: true }, "Paid", "Country", "Joined", "Last seen"]}
         rows={filtered.map((u) => [
-          <button key="e" type="button" className="adm-rowlink" onClick={() => setActive(u)}>
-            {u.email}{u.pro && <Pill tone="info">pro @</Pill>}
+          <button key="e" type="button" className="adm-rowlink adm-cell-email" title={u.email} onClick={() => setActive(u)}>
+            <span className="adm-cell-email-text">{u.email}</span>{u.pro && <Pill tone="info">pro @</Pill>}
           </button>,
           <Pill key="m" tone={modeTone(u.dashboardMode)}>{u.dashboardMode}</Pill>,
           u.paidPaise > 0 ? <Pill key="p" tone="ok">{u.plan} · paid</Pill> : u.plan,

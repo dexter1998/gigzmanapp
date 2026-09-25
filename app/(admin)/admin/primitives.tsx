@@ -3,7 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +80,28 @@ export function FilterDropdown({
         </DropdownPrimitive.Content>
       </DropdownPrimitive.Portal>
     </DropdownPrimitive.Root>
+  );
+}
+
+/* ------------------------------------------------------------------ Search input (table filter) */
+
+export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="adm-search">
+      <Search size={13} className="adm-search-icon" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="adm-search-input"
+      />
+      {value && (
+        <button type="button" className="adm-search-clear" onClick={() => onChange("")} aria-label="Clear search">
+          <X size={12} />
+        </button>
+      )}
+    </div>
   );
 }
 

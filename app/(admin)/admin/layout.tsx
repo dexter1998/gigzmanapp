@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin";
 import { AdminNav } from "./nav";
+import { Header } from "./Header";
 import "./admin.css";
 
 /**
@@ -14,7 +15,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="adm-shell">
       <AdminNav email={email} />
-      <main className="adm-main">{children}</main>
+      <div className="adm-content">
+        <Header email={email} />
+        <main className="adm-main">{children}</main>
+      </div>
     </div>
   );
 }

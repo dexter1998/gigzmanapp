@@ -1,0 +1,11 @@
+/* TEAM */
+Company: Reverblunt Private Limited
+Product: Mantis
+Contact: tarun [at] gigzman.com
+Location: Gurugram, India
+
+/* SITE */
+Last update: 2026-09-21
+Standards: HTML5, CSS3
+Components: Next.js, React
+Software: VS Code, Claude Code

@@ -25,12 +25,27 @@ export function fmtAgo(d: Date | string | null | undefined): string {
 export const fmtINR = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 export const fmtN = (n: number) => n.toLocaleString("en-IN");
 
-export function StatCard({ label, value, detail, tone }: { label: string; value: ReactNode; detail?: ReactNode; tone?: "up" | "bad" }) {
+export function StatCard({
+  label, value, detail, tone, icon, spark,
+}: {
+  label: string;
+  value: ReactNode;
+  detail?: ReactNode;
+  tone?: "up" | "bad";
+  /** Small top-right glyph — optional, purely a scan aid for pages with many cards side by side. */
+  icon?: ReactNode;
+  /** Optional Bars sparkline rendered under the metric, same "trend inside KPI" role as Tabler's. */
+  spark?: ReactNode;
+}) {
   return (
     <div className="adm-card">
-      <div className="k">{label}</div>
+      <div className="adm-card-top">
+        <div className="k">{label}</div>
+        {icon != null && <span className="adm-card-icon">{icon}</span>}
+      </div>
       <div className="v">{value}</div>
       {detail != null && <div className={`d${tone ? ` ${tone}` : ""}`}>{detail}</div>}
+      {spark != null && <div className="adm-card-spark">{spark}</div>}
     </div>
   );
 }
