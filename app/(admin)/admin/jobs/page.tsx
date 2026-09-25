@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { sql } from "@/lib/db";
-import { StatCard, Section, Table, Pill, fmtAgo, fmtDT, fmtN } from "../ui";
+import { PageHeader, StatCard, CardRow, Table, Pill, fmtAgo, fmtDT, fmtN } from "../ui";
 
 /** Jobs mode — the second product surface, previously invisible in admin. Same three-tier shape
  * as Overview: KPIs first (is the surface healthy + is anyone using it), then breakdowns (where
@@ -55,67 +55,65 @@ export default async function JobsPage() {
   const companyOkPct = companyKpi.total > 0 ? Math.round((companyKpi.ok / companyKpi.total) * 100) : 0;
 
   return (
-    <>
-      <div className="adm-head">
-        <h1>Jobs mode</h1>
-        <span className="adm-asof">as of {fmtDT(new Date())} IST</span>
-      </div>
+    <div className="page-body">
+      <div className="container-xl">
+        <PageHeader pretitle="Jobs mode" title="Jobs mode" sub={`as of ${fmtDT(new Date())} IST`} />
 
-      <div className="adm-cards">
-        <StatCard label="Jobs-mode users" value={fmtN(modeSplit.jobs_users)} detail={`${jobsAdoptionPct}% of all users · +${modeSplit.jobs_new7} in 7d`} tone={modeSplit.jobs_new7 > 0 ? "up" : undefined} />
-        <StatCard label="Companies scraped" value={fmtN(companyKpi.total)} detail={`${companyOkPct}% resolved ok`} tone={companyKpi.overdue > 0 ? "bad" : undefined} />
-        <StatCard label="Refresh overdue" value={fmtN(companyKpi.overdue)} detail="next_refresh_at passed" tone={companyKpi.overdue > 0 ? "bad" : undefined} />
-        <StatCard label="Open listings" value={fmtN(listingKpi.open)} detail={`${fmtN(listingKpi.total)} ever seen · +${listingKpi.new7} in 7d`} />
-        <StatCard label="Applicant profiles" value={fmtN(applicantKpi.total)} detail={`${applicantCompletePct}% complete`} />
-        <StatCard label="Salary bands" value={fmtN(bandKpi.total)} detail={bandKpi.last_at ? `last scraped ${fmtAgo(bandKpi.last_at)}` : "kabhi scrape nahi hua"} tone={!bandKpi.last_at ? "bad" : undefined} />
-      </div>
+        <CardRow>
+          <StatCard label="Jobs-mode users" value={fmtN(modeSplit.jobs_users)} detail={`${jobsAdoptionPct}% of all users · +${modeSplit.jobs_new7} in 7d`} tone={modeSplit.jobs_new7 > 0 ? "up" : undefined} />
+          <StatCard label="Companies scraped" value={fmtN(companyKpi.total)} detail={`${companyOkPct}% resolved ok`} tone={companyKpi.overdue > 0 ? "bad" : undefined} />
+          <StatCard label="Refresh overdue" value={fmtN(companyKpi.overdue)} detail="next_refresh_at passed" tone={companyKpi.overdue > 0 ? "bad" : undefined} />
+          <StatCard label="Open listings" value={fmtN(listingKpi.open)} detail={`${fmtN(listingKpi.total)} ever seen · +${listingKpi.new7} in 7d`} />
+          <StatCard label="Applicant profiles" value={fmtN(applicantKpi.total)} detail={`${applicantCompletePct}% complete`} />
+          <StatCard label="Salary bands" value={fmtN(bandKpi.total)} detail={bandKpi.last_at ? `last scraped ${fmtAgo(bandKpi.last_at)}` : "kabhi scrape nahi hua"} tone={!bandKpi.last_at ? "bad" : undefined} />
+        </CardRow>
 
-      <div className="adm-split">
-        <Section title="Careers-page scrape health" note="Har company ek baar resolve hoti hai, phir next_refresh_at pe dobara — yahan dekho scraper kahin stuck toh nahi.">
-          <Table head={["Status", { label: "Companies", num: true }]}
+        <div className="row row-cards mb-3">
+          <Table col="col-lg-6" title="Careers-page scrape health" note="Har company ek baar resolve hoti hai, phir next_refresh_at pe dobara — yahan dekho scraper kahin stuck toh nahi."
+            head={["Status", { label: "Companies", num: true }]}
             rows={scrapeBreakdown.map((r) => [<Pill key="s" tone={scrapeTone(r.scrape_status)}>{r.scrape_status}</Pill>, fmtN(r.n)])}
             empty="koi company nahi" />
-        </Section>
-        <Section title="Applications funnel" note="saved → applied → interviewing → offer/rejected.">
-          <Table head={["Status", { label: "Applications", num: true }]}
+          <Table col="col-lg-6" title="Applications funnel" note="saved → applied → interviewing → offer/rejected."
+            head={["Status", { label: "Applications", num: true }]}
             rows={statusBreakdown.map((r) => [<Pill key="s" tone={appTone(r.status)}>{r.status}</Pill>, fmtN(r.n)])}
             empty="koi application nahi" />
-        </Section>
+        </div>
+
+        <div className="row row-cards mb-3">
+          <Table col="col-12" title="Open listings by family" note="Top 8 — coverage kis role-type mein sabse zyada hai."
+            head={["Job family", { label: "Open listings", num: true }]}
+            rows={familyBreakdown.map((r) => [r.family, fmtN(r.n)])}
+            empty="koi open listing nahi" />
+        </div>
+
+        <div className="row row-cards mb-3">
+          <Table col="col-12" title="Recently scraped companies" note="Latest 20 — resolve fail ya no_careers_page yahan turant dikhega."
+            head={["Domain", "Company", "Status", "ATS", "Scraped", "Next refresh"]}
+            rows={companies.map((c) => [
+              c.domain,
+              c.company_name ?? "—",
+              <span key="s"><Pill tone={scrapeTone(c.scrape_status)}>{c.scrape_status}</Pill>{c.scrape_error && <span className="wrap text-danger d-block" style={{ fontSize: 11, marginTop: 3 }}>{String(c.scrape_error).slice(0, 90)}</span>}</span>,
+              c.ats_platform ?? "—",
+              c.scraped_at ? fmtAgo(c.scraped_at) : "kabhi nahi",
+              c.next_refresh_at ? fmtDT(c.next_refresh_at) : "—",
+            ])}
+            empty="koi company scrape nahi hui" />
+        </div>
+
+        <div className="row row-cards">
+          <Table col="col-12" title="Recent applications" note="Latest 20 — user profile ek click door hai."
+            head={["When", "Applicant", "Role", "Company", { label: "Match", num: true }, "Status"]}
+            rows={applications.map((a) => [
+              fmtDT(a.created_at),
+              <Link key="u" href={`/admin/users/${encodeURIComponent(a.user_email)}`}>{a.user_email}</Link>,
+              a.title,
+              a.company_name ?? "—",
+              a.match_score != null ? `${a.match_score}%` : "—",
+              <Pill key="s" tone={appTone(a.status)}>{a.status}</Pill>,
+            ])}
+            empty="koi application nahi" />
+        </div>
       </div>
-
-      <Section title="Open listings by family" note="Top 8 — coverage kis role-type mein sabse zyada hai.">
-        <Table head={["Job family", { label: "Open listings", num: true }]}
-          rows={familyBreakdown.map((r) => [r.family, fmtN(r.n)])}
-          empty="koi open listing nahi" />
-      </Section>
-
-      <Section title="Recently scraped companies" note="Latest 20 — resolve fail ya no_careers_page yahan turant dikhega.">
-        <Table
-          head={["Domain", "Company", "Status", "ATS", "Scraped", "Next refresh"]}
-          rows={companies.map((c) => [
-            c.domain,
-            c.company_name ?? "—",
-            <span key="s"><Pill tone={scrapeTone(c.scrape_status)}>{c.scrape_status}</Pill>{c.scrape_error && <span className="wrap" style={{ display: "block", fontSize: 11, color: "var(--g-red-text)", marginTop: 3 }}>{String(c.scrape_error).slice(0, 90)}</span>}</span>,
-            c.ats_platform ?? "—",
-            c.scraped_at ? fmtAgo(c.scraped_at) : "kabhi nahi",
-            c.next_refresh_at ? fmtDT(c.next_refresh_at) : "—",
-          ])}
-          empty="koi company scrape nahi hui" />
-      </Section>
-
-      <Section title="Recent applications" note="Latest 20 — user profile ek click door hai.">
-        <Table
-          head={["When", "Applicant", "Role", "Company", { label: "Match", num: true }, "Status"]}
-          rows={applications.map((a) => [
-            fmtDT(a.created_at),
-            <Link key="u" href={`/admin/users/${encodeURIComponent(a.user_email)}`}>{a.user_email}</Link>,
-            a.title,
-            a.company_name ?? "—",
-            a.match_score != null ? `${a.match_score}%` : "—",
-            <Pill key="s" tone={appTone(a.status)}>{a.status}</Pill>,
-          ])}
-          empty="koi application nahi" />
-      </Section>
-    </>
+    </div>
   );
 }

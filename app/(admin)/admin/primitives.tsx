@@ -2,16 +2,16 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
-import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
-import { ChevronDown, Search, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { IconSearch } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 /**
- * Interactive primitives for the admin console — sourced from shadcn/ui (Radix + Tailwind, MIT),
- * restyled onto this app's own tokens instead of shadcn's default theme so it stays one visual
- * system with the rest of admin.css. Kept separate from ui.tsx (server components, no handlers)
- * because these need "use client" — same split rationale as lib/credits/{index,server}.ts.
+ * Interactive primitives for the admin console — Radix (accessible, React-state-driven) wearing
+ * Tabler's real CSS classes (modal/modal-dialog/modal-content, dropdown-menu/dropdown-item,
+ * input-icon), not Bootstrap's own JS. See docs/MANTIS_ADMIN_TABLER_SYSTEM.md for why: Bootstrap's
+ * data-bs-toggle components mutate the DOM imperatively, which can fight React's virtual DOM
+ * inside a page these components live on; Radix gives the same visual result driven by props.
  *
  * Still read-only in effect: nothing here calls a mutating route. A dropdown narrows a GET query
  * via the URL, a dialog fetches detail that already exists — no admin action writes anything.
@@ -23,9 +23,15 @@ export function Dialog({ open, onOpenChange, children }: { open: boolean; onOpen
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="adm-modal-overlay" />
-        <DialogPrimitive.Content className="adm-modal-content" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {children}
+        <DialogPrimitive.Overlay className="modal-backdrop fade show" />
+        <DialogPrimitive.Content
+          className="modal d-block"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 640, width: "calc(100vw - 32px)" }} role="document">
+            <div className="modal-content">{children}</div>
+          </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
@@ -34,16 +40,18 @@ export function Dialog({ open, onOpenChange, children }: { open: boolean; onOpen
 
 export function DialogHeader({ title, sub, onClose }: { title: ReactNode; sub?: ReactNode; onClose: () => void }) {
   return (
-    <div className="adm-modal-head">
+    <div className="modal-header">
       <div>
-        <DialogPrimitive.Title className="adm-modal-title">{title}</DialogPrimitive.Title>
-        {sub != null && <DialogPrimitive.Description className="adm-modal-sub">{sub}</DialogPrimitive.Description>}
+        <DialogPrimitive.Title className="modal-title">{title}</DialogPrimitive.Title>
+        {sub != null && <DialogPrimitive.Description className="text-secondary mt-1" style={{ fontSize: 12 }}>{sub}</DialogPrimitive.Description>}
       </div>
-      <button type="button" className="adm-modal-close" onClick={onClose} aria-label="Close">
-        <X size={16} />
-      </button>
+      <button type="button" className="btn-close" onClick={onClose} aria-label="Close" />
     </div>
   );
+}
+
+export function DialogBody({ children }: { children: ReactNode }) {
+  return <div className="modal-body">{children}</div>;
 }
 
 /* ------------------------------------------------------------------ Dropdown (filter menu) */
@@ -57,22 +65,22 @@ export function FilterDropdown({
   onSelect: (value: string) => void;
 }) {
   const activeLabel = options.find((o) => o.value === active)?.label ?? options[0]?.label;
+  const isSet = active !== options[0]?.value;
   return (
     <DropdownPrimitive.Root>
       <DropdownPrimitive.Trigger asChild>
-        <button type="button" className={cn("adm-filter-trigger", active !== options[0]?.value && "is-set")}>
-          <span className="k">{label}</span>
-          <span className="v">{activeLabel}</span>
-          <ChevronDown size={13} className="chev" />
+        <button type="button" className={cn("btn btn-sm dropdown-toggle", isSet ? "btn-primary" : "btn-outline-secondary")}>
+          {label}: {activeLabel}
         </button>
       </DropdownPrimitive.Trigger>
       <DropdownPrimitive.Portal>
-        <DropdownPrimitive.Content className="adm-filter-menu" align="start" sideOffset={6}>
+        <DropdownPrimitive.Content className="dropdown-menu show" align="start" sideOffset={6}>
           {options.map((opt) => (
             <DropdownPrimitive.Item
               key={opt.value}
-              className={cn("adm-filter-item", opt.value === active && "is-active")}
+              className={cn("dropdown-item", opt.value === active && "active")}
               onSelect={() => onSelect(opt.value)}
+              style={{ cursor: "pointer" }}
             >
               {opt.label}
             </DropdownPrimitive.Item>
@@ -87,58 +95,24 @@ export function FilterDropdown({
 
 export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div className="adm-search">
-      <Search size={13} className="adm-search-icon" />
+    <div className="input-icon" style={{ maxWidth: 320 }}>
+      <span className="input-icon-addon"><IconSearch size={16} /></span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="adm-search-input"
+        className="form-control form-control-sm"
       />
       {value && (
-        <button type="button" className="adm-search-clear" onClick={() => onChange("")} aria-label="Clear search">
-          <X size={12} />
-        </button>
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="btn-close"
+          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10 }}
+        />
       )}
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ Collapsible (nav groups) */
-
-export function CollapsibleGroup({
-  label, defaultOpen = true, storageKey, children,
-}: {
-  label: string;
-  defaultOpen?: boolean;
-  storageKey: string;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(() => {
-    if (typeof window === "undefined") return defaultOpen;
-    try {
-      const stored = localStorage.getItem(storageKey);
-      return stored == null ? defaultOpen : stored === "1";
-    } catch {
-      return defaultOpen; // private-browsing / storage blocked
-    }
-  });
-
-  function toggle(next: boolean) {
-    setOpen(next);
-    try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
-  }
-
-  return (
-    <CollapsiblePrimitive.Root open={open} onOpenChange={toggle}>
-      <CollapsiblePrimitive.Trigger className="adm-nav-label as-trigger">
-        {label}
-        <ChevronDown size={12} className={cn("adm-nav-chev", open && "is-open")} />
-      </CollapsiblePrimitive.Trigger>
-      <CollapsiblePrimitive.Content className="adm-nav-collapsible">
-        {children}
-      </CollapsiblePrimitive.Content>
-    </CollapsiblePrimitive.Root>
   );
 }

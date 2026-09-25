@@ -79,7 +79,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${fraunces.variable} ${poppins.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${jakarta.variable} ${fraunces.variable} ${poppins.variable} h-full antialiased`}
+      // The admin section sets/clears `data-bs-theme` on this element imperatively (see
+      // app/(admin)/admin/ThemeSetter.tsx) because Tabler's dark mode keys off `:root[data-bs-
+      // theme=dark]`, which only `<html>` — owned by this shared root layout — can satisfy. That
+      // makes a server/client attribute mismatch expected on every admin page load, not a bug.
+      suppressHydrationWarning
+    >
       <body className="min-h-full flex flex-col">
         {children}
         <AnalyticsScripts measurementId={GA_MEASUREMENT_ID} />

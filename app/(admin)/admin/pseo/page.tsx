@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { StatCard, Section, Table, Pill, fmtAgo, fmtDT, fmtN } from "../ui";
+import { PageHeader, StatCard, CardRow, Table, Pill, HealthItem, fmtAgo, fmtDT, fmtN } from "../ui";
 
 /** pSEO — registry ki sehat: kitne pages live, kitne gate par waiting, kal ke cron ne kya kiya.
  * GSC impressions/keywords tab aayenge jab one-time OAuth ho jaye (scripts/gsc-authorize.ts). */
@@ -35,68 +35,56 @@ export default async function PseoPage() {
   const summary = (lastRun?.summary ?? null) as { evaluated?: number; revalidated?: number; promoted?: number } | null;
 
   return (
-    <>
-      <div className="adm-head">
-        <h1>Programmatic SEO</h1>
-        <span className="adm-asof">as of {fmtDT(new Date())} IST</span>
-      </div>
+    <div className="page-body">
+      <div className="container-xl">
+        <PageHeader pretitle="Systems" title="Programmatic SEO" sub={`as of ${fmtDT(new Date())} IST`} />
 
-      <div className="adm-cards">
-        <StatCard label="Pages total" value={fmtN(kpi.total)} />
-        <StatCard label="Published" value={fmtN(kpi.published)} detail={`+${kpi.promoted30} promoted in 30d`} tone={kpi.promoted30 > 0 ? "up" : undefined} />
-        <StatCard label="Noindex" value={fmtN(kpi.noindex)} />
-        <StatCard label="Withheld (gate fail)" value={fmtN(kpi.withheld)} />
-        <StatCard label="1 pass — promotion ke kareeb" value={fmtN(kpi.one_pass)} detail="agla pass = publish" />
-      </div>
+        <CardRow>
+          <StatCard label="Pages total" value={fmtN(kpi.total)} />
+          <StatCard label="Published" value={fmtN(kpi.published)} detail={`+${kpi.promoted30} promoted in 30d`} tone={kpi.promoted30 > 0 ? "up" : undefined} />
+          <StatCard label="Noindex" value={fmtN(kpi.noindex)} />
+          <StatCard label="Withheld (gate fail)" value={fmtN(kpi.withheld)} />
+          <StatCard label="1 pass — promotion ke kareeb" value={fmtN(kpi.one_pass)} detail="agla pass = publish" />
+        </CardRow>
 
-      <div className="adm-health">
-        <div className="adm-health-item">
-          <span className={`dot ${lastRun ? (lastRun.ok ? "ok" : "bad") : "mut"}`} />
-          <div>
-            <div className="t">Last refresh cron</div>
-            <div className="s">{lastRun
+        <CardRow>
+          <HealthItem col="col-lg-4" tone={lastRun ? (lastRun.ok ? "ok" : "bad") : "mut"} title="Last refresh cron"
+            sub={lastRun
               ? (lastRun.ok
                 ? `${fmtAgo(lastRun.started_at)} · evaluated ${summary?.evaluated ?? "?"} · revalidated ${summary?.revalidated ?? "?"} · promoted ${summary?.promoted ?? "?"}`
                 : `FAIL ${fmtAgo(lastRun.started_at)} — ${lastRun.error?.slice(0, 60)}`)
-              : "abhi koi recorded run nahi (collector naya hai)"}</div>
-          </div>
-        </div>
-        <div className="adm-health-item">
-          <span className="dot ok" />
-          <div><div className="t">Next refresh</div><div className="s">{fmtDT(nextPseoRun())} IST (daily 10:30 IST)</div></div>
-        </div>
-        <div className="adm-health-item">
-          <span className="dot mut" />
-          <div><div className="t">GSC impressions / keywords</div><div className="s">one-time OAuth pending — scripts/gsc-authorize.ts chalani hai</div></div>
-        </div>
-      </div>
+              : "abhi koi recorded run nahi (collector naya hai)"} />
+          <HealthItem col="col-lg-4" tone="ok" title="Next refresh" sub={`${fmtDT(nextPseoRun())} IST (daily 10:30 IST)`} />
+          <HealthItem col="col-lg-4" tone="mut" title="GSC impressions / keywords" sub="one-time OAuth pending — scripts/gsc-authorize.ts chalani hai" />
+        </CardRow>
 
-      <div className="adm-split">
-        <Section title="By page type">
-          <Table head={["Type", { label: "Total", num: true }, { label: "Published", num: true }]}
+        <div className="row row-cards mb-3">
+          <Table col="col-lg-6" title="By page type"
+            head={["Type", { label: "Total", num: true }, { label: "Published", num: true }]}
             rows={byType.map((t) => [t.page_type, fmtN(t.total), fmtN(t.pub)])}
             empty="registry khali hai" />
-        </Section>
-        <Section title="Location candidates (approval waiting)" note="Auto-detected; slug approve karna human decision hai.">
-          <Table head={["Token", "Suggested", { label: "Qualifying", num: true }, { label: "Leads", num: true }]}
+          <Table col="col-lg-6" title="Location candidates (approval waiting)" note="Auto-detected; slug approve karna human decision hai."
+            head={["Token", "Suggested", { label: "Qualifying", num: true }, { label: "Leads", num: true }]}
             rows={candidates.map((c) => [c.token, c.suggested_name, fmtN(c.qualifying_count), fmtN(c.lead_count)])}
             empty="koi pending candidate nahi" />
-        </Section>
+        </div>
+
+        <div className="row row-cards mb-3">
+          <Table col="col-12" title="Gate par waiting (streak 1+)" note="Do consecutive pass chahiye promotion ke liye — ye pages ek pass kar chuke hain."
+            head={["Page", { label: "Qualifying", num: true }, { label: "Total leads", num: true }, { label: "Streak", num: true }, "Stats computed"]}
+            rows={waiting.map((w) => [w.page_key, fmtN(w.qualifying_leads), fmtN(w.total_leads),
+              <Pill key="s" tone="warn">{w.gate_pass_streak}/2</Pill>, fmtAgo(w.stats_computed_at)])}
+            empty="koi page gate par nahi" />
+        </div>
+
+        <div className="row row-cards">
+          <Table col="col-12" title="Top published pages (by qualifying leads)" note="Cannibalization check: same city ke multiple published pages yahan saath dikhte hain — overlap ho to lowest wale ko dekho."
+            head={["Page", "Type", { label: "Qualifying", num: true }, { label: "Total", num: true }, "First published", "Last material change"]}
+            rows={topPages.map((p) => [p.page_key, p.page_type, fmtN(p.qualifying_leads), fmtN(p.total_leads),
+              fmtDT(p.first_published_at), fmtAgo(p.last_material_change_at)])}
+            empty="abhi koi published page nahi" />
+        </div>
       </div>
-
-      <Section title="Gate par waiting (streak 1+)" note="Do consecutive pass chahiye promotion ke liye — ye pages ek pass kar chuke hain.">
-        <Table head={["Page", { label: "Qualifying", num: true }, { label: "Total leads", num: true }, { label: "Streak", num: true }, "Stats computed"]}
-          rows={waiting.map((w) => [w.page_key, fmtN(w.qualifying_leads), fmtN(w.total_leads),
-            <Pill key="s" tone="warn">{w.gate_pass_streak}/2</Pill>, fmtAgo(w.stats_computed_at)])}
-          empty="koi page gate par nahi" />
-      </Section>
-
-      <Section title="Top published pages (by qualifying leads)" note="Cannibalization check: same city ke multiple published pages yahan saath dikhte hain — overlap ho to lowest wale ko dekho.">
-        <Table head={["Page", "Type", { label: "Qualifying", num: true }, { label: "Total", num: true }, "First published", "Last material change"]}
-          rows={topPages.map((p) => [p.page_key, p.page_type, fmtN(p.qualifying_leads), fmtN(p.total_leads),
-            fmtDT(p.first_published_at), fmtAgo(p.last_material_change_at)])}
-          empty="abhi koi published page nahi" />
-      </Section>
-    </>
+    </div>
   );
 }

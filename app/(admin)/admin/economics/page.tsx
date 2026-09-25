@@ -1,6 +1,6 @@
 import { sql } from "@/lib/db";
 import { CREDIT_COST, CREDIT_PACKS, PLACES_CALL_COST_INR, CREDIT_FLOOR_INR, FREE_MONTHLY_CREDITS } from "@/lib/credits/pricing";
-import { StatCard, Section, Table, Pill, fmtDT, fmtINR, fmtN } from "../ui";
+import { PageHeader, StatCard, CardRow, Table, fmtDT, fmtINR, fmtN } from "../ui";
 
 /** Unit economics — collected vs COGS, month-wise. COGS ka bada driver Places API hai (billed
  * calls exact count hote hain); SES/Bedrock chhote estimates hain aur waise hi labelled hain.
@@ -51,57 +51,56 @@ export default async function EconomicsPage() {
   const totCogs = rows.reduce((s, r) => s + r.cogs, 0);
 
   return (
-    <>
-      <div className="adm-head">
-        <h1>Unit economics &amp; Billing</h1>
-        <span className="adm-asof">as of {fmtDT(new Date())} IST</span>
-      </div>
+    <div className="page-body">
+      <div className="container-xl">
+        <PageHeader pretitle="Analysis" title="Unit economics & Billing" sub={`as of ${fmtDT(new Date())} IST`} />
 
-      <div className="adm-cards">
-        <StatCard label="Collected (6mo)" value={`₹${Math.round(totCollected).toLocaleString("en-IN")}`} />
-        <StatCard label="COGS est (6mo)" value={`₹${Math.round(totCogs).toLocaleString("en-IN")}`} detail="Places + Bedrock + SES" />
-        <StatCard label="Gross margin" value={totCollected > 0 ? `${Math.round(((totCollected - totCogs) / totCollected) * 100)}%` : "—"}
-          detail={totCollected > 0 ? `₹${Math.round(totCollected - totCogs).toLocaleString("en-IN")}` : "abhi revenue nahi"} tone={totCollected - totCogs >= 0 ? "up" : "bad"} />
-        <StatCard label="Credits sold" value={fmtN(led.granted)} detail={`spent ${fmtN(led.spent)}`} />
-        <StatCard label="Credit floor" value={`₹${CREDIT_FLOOR_INR.toFixed(3)}`} detail="COGS per credit — kabhi isse neeche mat becho" />
-      </div>
+        <CardRow>
+          <StatCard label="Collected (6mo)" value={`₹${Math.round(totCollected).toLocaleString("en-IN")}`} />
+          <StatCard label="COGS est (6mo)" value={`₹${Math.round(totCogs).toLocaleString("en-IN")}`} detail="Places + Bedrock + SES" />
+          <StatCard label="Gross margin" value={totCollected > 0 ? `${Math.round(((totCollected - totCogs) / totCollected) * 100)}%` : "—"}
+            detail={totCollected > 0 ? `₹${Math.round(totCollected - totCogs).toLocaleString("en-IN")}` : "abhi revenue nahi"} tone={totCollected - totCogs >= 0 ? "up" : "bad"} />
+          <StatCard label="Credits sold" value={fmtN(led.granted)} detail={`spent ${fmtN(led.spent)}`} />
+          <StatCard label="Credit floor" value={`₹${CREDIT_FLOOR_INR.toFixed(3)}`} detail="COGS per credit — kabhi isse neeche mat becho" />
+        </CardRow>
 
-      <Section title="Month-wise P&L" note="COGS estimate: billed Places calls exact hain; Bedrock ₹0.35/turn aur SES ₹0.0088/mail approximations.">
-        <Table head={["Month", { label: "Collected", num: true }, { label: "Orders", num: true }, { label: "Credits sold", num: true }, { label: "Places calls", num: true }, { label: "Chat turns", num: true }, { label: "COGS est", num: true }, { label: "Margin", num: true }, { label: "GM%", num: true }]}
-          rows={rows.map((r) => [
-            r.label,
-            `₹${Math.round(r.collected).toLocaleString("en-IN")}`,
-            fmtN(r.orders), fmtN(r.credits_sold), fmtN(r.billed_calls), fmtN(r.chat_turns),
-            `₹${Math.round(r.cogs).toLocaleString("en-IN")}`,
-            <span key="m" style={{ color: r.margin >= 0 ? "var(--g-green-text)" : "var(--g-red-text)", fontWeight: 600 }}>₹{Math.round(r.margin).toLocaleString("en-IN")}</span>,
-            r.pct === null ? "—" : `${r.pct}%`,
-          ])}
-          empty="koi data nahi" />
-      </Section>
+        <div className="row row-cards mb-3">
+          <Table col="col-12" title="Month-wise P&L" note="COGS estimate: billed Places calls exact hain; Bedrock ₹0.35/turn aur SES ₹0.0088/mail approximations."
+            head={["Month", { label: "Collected", num: true }, { label: "Orders", num: true }, { label: "Credits sold", num: true }, { label: "Places calls", num: true }, { label: "Chat turns", num: true }, { label: "COGS est", num: true }, { label: "Margin", num: true }, { label: "GM%", num: true }]}
+            rows={rows.map((r) => [
+              r.label,
+              `₹${Math.round(r.collected).toLocaleString("en-IN")}`,
+              fmtN(r.orders), fmtN(r.credits_sold), fmtN(r.billed_calls), fmtN(r.chat_turns),
+              `₹${Math.round(r.cogs).toLocaleString("en-IN")}`,
+              <span key="m" className={r.margin >= 0 ? "text-success" : "text-danger"} style={{ fontWeight: 600 }}>₹{Math.round(r.margin).toLocaleString("en-IN")}</span>,
+              r.pct === null ? "—" : `${r.pct}%`,
+            ])}
+            empty="koi data nahi" />
+        </div>
 
-      <div className="adm-split">
-        <Section title="Credit spend by reason" note="Kis feature par credits jal rahe hain — pricing tune karne ka input.">
-          <Table head={["Reason", { label: "Events", num: true }, { label: "Credits", num: true }, { label: "Price/event", num: true }]}
+        <div className="row row-cards mb-3">
+          <Table col="col-lg-6" title="Credit spend by reason" note="Kis feature par credits jal rahe hain — pricing tune karne ka input."
+            head={["Reason", { label: "Events", num: true }, { label: "Credits", num: true }, { label: "Price/event", num: true }]}
             rows={spendByReason.map((r) => [r.reason, fmtN(r.n), fmtN(r.credits),
               (CREDIT_COST as Record<string, number>)[r.reason] != null ? `${(CREDIT_COST as Record<string, number>)[r.reason]} cr` : "?"])}
             empty="abhi koi spend nahi" />
-        </Section>
-        <Section title="Rate card (live from code)" note={`Free allowance ${FREE_MONTHLY_CREDITS} credits/month. Source: lib/credits/pricing.ts`}>
-          <Table head={["Item", { label: "Value", num: true }]}
+          <Table col="col-lg-6" title="Rate card (live from code)" note={`Free allowance ${FREE_MONTHLY_CREDITS} credits/month. Source: lib/credits/pricing.ts`}
+            head={["Item", { label: "Value", num: true }]}
             rows={[
               ...Object.entries(CREDIT_COST).map(([k, v]) => [k, `${v} credits`]),
               ...CREDIT_PACKS.map((p) => [`pack · ${p.id}`, `${fmtN(p.credits)} cr @ ${fmtINR(p.pricePaise)} (₹${(p.pricePaise / 100 / p.credits).toFixed(2)}/cr)`]),
               ["Places call COGS", `₹${PLACES_CALL_COST_INR.toFixed(2)}`],
             ]}
             empty="" />
-        </Section>
-      </div>
+        </div>
 
-      <Section title="Abandoned checkouts (30d)" note="Order create hua par payment nahi — inhe email/call se follow-up karna sabse sasta revenue hai.">
-        <Table head={["When", "User", "Pack", { label: "Amount", num: true }]}
-          rows={abandoned.map((a) => [fmtDT(a.created_at), a.user_email, a.pack_id, fmtINR(Number(a.amount_paise))])}
-          empty="koi abandoned order nahi" />
-      </Section>
-    </>
+        <div className="row row-cards">
+          <Table col="col-12" title="Abandoned checkouts (30d)" note="Order bana par payment nahi — inhe email/call se follow-up karna sabse sasta revenue hai."
+            head={["When", "User", "Pack", { label: "Amount", num: true }]}
+            rows={abandoned.map((a) => [fmtDT(a.created_at), a.user_email, a.pack_id, fmtINR(Number(a.amount_paise))])}
+            empty="koi abandoned order nahi" />
+        </div>
+      </div>
+    </div>
   );
 }

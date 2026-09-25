@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { StatCard, Section, Table, Pill, fmtDT, fmtN } from "../ui";
+import { PageHeader, StatCard, CardRow, Table, Pill, fmtDT, fmtN } from "../ui";
 import { UsersTable, type UserRow } from "./UsersTable";
 
 /** Users — registrations, activity, aur "kaun serious hai" signals. Professional accounts =
@@ -49,41 +49,48 @@ export default async function UsersPage() {
   }));
 
   return (
-    <>
-      <div className="adm-head">
-        <h1>Users</h1>
-        <span className="adm-asof">latest 200 · as of {fmtDT(new Date())} IST</span>
-      </div>
+    <div className="page-body">
+      <div className="container-xl">
+        <PageHeader pretitle="Analysis" title="Users" sub={`latest 200 · as of ${fmtDT(new Date())} IST`} />
 
-      <div className="adm-cards">
-        <StatCard label="Registrations" value={fmtN(kpi.total)} detail={`+${kpi.new7} in 7d`} tone={kpi.new7 > 0 ? "up" : undefined} />
-        <StatCard label="Active 7d" value={fmtN(kpi.active7)} />
-        <StatCard label="Jobs mode" value={fmtN(kpi.jobs_mode)} detail={`${fmtN(kpi.total - kpi.jobs_mode)} on leads`} />
-        <StatCard label="Inactive 30d+" value={fmtN(kpi.inactive30)} detail="re-activation email target" />
-        <StatCard label="Professional @domain" value={fmtN(kpi.professional)} detail="non free-mail" />
-        <StatCard label="Onboarding incomplete" value={fmtN(kpi.unonboarded)} tone={kpi.unonboarded > 0 ? "bad" : undefined} />
-      </div>
+        <CardRow>
+          <StatCard label="Registrations" value={fmtN(kpi.total)} detail={`+${kpi.new7} in 7d`} tone={kpi.new7 > 0 ? "up" : undefined} />
+          <StatCard label="Active 7d" value={fmtN(kpi.active7)} />
+          <StatCard label="Jobs mode" value={fmtN(kpi.jobs_mode)} detail={`${fmtN(kpi.total - kpi.jobs_mode)} on leads`} />
+          <StatCard label="Inactive 30d+" value={fmtN(kpi.inactive30)} detail="re-activation email target" />
+          <StatCard label="Professional @domain" value={fmtN(kpi.professional)} detail="non free-mail" />
+          <StatCard label="Onboarding incomplete" value={fmtN(kpi.unonboarded)} tone={kpi.unonboarded > 0 ? "bad" : undefined} />
+        </CardRow>
 
-      <div className="adm-split">
-        <Section title="Country split" note="Client IP se one-time capture — purane users 'Unknown' rahenge jab tak wo dobara login nahi karte.">
-          <Table head={["Country", { label: "Users", num: true }]}
+        <div className="row row-cards mb-3">
+          <Table col="col-lg-6" title="Country split" note="Client IP se one-time capture — purane users 'Unknown' rahenge jab tak wo dobara login nahi karte."
+            head={["Country", { label: "Users", num: true }]}
             rows={countries.map((c) => [c.country, fmtN(c.n)])}
             empty="koi data nahi" />
-        </Section>
-        <Section title="Signal ⇒ kya dekhna" note="Analysis shortcuts">
-          <Table head={["Signal", "Matlab"]}
+          <Table col="col-lg-6" title="Signal ⇒ kya dekhna" note="Analysis shortcuts"
+            head={["Signal", "Matlab"]}
             rows={[
               [<Pill key="1" tone="ok">PAID</Pill>, "payments.status='paid' wala user — inki activity sabse dhyan se"],
               [<Pill key="2" tone="info">PRO @</Pill>, "company domain — outreach/partnership candidate"],
               [<Pill key="3" tone="mut">JOBS</Pill>, "dashboard_mode='jobs' — job-seeker side, alag stats matter (applications, not scans)"],
             ]}
             empty="" />
-        </Section>
-      </div>
+        </div>
 
-      <Section title="All users" note="Mode aur plan se filter karo, ya kisi row pe click karke quick view kholo.">
-        <UsersTable users={rows} />
-      </Section>
-    </>
+        <div className="row row-cards">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">All users</h3>
+              </div>
+              <div className="card-body">
+                <div className="text-secondary mb-3" style={{ fontSize: 12 }}>Mode aur plan se filter karo, ya kisi row pe click karke quick view kholo.</div>
+                <UsersTable users={rows} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
