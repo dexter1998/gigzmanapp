@@ -82,7 +82,7 @@ export const CREDIT_PACKS: CreditPack[] = [
   { id: "pack_10k", credits: 10_000, pricePaise: 749_900, label: "Scale", badge: "Best value" },
 ];
 
-export const FREE_MONTHLY_CREDITS = 100;
+export const FREE_MONTHLY_CREDITS = 500;
 
 export function packById(id: string): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id);
