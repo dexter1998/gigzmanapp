@@ -5,6 +5,7 @@ import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
 import { AnalyticsScripts } from "@/components/AnalyticsScripts";
 import { CookieConsent } from "@/components/CookieConsent";
+import { FounderWidgetScript } from "@/components/widget/FounderWidgetScript";
 
 const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
 
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <AnalyticsScripts measurementId={GA_MEASUREMENT_ID} />
         <CookieConsent />
+        <FounderWidgetScript />
       </body>
     </html>
   );

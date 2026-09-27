@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import {
   appendMessage, markVisitorRead, messagesFor, threadOwnedBy, tooManyRecently, MAX_MESSAGE_CHARS,
 } from "@/lib/widget/store";
+import { notifyFounder } from "@/lib/widget/notify";
 
 /**
  * One conversation, from the visitor's side.
@@ -51,5 +52,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ thr
   }
 
   const saved = await appendMessage(threadId, "visitor", body.slice(0, MAX_MESSAGE_CHARS));
+  await notifyFounder(threadId, false);
   return NextResponse.json({ message: saved });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
 import { appendMessage, messagesFor, MAX_MESSAGE_CHARS } from "@/lib/widget/store";
+import { notifyVisitor } from "@/lib/widget/notify";
 
 /**
  * The founder's side of a widget conversation.
@@ -47,5 +48,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ thr
   if (!thread) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const saved = await appendMessage(threadId, "admin", body.slice(0, MAX_MESSAGE_CHARS));
+  await notifyVisitor(threadId);
   return NextResponse.json({ message: saved });
 }

@@ -5,6 +5,7 @@ import {
   appendMessage, newVisitorToken, normaliseSlug, tooManyRecently, touchSite,
   upsertContact, validateDetails, MAX_MESSAGE_CHARS,
 } from "@/lib/widget/store";
+import { notifyFounder } from "@/lib/widget/notify";
 
 /** A new conversation: the visitor's details, plus the first thing they wanted to say. */
 export async function POST(req: NextRequest) {
@@ -58,6 +59,11 @@ export async function POST(req: NextRequest) {
   await sql`UPDATE widget_sites SET thread_count = thread_count + 1 WHERE slug = ${slug}`;
 
   const first = await appendMessage(thread.id as string, "visitor", message.slice(0, MAX_MESSAGE_CHARS));
+
+  // Awaited, not fired and forgotten: on a serverless-style runtime the response ending can end
+  // the invocation, and a notification that sometimes arrives is worse than one that always does.
+  // notifyFounder never throws — a send failure is recorded and the message still exists.
+  await notifyFounder(thread.id as string, true);
 
   return NextResponse.json({ threadId: thread.id, token: visitorToken, message: first });
 }
