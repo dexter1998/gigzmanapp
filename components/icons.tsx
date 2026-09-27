@@ -1,8 +1,10 @@
 import {
   ArrowRight, Bell, Building2, Check, ChevronDown, ChevronRight, Clipboard, Clock, Crosshair,
   Download, Filter, Globe, Handshake, HelpCircle, Home, Lightbulb, Link2, Lock, Mail, Map, MapPin,
-  MessageCircle, Mic, Minus, Moon, Paperclip, Phone, Plus, Quote, Radio, RefreshCw, Search, Settings,
-  Shield, ShieldCheck, Sparkles, Star, Table, ThumbsDown, ThumbsUp, User, X, Zap,
+  AlertTriangle, Gift, Megaphone, MessageCircle, Mic, Minus, Moon, Paperclip, Phone, Plus, Quote,
+  Radio, RefreshCw, Search, Settings, Shield, ShieldCheck, Shuffle, Sparkles, Star, Table, Tag,
+  ThumbsDown,
+  ThumbsUp, Trophy, User, X, Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -79,6 +81,16 @@ export const PaperclipIcon = icon(Paperclip, 18);
 export const LinkIcon = icon(Link2, 18);
 export const MicIcon = icon(Mic, 18);
 export const LightbulbIcon = icon(Lightbulb, 16);
+
+// Popup category marks (lib/popups.ts maps one to each category). 16px because they sit inside a
+// 32px badge chip, and they take their colour from the category accent rather than a fixed ink.
+export const GiftIcon = icon(Gift, 16);
+export const SparklesIcon = icon(Sparkles, 16);
+export const MegaphoneIcon = icon(Megaphone, 16);
+export const AlertTriangleIcon = icon(AlertTriangle, 16);
+export const TrophyIcon = icon(Trophy, 16);
+export const TagIcon = icon(Tag, 16);
+export const ShuffleIcon = icon(Shuffle, 16, "#fff");
 export const ThumbsUpIcon = fillableIcon(ThumbsUp, 15, "var(--g-gray-500)");
 export const ThumbsDownIcon = fillableIcon(ThumbsDown, 15, "var(--g-gray-500)");
 export const SparkleIcon = icon(Sparkles, 14);

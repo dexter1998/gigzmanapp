@@ -30,11 +30,18 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
-              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com",
+              // maps.googleapis.com is the Maps JS API bootstrap; it then pulls its own module
+              // chunks from maps.gstatic.com and talks to *.googleapis.com for tiles, Places and
+              // the key-auth call. Without these the loader is blocked outright and every map on
+              // the site (landing demo and /home alike) silently renders as an empty box.
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com",
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com",
               "img-src 'self' data: https: blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
+              // Maps runs parts of its renderer in blob-backed workers, which default-src 'self'
+              // would otherwise reject.
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join("; "),
           },
