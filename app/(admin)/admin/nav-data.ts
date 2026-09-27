@@ -6,6 +6,7 @@ export const NAV: { group: string; storageKey: string; items: { href: string; la
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/economics", label: "Economics", icon: "economics" },
     { href: "/admin/inbound", label: "Inbound", icon: "inbound" },
+    { href: "/admin/widget", label: "Founder inbox", icon: "inbound" },
   ]},
   { group: "Jobs mode", storageKey: "adm-nav-jobs", items: [
     { href: "/admin/jobs", label: "Jobs ops", icon: "jobs" },

@@ -14,7 +14,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // Everything EXCEPT /widget. The widget is an iframe by design — it is embedded on other
+        // sites — so the blanket DENY below would stop the one page that has to be framable,
+        // including on our own marketing pages. Excluding it here rather than trying to override
+        // the header in a second matching rule: Next applies every matching entry, and relying on
+        // which one wins for a duplicate key is exactly the kind of thing that breaks silently.
+        source: "/((?!widget$|widget/).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -43,6 +48,32 @@ const nextConfig: NextConfig = {
               // would otherwise reject.
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        // The widget page, and only the widget page. It renders no account data of its own — the
+        // visitor's own conversation, reached with a token their browser already holds — so there
+        // is nothing here for a clickjacked frame to steal. Everything else keeps DENY.
+        source: "/widget",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "connect-src 'self'",
+              // Themeable logo and avatar images come from whichever site embedded the widget.
+              "img-src 'self' data: https:",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
+              // Deliberately open: the embed is meant to work on sites we do not control or know
+              // about yet. The block switch in widget_sites is what stops a slug being abused,
+              // not a list of hosts that would need a deploy every time a landing page ships.
+              "frame-ancestors *",
             ].join("; "),
           },
         ],

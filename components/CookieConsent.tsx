@@ -1,6 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+
+/**
+ * The widget is an iframe embedded on other people's sites. Global chrome from this app's root
+ * layout must not render inside it: the consent banner covered the Send button in a 380px frame,
+ * and firing our page-view analytics from a frame on a customer's homepage would book their
+ * traffic as ours. A path check rather than a second root layout — Next only allows those when
+ * there is no top-level app/layout.tsx, and restructuring every route for one embed is the kind
+ * of change that breaks things far from the thing being built.
+ */
+const isWidgetFrame = (pathname: string | null) => Boolean(pathname?.startsWith("/widget"));
+
 
 const CONSENT_KEY = "mantis-cookie-consent";
 
@@ -18,6 +30,7 @@ export function hasAnalyticsConsent(): boolean {
 }
 
 export function CookieConsent() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -43,6 +56,8 @@ export function CookieConsent() {
   }
 
   if (!visible) return null;
+
+  if (isWidgetFrame(pathname)) return null;
 
   return (
     <div
