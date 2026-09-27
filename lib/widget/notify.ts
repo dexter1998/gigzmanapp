@@ -1,5 +1,5 @@
 import { SendEmailCommand } from "@aws-sdk/client-ses";
-import { ses } from "@/lib/ses";
+import { ses, TRANSACTIONAL_CONFIG_SET } from "@/lib/ses";
 import { sql } from "@/lib/db";
 import { recordApiFailure } from "@/lib/api-alerts";
 import { COMPANY } from "@/lib/company";
@@ -21,7 +21,17 @@ import { COMPANY } from "@/lib/company";
  * who is already reading is more annoying than a slightly late one to someone who left.
  */
 
-const FROM = process.env.SES_FROM_ADDRESS || `Mantis Ai <no-reply@${new URL(COMPANY.site).hostname}>`;
+/**
+ * Widget mail comes from a person's address, not the no-reply one lib/ses.ts uses for sign-in
+ * codes. These are two halves of a conversation somebody started — a founder answering a
+ * partnership pitch from `no-reply@` is both the wrong tone and a worse sender signal, and the
+ * first sends of this landed in Gmail's spam folder despite SPF, DKIM and DMARC all passing.
+ */
+const FROM = process.env.SES_FOUNDER_FROM || `Founder MantisAI <founder@${new URL(COMPANY.site).hostname}>`;
+
+/** Where a reply to the founder's own email should land. His real inbox, not the widget — an
+ *  email that cannot be replied to is the thing that makes people stop replying. */
+const FOUNDER_REPLY_TO = (process.env.FOUNDER_REPLY_TO || "kumartarun276@gmail.com").trim();
 /**
  * Where "somebody wrote in" lands.
  *
@@ -42,11 +52,43 @@ const STILL_READING_SECONDS = 120;
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-async function send(to: string, subject: string, text: string, html: string, ctx: Record<string, unknown>) {
+/**
+ * A full HTML document, not a fragment.
+ *
+ * Caught live: the first sends were accepted by SES, passed SPF, DKIM and DMARC, and still landed
+ * in Gmail's spam folder. A bare run of <p> tags with no doctype, no charset and no structure is
+ * one of the cheapest signals a filter has, and it costs nothing to stop sending it.
+ */
+function document_(inner: string) {
+  return `<!doctype html><html><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
+    `<body style="margin:0;padding:24px;background:#f6f7f4;` +
+    `font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#101214">` +
+    `<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px">` +
+    inner +
+    `<p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #e5e8e2;font-size:12px;color:#98a2b3">` +
+    `Mantis Ai · <a href="${COMPANY.site}" style="color:#98a2b3">${new URL(COMPANY.site).hostname}</a></p>` +
+    `</div></body></html>`;
+}
+
+async function send(
+  to: string,
+  subject: string,
+  text: string,
+  html: string,
+  ctx: Record<string, unknown>,
+  opts: { from?: string; replyTo?: string } = {}
+) {
   try {
     await ses.send(
       new SendEmailCommand({
-        Source: FROM,
+        // See TRANSACTIONAL_CONFIG_SET — without this SES emits no events and a send that never
+        // arrives is indistinguishable from one that did.
+        ConfigurationSetName: TRANSACTIONAL_CONFIG_SET,
+        Source: opts.from ?? FROM,
+        // A reachable Reply-To on every message. "no-reply" with nowhere to reply is both a spam
+        // signal and a dead end for the one person we most want to hear back from.
+        ReplyToAddresses: opts.replyTo ? [opts.replyTo] : undefined,
         Destination: { ToAddresses: [to] },
         Message: {
           Subject: { Data: subject, Charset: "UTF-8" },
@@ -99,7 +141,10 @@ export async function notifyFounder(threadId: string, isNewThread: boolean) {
     `<blockquote style="margin:0 0 16px;padding:10px 14px;background:#f6f7f4;border-left:3px solid #648b1c">${esc(String(msg?.body ?? ""))}</blockquote>` +
     `<p style="margin:0"><a href="${link}" style="color:#4c6b16"><b>Reply in the founder inbox →</b></a></p>`;
 
-  if (await send(FOUNDER_INBOX, subject, text, html, { threadId, to: "founder" })) {
+  // Reply-To is the visitor. Hitting reply in the mail client answers the person who wrote in —
+  // the thread in the inbox stays the record, but a founder on a phone at night should not have
+  // to open an admin console to say "yes, let's talk".
+  if (await send(FOUNDER_INBOX, subject, text, document_(html), { threadId, to: "founder" }, { replyTo: String(t.visitor_email) })) {
     await sql`UPDATE widget_threads SET last_emailed_admin_at = now() WHERE id = ${threadId}`;
   }
 }
@@ -141,7 +186,7 @@ export async function notifyVisitor(threadId: string) {
     // control. Their browser already holds it — reopening the widget is enough.
     `<p style="margin:0;color:#667085">Open the chat on <a href="${COMPANY.site}" style="color:#4c6b16">${new URL(COMPANY.site).hostname}</a> to reply.</p>`;
 
-  if (await send(String(t.visitor_email), subject, text, html, { threadId, to: "visitor" })) {
+  if (await send(String(t.visitor_email), subject, text, document_(html), { threadId, to: "visitor" }, { replyTo: FOUNDER_REPLY_TO })) {
     await sql`UPDATE widget_threads SET last_emailed_visitor_at = now() WHERE id = ${threadId}`;
   }
 }

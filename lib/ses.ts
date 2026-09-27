@@ -23,6 +23,22 @@ if (process.env.NODE_ENV !== "production") {
 // can receive the code they need to log in.
 const FROM_ADDRESS = process.env.SES_FROM_ADDRESS || `Mantis Ai <no-reply@${new URL(COMPANY.site).hostname}>`;
 
+/**
+ * Every transactional send goes through a configuration set, which is the only way SES emits
+ * delivery, bounce and complaint events at all.
+ *
+ * Without it a send is write-only: the API returns a MessageId and nothing afterwards is
+ * observable — which is exactly the hole this closed. A widget notification and a direct CLI test
+ * were both accepted by SES and neither arrived, and there was no way to tell whether Gmail had
+ * bounced them, dropped them or filed them in spam.
+ *
+ * Its own set rather than reusing the campaign ones: those carry cold-outreach sends, and the
+ * whole reason mantisai.in and blogyapp.com are split is so prospecting reputation can never
+ * affect whether someone receives the code they need to sign in. Sharing a configuration set
+ * would put both under one reputation metric again.
+ */
+export const TRANSACTIONAL_CONFIG_SET = process.env.SES_CONFIG_SET || "mantis-transactional";
+
 function fill(template: string, values: Record<string, string>) {
   return Object.entries(values).reduce(
     (out, [key, value]) => out.replaceAll(`{{${key}}}`, value),
@@ -48,6 +64,7 @@ export async function sendVerificationEmail(to: string, code: string) {
   try {
     await ses.send(
       new SendEmailCommand({
+        ConfigurationSetName: TRANSACTIONAL_CONFIG_SET,
         Source: FROM_ADDRESS,
         Destination: { ToAddresses: [to] },
         Message: {
@@ -82,6 +99,7 @@ export async function sendPasswordResetEmail(to: string, code: string) {
   try {
     await ses.send(
       new SendEmailCommand({
+        ConfigurationSetName: TRANSACTIONAL_CONFIG_SET,
         Source: FROM_ADDRESS,
         Destination: { ToAddresses: [to] },
         Message: {
