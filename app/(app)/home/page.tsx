@@ -401,6 +401,7 @@ export default function HomePage() {
             let data: {
               found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean; cached?: boolean;
             };
+            let status: number;
             try {
               const res = await fetch("/api/leads/find", {
                 method: "POST",
@@ -408,10 +409,22 @@ export default function HomePage() {
                 body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, types: typesToSearch }),
                 signal: abort.signal,
               });
+              status = res.status;
               data = await res.json();
             } catch {
               // Aborted because a newer search took over, or the request failed outright.
               // Either way this tile is no longer the one being looked at.
+              return;
+            }
+
+            // Out of credits. /api/leads/find has always answered 402 + "credits_required" here,
+            // but this map never read it — so a drained account watched its searches do nothing at
+            // all, with no message and no way to top up. (The jobs map has handled it since it was
+            // written; this is the same two lines.) stopAll because the other tiles are running
+            // concurrently against the same balance and would each raise the same dialog.
+            if (status === 402 || data.throttled === "credits_required") {
+              stopAll = true;
+              window.dispatchEvent(new Event("gigzman:open-plans"));
               return;
             }
             rounds++;
