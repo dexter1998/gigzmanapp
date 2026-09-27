@@ -9,7 +9,7 @@
  * `linked` entries are deliberate and separate: some directories list for free on the condition
  * that the site links back to them in a crawlable way. We link, from a row that says only that.
  *
- * Last generated: 2026-09-15 17:14
+ * Last generated: 2026-09-25 17:00
  */
 export type DirectoryStatus = "live" | "submitted" | "linked";
 
@@ -25,8 +25,9 @@ export interface DirectoryEntry {
 
 export const DIRECTORIES: DirectoryEntry[] = [
   { name: "Aitop10", href: "https://aitop10.tools/", status: "linked" },
-  { name: "Dang", href: "https://dang.ai/", status: "linked" },
-  { name: "Insidr", href: "https://insidr.ai/", status: "submitted" },
+  { name: "Uno Directory", href: "https://uno.directory/", status: "linked" },
+  { name: "Indiehackers", href: "https://www.indiehackers.com/product/mantis-ai-3", status: "live", verifiedAt: "2026-09-20" },
+  { name: "Product Hunt", href: "https://www.producthunt.com/products/mantis-ai", status: "live", verifiedAt: "2026-09-19" },
 ];
 
 export const liveListings = () => DIRECTORIES.filter((d) => d.status === "live");

@@ -13,6 +13,7 @@ import { LandingDirectories } from "@/components/landing/LandingDirectories";
 import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingFaq } from "@/components/landing/LandingFaq";
+import { LandingUpvote } from "@/components/landing/LandingUpvote";
 import { LandingCta } from "@/components/landing/LandingCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
@@ -92,6 +93,7 @@ export default async function RootPage() {
         <LandingDirectories />
         <LandingTestimonials />
         <LandingPricing />
+        <LandingUpvote />
         <LandingFaq />
         <LandingCta />
       </main>

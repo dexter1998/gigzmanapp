@@ -1,15 +1,17 @@
 import Script from "next/script";
-import { liveBadges } from "@/lib/badges";
+import { footerBadges } from "@/lib/badges";
 
 /**
  * The review-platform badges, under the brand block in the footer.
  *
- * Renders only badges for listings that exist. Product Hunt gives an image, G2 and Capterra give a
- * script that fills a container of their own — both shapes are supported, and neither is faked
- * with a look-alike graphic while the real listing is still pending.
+ * Deliberately narrower than the full carousel (`LandingUpvote`): only `footer: true` badges show
+ * here (Product Hunt, TheresAnAIForThat) — Startup Fast's "powered by" badge, for instance, lives
+ * in the carousel only, per operator instruction 2026-09-21. Product Hunt gives an image, G2 and
+ * Capterra give a script that fills a container of their own — both shapes are supported, and
+ * neither is faked with a look-alike graphic while the real listing is still pending.
  */
-export function FooterBadges() {
-  const badges = liveBadges();
+export async function FooterBadges() {
+  const badges = await footerBadges();
   if (!badges.length) return null;
 
   return (

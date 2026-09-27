@@ -92,7 +92,6 @@ export function LandingFooter() {
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginTop: 44, paddingTop: 24, borderTop: "1px solid rgba(20,32,51,0.12)" }}>
           <span style={{ fontSize: 13, color: "var(--g-ink-soft)" }}>© {new Date().getFullYear()} Mantis Ai. All rights reserved.</span>
-
         </div>
       </div>
     </footer>

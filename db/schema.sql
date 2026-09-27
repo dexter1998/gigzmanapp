@@ -856,3 +856,22 @@ CREATE INDEX IF NOT EXISTS idx_company_salary_slug ON company_salary_bands(compa
 -- discovery call that sets has_website (see app/api/leads/find/route.ts, scripts/places-ingest.ts)
 -- -- it was being read for a boolean and then thrown away. Stored properly instead of re-fetched.
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS website_url TEXT;
+
+-- 2026-09-21: review-platform badges (footer strip + "Upvote us on" carousel) used to live in
+-- lib/badges.ts as a build-time constant -- every new listing (StartupFast, Product Hunt, and many
+-- more queued via growth-os's directory priority queue) meant a full Docker build + App Runner
+-- rollout just to add one badge image. That's the wrong cost for what is genuinely just data.
+-- Runtime table instead: growth-os (or any script with DATABASE_URL) can INSERT a new live badge
+-- and it appears on the next page load, no deploy. Additive-only, matches this file's own rule.
+CREATE TABLE IF NOT EXISTS badges (
+  platform TEXT PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('image', 'script')),
+  href TEXT NOT NULL,              -- OUR listing page on that platform, never their generic homepage
+  img TEXT,                        -- kind='image': their badge asset URL
+  width INTEGER, height INTEGER,   -- kind='image'
+  src TEXT,                        -- kind='script': their embed script URL
+  container_id TEXT,               -- kind='script': the div id their script fills
+  alt TEXT NOT NULL,
+  show_in_footer BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
