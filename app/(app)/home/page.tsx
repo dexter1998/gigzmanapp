@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { loadGoogleMaps } from "@/lib/google-maps";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/lib/pin-overlay";
-import { SECTION_NAMES, SEARCH_ORDER, TYPE_TO_SECTION, formatCategory } from "@/lib/categories";
+import { formatCategory } from "@/lib/categories";
+import { ALL_CATALOG_TYPES } from "@/lib/discovery-catalog";
+import { CategoryPicker } from "@/components/map/CategoryPicker";
 import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { DashboardModeBadge } from "@/components/DashboardModeBadge";
@@ -29,7 +31,8 @@ type Lead = {
   review_count: number | null;
 };
 
-const SEARCH_CATEGORIES = ["All categories", ...SECTION_NAMES];
+// Every catalog type is on by default. 147 types is three Google calls per tile; the picker lets
+// a user narrow below that, and narrowing is the only thing that makes a search cheaper.
 
 // DLF Cyber City, Gurugram — default center when location access isn't granted, zoomed in to
 // match Pindrop's own default (building-level, not a whole-city view).
@@ -66,6 +69,24 @@ const TOOLBAR_SAFE_TOP = 72;
 // meant to cut latency, but it only ever changes API cost/coverage, not how fast a single tile
 // resolves, so it wasn't worth the ~2x worst-case cost.)
 const MAX_TILES_PER_SEARCH = 4;
+
+// A tile is drained one grid level per search, not until its grid is exhausted.
+//
+// Nearby Search caps at 20 results, so a dense area caps every batch, and a capped cell splits
+// into four at half the radius — 800m -> 400m -> 200m -> 100m is up to 85 cells per batch, 255
+// billed calls for ONE tile at three batches. The old loop ran until `hasMore` went false, which
+// is how a first load kept billing long after the map had more pins than it can even render
+// (/api/leads returns 120). Confirmed live at DLF Cyber City: all three batches came back capped
+// on the very first call.
+//
+// One billed round per tile is enough to fill the screen (~49 unique businesses per tile in that
+// test, x4 tiles). The rest stays in pending_cells and continues on the next search — which is
+// exactly what panning or zooming already triggers, so "show me more" costs the user nothing to
+// ask for and nothing to not ask for.
+//
+// Rounds that cost nothing are exempt: ground already in area_type_scans is free to drain, and
+// stopping there would hide pins that are already paid for.
+const FREE_ROUNDS_SAFETY_CAP = 20;
 
 type SearchTile = { lat: number; lng: number };
 
@@ -164,7 +185,7 @@ export default function HomePage() {
   }, []);
 
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [category, setCategory] = useState(SEARCH_CATEGORIES[0]);
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(() => new Set(ALL_CATALOG_TYPES));
   const [searching, setSearching] = useState(false);
   // Since has_website now resolves in the same call that discovers a business (see the
   // find/route.ts merge), there's no more real "found it, still checking" gap to show a grey
@@ -244,10 +265,10 @@ export default function HomePage() {
   // Ref mirrors of state that the map's `idle` listener needs to read — the listener is attached
   // once at map creation, so it would otherwise only ever see the state values from that first
   // render (a classic stale-closure trap).
-  const categoryRef = useRef(category);
+  const selectedTypesRef = useRef(selectedTypes);
   useEffect(() => {
-    categoryRef.current = category;
-  }, [category]);
+    selectedTypesRef.current = selectedTypes;
+  }, [selectedTypes]);
 
   const lastAutoSearchRef = useRef(0);
   // Pending debounced search for the area the map has settled on. Cleared and re-armed by every
@@ -325,7 +346,12 @@ export default function HomePage() {
       // slightly-jittery map center.
       const tiles = nearestSearchTiles(center, MAX_TILES_PER_SEARCH);
 
-      const sectionsToRun = categoryRef.current === "All categories" ? SEARCH_ORDER : [categoryRef.current];
+      // One request per tile, carrying the whole type selection — not one per category. The old
+      // shape fanned a single "All categories" load into 14 categories x 4 tiles = 56 concurrent
+      // requests and 68 billed Google calls; the server now packs the selection into 50-type
+      // batches instead, so the same coverage costs 3 calls per tile.
+      const typesToSearch = [...selectedTypesRef.current];
+      if (typesToSearch.length === 0) return;
 
       // Optimistic reset — re-set immediately below if this attempt is still inside the
       // throttle window, but a fresh attempt deserves a fresh chance rather than an indefinitely
@@ -361,62 +387,63 @@ export default function HomePage() {
         setCurrentSearchingSection(first ?? null);
       };
 
-      const runSection = async (section: string) => {
-        inFlight.add(section);
+      const runTile = async (tile: SearchTile, label: string) => {
+        inFlight.add(label);
         showRunningSection();
         try {
-          for (const tile of tiles) {
-            let hasMore = true;
-            while (hasMore) {
-              // A newer handleFind (a pan, or the real-location search finally resolving) has taken
-              // over — stop working toward this now-stale area immediately rather than finishing it.
-              if (stopAll || searchGenerationRef.current !== myGeneration) return;
+          let keepGoing = true;
+          let rounds = 0;
+          while (keepGoing && rounds < FREE_ROUNDS_SAFETY_CAP) {
+            // A newer handleFind (a pan, or the real-location search finally resolving) has taken
+            // over — stop working toward this now-stale area immediately rather than finishing it.
+            if (stopAll || searchGenerationRef.current !== myGeneration) return;
 
-              let data: {
-                found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean; cached?: boolean;
-              };
-              try {
-                const res = await fetch("/api/leads/find", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, category: section }),
-                  signal: abort.signal,
-                });
-                data = await res.json();
-              } catch {
-                // Aborted because a newer search took over, or the request failed outright.
-                // Either way this section's area is no longer the one being looked at.
-                return;
-              }
-              hasMore = data.hasMore ?? false;
-              if (data.apiDown) setShowMaintenance(true);
-              if (data.throttled === "session_budget") {
-                // Every remaining request this search would make is going to get throttled the
-                // same way — stop every section immediately instead of burning through the rest of
-                // the tiles/categories for nothing.
-                setSessionThrottled(true);
-                stopAll = true;
-                return;
-              }
-              if ((data.found ?? 0) > 0) {
-                clearDecorativeDotsAfterMinDuration();
-                scheduleLeadRefresh();
-              }
+            let data: {
+              found?: number; hasMore?: boolean; throttled?: string; apiDown?: boolean; cached?: boolean;
+            };
+            try {
+              const res = await fetch("/api/leads/find", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lat: tile.lat, lng: tile.lng, radius: TILE_RADIUS_METERS, types: typesToSearch }),
+                signal: abort.signal,
+              });
+              data = await res.json();
+            } catch {
+              // Aborted because a newer search took over, or the request failed outright.
+              // Either way this tile is no longer the one being looked at.
+              return;
+            }
+            rounds++;
+            // Keep going only while this tile is still costing nothing. The moment a round
+            // actually calls Places, this tile is done for this search.
+            keepGoing = (data.hasMore ?? false) && data.cached === true;
+            if (data.apiDown) setShowMaintenance(true);
+            if (data.throttled === "session_budget") {
+              // Every remaining request this search would make is going to get throttled the same
+              // way — stop every tile immediately instead of burning through the rest for nothing.
+              setSessionThrottled(true);
+              stopAll = true;
+              return;
+            }
+            if ((data.found ?? 0) > 0) {
+              clearDecorativeDotsAfterMinDuration();
+              scheduleLeadRefresh();
             }
           }
         } finally {
-          inFlight.delete(section);
+          inFlight.delete(label);
           showRunningSection();
         }
       };
 
-      const queue = [...sectionsToRun];
+      const queue = tiles.map((tile, i) => ({ tile, label: `area ${i + 1}` }));
       await Promise.all(
         Array.from({ length: Math.min(SECTION_CONCURRENCY, queue.length) }, async () => {
           while (queue.length && !stopAll) {
             if (searchGenerationRef.current !== myGeneration) return;
             const next = queue.shift();
-            if (next) await runSection(next);
+            if (next) await runTile(next.tile, next.label);
           }
         })
       );
@@ -758,12 +785,15 @@ export default function HomePage() {
     if (!mapReady || !mapRef.current || !PinOverlayClassRef.current) return;
     const PinOverlay = PinOverlayClassRef.current;
 
+    const allTypesSelected = selectedTypes.size === ALL_CATALOG_TYPES.length;
     const filtered = leads.filter((l) => {
       if (websiteFilter === "no_website" && l.has_website !== false) return false;
       if (websiteFilter === "has_website" && l.has_website !== true) return false;
       if (minRating !== null && (l.rating === null || l.rating < minRating)) return false;
       if (minHeatScore !== null && (l.heat_score === null || l.heat_score < minHeatScore)) return false;
-      if (category !== "All categories" && (!l.category || TYPE_TO_SECTION[l.category] !== category)) return false;
+      // Only filter when the user has actually narrowed: with everything ticked, leads stored
+      // before a type left the catalog would otherwise vanish from a map they are legitimately on.
+      if (!allTypesSelected && (!l.category || !selectedTypes.has(l.category))) return false;
       return true;
     });
 
@@ -892,7 +922,7 @@ export default function HomePage() {
         }
       });
     }, 250);
-  }, [leads, websiteFilter, minRating, minHeatScore, category, mapReady, mapZoom]);
+  }, [leads, websiteFilter, minRating, minHeatScore, selectedTypes, mapReady, mapZoom]);
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
@@ -1008,29 +1038,7 @@ export default function HomePage() {
           )}
         </div>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{
-            border: "1px solid var(--g-green)",
-            outline: "none",
-            fontSize: 12.5,
-            fontWeight: 700,
-            color: category === "All categories" ? "var(--g-green-text)" : "var(--g-ink)",
-            background: "var(--g-white)",
-            borderRadius: "var(--radius-pill)",
-            padding: "0 16px",
-            height: 44,
-            boxShadow: "var(--shadow-toolbar)",
-            cursor: "pointer",
-          }}
-        >
-          {SEARCH_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <CategoryPicker selected={selectedTypes} onChange={setSelectedTypes} />
 
         <div style={{ position: "relative" }}>
           <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>

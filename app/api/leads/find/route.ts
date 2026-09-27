@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { looksLikeCompetitor } from "@/lib/competitors";
-import { CATEGORY_SECTIONS, chunkTypes } from "@/lib/categories";
+import { TYPE_TO_SECTION } from "@/lib/categories";
+import { ALL_CATALOG_TYPES, typeBatches } from "@/lib/discovery-catalog";
+import { createHash } from "node:crypto";
 import { isAllowedLeadType } from "@/lib/lead-quality";
 import { allowanceFor, chargeCredits } from "@/lib/credits/server";
 import { CREDIT_COST } from "@/lib/credits/pricing";
@@ -75,8 +77,22 @@ async function prescannedCoverage(lat: number, lng: number, section: string) {
   return (row as { city_slug: string; lead_count: number } | undefined) ?? null;
 }
 
-function cacheKeyFor(lat: number, lng: number, section: string, batchIndex: number) {
-  return `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}_${batchIndex}`;
+/**
+ * A stable identity for one batch of types, so the same set of types always reuses the same cached
+ * grid regardless of which user asked or what order the picker handed them over in.
+ *
+ * This replaces the old per-section key. Batching used to follow our own category grouping, which
+ * meant a one-type section (Finance had exactly `accounting`) still cost a full billed call of its
+ * own — 369 types went out as 17 calls per tile where 8 would have done. Batching the actual
+ * SELECTION instead packs types up to Google's 50-per-call ceiling, and the key has to follow the
+ * batch rather than a category that no longer decides anything.
+ */
+function batchKeyFor(types: string[]) {
+  return createHash("sha1").update([...types].sort().join(",")).digest("hex").slice(0, 12);
+}
+
+function cacheKeyFor(lat: number, lng: number, batchKey: string, batchIndex: number) {
+  return `${lat.toFixed(2)}_${lng.toFixed(2)}_t${batchKey}_${batchIndex}`;
 }
 
 // Past this age, an exhausted batch is no longer trusted blindly — the next visit spends exactly
@@ -93,13 +109,13 @@ const STALENESS_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
  */
 async function discoverBatch(
   types: string[],
-  section: string,
+  batchKey: string,
   batchIndex: number,
   lat: number,
   lng: number,
   radius: number
 ) {
-  const cacheKey = cacheKeyFor(lat, lng, section, batchIndex);
+  const cacheKey = cacheKeyFor(lat, lng, batchKey, batchIndex);
   const [existing] = await sql`
     SELECT is_exhausted, pending_cells, top_level_count, last_verified_at
     FROM area_type_scans WHERE cache_key = ${cacheKey}
@@ -162,7 +178,7 @@ async function discoverBatch(
   const isExhausted = nextPending.length === 0;
   await sql`
     INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count, top_level_count, last_verified_at)
-    VALUES (${cacheKey}, ${section}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length}, ${topLevelCount}, now())
+    VALUES (${cacheKey}, ${batchKey}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length}, ${topLevelCount}, now())
     ON CONFLICT (cache_key) DO UPDATE SET
       is_exhausted = EXCLUDED.is_exhausted,
       pending_cells = EXCLUDED.pending_cells,
@@ -179,16 +195,26 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const body = (await req.json()) as { lat?: number; lng?: number; radius?: number; category?: string };
-  if (body.lat == null || body.lng == null || !body.radius || !body.category) {
-    return NextResponse.json({ error: "lat, lng, radius, and category are required" }, { status: 400 });
+  const body = (await req.json()) as { lat?: number; lng?: number; radius?: number; types?: string[] };
+  if (body.lat == null || body.lng == null || !body.radius) {
+    return NextResponse.json({ error: "lat, lng and radius are required" }, { status: 400 });
   }
   const lat: number = body.lat;
   const lng: number = body.lng;
   const radius = Math.min(body.radius, MAX_SEARCH_RADIUS_METERS);
-  const section: string = body.category;
   const userEmail = session.user.email;
-  const cooldownKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${section}`;
+
+  // Intersected with the catalog rather than trusted: the number of types decides how many billed
+  // calls this request makes (50 per call), so an unfiltered list from the client would be a way
+  // to spend someone's credits — or ours — 8 at a time. An empty or absent selection means the
+  // whole catalog, which is what the picker starts on.
+  const requested = Array.isArray(body.types) && body.types.length > 0 ? body.types : ALL_CATALOG_TYPES;
+  const selectedTypes = [...new Set(requested.filter((t) => ALL_CATALOG_TYPES.includes(t)))].sort();
+  if (selectedTypes.length === 0) {
+    return NextResponse.json({ error: "no recognised types selected" }, { status: 400 });
+  }
+  const selectionKey = batchKeyFor(selectedTypes);
+  const cooldownKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${selectionKey}`;
 
   // Both throttles below count only requests that actually called Places API
   // (billed_places_calls > 0). They exist to cap Google spend, and a request served entirely from
@@ -241,14 +267,20 @@ export async function POST(req: NextRequest) {
 
   const [scan] = await sql`
     INSERT INTO area_scans (requested_by, area_label, center_lat, center_lng, category, cache_key, status)
-    VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${section}, ${cooldownKey}, 'discovering')
+    VALUES (${userEmail}, ${`${lat.toFixed(4)},${lng.toFixed(4)}`}, ${lat}, ${lng}, ${selectionKey}, ${cooldownKey}, 'discovering')
     RETURNING id
   `;
 
-  // Checked before any batch runs, because the answer applies to the whole section: if a sweep
-  // already covered this ground there is nothing for the grid to find, and every call it would
-  // make is one we have already paid for once.
-  const prescan = await prescannedCoverage(lat, lng, section);
+  // Checked before any batch runs: if a sweep already covered this ground there is nothing for the
+  // grid to find, and every call it would make is one we have already paid for once.
+  //
+  // prescanned_regions records coverage per SECTION, while a selection is a set of types that can
+  // straddle several. Skipping needs every section the selection touches to be covered — one
+  // uncovered section means there is still ground the grid would legitimately find, so the search
+  // has to run. Checking only the first section would silently skip real work.
+  const selectedSections = [...new Set(selectedTypes.map((t) => TYPE_TO_SECTION[t]).filter(Boolean))];
+  const coverage = await Promise.all(selectedSections.map((sec) => prescannedCoverage(lat, lng, sec)));
+  const prescan = coverage.every(Boolean) ? coverage[0] : null;
   if (prescan) {
     await sql`
       UPDATE area_scans
@@ -262,15 +294,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ found: 0, leads: [], hasMore: false, apiDown: false, cached: true });
   }
 
-  const types = CATEGORY_SECTIONS[section] ?? [];
-  const batches = chunkTypes(types, 50);
+  // Flat batching across the whole selection — Google takes 50 types per call, and one call is one
+  // billed request whether it carries 1 type or 50.
+  const batches = typeBatches(selectedTypes);
   const rows: Array<{ id: string; lat: number | null; lng: number | null; is_competitor: boolean }> = [];
   let hasMore = false;
   let apiDown = false;
   let placesCalls = 0;
 
   for (let i = 0; i < batches.length; i++) {
-    const result = await discoverBatch(batches[i], section, i, lat, lng, radius);
+    const result = await discoverBatch(batches[i], selectionKey, i, lat, lng, radius);
     hasMore = hasMore || result.hasMore;
     apiDown = apiDown || result.failed;
     placesCalls += result.apiCalls;
@@ -292,7 +325,7 @@ export async function POST(req: NextRequest) {
       const [row] = await sql`
         INSERT INTO leads (area_scan_id, place_id, business_name, category, address, lat, lng, phone, has_website, website_url, website_checked_at, is_competitor, rating, review_count)
         VALUES (
-          ${scan.id}, ${place.id}, ${name}, ${place.primaryType ?? section},
+          ${scan.id}, ${place.id}, ${name}, ${place.primaryType ?? null},
           ${place.formattedAddress ?? null}, ${place.location?.latitude ?? null}, ${place.location?.longitude ?? null},
           ${place.nationalPhoneNumber ?? null}, ${Boolean(place.websiteUri)}, ${place.websiteUri ?? null}, now(), ${isCompetitor}, ${place.rating ?? null}, ${place.userRatingCount ?? null}
         )
