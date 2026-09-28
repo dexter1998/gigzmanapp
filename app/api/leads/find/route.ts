@@ -37,6 +37,9 @@ const SESSION_RAW_REQUEST_CEILING = 1500;
 // computes from its viewport — user report: zooming out toward city/state/country scale must not
 // balloon into scanning that whole area. Enforced server-side so a client bug can't bypass it.
 const MAX_SEARCH_RADIUS_METERS = 3000;
+// Three Google calls per tile, matching what the picker's full catalog costs. A caller asking for
+// more types than this is asking for more billed calls than any screen can show the results of.
+const MAX_TYPES_PER_REQUEST = 150;
 // Exactly one grid cell processed per batch per request — keeps each POST fast (one Places API
 // call per type-batch) so the frontend can refresh pins after every request instead of a whole
 // section's grid finishing silently in one long call. How many requests a section needs to fully
@@ -204,12 +207,18 @@ export async function POST(req: NextRequest) {
   const radius = Math.min(body.radius, MAX_SEARCH_RADIUS_METERS);
   const userEmail = session.user.email;
 
-  // Intersected with the catalog rather than trusted: the number of types decides how many billed
-  // calls this request makes (50 per call), so an unfiltered list from the client would be a way
-  // to spend someone's credits — or ours — 8 at a time. An empty or absent selection means the
-  // whole catalog, which is what the picker starts on.
+  // Validated against the classification allowlist, then capped. The count of types decides how
+  // many billed calls this request makes (50 per call), so an unfiltered list would be a way to
+  // spend someone's credits — or ours — 8 at a time.
+  //
+  // The allowlist rather than the picker's catalog, because the chat reaches this route too and
+  // searches by a single resolved type ("barber_shop") that the catalog may not carry. Restricting
+  // to the catalog silently widened those searches to all 147 types: three calls where one would
+  // do, and salons answered with a list of everything nearby.
   const requested = Array.isArray(body.types) && body.types.length > 0 ? body.types : ALL_CATALOG_TYPES;
-  const selectedTypes = [...new Set(requested.filter((t) => ALL_CATALOG_TYPES.includes(t)))].sort();
+  const selectedTypes = [...new Set(requested.filter((t) => Boolean(TYPE_TO_SECTION[t])))]
+    .sort()
+    .slice(0, MAX_TYPES_PER_REQUEST);
   if (selectedTypes.length === 0) {
     return NextResponse.json({ error: "no recognised types selected" }, { status: 400 });
   }

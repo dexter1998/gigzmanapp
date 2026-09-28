@@ -291,8 +291,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
       method: "POST",
       body: JSON.stringify({
         lat: center.lat, lng: center.lng, radius: DEFAULT_SEARCH_RADIUS_METERS,
-        // Discovery works in sections, so a resolved type is widened back to its own section.
-        category: intent.category ?? (resolvedType ? TYPE_TO_SECTION[resolvedType] : null),
+        // Types, not a section name. A resolved type searches only itself — one billed call, and
+        // an answer about barbers rather than about everything near the barbers. Only when the
+        // chat could not narrow past a section does the whole section go.
+        types: resolvedType ? [resolvedType] : (CATEGORY_SECTIONS[intent.category ?? ""] ?? []),
       }),
       headers: { "content-type": "application/json" },
     });
