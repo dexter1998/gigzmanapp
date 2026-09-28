@@ -67,10 +67,14 @@
     ":host{all:initial}",
     ".wrap{position:fixed;bottom:" + offset + "px;" + position + ":" + offset + "px;z-index:2147483000;",
     "font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif}",
-    ".btn{display:flex;align-items:center;gap:8px;height:48px;padding:0 18px;border:none;cursor:pointer;",
+    ".btn{display:flex;align-items:center;gap:10px;height:48px;padding:0 18px 0 6px;border:none;cursor:pointer;",
     "border-radius:999px;background:" + accent + ";color:" + accentText + ";font-size:14px;font-weight:700;",
     "box-shadow:0 6px 20px rgba(16,18,20,.22);transition:transform .15s ease}",
     ".btn:hover{transform:translateY(-1px)}",
+    // The face on the button, not just inside the panel. A circle with a person in it is read as
+    // "someone is there" before a single word of the label is.
+    ".btn img{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:0 0 auto;",
+    "border:2px solid rgba(255,255,255,.75)}",
     // The same stacking as the launcher, not the default. Without it the iframe sat at z-index
     // auto and the host page's own content drew over it — confirmed live on the Mantis landing
     // page, where a decorative graphic covered the panel's footer.
@@ -93,8 +97,15 @@
   var btn = document.createElement("button");
   btn.className = "btn";
   btn.type = "button";
-  btn.textContent = label;
   btn.setAttribute("aria-label", label);
+
+  var face = document.createElement("img");
+  face.alt = "";
+  face.src = d.avatar || base + "/widget/founder.jpg";
+  // A broken avatar should cost the label its padding, not the whole button.
+  face.onerror = function () { face.remove(); btn.style.paddingLeft = "18px"; };
+  btn.appendChild(face);
+  btn.appendChild(document.createTextNode(label));
 
   var frame = null;
   var open = false;

@@ -49,8 +49,15 @@ const INTENTS: { id: string; label: string; icon: string; prompt: string; primar
   { id: "partnership", label: "Partnership & Collaboration", icon: "🚀", prompt: "About a partnership or collaboration — ", primary: true },
 ];
 
-/** How long the founder is shown as typing after a visitor's first message. */
-const TYPING_MS = 10_000;
+/**
+ * How long the typing indicator runs before a reply is revealed.
+ *
+ * It fires when an admin message has ALREADY arrived from the poll and is about to be shown —
+ * never on the visitor's own send. Typing that appears because somebody pressed send is a claim
+ * nobody is keeping: it promises a person at a keyboard and then quietly gives up. Here it is
+ * true every time it appears, and it is short because the message is already in hand.
+ */
+const TYPING_MS = 1_600;
 
 /** Per site, so the same browser visiting two embedded sites keeps two identities. */
 const tokenKey = (site: string) => `mantis.widget.token.${site}`;
@@ -93,6 +100,7 @@ export function WidgetApp({
   const [error, setError] = useState<string | null>(null);
 
   const [typing, setTyping] = useState(false);
+  const [adminReadAt, setAdminReadAt] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const tokenRef = useRef<string | null>(null);
@@ -133,6 +141,7 @@ export function WidgetApp({
       if (!res.ok) return;
       const d = await res.json();
       setMessages(d.messages ?? []);
+      setAdminReadAt(d.thread?.admin_last_read_at ?? null);
     },
     [authedFetch]
   );
@@ -146,7 +155,18 @@ export function WidgetApp({
       const res = await authedFetch(`/api/widget/threads/${activeId}`);
       if (!res.ok) return;
       const d = await res.json();
-      setMessages(d.messages ?? []);
+      const next: Message[] = d.messages ?? [];
+      setAdminReadAt(d.thread?.admin_last_read_at ?? null);
+
+      setMessages((prev) => {
+        const isReply = next.length > prev.length && next[next.length - 1]?.sender === "admin";
+        if (!isReply) return next;
+        // Hold the new reply back for a moment and show typing first. The message exists either
+        // way — this only stops a founder's answer from materialising out of nowhere mid-read.
+        setTyping(true);
+        setTimeout(() => { setTyping(false); setMessages(next); }, TYPING_MS);
+        return prev;
+      });
     }, POLL_MS);
     return () => clearInterval(t);
   }, [view, activeId, authedFetch]);
@@ -180,11 +200,6 @@ export function WidgetApp({
       writeToken(site, d.token);
       setDraft("");
       await openThread(d.threadId);
-      // Shown while the notification is on its way. It is a waiting state, not a claim that
-      // somebody is at a keyboard — which is why it resolves into the real answer below rather
-      // than looping forever.
-      setTyping(true);
-      setTimeout(() => setTyping(false), TYPING_MS);
     } finally {
       setSending(false);
     }
@@ -242,7 +257,7 @@ export function WidgetApp({
             onSend={startThread}
           />
         ) : (
-          <Thread messages={messages} error={error} typing={typing} avatar={theme.avatar} />
+          <Thread messages={messages} error={error} typing={typing} avatar={theme.avatar} adminReadAt={adminReadAt} />
         )}
       </div>
 
@@ -447,29 +462,41 @@ function Compose({
 }
 
 function Thread({
-  messages, error, typing, avatar,
+  messages, error, typing, avatar, adminReadAt,
 }: {
   messages: Message[];
   error: string | null;
   typing: boolean;
   avatar: string | null;
+  adminReadAt: string | null;
 }) {
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-      {messages.map((m) => (
-        <div key={m.id} style={{ display: "flex", justifyContent: m.sender === "visitor" ? "flex-end" : "flex-start" }}>
-          <div
-            style={{
-              maxWidth: "80%", padding: "9px 12px", fontSize: 13.5, lineHeight: "19px", whiteSpace: "pre-wrap",
-              borderRadius: "var(--w-radius-sm)",
-              background: m.sender === "visitor" ? "var(--w-accent)" : "#f0f1f3",
-              color: m.sender === "visitor" ? "var(--w-accent-text)" : "#101214",
-            }}
-          >
-            {m.body}
+      {messages.map((m, i) => {
+        const mine = m.sender === "visitor";
+        // "Seen" belongs on the last of a run, not on every bubble — repeated under each line it
+        // reads as a status per message rather than where the other side has read up to.
+        const lastOfMine = mine && !messages.slice(i + 1).some((n) => n.sender === "visitor");
+        const seen = lastOfMine && adminReadAt !== null && adminReadAt >= m.created_at;
+        return (
+          <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
+            <div
+              style={{
+                maxWidth: "80%", padding: "9px 12px", fontSize: 13.5, lineHeight: "19px", whiteSpace: "pre-wrap",
+                borderRadius: "var(--w-radius-sm)",
+                background: mine ? "var(--w-accent)" : "#f0f1f3",
+                color: mine ? "var(--w-accent-text)" : "#101214",
+              }}
+            >
+              {m.body}
+            </div>
+            <div style={{ fontSize: 10.5, color: "#98a2b3", margin: "3px 2px 0" }}>
+              {stamp(m.created_at)}
+              {lastOfMine && (seen ? " · Seen" : " · Sent")}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {typing && (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {avatar && (
@@ -565,6 +592,15 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
     </div>
   );
+}
+
+/** Date and time under a message. Same-day messages drop the date: in a conversation that just
+ *  happened, "5:42 pm" is the useful half and the date is noise. */
+function stamp(iso: string) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const today = new Date().toDateString() === d.toDateString();
+  return today ? time : `${d.toLocaleDateString([], { day: "numeric", month: "short" })}, ${time}`;
 }
 
 /** Short relative time — a widget has no room for a date, and "2d" is what the reference shows. */

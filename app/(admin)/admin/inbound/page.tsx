@@ -38,7 +38,7 @@ export default async function InboundPage() {
 
         <div className="row row-cards mb-3">
           <Table col="col-12" title="Partner with us" note="Ticket size × projects/month batata hai kiske saath partner karna chahiye — wahi yahan saamne hai."
-            head={["When", "Who", "Agency", "Type", { label: "Projects/mo", num: true }, "Avg ticket", "Revenue range", "Team", "Where", "Source", "Status"]}
+            head={["When", "Who", "Agency", "Type", { label: "Projects/mo", num: true }, "Avg ticket", "Revenue range", "Team", "Where", "In their words", "Source", "Status"]}
             rows={partners.map((p) => [
               fmtDT(p.submitted_at),
               <span key="w">{p.full_name}<br /><span className="text-secondary" style={{ fontSize: 11 }}>{p.email}{p.phone ? ` · ${p.phone}` : ""}</span></span>,
@@ -49,6 +49,11 @@ export default async function InboundPage() {
               p.monthly_revenue_range ?? "—",
               p.team_size ?? "—",
               [p.city, p.country].filter(Boolean).join(", ") || "—",
+              // The only free text on the form, and the only part that says what they actually
+              // want — it was being selected and then thrown away before it reached the page.
+              p.partnership_reason
+                ? <span key="r" title={p.partnership_reason} style={{ display: "inline-block", maxWidth: 260, whiteSpace: "normal", fontSize: 12 }}>{p.partnership_reason}</span>
+                : "—",
               p.source,
               <Pill key="s" tone={statusTone(p.status)}>{p.status}</Pill>,
             ])}

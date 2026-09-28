@@ -155,7 +155,8 @@ export async function threadOwnedBy(
   opts: { userEmail?: string | null; token?: string | null }
 ) {
   const [row] = await sql`
-    SELECT id, site_slug, subject, status, visitor_name, last_sender, visitor_last_read_at
+    SELECT id, site_slug, subject, status, visitor_name, last_sender,
+           visitor_last_read_at, admin_last_read_at
       FROM widget_threads
      WHERE id = ${threadId}
        AND (
