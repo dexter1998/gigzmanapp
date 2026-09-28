@@ -20,6 +20,7 @@
  *   data-title         header text               ("Talk to Founder")
  *   data-greeting      one-line intro
  *   data-logo          https logo url
+ *   data-avatar        https headshot url (defaults to the founder's)
  *   data-avatars       comma-separated https image urls
  *   data-position      "right" | "left"          (right)
  *   data-offset        distance from the edge px (24)
@@ -52,7 +53,7 @@
   var label = d.label || d.title || "Talk to Founder";
 
   var params = new URLSearchParams({ site: site, origin: location.origin });
-  ["accent", "accentText", "radius", "title", "greeting", "logo", "avatars"].forEach(function (k) {
+  ["accent", "accentText", "radius", "title", "greeting", "logo", "avatar", "avatars"].forEach(function (k) {
     if (d[k]) params.set(k, d[k]);
   });
 
@@ -70,7 +71,10 @@
     "border-radius:999px;background:" + accent + ";color:" + accentText + ";font-size:14px;font-weight:700;",
     "box-shadow:0 6px 20px rgba(16,18,20,.22);transition:transform .15s ease}",
     ".btn:hover{transform:translateY(-1px)}",
-    ".panel{position:fixed;bottom:" + (offset + 60) + "px;" + position + ":" + offset + "px;",
+    // The same stacking as the launcher, not the default. Without it the iframe sat at z-index
+    // auto and the host page's own content drew over it — confirmed live on the Mantis landing
+    // page, where a decorative graphic covered the panel's footer.
+    ".panel{position:fixed;z-index:2147483000;bottom:" + (offset + 60) + "px;" + position + ":" + offset + "px;",
     "width:380px;height:min(620px,calc(100vh - " + (offset * 2 + 70) + "px));border:none;",
     "border-radius:" + radius + "px;background:#fff;box-shadow:0 18px 50px rgba(16,18,20,.28);",
     "opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .16s ease,transform .16s ease}",

@@ -31,6 +31,27 @@ type Prefill = { name: string; email: string; countryCode: string; phone: string
 const COUNTRY_CODES = ["+91", "+1", "+44", "+971", "+65", "+61", "+49", "+33"];
 const POLL_MS = 10_000;
 
+/**
+ * Why someone is writing in, offered up front.
+ *
+ * A blank box is the hardest thing to answer — people who would happily say "I have an idea"
+ * stall when asked to compose a message to a founder from nothing. Every one of these opens the
+ * same conversation; the only difference is the line already typed into the box, which is there
+ * to be edited, not sent as-is.
+ *
+ * Partnership sits last and heaviest on purpose: it is the one worth the most, and putting it
+ * first would make the lighter ones feel like afterthoughts.
+ */
+const INTENTS: { id: string; label: string; icon: string; prompt: string; primary?: boolean }[] = [
+  { id: "idea", label: "Have an idea in mind?", icon: "💡", prompt: "I have an idea in mind — " },
+  { id: "contribute", label: "Want to contribute", icon: "🤝", prompt: "I'd like to contribute — " },
+  { id: "feedback", label: "Share some feedback", icon: "💬", prompt: "Some feedback on Mantis — " },
+  { id: "partnership", label: "Partnership & Collaboration", icon: "🚀", prompt: "About a partnership or collaboration — ", primary: true },
+];
+
+/** How long the founder is shown as typing after a visitor's first message. */
+const TYPING_MS = 10_000;
+
 /** Per site, so the same browser visiting two embedded sites keeps two identities. */
 const tokenKey = (site: string) => `mantis.widget.token.${site}`;
 
@@ -71,6 +92,7 @@ export function WidgetApp({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [typing, setTyping] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const tokenRef = useRef<string | null>(null);
@@ -135,6 +157,12 @@ export function WidgetApp({
 
   const needsDetails = !prefill || !prefill.email || !prefill.phone || !prefill.name;
 
+  function startFrom(intent: (typeof INTENTS)[number]) {
+    // Prefilled, not sent. The visitor still writes the message — this only removes the blank page.
+    setDraft(intent.prompt);
+    setView("compose");
+  }
+
   async function startThread() {
     setError(null);
     setSending(true);
@@ -152,6 +180,11 @@ export function WidgetApp({
       writeToken(site, d.token);
       setDraft("");
       await openThread(d.threadId);
+      // Shown while the notification is on its way. It is a waiting state, not a claim that
+      // somebody is at a keyboard — which is why it resolves into the real answer below rather
+      // than looping forever.
+      setTyping(true);
+      setTimeout(() => setTyping(false), TYPING_MS);
     } finally {
       setSending(false);
     }
@@ -183,6 +216,9 @@ export function WidgetApp({
 
   return (
     <div style={{ ...themeVars(theme), ...shell }}>
+      {/* Scoped to the widget's own document rather than globals.css: this file is the only thing
+          that uses it, and the widget is served standalone. */}
+      <style>{"@keyframes w-bounce{0%,80%,100%{transform:translateY(0);opacity:.45}40%{transform:translateY(-4px);opacity:1}}"}</style>
       <Header theme={theme} />
 
       <div ref={scrollRef} style={body}>
@@ -191,7 +227,7 @@ export function WidgetApp({
         ) : loading ? (
           <Empty text="Loading…" />
         ) : view === "home" ? (
-          <Home threads={threads} onStart={() => setView("compose")} onOpen={openThread} />
+          <Home threads={threads} onStart={() => setView("compose")} onOpen={openThread} onIntent={startFrom} />
         ) : view === "messages" ? (
           <MessageList threads={threads} onOpen={openThread} onStart={() => setView("compose")} />
         ) : view === "compose" ? (
@@ -206,7 +242,7 @@ export function WidgetApp({
             onSend={startThread}
           />
         ) : (
-          <Thread messages={messages} error={error} />
+          <Thread messages={messages} error={error} typing={typing} avatar={theme.avatar} />
         )}
       </div>
 
@@ -260,20 +296,31 @@ function Header({ theme }: { theme: WidgetTheme }) {
           </button>
         </div>
       </div>
-      <h1 style={{ margin: "18px 0 6px", fontSize: 24, lineHeight: 1.2, fontWeight: 800, color: "#101214" }}>
-        {theme.title}
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0 6px" }}>
+        {theme.avatar && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={theme.avatar}
+            alt=""
+            style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #fff", boxShadow: "0 2px 8px rgba(16,18,20,0.14)" }}
+          />
+        )}
+        <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 800, color: "#101214" }}>
+          {theme.title}
+        </h1>
+      </div>
       <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: "#667085" }}>{theme.greeting}</p>
     </div>
   );
 }
 
 function Home({
-  threads, onStart, onOpen,
+  threads, onStart, onOpen, onIntent,
 }: {
   threads: Thread[];
   onStart: () => void;
   onOpen: (id: string) => void;
+  onIntent: (i: (typeof INTENTS)[number]) => void;
 }) {
   const recent = threads[0];
   return (
@@ -298,6 +345,28 @@ function Home({
           <span style={{ fontSize: 18, color: "var(--w-accent)" }}>→</span>
         </div>
       </Card>
+
+      {INTENTS.map((i) => (
+        <button
+          key={i.id}
+          type="button"
+          onClick={() => onIntent(i)}
+          style={{
+            display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 13px",
+            borderRadius: "var(--w-radius-sm)", cursor: "pointer", textAlign: "left",
+            fontFamily: "inherit", fontSize: 13, fontWeight: i.primary ? 700 : 600,
+            // The heavy one is filled, the rest are outlined: three equal buttons would make the
+            // visitor choose rather than see which door is the main one.
+            border: i.primary ? "none" : "1px solid #e5e8e2",
+            background: i.primary ? "#101214" : "#fff",
+            color: i.primary ? "#fff" : "#101214",
+          }}
+        >
+          <span style={{ fontSize: 15 }}>{i.icon}</span>
+          <span style={{ flex: 1 }}>{i.label}</span>
+          <span style={{ opacity: 0.55 }}>→</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -377,7 +446,14 @@ function Compose({
   );
 }
 
-function Thread({ messages, error }: { messages: Message[]; error: string | null }) {
+function Thread({
+  messages, error, typing, avatar,
+}: {
+  messages: Message[];
+  error: string | null;
+  typing: boolean;
+  avatar: string | null;
+}) {
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
       {messages.map((m) => (
@@ -394,6 +470,19 @@ function Thread({ messages, error }: { messages: Message[]; error: string | null
           </div>
         </div>
       ))}
+      {typing && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {avatar && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="" style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover" }} />
+          )}
+          <div style={{ display: "flex", gap: 4, padding: "11px 13px", borderRadius: "var(--w-radius-sm)", background: "#f0f1f3" }}>
+            {[0, 1, 2].map((i) => (
+              <span key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "#98a2b3", animation: `w-bounce 1.2s ${i * 0.16}s infinite ease-in-out` }} />
+            ))}
+          </div>
+        </div>
+      )}
       {error && <div style={errorStyle}>{error}</div>}
     </div>
   );
