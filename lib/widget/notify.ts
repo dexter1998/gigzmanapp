@@ -26,12 +26,18 @@ import { COMPANY } from "@/lib/company";
  * codes. These are two halves of a conversation somebody started — a founder answering a
  * partnership pitch from `no-reply@` is both the wrong tone and a worse sender signal, and the
  * first sends of this landed in Gmail's spam folder despite SPF, DKIM and DMARC all passing.
+ *
+ * `tarun@` rather than `founder@` because mantisai.in is a Workspace *alias* domain: every real
+ * user gets a matching address on it automatically, so tarun@mantisai.in receives mail today.
+ * founder@ needs a group to exist behind it, and until that is confirmed working, sending from an
+ * address that bounces is exactly the signal this whole change set out to remove. The display
+ * name still reads "Founder MantisAI" — that is the half recipients actually see.
  */
-const FROM = process.env.SES_FOUNDER_FROM || `Founder MantisAI <founder@${new URL(COMPANY.site).hostname}>`;
+const FROM = process.env.SES_FOUNDER_FROM || `Founder MantisAI <tarun@${new URL(COMPANY.site).hostname}>`;
 
 /** Where a reply to the founder's own email should land. His real inbox, not the widget — an
  *  email that cannot be replied to is the thing that makes people stop replying. */
-const FOUNDER_REPLY_TO = (process.env.FOUNDER_REPLY_TO || "kumartarun276@gmail.com").trim();
+const FOUNDER_REPLY_TO = (process.env.FOUNDER_REPLY_TO || "tarun@gigzman.com").trim();
 /**
  * Where "somebody wrote in" lands.
  *
