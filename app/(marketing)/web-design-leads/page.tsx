@@ -78,7 +78,7 @@ export default async function WebDesignLeadsPage() {
         lede={
           totals && totals.qualifying > 0 ? (
             <>
-              Not "might want a redesign" — <strong style={{ color: "var(--g-ink)" }}>no website at
+              Not “might want a redesign” — <strong style={{ color: "var(--g-ink)" }}>no website at
               all</strong>. {fmtCount(totals.qualifying)} verified businesses across{" "}
               {fmtCount(totals.cities)} cities, each with an active Google listing, real reviews and
               nowhere to send a customer online. Free to browse, no per-lead fee.

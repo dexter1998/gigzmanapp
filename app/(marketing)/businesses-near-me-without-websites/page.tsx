@@ -94,7 +94,7 @@ export default async function BusinessesNearMePage() {
             <>
               <strong style={{ color: "var(--g-ink)" }}>{fmtCount(totals.qualifying)} businesses</strong> in{" "}
               {fmtCount(totals.cities)} cities have an active Google listing, real reviews and no website
-              at all. Not "a bad website" — none. Pick your city below to see who they are, what they
+              at all. Not “a bad website” — none. Pick your city below to see who they are, what they
               do and how many people have reviewed them.
             </>
           ) : (
@@ -149,7 +149,7 @@ export default async function BusinessesNearMePage() {
             single afternoon in a single area it is genuinely the fastest way to start.
           </p>
           <p style={{ margin: "0 0 14px" }}>
-            It stops working at scale for three reasons. Maps has no "no website" filter, so every
+            It stops working at scale for three reasons. Maps has no “no website” filter, so every
             listing has to be opened individually. The results are capped per search, so a dense area
             needs the map moved and re-searched dozens of times to be covered properly. And the
             website field lies in both directions — profiles pointing at a dead domain, a Linktree or

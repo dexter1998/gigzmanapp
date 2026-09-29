@@ -144,7 +144,7 @@ export default async function FindBusinessesPage() {
           <p style={{ margin: "0 0 14px" }}>
             That choice makes our counts higher than a raw export of the website field, and it is the
             honest version for anyone selling websites: those businesses are exactly the ones who will
-            tell you "we already have a Facebook page" on the first call, and exactly the ones for
+            tell you “we already have a Facebook page” on the first call, and exactly the ones for
             whom that is not the same thing.
           </p>
           <p style={{ margin: 0 }}>

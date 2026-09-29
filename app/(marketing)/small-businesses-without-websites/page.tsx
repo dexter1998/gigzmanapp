@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
 import { cityPath } from "@/lib/pseo/urls";

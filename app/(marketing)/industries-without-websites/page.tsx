@@ -72,7 +72,7 @@ export default async function IndustriesPage() {
           industries.length > 0 ? (
             <>
               Ranked from listings we have actually checked, not estimated from a sample or quoted
-              from someone else's blog post. {fmtCount(industries.length)} categories, each with its
+              from someone else’s blog post. {fmtCount(industries.length)} categories, each with its
               real count and its real gap rate — so you can pick a category to call on evidence rather
               than on the usual guesses.
             </>
