@@ -18,6 +18,27 @@ const CYCLE_DAYS = 15;
 /** Named, stable, in true score order. Rotating the strongest out would misrepresent the ranking
  *  rather than refresh it — and these are the leads the page is actually arguing about. */
 export const NAMED_LEADS = 40;
+
+/**
+ * How many leads a page may name, by scope.
+ *
+ * NAMED_LEADS is applied per page key, and area and category pages partition the *same* city pool —
+ * so the cap never bound at the level that matters. A city with 30 published areas and 20 published
+ * categories was naming up to 50 x 40 = 2,000 businesses across its children, against a Gurgaon
+ * inventory of about 2,125. The per-page limit reads as a disclosure budget and was in practice the
+ * whole catalogue, republished under different URLs.
+ *
+ * The city page keeps its 40 — that page is the argument and those are the leads it argues about.
+ * Children get a small sample each, bounding the union at roughly 40 + 8n rather than 40n, and
+ * keeping every child page's ratings, review counts, gap rates and within-city rankings: the
+ * computed figures were always the part that isn't recoverable from Google Maps anyway.
+ */
+export const NAMED_LEADS_CHILD = 8;
+
+export function namedLeadsFor(scopeKind: "city" | "area" | "category"): number {
+  return scopeKind === "city" ? NAMED_LEADS : NAMED_LEADS_CHILD;
+}
+
 export const CARDS_PER_PAGE = 20;
 /** Everything past the named head is shown masked, so the tail can be deeper without giving the
  *  inventory away. Ten pages is enough to browse and far short of anything that reads as a search

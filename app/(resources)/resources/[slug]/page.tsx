@@ -9,6 +9,7 @@ import { getPost, linksFor, publishedSlugs, hubHrefFor } from "@/lib/blog/db";
 import { Blocks } from "@/components/blog/Blocks";
 import { indexStats, fill } from "@/lib/blog/stats";
 import { Icon } from "@/components/blog/icons";
+import { TagChips } from "@/components/blog/TagChips";
 import Image from "next/image";
 import { OrigamiFloor } from "@/components/marketing/MarketingPieces";
 
@@ -156,7 +157,9 @@ export default async function ArticlePage({ params }: Props) {
               <span>{post.read_minutes} min read</span>
             </div>
             {post.tags.length > 0 && (
-              <div className="rc-tags" style={{ position: "relative", zIndex: 1 }}>{post.tags.map((t) => <span className="rc-tag" key={t}>{t}</span>)}</div>
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <TagChips tags={post.tags} />
+              </div>
             )}
         </div>
       </header>

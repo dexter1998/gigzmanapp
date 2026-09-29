@@ -8,8 +8,15 @@ import { ChevronDownIcon } from "@/components/icons";
 // Root-relative rather than bare "#anchor": this same nav now renders on /pricing, /partner,
 // /about and /contact, where a bare fragment would scroll the current page to nothing instead
 // of navigating home to that section.
+// "Free Leads" and "Resources" are real pages among a list that is otherwise mostly fragments.
+// Both were unreachable from the nav: /leads was linked only from the footer, and /resources from
+// nowhere at all — which is why every article in it has returned zero impressions. A page Google
+// reaches in one click from every page on the site is treated very differently from one it reaches
+// in none, so these earn their slots ahead of the anchor links.
 const NAV_LINKS = [
   { label: "Product", href: "/#capabilities" },
+  { label: "Free Leads", href: "/find-businesses-without-websites" },
+  { label: "Resources", href: "/resources" },
   { label: "Jobs", href: "/jobs" },
   { label: "Use Cases", href: "/#testimonials" },
   { label: "Pricing", href: "/pricing" },

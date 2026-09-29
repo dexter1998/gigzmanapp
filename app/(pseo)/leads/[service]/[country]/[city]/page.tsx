@@ -11,6 +11,22 @@ import { CityLeadsView, cityMetadata } from "@/components/pseo/views";
 export const revalidate = 86400;
 export const dynamicParams = true;
 
+/**
+ * Empty on purpose, and load-bearing.
+ *
+ * With no generateStaticParams at all, Next classifies this route as fully dynamic and the
+ * `revalidate` above never applies — every visit re-renders the page from scratch. Declaring it,
+ * even returning nothing, makes the route statically generated with dynamicParams: a city renders
+ * on demand the first time it is asked for and is then served from cache until it revalidates.
+ *
+ * Returning `[]` rather than the city list is what keeps the build free of the database, which is
+ * the constraint that pushed this section to force-dynamic in the first place. Same pattern the
+ * blog already uses in app/(resources)/resources/[slug]/page.tsx.
+ */
+export function generateStaticParams() {
+  return [];
+}
+
 type Params = { params: Promise<{ service: string; country: string; city: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {

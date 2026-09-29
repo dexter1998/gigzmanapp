@@ -6,6 +6,13 @@ import { AreaLeadsView, areaMetadata } from "@/components/pseo/views";
 export const revalidate = 86400;
 export const dynamicParams = true;
 
+// Empty on purpose: declaring generateStaticParams is what makes `revalidate` above take effect.
+// Without it Next treats the route as fully dynamic and re-renders on every visit. Returning []
+// keeps the database out of the build, so a page is generated on first request and then cached.
+export function generateStaticParams() {
+  return [];
+}
+
 type Params = { params: Promise<{ service: string; country: string; city: string; area: string; n: string }> };
 
 function parsePage(n: string): number {

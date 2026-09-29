@@ -8,8 +8,14 @@ import { FooterBadges } from "./FooterBadges";
 // the current page instead of navigating home to that section.
 const COLUMNS = [
   { title: "Product", links: [["Features", "/#capabilities"], ["Lead Search", "/#capabilities"], ["Local Lead Market", "/leads"], ["Jobs", "/jobs", "NEW"], ["Pricing", "/pricing"]] },
+  // The no-website pages. Footer links are site-wide, which is the cheapest internal-linking win
+  // available to a brand-new page: every page on the site links here from the day it ships.
+  { title: "Find Leads", links: [["Businesses Near Me", "/businesses-near-me-without-websites"], ["Businesses With No Website", "/find-businesses-without-websites"], ["Small Businesses", "/small-businesses-without-websites"], ["Web Design Leads", "/web-design-leads"], ["Industries Ranked", "/industries-without-websites"]] },
   { title: "Use Cases", links: [["Agencies", "/#testimonials"], ["Freelancers", "/#testimonials"], ["Consultants", "/#testimonials"]] },
-  { title: "Resources", links: [["Help Center", "/#faq"], ["Guides", "/#faq"], ["Email Preferences", "/preferences"]] },
+  // This column was titled "Resources" and linked to everything except /resources — two fragments
+  // and /preferences, which robots.txt disallows. The articles it should have been pointing at have
+  // had no inbound link from anywhere on the site since they were published.
+  { title: "Resources", links: [["All Guides", "/resources"], ["How These Figures Are Made", "/leads/methodology"], ["Help Center", "/#faq"], ["Email Preferences", "/preferences"]] },
   { title: "Company", links: [["About Us", "/company"], ["Partner Access", "/partner"], ["Contact", "/contact"]] },
   { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]] },
 ] as const;

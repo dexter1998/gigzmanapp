@@ -1,16 +1,25 @@
 import type { ReactNode } from "react";
 
 /**
- * Every page under this group renders per-request instead of at build time.
+ * Rendered on demand, then cached — not per request.
  *
- * These pages are driven by the pSEO registry in Postgres, and prerendering them made `next
- * build` require a reachable production database — which is how a database outage blocked all
- * deploys for a day (the Neon quota suspension), and how the container build failed with
- * ECONNREFUSED: a build environment has no database at all. A build must never depend on the
- * database being up. The pages are still fully server-rendered HTML for crawlers; on a 40 MB
- * database the per-request read is milliseconds, and at current traffic ISR bought nothing.
+ * The build must never require a reachable database: prerendering these made `next build` query
+ * production, which is how a database outage blocked deploys for a day (the Neon quota suspension)
+ * and how the container build failed with ECONNREFUSED. That constraint still holds and is why no
+ * route under here declares generateStaticParams.
+ *
+ * It does NOT require `force-dynamic`, which is what this used to be. A dynamic segment with a
+ * `revalidate` and no generateStaticParams is already built at request time, not build time — so
+ * the build stays database-free either way. `force-dynamic` additionally threw the cache away, and
+ * because a layout's setting wins over the pages beneath it, the `export const revalidate = 86400`
+ * on every city, area and category page was dead code. Every visit re-ran the whole page: five
+ * sequential queries, up to 6,000 rows scored in JavaScript, through a three-connection pool. That
+ * is the "clicking a city takes forever" report.
+ *
+ * The claim that "at current traffic ISR bought nothing" was the expensive part — at low traffic
+ * almost every hit is a cold render, so caching is worth more, not less.
  */
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { COMPANY } from "@/lib/company";

@@ -60,7 +60,26 @@ export async function publishedPages(): Promise<PseoPage[]> {
   return (await renderablePages()).filter((p) => p.status === "published");
 }
 
-export type AreaRow = { area_slug: string; name: string; qualifying: number; checked: number; gapRate: number };
+export type CityCard = { city_slug: string; service_slug: string; qualifying_leads: number };
+
+/**
+ * Just the city rows, just the columns the hub renders.
+ *
+ * The hub used to call publishedPages(), which selects every column — including the `stats` JSONB —
+ * for every published page, then discarded all but the cities in JavaScript. At ~8,500 rows that is
+ * a large payload off RDS, through the three-connection pSEO pool, to render a grid of city cards.
+ * The filter belongs in the WHERE clause, and `stats` is not read here at all.
+ */
+export async function publishedCityPages(): Promise<CityCard[]> {
+  return (await pseoSql`
+    SELECT city_slug, service_slug, qualifying_leads
+    FROM pseo_pages
+    WHERE status = 'published' AND page_type = 'city' AND city_slug IS NOT NULL
+    ORDER BY qualifying_leads DESC
+  `) as unknown as CityCard[];
+}
+
+export type AreaRow ={ area_slug: string; name: string; qualifying: number; checked: number; gapRate: number };
 
 /** Areas of a city, ranked by opportunity. Feeds the "top opportunity areas" module and, on an area
  *  page, the rank-within-city figure — which is the statistic that proves the hierarchy is real

@@ -1,5 +1,6 @@
 import { COMPANY } from "@/lib/company";
 import { pseoSitemapSegments } from "@/lib/pseo/sitemap";
+import { BLOG_SEGMENT, blogSitemapUrls } from "@/lib/blog/sitemap";
 
 /**
  * The sitemap index. robots.txt points here and this is the only file that needs submitting —
@@ -16,6 +17,23 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const children: Array<{ id: string; lastModified?: Date }> = [{ id: "pages" }];
+
+  // Listed before the lead segments because the articles are the section Google currently cannot
+  // find at all. Same isolation as below: an empty or failing resources segment must not remove the
+  // lead segments from the index, and a segment with no rows is omitted rather than advertised
+  // empty — Search Console reads an empty urlset as an error, not as "nothing yet".
+  try {
+    const posts = await blogSitemapUrls();
+    if (posts.length > 0) {
+      const stamps = posts.map((p) => p.lastModified).filter((d): d is Date => d instanceof Date);
+      children.push({
+        id: BLOG_SEGMENT,
+        lastModified: stamps.length ? new Date(Math.max(...stamps.map((d) => d.getTime()))) : undefined,
+      });
+    }
+  } catch (err) {
+    console.error("sitemap index: could not read published articles", err);
+  }
 
   // A failure in the lead registry must not take the marketing sitemap down with it.
   try {

@@ -5,8 +5,9 @@ import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { SERVICES } from "@/lib/pseo/services";
 import { CITY_BY_SLUG } from "@/lib/pseo/locations";
-import { publishedPages } from "@/lib/pseo/registry";
+import { publishedCityPages } from "@/lib/pseo/registry";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
+import { CitySearch, type CityItem } from "@/components/pseo/CitySearch";
 
 export const revalidate = 86400;
 
@@ -22,27 +23,83 @@ export const metadata: Metadata = {
     }),
   },
   twitter: { card: "summary_large_image" },
-  title: { absolute: "Local Lead Market — Businesses With No Website" },
+  // Retargeted at the city-browsing intent ("list of businesses without websites", "businesses
+  // without websites in <place>") and deliberately NOT at the generic head term, which belongs to
+  // /find-businesses-without-websites. Two pages chasing "local businesses without websites" would
+  // split the only demand this section has. The old title — "Local Lead Market — Businesses With No
+  // Website" — led with a phrase nobody searches; "local lead market" has no measurable volume.
+  title: { absolute: "Businesses Without Websites, By City" },
   description:
-    "Which local businesses have an active Google listing and no website, by city and by area. Gap rates, opportunity scores and coverage, measured by Mantis.",
+    "Browse businesses with an active Google listing and no website, city by city. Gurgaon alone has 2,125. Verified counts, gap rates and opportunity scores.",
   alternates: { canonical: `${COMPANY.site}/leads` },
 };
 
 export default async function LeadMarketHub() {
-  const pages = await publishedPages();
-  const cities = pages.filter((p) => p.page_type === "city");
-  const crumbs: Crumb[] = [{ label: "Home", href: "/" }, { label: "Lead Market" }];
+  const cityRows = await publishedCityPages();
+  const crumbs: Crumb[] = [{ label: "Home", href: "/" }, { label: "Businesses Without Websites" }];
+
+  const cities: CityItem[] = cityRows
+    .map((p): CityItem | null => {
+      const city = CITY_BY_SLUG.get(p.city_slug);
+      if (!city) return null;
+      return {
+        slug: p.city_slug,
+        name: city.name,
+        href: cityPath(p.service_slug, p.city_slug),
+        qualifying: p.qualifying_leads,
+        region: city.state,
+      };
+    })
+    .filter((c): c is CityItem => c !== null);
+
+  const totalNoWebsite = cities.reduce((n, c) => n + c.qualifying, 0);
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 96px" }}>
       <Breadcrumbs items={crumbs} />
+      {/* The H1 states the thing people search for. "The local lead market" was a phrase we coined;
+          it has no search volume and told a visitor nothing about what the page lists. */}
       <h1 style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -1.4, fontWeight: 800, color: "var(--g-ink)", margin: "22px 0 0" }} className="marketing-h1">
-        The local lead market
+        Businesses without websites, city by city
       </h1>
       <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--g-ink-soft)", margin: "16px 0 0", maxWidth: 700 }}>
-        A large share of small businesses run entirely on a Google listing and a phone number. We map
-        which ones, where, and how strong an opportunity each represents — then publish the counts.
+        {totalNoWebsite > 0 ? (
+          <>
+            <strong style={{ color: "var(--g-ink)" }}>{totalNoWebsite.toLocaleString("en-IN")} businesses</strong>{" "}
+            across {cities.length} cities have an active Google listing, real customers and no website
+            at all. Every one is a business that can be pitched today. Pick a city to see who they are.
+          </>
+        ) : (
+          <>
+            A large share of small businesses run entirely on a Google listing and a phone number. We
+            map which ones, where, and how strong an opportunity each represents.
+          </>
+        )}
       </p>
+
+      {/* Entry points into the new landing pages. These carry the search demand — the head term is
+          1,300/mo against 1-4 impressions a quarter for this whole tree — so the hub links up into
+          them rather than treating itself as the top of the section. */}
+      <nav aria-label="Ways to search" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+        {[
+          ["Businesses near me", "/businesses-near-me-without-websites"],
+          ["Search any city worldwide", "/find-businesses-without-websites"],
+          ["By industry", "/industries-without-websites"],
+          ["Web design leads", "/web-design-leads"],
+        ].map(([label, href]) => (
+          <Link
+            key={href}
+            href={href}
+            style={{
+              fontSize: 13.5, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none",
+              border: "1px solid var(--g-border)", borderRadius: 999, padding: "7px 14px",
+              background: "var(--g-white)",
+            }}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
       <section style={{ marginTop: 34 }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>By opportunity</h2>
@@ -56,21 +113,10 @@ export default async function LeadMarketHub() {
 
       {cities.length > 0 && (
         <section style={{ marginTop: 34 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>Cities covered</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-            {cities.map((p) => {
-              const city = CITY_BY_SLUG.get(p.city_slug!);
-              if (!city) return null;
-              return (
-                <Link key={p.page_key} href={cityPath(p.service_slug, p.city_slug!)} style={cardStyle}>
-                  <div style={{ fontSize: 15.5, fontWeight: 700, color: "var(--g-ink)" }}>{city.name}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 4 }}>
-                    {p.qualifying_leads} businesses with no website
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 12px" }}>
+            Find your city
+          </h2>
+          <CitySearch cities={cities} />
         </section>
       )}
 

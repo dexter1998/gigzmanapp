@@ -6,7 +6,7 @@ import {
   getPage, pageKeyFor, cityAreaBreakdown, nearbyPublishedCities, publishedChildren,
   type AreaRow,
 } from "@/lib/pseo/registry";
-import { epochFor, selectForEpoch, CARDS_PER_PAGE, NAMED_LEADS, totalPages } from "@/lib/pseo/rotation";
+import { epochFor, selectForEpoch, CARDS_PER_PAGE, namedLeadsFor, totalPages } from "@/lib/pseo/rotation";
 import { maskName } from "@/lib/mask";
 
 /**
@@ -61,8 +61,15 @@ export async function loadPageData(
   // space gets a real 404 rather than a thin page.
   if (!registryRow || registryRow.status === "withheld") notFound();
 
-  const { stats, leads } = await loadScope(scope);
-  const areas = await cityAreaBreakdown(citySlug);
+  // Four independent reads, issued together. They used to run one after another — and with
+  // publishedChildren and nearbyPublishedCities awaited inline in the returned object below, one
+  // page render was five sequential round trips, none of which depends on another's result.
+  const [{ stats, leads }, areas, children, nearby] = await Promise.all([
+    loadScope(scope),
+    cityAreaBreakdown(citySlug),
+    publishedChildren(serviceSlug, citySlug),
+    nearbyPublishedCities(citySlug),
+  ]);
 
   let rank: PseoPageData["rank"] = null;
   if (scope.kind === "area") {
@@ -75,9 +82,11 @@ export async function loadPageData(
     };
   }
 
-  // Names are shown for the first two pages and masked after that. The identity of a business is
-  // already public on Google Maps, so revealing the strongest leads costs nothing we actually sell
-  // — but publishing the entire inventory in a crawlable list would. Forty is the line.
+  // The identity of a business is already public on Google Maps, so revealing the strongest leads
+  // costs nothing we actually sell — but publishing the entire inventory in a crawlable list would.
+  // The line is per scope, not a flat forty: see namedLeadsFor() for why a per-page forty added up
+  // to the whole city once its area and category children were counted together.
+  const namedLimit = namedLeadsFor(scope.kind);
   const listedLeads = selectForEpoch(leads, pageKey, epochFor());
   const pageCount = totalPages(listedLeads.length);
   // Out of range is a 404, not a clamp. Clamping would serve page 1's content at /page/9 and at
@@ -89,7 +98,7 @@ export async function loadPageData(
     .slice((current - 1) * CARDS_PER_PAGE, current * CARDS_PER_PAGE)
     .map((lead, i) => {
       const absoluteIndex = (current - 1) * CARDS_PER_PAGE + i;
-      const masked = absoluteIndex >= NAMED_LEADS;
+      const masked = absoluteIndex >= namedLimit;
       return { ...lead, masked, business_name: masked ? maskName(lead.business_name) : lead.business_name };
     });
 
@@ -116,8 +125,8 @@ export async function loadPageData(
     },
     areas,
     rank,
-    children: await publishedChildren(serviceSlug, citySlug),
-    nearby: await nearbyPublishedCities(citySlug),
+    children,
+    nearby,
     lastMaterialChangeAt: registryRow.last_material_change_at,
     statsComputedAt: registryRow.stats_computed_at,
   };

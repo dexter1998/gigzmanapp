@@ -116,6 +116,11 @@
   font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: var(--radius-pill);
   border: 1px solid var(--g-border); color: var(--g-ink-soft); background: var(--g-white);
 }
+/* A tag becomes a link only when it has a real destination — see components/blog/TagChips.tsx.
+   Styled so the difference is visible: a chip that looks clickable and isn't is worse than a plain
+   badge, and by design half of these stay plain badges. */
+a.rc-tag-link { text-decoration: none; color: var(--g-green-text); border-color: color-mix(in srgb, var(--g-green-text) 30%, var(--g-border)); }
+a.rc-tag-link:hover { background: color-mix(in srgb, var(--g-green-text) 8%, var(--g-white)); }
 
 /* ── article layout: sticky TOC + body ── */
 .rc-article { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 48px; padding: 12px 0 60px; }

@@ -32,6 +32,33 @@ function B({ children }: { children: React.ReactNode }) {
 function paged(title: string, page: number) {
   return page > 1 ? `${title} — page ${page}` : title;
 }
+
+/**
+ * Titles are budgeted, not written and hoped for.
+ *
+ * The root layout appends " — Mantis" (9 characters) and Google shows roughly 59 before truncating,
+ * so a page's own title has about 50 to work with. These were running to 79: "2125 Website Design
+ * Leads in Gurgaon — businesses with no website" lost its ending in the SERP, and what it lost was
+ * the phrase people actually search for. Leading with the count is deliberate — a specific number is
+ * the one thing in a title that reads as evidence rather than as marketing.
+ *
+ * `fit` takes a preferred title and progressively shorter fallbacks, and drops to one that fits when
+ * a long city, area or category name pushes the first over budget. Nothing here can silently exceed
+ * it, which is the part that was missing before.
+ */
+const TITLE_BUDGET = 50;
+
+function fit(preferred: string, ...fallbacks: string[]): string {
+  if (preferred.length <= TITLE_BUDGET) return preferred;
+  for (const f of fallbacks) if (f.length <= TITLE_BUDGET) return f;
+  return fallbacks[fallbacks.length - 1] ?? preferred;
+}
+
+/** Grouped counts read as evidence; bare digit runs read as noise. */
+function n(value: number): string {
+  return value.toLocaleString("en-IN");
+}
+
 function robotsFor(indexable: boolean, page: number) {
   return indexable && page === 1 ? undefined : { index: false, follow: true };
 }
@@ -42,10 +69,17 @@ export async function cityMetadata(serviceSlug: string, citySlug: string, page =
   const d = await loadPageData(serviceSlug, citySlug, { kind: "city", citySlug }, page);
   const base = `${COMPANY.site}${cityPath(serviceSlug, citySlug)}`;
   return {
-    title: paged(`${d.stats.qualifying} ${d.service.name} Leads in ${d.city.name} — businesses with no website`, d.page),
+    title: paged(
+      fit(
+        `${n(d.stats.qualifying)} Businesses With No Website in ${d.city.name}`,
+        `Businesses With No Website in ${d.city.name}`,
+        `No-Website Businesses: ${d.city.name}`
+      ),
+      d.page
+    ),
     description:
-      `${d.stats.qualifying} businesses in ${d.city.name} have an active Google listing and no website — ` +
-      `${pct(d.stats.gapRate)} of the ${d.stats.checked} we've checked. Ranked by opportunity, with category and area breakdowns.`,
+      `${n(d.stats.qualifying)} businesses in ${d.city.name} have an active Google listing and no website — ` +
+      `${pct(d.stats.gapRate)} of the ${n(d.stats.checked)} we've checked. Names, ratings and review counts, free to browse.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
     openGraph: {
@@ -96,7 +130,11 @@ export async function CityLeadsView({ serviceSlug, citySlug, page = 1 }: {
       crumbs={crumbs}
       basePath={base}
       canonical={`${COMPANY.site}${d.page > 1 ? `${base}/page/${d.page}` : base}`}
-      h1={`${d.stats.qualifying.toLocaleString("en-IN")} ${d.service.name} Leads in ${d.city.name}`}
+      // Matched to the <title>, which measurably reduces how often Google rewrites it — and a
+      // rewritten title is one we didn't choose. It also drops "Website Design Leads", which is our
+      // internal service name rather than anything a person types; the area and category pages were
+      // already phrased the way the query is.
+      h1={`${n(d.stats.qualifying)} businesses with no website in ${d.city.name}`}
       listingNoun="opportunities"
       showAreaGrid
       intro={
@@ -120,10 +158,17 @@ export async function areaMetadata(serviceSlug: string, citySlug: string, areaSl
   const d = await loadPageData(serviceSlug, citySlug, { kind: "area", citySlug, areaSlug }, page);
   const base = `${COMPANY.site}${areaPath(serviceSlug, citySlug, areaSlug)}`;
   return {
-    title: paged(`${d.stats.qualifying} businesses with no website in ${d.areaName}, ${d.city.name}`, d.page),
+    title: paged(
+      fit(
+        `${n(d.stats.qualifying)} No-Website Businesses in ${d.areaName}`,
+        `No-Website Businesses in ${d.areaName}`,
+        `${d.areaName}: Businesses With No Website`
+      ),
+      d.page
+    ),
     description:
-      `${d.stats.qualifying} of ${d.stats.checked} businesses mapped in ${d.areaName} have no website — ` +
-      `a ${pct(d.stats.gapRate)} gap. Ranked by opportunity score.`,
+      `${n(d.stats.qualifying)} of ${n(d.stats.checked)} businesses mapped in ${d.areaName}, ${d.city.name} have no ` +
+      `website — a ${pct(d.stats.gapRate)} gap. Ranked by opportunity, with ratings and review counts.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
     openGraph: {
@@ -203,10 +248,17 @@ export async function categoryMetadata(serviceSlug: string, citySlug: string, ca
   const d = await loadPageData(serviceSlug, citySlug, { kind: "category", citySlug, category }, page);
   const base = `${COMPANY.site}${categoryPath(serviceSlug, citySlug, category)}`;
   return {
-    title: paged(`${d.categoryLabel} businesses with no website in ${d.city.name} — ${d.stats.qualifying} leads`, d.page),
+    title: paged(
+      fit(
+        `${d.categoryLabel} With No Website in ${d.city.name}`,
+        `${d.categoryLabel}: No Website, ${d.city.name}`,
+        `No-Website ${d.categoryLabel}`
+      ),
+      d.page
+    ),
     description:
-      `${d.stats.qualifying} of ${d.stats.checked} ${String(d.categoryLabel).toLowerCase()} businesses mapped in ` +
-      `${d.city.name} have no website — a ${pct(d.stats.gapRate)} gap.`,
+      `${n(d.stats.qualifying)} of ${n(d.stats.checked)} ${String(d.categoryLabel).toLowerCase()} businesses mapped in ` +
+      `${d.city.name} have no website — a ${pct(d.stats.gapRate)} gap. Ranked by opportunity, free to browse.`,
     alternates: { canonical: d.page > 1 ? `${base}/page/${d.page}` : base },
     robots: robotsFor(d.indexable, d.page),
     openGraph: {
