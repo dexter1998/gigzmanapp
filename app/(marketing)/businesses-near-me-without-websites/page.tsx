@@ -57,7 +57,7 @@ const FAQS = [
   },
   {
     q: "Which countries and cities do you cover?",
-    a: "Coverage is uneven and shown honestly rather than implied. The city list on this page is every city we have actually scanned and verified, with its real count. India is the deepest coverage by a wide margin — roughly two in three small businesses there have no website, against a far smaller share in the US and UK.",
+    a: "Coverage is uneven and shown honestly rather than implied. The city list on this page is every city we have actually scanned and verified, with its real count. India is the deepest coverage by a wide margin, and around two in five of the businesses we check there have no website — against a far smaller share in the US and UK.",
   },
   {
     q: "What does it cost?",

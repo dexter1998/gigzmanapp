@@ -50,7 +50,7 @@ const FAQS = [
   },
   {
     q: "How many small businesses have no website?",
-    a: "It depends enormously on the country, which is why a single global figure is misleading. In India roughly two in three of the small businesses we check have no website. In the US and UK it is a small fraction of that. The country table on this page shows our measured rate for each place we cover, with the number of listings behind it.",
+    a: "It depends enormously on the country, which is why a single global figure is misleading. In India it is around two in five of the small businesses we check. In the US and UK it is a small fraction of that. The country table on this page shows our measured rate for each place we cover, with the number of listings behind it.",
   },
   {
     q: "Can I get a list of businesses without websites in my country?",

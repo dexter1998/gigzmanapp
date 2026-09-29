@@ -62,7 +62,7 @@ const mapsBody: Block[] = [
 
   { type: "h2", id: "scale", text: "Where the manual method stops paying" },
   { type: "prose", text: [
-    "The arithmetic is not complicated. Six seconds to open a listing, plus judging the website field, plus noting the reviews, is realistically twenty to thirty seconds per business once you include the map-dragging. A hundred businesses is most of an hour, and in a market where two in three have no website that hour produces perhaps sixty leads.",
+    "The arithmetic is not complicated. Six seconds to open a listing, plus judging the website field, plus noting the reviews, is realistically twenty to thirty seconds per business once you include the map-dragging. A hundred businesses is most of an hour, and in a market where two in five have no website that hour produces perhaps forty leads.",
     "That is a good hour, once. The problem is the second hour, because you have to remember which boxes you have already covered, and the third, because the useful ordering — by review count, so you call the busy ones first — is something you can only do after collecting everything.",
     "Which is the point at which you either write a scraper, buy an export, or use a list somebody else has already verified.",
   ]},
@@ -73,7 +73,7 @@ const mapsBody: Block[] = [
   { type: "h2", id: "scraping", text: "Scraping Maps: what actually happens" },
   { type: "prose", text: [
     "Two honest warnings before the mechanics. Scraping Google Maps is against its terms of service, and the Places API — the sanctioned route — charges per request and does not return a \"has website\" filter either, so you pay to fetch listings and then discard most of them.",
-    "That second point is the one people miss when they price this out. You are not billed for the businesses without websites; you are billed for every business you had to look at to find them. In a market with a 4% gap rate that is twenty-five paid lookups per usable lead. In one with a 65% gap rate it is closer to one and a half.",
+    "That second point is the one people miss when they price this out. You are not billed for the businesses without websites; you are billed for every business you had to look at to find them. In a market with a 4% gap rate that is twenty-five paid lookups per usable lead. In one with a 40% gap rate it is closer to two and a half.",
   ]},
   { type: "prose", text: [
     "This is also why the same tool feels cheap to one agency and absurd to another, and why any pricing comparison that ignores the local gap rate is not telling you anything.",
