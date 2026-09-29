@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { refreshAll } from "@/lib/pseo/refresh";
 import { recordCronRun } from "@/lib/cron-runs";
 import { submitToIndexNow } from "@/lib/pseo/indexnow";
@@ -40,6 +40,18 @@ export async function GET(req: NextRequest) {
   // changes, so a newly promoted page is submitted the same day.
   const changed = results.filter((r) => r.changed);
   for (const r of changed) revalidatePath(pathFor(r.pageKey));
+
+  // The no-website landing pages (/businesses-near-me-without-websites and friends) read their
+  // totals, country table and industry table through day-cached aggregates tagged "no-website".
+  // Without this they would keep yesterday's counts in their headlines and meta descriptions for up
+  // to a day after the figures behind them moved — and those numbers are the whole argument on
+  // those pages. Dropped unconditionally rather than only when `changed` is non-empty: those
+  // aggregates are counted over the leads table, which the scans move every night whether or not
+  // any page crossed a gate threshold.
+  // Next 16 takes a cache-life profile as the second argument; "max" expires entries of any
+  // profile, which is what is wanted here — the tag is only attached to these aggregates.
+  revalidateTag("no-website", "max");
+
   if (changed.length) {
     // The index and the segment the change lives in. Segments are cheap to rebuild and there are
     // three of them, so this is simpler than working out which one a given page belongs to.

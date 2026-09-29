@@ -245,6 +245,13 @@ a.rc-tag-link:hover { background: color-mix(in srgb, var(--g-green-text) 8%, var
 .rc-lead-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .rc-lb { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-sm); background: var(--g-gray-100); color: var(--g-gray-500); }
 .rc-lb.on { background: var(--g-green-mint); color: var(--g-green-text); }
+/* Per-card unlock CTA. Full width so it reads as the card's action rather than as another badge,
+   and separated by a rule so it is not mistaken for one. */
+.rc-lead-unlock {
+  display: block; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--g-gray-100);
+  font-size: 13px; font-weight: 700; color: var(--g-green-text); text-decoration: none;
+}
+.rc-lead-unlock:hover { text-decoration: underline; }
 
 /* faq */
 .rc-faq { border-top: 1px solid var(--g-border); }

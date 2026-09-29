@@ -123,6 +123,13 @@ async function LeadsBlock({ city, heading, limit, country = "in" }: { city: stri
               {(l.review_count ?? 0) >= 50 && <span className="rc-lb on">High intent</span>}
               {l.category && <span className="rc-lb">{l.category.replace(/_/g, " ")}</span>}
             </div>
+            {/* Points at /login, not at the unlock endpoint: unlocking spends a credit and needs a
+                session, and an article is read by people who have neither. Same destination the
+                lead pages' own CTA uses. Deliberately carries no return URL — the login page does
+                not read one, and a redirect parameter that is silently ignored is worse than none. */}
+            <Link className="rc-lead-unlock" href="/login">
+              Unlock this lead →
+            </Link>
           </div>
         ))}
       </div>

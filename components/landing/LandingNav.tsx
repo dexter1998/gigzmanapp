@@ -8,19 +8,19 @@ import { ChevronDownIcon } from "@/components/icons";
 // Root-relative rather than bare "#anchor": this same nav now renders on /pricing, /partner,
 // /about and /contact, where a bare fragment would scroll the current page to nothing instead
 // of navigating home to that section.
-// "Free Leads" and "Resources" are real pages among a list that is otherwise mostly fragments.
-// Both were unreachable from the nav: /leads was linked only from the footer, and /resources from
-// nowhere at all — which is why every article in it has returned zero impressions. A page Google
-// reaches in one click from every page on the site is treated very differently from one it reaches
-// in none, so these earn their slots ahead of the anchor links.
+// Six items, all real pages. Nine wrapped onto two lines at common widths, which is what made the
+// bar look crowded next to the two buttons on the right.
+//
+// Removed: "Partner Access" (the right-hand button already carries the access CTA), "Use Cases" and
+// "Free Leads". The last two move to the footer rather than disappearing — a footer link is still
+// site-wide, so /find-businesses-without-websites keeps a link from every page on the site, which
+// was the point of putting it here. "Resources" stays in the nav: 87 articles had no inbound link
+// from anywhere before it was added, and that is the one link doing real work.
 const NAV_LINKS = [
   { label: "Product", href: "/#capabilities" },
-  { label: "Free Leads", href: "/find-businesses-without-websites" },
   { label: "Resources", href: "/resources" },
   { label: "Jobs", href: "/jobs" },
-  { label: "Use Cases", href: "/#testimonials" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Partner Access", href: "/partner" },
   { label: "About", href: "/company" },
   { label: "Contact", href: "/contact" },
 ];

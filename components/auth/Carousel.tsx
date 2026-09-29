@@ -5,12 +5,24 @@ import Image from "next/image";
 
 // Each slide is a full, self-contained marketing image (already has its own headline/copy/
 // branding baked in) — all 4, matching portrait dimensions (1003x1568).
+//
+// WebP, not the original PNGs. The four PNGs were 6.08MB between them for a 1003x1568 image —
+// roughly 1.2 bytes per pixel, carrying an alpha channel these full-bleed slides never used. Next's
+// optimizer did produce a ~110KB WebP from each, but it had to read and transcode the full 1.8MB
+// source to do it, and App Runner's image cache is per-instance and does not survive a deploy, so
+// that transcode was paid again on every cold miss. That is what made the panel take seconds to
+// appear, not the bytes on the wire. Re-encoded at source they total 0.34MB — a 94% reduction — and
+// the optimizer's work becomes trivial.
 const SLIDES = [
-  "/auth/carousel-1.png",
-  "/auth/carousel-2.png",
-  "/auth/carousel-3.png",
-  "/auth/carousel-4.png",
+  "/auth/carousel-1.webp",
+  "/auth/carousel-2.webp",
+  "/auth/carousel-3.webp",
+  "/auth/carousel-4.webp",
 ];
+
+/** The panel is half the split layout on desktop and full width below it. Without this, `fill` makes
+ *  Next assume 100vw and pick the widest srcset entry at every viewport. */
+const SIZES = "(max-width: 900px) 100vw, 50vw";
 
 const AUTOPLAY_MS = 7500; // 1.5x the original 5s
 
@@ -29,16 +41,24 @@ export function AuthCarousel() {
 
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio: "1003 / 1568" }}>
-      {SLIDES.map((src, i) => (
-        <Image
-          key={src}
-          src={src}
-          alt=""
-          fill
-          style={{ objectFit: "cover", opacity: i === index ? 1 : 0, transition: "opacity 400ms ease" }}
-          priority={i === 0}
-        />
-      ))}
+      {/* Only the current slide and the one after it are mounted. All four used to be in the DOM at
+          once and, being absolutely positioned inside the viewport, all four fetched on first paint
+          however they were flagged — so the page paid for every slide before showing one. Mounting
+          the next one early is what keeps the crossfade instant. */}
+      {SLIDES.map((src, i) => {
+        if (i !== index && i !== (index + 1) % SLIDES.length) return null;
+        return (
+          <Image
+            key={src}
+            src={src}
+            alt=""
+            fill
+            sizes={SIZES}
+            style={{ objectFit: "cover", opacity: i === index ? 1 : 0, transition: "opacity 400ms ease" }}
+            priority={i === 0}
+          />
+        );
+      })}
 
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 24, display: "flex", gap: 6, justifyContent: "center" }}>
         {SLIDES.map((_, i) => (
