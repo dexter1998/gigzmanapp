@@ -60,7 +60,16 @@ export async function publishedPages(): Promise<PseoPage[]> {
   return (await renderablePages()).filter((p) => p.status === "published");
 }
 
-export type CityCard = { city_slug: string; service_slug: string; qualifying_leads: number };
+export type CityCard = {
+  page_key: string;
+  city_slug: string;
+  service_slug: string;
+  qualifying_leads: number;
+  /** Carried because the service hub renders a "% gap" badge from it. Included here rather than
+   *  dropped: this query is already filtered to city rows, so it is a handful of JSONB values, not
+   *  the ~8,500 the old publishedPages() call pulled to render the same grid. */
+  stats: Record<string, unknown>;
+};
 
 /**
  * Just the city rows, just the columns the hub renders.
@@ -72,7 +81,7 @@ export type CityCard = { city_slug: string; service_slug: string; qualifying_lea
  */
 export async function publishedCityPages(): Promise<CityCard[]> {
   return (await pseoSql`
-    SELECT city_slug, service_slug, qualifying_leads
+    SELECT page_key, city_slug, service_slug, qualifying_leads, stats
     FROM pseo_pages
     WHERE status = 'published' AND page_type = 'city' AND city_slug IS NOT NULL
     ORDER BY qualifying_leads DESC

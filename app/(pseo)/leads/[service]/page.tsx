@@ -5,10 +5,22 @@ import { notFound } from "next/navigation";
 import { COMPANY } from "@/lib/company";
 import { SERVICES, SERVICE_BY_SLUG } from "@/lib/pseo/services";
 import { CITY_BY_SLUG } from "@/lib/pseo/locations";
-import { publishedPages } from "@/lib/pseo/registry";
+import { getCityCards } from "@/lib/landing/no-website";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 
-export const revalidate = 86400;
+/**
+ * Per-request from a cached read, for the same reason as /leads.
+ *
+ * generateStaticParams below returns real slugs and dynamicParams is false, so Next must render
+ * this route at build time — and the body queries Postgres. While the group layout forced
+ * everything dynamic that never happened; once it stopped, `next build` needed a live database and
+ * the container build failed with ECONNREFUSED.
+ *
+ * generateStaticParams stays: with dynamicParams false it is still what defines which service slugs
+ * are valid at all, which is the guard against an unbounded URL space. It simply no longer causes a
+ * build-time render.
+ */
+export const dynamic = "force-dynamic";
 export const dynamicParams = false;
 
 type Params = { params: Promise<{ service: string }> };
@@ -33,7 +45,7 @@ export default async function ServiceHub({ params }: Params) {
   const service = SERVICE_BY_SLUG.get(slug);
   if (!service) notFound();
 
-  const cities = (await publishedPages()).filter((p) => p.page_type === "city" && p.service_slug === slug);
+  const cities = (await getCityCards().catch(() => [])).filter((p) => p.service_slug === slug);
   const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Lead Market", href: "/leads" },

@@ -5,11 +5,30 @@ import Link from "next/link";
 import { COMPANY } from "@/lib/company";
 import { SERVICES } from "@/lib/pseo/services";
 import { CITY_BY_SLUG } from "@/lib/pseo/locations";
-import { publishedCityPages } from "@/lib/pseo/registry";
+import { getCityCards } from "@/lib/landing/no-website";
 import { Breadcrumbs, breadcrumbJsonLd, type Crumb } from "@/components/pseo/Breadcrumbs";
 import { CitySearch, type CityItem } from "@/components/pseo/CitySearch";
 
-export const revalidate = 86400;
+/**
+ * Rendered per request, from a cached read — not prerendered.
+ *
+ * This is a parameterless route that queries Postgres, so once the group layout stopped forcing
+ * everything dynamic, Next started prerendering it at build time and `next build` needed a live
+ * database again. That failed the container build with ECONNREFUSED, which is the exact coupling
+ * the layout's old force-dynamic was there to avoid — it was just avoiding it with a sledgehammer
+ * that also disabled caching on the 8,471 pages underneath.
+ *
+ * The child routes keep ISR: they are dynamic segments with an empty generateStaticParams, so they
+ * are never built ahead of time and cache after first render. A route with no params cannot do
+ * that, so it opts out of the build explicitly and gets its speed from getCityCards() being cached
+ * for a day instead.
+ *
+ * Worth noting for the next person: a local `next build` will NOT catch a regression here, because
+ * Next loads .env.local and the database is reachable from this machine. Reproduce the container
+ * build with an unreachable URL:
+ *   DATABASE_URL="postgres://x:x@127.0.0.1:1/x" npx next build
+ */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   openGraph: {
@@ -35,7 +54,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LeadMarketHub() {
-  const cityRows = await publishedCityPages();
+  const cityRows = await getCityCards().catch(() => []);
   const crumbs: Crumb[] = [{ label: "Home", href: "/" }, { label: "Businesses Without Websites" }];
 
   const cities: CityItem[] = cityRows
