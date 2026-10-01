@@ -39,8 +39,22 @@ const nextConfig: NextConfig = {
               // chunks from maps.gstatic.com and talks to *.googleapis.com for tiles, Places and
               // the key-auth call. Without these the loader is blocked outright and every map on
               // the site (landing demo and /home alike) silently renders as an empty box.
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com",
-              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com",
+              // sdk.cashfree.com / checkout.razorpay.com are the two checkout loaders
+              // (components/billing/useCashfreeCheckout.ts fetches both up front and the server
+              // picks the gateway per order). Without them here the scripts are blocked outright,
+              // window.Razorpay/window.Cashfree never exist, and every Buy credits click dies on
+              // "Payment window couldn't load" -- which is how orders ended up stuck at `created`
+              // in payments with no checkout ever opening. Wildcarded rather than pinned to the two
+              // loader hosts: Razorpay's loader pulls its own risk-detection bundle from
+              // cdn.razorpay.com, so checkout.razorpay.com alone still throws mid-checkout.
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com https://*.cashfree.com https://*.razorpay.com",
+              // Both gateways call their own APIs from the browser mid-checkout (Razorpay also
+              // posts telemetry to lumberjack), so script-src alone is not enough.
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.cashfree.com https://*.razorpay.com",
+              // The checkout itself renders in a gateway-hosted iframe, and the bank/UPI step
+              // submits a form to it -- default-src 'self' would reject both.
+              "frame-src 'self' https://*.cashfree.com https://*.razorpay.com",
+              "form-action 'self' https://*.cashfree.com https://*.razorpay.com",
               "img-src 'self' data: https: blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",

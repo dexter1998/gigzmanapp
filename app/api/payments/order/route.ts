@@ -9,9 +9,13 @@ import { COMPANY } from "@/lib/company";
 
 /**
  * Provider-agnostic purchase start. The buy buttons call this instead of a gateway-specific
- * route, and the server picks the gateway: Razorpay when configured (Cashfree production is
- * stuck pending account activation), Cashfree otherwise. The response's `provider` field tells
- * the client which checkout to open.
+ * route, and the server picks the gateway: Razorpay when configured, Cashfree otherwise. The
+ * response's `provider` field tells the client which checkout to open.
+ *
+ * Razorpay is the chosen gateway (decision stands as of 2026-10-01, with live Cashfree keys in
+ * hand and deliberately unused). Deliberately NOT keyed off whether Cashfree's keys happen to be
+ * live keys: that would make setting a Cashfree credential anywhere silently move every buyer to a
+ * different gateway. Cashfree stays wired as the fallback for when Razorpay is unconfigured.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();

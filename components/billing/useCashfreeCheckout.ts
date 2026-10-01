@@ -18,7 +18,15 @@ function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
     if (existing) {
-      if ((existing as unknown as { loaded?: boolean }).loaded) return resolve();
+      const state = existing as unknown as { loaded?: boolean; failed?: boolean };
+      if (state.loaded) return resolve();
+      // A script element that has already errored never fires load or error again. Failure has to
+      // be remembered on the element for the same reason success is: the second buy surface to
+      // mount (billing page and the plans modal share this hook) would otherwise attach listeners
+      // to a dead element and wait forever, leaving sdkReady false and every Buy button
+      // permanently greyed out with no error shown -- worse than the first surface, which at
+      // least says something failed.
+      if (state.failed) return reject(new Error("sdk load failed"));
       existing.addEventListener("load", () => resolve());
       existing.addEventListener("error", () => reject(new Error("sdk load failed")));
       return;
@@ -27,7 +35,7 @@ function loadScript(src: string): Promise<void> {
     s.src = src;
     s.async = true;
     s.onload = () => { (s as unknown as { loaded?: boolean }).loaded = true; resolve(); };
-    s.onerror = () => reject(new Error("sdk load failed"));
+    s.onerror = () => { (s as unknown as { failed?: boolean }).failed = true; reject(new Error("sdk load failed")); };
     document.head.appendChild(s);
   });
 }
@@ -46,8 +54,19 @@ export function useCashfreeCheckout(mode: "production" | "sandbox") {
   const [error, setError] = useState<string | null>(null);
 
   // Both SDKs are tiny loaders; fetching them up front keeps the click handler synchronous-feeling.
+  //
+  // "Ready" means at least one loader actually landed, not merely that both settled. Resolving on
+  // allSettled alone meant a CSP that blocked both scripts still enabled the Buy button, and the
+  // failure only surfaced after a click — which is how a month of orders ended up stuck at
+  // `created` with nothing on the server looking broken.
   useEffect(() => {
-    Promise.allSettled([loadScript(CASHFREE_SDK), loadScript(RAZORPAY_SDK)]).then(() => setSdkReady(true));
+    Promise.allSettled([loadScript(CASHFREE_SDK), loadScript(RAZORPAY_SDK)]).then((results) => {
+      if (results.some((r) => r.status === "fulfilled")) {
+        setSdkReady(true);
+        return;
+      }
+      setError("Payment window couldn't load — it's being blocked before it opens. Please tell us if this persists.");
+    });
   }, []);
 
   async function buy(packId: string) {
