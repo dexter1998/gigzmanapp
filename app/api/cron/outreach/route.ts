@@ -5,6 +5,7 @@ import { recordCronRun } from "@/lib/cron-runs";
 import { reduceOutreachEvents, syncConversions } from "@/lib/outreach/events";
 import { checkGates } from "@/lib/outreach/gates";
 import { planCampaign, recordTouch, stallRecipients } from "@/lib/outreach/planner";
+import { computeCapacity } from "@/lib/outreach/pacing";
 
 /**
  * The engagement-driven outreach tick.
@@ -31,6 +32,11 @@ export const maxDuration = 300;
 
 /** ~204s of sending at the interval below, inside maxDuration with room for the gate queries. */
 const CHUNK_LIMIT = 2400;
+/** EventBridge rule `mantis-outreach-daily` fires every 15 minutes (confirmed from the run log:
+ *  ticks land on :01, :16, :31, :46). The pacing maths divides the day's remaining budget by the
+ *  ticks left, so this must match the rule's schedule — change one and the day either
+ *  front-loads or underspends. */
+const TICK_INTERVAL_MINUTES = 15;
 /** ~11.8/sec, under the account's confirmed 14/sec cap with headroom for transactional mail
  *  sharing the same rate limit. Pacing is not politeness: Microsoft's 554 5.7.7 policy block
  *  triggers on burst PATTERN rather than daily volume. */
@@ -144,13 +150,17 @@ export async function GET(req: NextRequest) {
     // Deliberately remaining/hoursLeft rather than a fixed per-hour constant: if a tick is
     // skipped (gate trip, deploy, window edge), the rest of the day absorbs the shortfall
     // instead of silently losing it, and a day can never overshoot its budget either.
-    const istHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", hour12: false }).format(new Date()));
+    const istParts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date());
+    const istHour = Number(istParts.find((p) => p.type === "hour")!.value);
+    const istMinute = Number(istParts.find((p) => p.type === "minute")!.value);
     const inWindow = istHour >= row.send_window_start_hour && istHour < row.send_window_end_hour;
     if (!inWindow && !force) {
       perCampaign.push({ campaignId, skipped: `outside send window (IST ${istHour}:00, window ${row.send_window_start_hour}-${row.send_window_end_hour})` });
       continue;
     }
-    const hoursLeft = Math.max(1, row.send_window_end_hour - istHour);
+    const minutesLeft = Math.max(1, (row.send_window_end_hour - istHour) * 60 - istMinute);
 
     // 3 — gates. Checked per campaign, because a campaign's own list quality can be bad while the
     // account is still healthy, and that is precisely the case worth catching early.
@@ -158,7 +168,7 @@ export async function GET(req: NextRequest) {
     const runRows = await sql`
       INSERT INTO outreach_runs (campaign_id, blocked_by, bounce_rate, complaint_rate, quota_headroom, notes)
       VALUES (${campaignId}, ${gate.blockedBy}, ${gate.metrics.bounceRate}, ${gate.metrics.complaintRate},
-              ${gate.metrics.quotaHeadroom}, ${JSON.stringify({ reason: gate.reason, events, converted, dryRun })}::jsonb)
+              ${gate.metrics.quotaHeadroom}, ${sql.json({ reason: gate.reason, events, converted, dryRun })}::jsonb)
       RETURNING id
     `;
     const runId = (runRows[0] as { id: string }).id;
@@ -183,19 +193,22 @@ export async function GET(req: NextRequest) {
     // the volume just leaves quota unused. The gates above are the safety net instead, and they
     // are the ones that matter: a rate check catches a bad list on the day, where a volume ramp
     // only ever delays it.
-    const dailyBudget = Math.min(
-      row.daily_target ?? Number.MAX_SAFE_INTEGER,
-      Math.floor(gate.metrics.quotaHeadroom * gate.capacityFactor)
-    );
-    const remainingToday = Math.max(0, dailyBudget - sentToday);
-    const perTick = Math.ceil(remainingToday / hoursLeft);
-    const capacity = Math.min(CHUNK_LIMIT, perTick);
+    const pace = computeCapacity({
+      dailyTarget: row.daily_target,
+      quotaHeadroom: gate.metrics.quotaHeadroom,
+      sentToday,
+      minutesLeft,
+      tickIntervalMinutes: TICK_INTERVAL_MINUTES,
+      capacityFactor: gate.capacityFactor,
+      chunkLimit: CHUNK_LIMIT,
+    });
+    const { dailyBudget, perTick, capacity } = pace;
     const plan = await planCampaign(campaignId, capacity);
 
     await sql`
       UPDATE outreach_runs
       SET capacity = ${capacity}, planned_new = ${plan.counts.plannedNew}, planned_followup = ${plan.counts.plannedFollowups},
-          notes = notes || ${JSON.stringify({ istHour, hoursLeft, sentToday, dailyBudget, perTick })}::jsonb
+          notes = notes || ${sql.json({ istHour, istMinute, minutesLeft, ticksLeft: pace.ticksLeft, sentToday, dailyBudget, perTick, capacityFactor: gate.capacityFactor })}::jsonb
       WHERE id = ${runId}
     `;
 
@@ -275,7 +288,7 @@ export async function GET(req: NextRequest) {
     await sql`
       UPDATE outreach_runs
       SET sent = ${sent}, failed = ${failed}, finished_at = now(),
-          blocked_by = ${aborted}, notes = notes || ${JSON.stringify({ skipped, aborted })}::jsonb
+          blocked_by = ${aborted}, notes = notes || ${sql.json({ skipped, aborted })}::jsonb
       WHERE id = ${runId}
     `;
     totalSent += sent;
