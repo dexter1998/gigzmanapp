@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/jobs-refresh",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/outreach",
+      "schedule": "30 4 * * *"
     }
   ]
 }

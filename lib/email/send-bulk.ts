@@ -47,6 +47,17 @@ export type BulkSend = {
    *  (blogyapp.com) than lifecycle mail (mantisai.in), so prospecting reputation can never touch
    *  the domain that also carries sign-in codes. Omit for the existing lifecycle default. */
   sender?: string;
+  /** Overrides SES_CONFIGURATION_SET for this message.
+   *
+   *  Auto Validation is a configuration-set setting, not a per-message one, so routing through a
+   *  different set is the only way to choose whether SES screens the address before sending.
+   *  Unverified addresses go through the AV-enabled set; once an address has actually delivered,
+   *  later touches go through a set without AV, since re-validating a known-good address on every
+   *  follow-up pays the per-validation fee for an answer already in hand. */
+  configSet?: string | null;
+  /** Which touch in the recipient's journey this is. Stored so the journey view can show sequence
+   *  position without re-deriving it from step_key string matching. */
+  touchNo?: number | null;
 };
 
 export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; reason?: string }> {
@@ -57,8 +68,9 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
   // Claim the send first. If another tick already claimed this exact step, the unique index
   // rejects this one and nothing goes out — the check and the send can't drift apart.
   const claimed = await sql`
-    INSERT INTO email_sends (recipient, campaign_id, step_key, template, stream, lead_id)
-    VALUES (${msg.to}, ${msg.campaignId}, ${msg.stepKey}, ${msg.template}, ${msg.stream}, ${msg.leadId ?? null})
+    INSERT INTO email_sends (recipient, campaign_id, step_key, template, stream, lead_id, touch_no, config_set)
+    VALUES (${msg.to}, ${msg.campaignId}, ${msg.stepKey}, ${msg.template}, ${msg.stream}, ${msg.leadId ?? null},
+            ${msg.touchNo ?? null}, ${msg.configSet ?? process.env.SES_CONFIGURATION_SET ?? null})
     ON CONFLICT (recipient, campaign_id, step_key) DO NOTHING
     RETURNING id
   `;
@@ -81,7 +93,9 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
     // Only set once SES_CONFIGURATION_SET actually names a live configuration set -- SES rejects
     // the whole send with ConfigurationSetDoesNotExist if this header names one that isn't real,
     // so this must never be hardcoded to a default that might not exist in the account.
-    ...(process.env.SES_CONFIGURATION_SET ? [`X-SES-CONFIGURATION-SET: ${process.env.SES_CONFIGURATION_SET}`] : []),
+    ...((msg.configSet ?? process.env.SES_CONFIGURATION_SET)
+      ? [`X-SES-CONFIGURATION-SET: ${msg.configSet ?? process.env.SES_CONFIGURATION_SET}`]
+      : []),
     `X-Mantis-Campaign-Id: ${msg.campaignId}`,
     `X-Mantis-Step: ${msg.stepKey}`,
     // The dimensions SES splits its own open/click/bounce metrics on, so reporting lines up with
