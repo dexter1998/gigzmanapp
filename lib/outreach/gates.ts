@@ -77,6 +77,21 @@ export const LIMITS = {
   selfBounceStop: 0.1,
   selfBounceMinSample: 200,
   /**
+   * How far back the campaign's own bounce rate looks.
+   *
+   * Lifetime was wrong, and wrong in the direction that hides itself: a bad stretch can only be
+   * diluted by sending more good mail, but the warn it triggers halves capacity, so the mail that
+   * would clear it arrives at half speed. The gate feeds itself. Measured 2026-10-02, the campaign
+   * sat at 5.2% over 28,049 lifetime sends and needed ~8,400 further perfect sends to fall under
+   * the 4% warn — at half rate, days of throttling over bounces nothing can now change.
+   *
+   * Three days rather than 24h because bounces arrive asynchronously: a send late in the day is
+   * still bouncing the next morning, and a 24h window would keep re-scoring the same batch as its
+   * failures trickle in. This is the "is the list we are mailing RIGHT NOW bad" question, which is
+   * what a throttle should act on. The account-level reputation gates remain the hard line.
+   */
+  selfBounceWindowDays: 3,
+  /**
    * Attempts needed in the 24h window before the account rate is allowed to block anything.
    *
    * Without this the gate reads noise as catastrophe. Measured 2026-10-02: a 100-message
@@ -201,7 +216,8 @@ async function recentRates(): Promise<{ bounceRate: number | null; complaintRate
  * the wrong reason.
  */
 async function selfBounceRate(campaignId: string): Promise<{ rate: number | null; sample: number }> {
-  // Counted over sends THIS pipeline actually made, not over the imported backlog.
+  // Counted over sends THIS pipeline actually made, inside selfBounceWindowDays, not over the
+  // imported backlog.
   //
   // Imported leads carry the bounce history of the campaigns they came from — 4,112 hard bounces
   // from sends made months ago with Auto Validation switched off. Those addresses are already
@@ -218,6 +234,7 @@ async function selfBounceRate(campaignId: string): Promise<{ rate: number | null
     FROM email_sends es
     JOIN campaign_recipients cr ON cr.email = es.recipient AND cr.campaign_id = es.campaign_id
     WHERE es.campaign_id = ${campaignId} AND es.ses_message_id IS NOT NULL
+      AND es.sent_at > now() - (${LIMITS.selfBounceWindowDays} || ' days')::interval
   `;
   const r = rows[0] as { attempted: number; bad: number } | undefined;
   if (!r || r.attempted < LIMITS.selfBounceMinSample) return { rate: null, sample: r?.attempted ?? 0 };
@@ -291,7 +308,7 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
   // over everything the account sends and so the last thing to react. The warn band below throttles
   // well before this point.
   if (self.rate !== null && self.rate >= LIMITS.selfBounceStop) {
-    return blocked("self_bounce_rate", `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends`, metrics);
+    return blocked("self_bounce_rate", `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d`, metrics);
   }
 
   // Gate 5 — quota.
@@ -308,7 +325,7 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     // Send less rather than stop. The list is worse than it should be, but AWS is not objecting,
     // and a smaller batch limits how much new damage one tick can do while that remains true.
     capacityFactor = 0.5;
-    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends — capacity halved`;
+    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d — capacity halved`;
   } else if (rates.complaintRate !== null && rates.complaintRate >= LIMITS.complaintWarn) {
     capacityFactor = 0.5;
     reason = `complaint rate ${(rates.complaintRate * 100).toFixed(3)}% in warn band — capacity halved`;
