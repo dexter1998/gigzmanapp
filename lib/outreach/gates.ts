@@ -41,6 +41,18 @@ export const LIMITS = {
   /** Our own bounce rate, over our own send history, excluding validation suppressions. */
   selfBounceStop: 0.04,
   selfBounceMinSample: 200,
+  /**
+   * Attempts needed in the 24h window before the account rate is allowed to block anything.
+   *
+   * Without this the gate reads noise as catastrophe. Measured 2026-10-02: a 100-message
+   * capability test (deliberately including simulator bounce addresses) left the window at 26
+   * bounces over 58 attempts — 44.8% — and blocked the campaign, while the metric AWS actually
+   * enforces on, Reputation.BounceRate, sat at 1.05%. Any low-volume day has the same shape: a
+   * handful of sends and one dead address reads as a disaster.
+   *
+   * 500 is roughly where one bounce stops moving the rate by more than a fifth of a percent.
+   */
+  rateMinSample: 500,
 } as const;
 
 export type GateVerdict = {
@@ -69,7 +81,7 @@ export type GateVerdict = {
  * two-week average hides a problem that started this morning, which is exactly the problem a
  * pre-send gate exists to catch.
  */
-async function recentRates(): Promise<{ bounceRate: number | null; complaintRate: number | null }> {
+async function recentRates(): Promise<{ bounceRate: number | null; complaintRate: number | null; attempts: number }> {
   try {
     const stats = await ses.send(new GetSendStatisticsCommand({}));
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -80,12 +92,14 @@ async function recentRates(): Promise<{ bounceRate: number | null; complaintRate
       bounces += p.Bounces ?? 0;
       complaints += p.Complaints ?? 0;
     }
-    if (attempts === 0) return { bounceRate: null, complaintRate: null };
-    return { bounceRate: bounces / attempts, complaintRate: complaints / attempts };
+    // Below the minimum sample the rate is not a measurement, so it is reported as unknown
+    // rather than as a number the caller will act on.
+    if (attempts < LIMITS.rateMinSample) return { bounceRate: null, complaintRate: null, attempts };
+    return { bounceRate: bounces / attempts, complaintRate: complaints / attempts, attempts };
   } catch {
     // A gate that cannot read its own metric must not silently pass. The caller treats null as
     // "unknown" and refuses to raise capacity on it.
-    return { bounceRate: null, complaintRate: null };
+    return { bounceRate: null, complaintRate: null, attempts: 0 };
   }
 }
 
@@ -180,8 +194,10 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     reason = `bounce rate ${(rates.bounceRate * 100).toFixed(2)}% in warn band — capacity halved`;
   } else if (rates.bounceRate === null) {
     // Unknown is not good news. Run, but do not run at full size on a metric we could not read.
+    // This is also the normal state when resuming after a quiet period: the window has too few
+    // attempts to mean anything, so the next tick builds the sample at half size.
     capacityFactor = 0.5;
-    reason = "SES send statistics unavailable — capacity halved";
+    reason = `bounce rate unknown (${rates.attempts} attempts in 24h, need ${LIMITS.rateMinSample}) — capacity halved`;
   }
 
   return { ok: true, blockedBy: null, reason, capacityFactor, metrics };
