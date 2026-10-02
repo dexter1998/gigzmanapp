@@ -70,18 +70,28 @@ export async function GET(req: NextRequest) {
 
   // Only one dispatcher run at a time, ever.
   //
-  // EventBridge API destinations give up waiting well before this route finishes (runs take
-  // 7-17s) and treat that as a failure, so without an explicit retry policy a single scheduled
-  // tick became six overlapping runs in seven minutes — two of them 23ms apart. No duplicate mail
-  // went out, because sendBulkEmail claims (recipient, campaign, step) on a unique index first,
-  // but each run took its own slice of the day's budget and the hourly pacing stopped meaning
-  // anything: a third of the daily allowance left in the first seven minutes.
+  // EventBridge API destinations give up waiting well before this route finishes and treat that
+  // as a failure, so a single scheduled tick became six overlapping runs in seven minutes. No
+  // duplicate mail went out — sendBulkEmail claims (recipient, campaign, step) on a unique index
+  // first — but each run took its own slice of the day's budget, which is exactly the burst the
+  // pacing exists to prevent.
   //
-  // A Postgres advisory lock rather than a row or a flag: it is held by the connection and
-  // released automatically if the process dies, so a crashed run cannot wedge the schedule shut.
-  const LOCK_KEY = 4_217_900_301;
-  const lockRows = await sql`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS got`;
-  if (!(lockRows[0] as { got: boolean }).got) {
+  // A lock ROW, not pg_advisory_lock. Advisory locks are scoped to a session, and lib/db.ts is a
+  // connection pool (max: 10): the lock and the unlock can land on different connections, so the
+  // unlock silently does nothing and the lock is held until that connection is recycled. That is
+  // not theoretical — it happened here and wedged the dispatcher shut until the backend was
+  // killed by hand. A row with a timestamp is pool-safe, and a stale one expires on its own so a
+  // crashed run cannot block the schedule forever.
+  const LOCK = "outreach_dispatcher";
+  const STALE_MINUTES = 10;
+  const claimed = await sql`
+    INSERT INTO outreach_event_cursor (name, last_created_at, updated_at)
+    VALUES (${LOCK}, now(), now())
+    ON CONFLICT (name) DO UPDATE SET updated_at = now()
+      WHERE outreach_event_cursor.updated_at < now() - (${STALE_MINUTES} || ' minutes')::interval
+    RETURNING name
+  `;
+  if (claimed.length === 0) {
     return NextResponse.json({ skipped: "another dispatcher run is already in progress" });
   }
 
@@ -254,6 +264,11 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ dryRun, events, converted, campaigns: perCampaign, sent: totalSent, failed: totalFailed });
 
   } finally {
-    await sql`SELECT pg_advisory_unlock(${LOCK_KEY})`;
+    // Release by ageing the row out, so the next tick's conditional UPDATE can take it.
+    await sql`
+      UPDATE outreach_event_cursor
+      SET updated_at = now() - (${STALE_MINUTES} || ' minutes')::interval
+      WHERE name = ${LOCK}
+    `;
   }
 }
