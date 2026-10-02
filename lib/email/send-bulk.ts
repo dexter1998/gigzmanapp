@@ -78,6 +78,15 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
   const sendId = (claimed[0] as { id: string }).id;
 
   const unsubUrl = `${COMPANY.site}/u/${signUnsubscribeToken(msg.to, msg.stream)}`;
+
+  // Every bulk template carries an {{unsubscribe_url}} in its footer, and it is the one merge tag
+  // no caller can supply: the link is signed per recipient and only exists here. Filling it at
+  // this layer means a template can never ship with the literal text "{{unsubscribe_url}}" in the
+  // place its opt-out link should be -- which is both the ugliest possible failure and, with
+  // Gmail and Yahoo's bulk-sender rules, a compliance one. (This has already happened: the
+  // 2026-09-24 agency send went out with several tags unfilled.)
+  const html = msg.html.replaceAll("{{unsubscribe_url}}", unsubUrl);
+  const text = msg.text.replaceAll("{{unsubscribe_url}}", unsubUrl);
   const boundary = `--mantis-${sendId}`;
   const domain = new URL(COMPANY.site).hostname;
 
@@ -112,13 +121,13 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
     `Content-Type: text/plain; charset=UTF-8`,
     `Content-Transfer-Encoding: base64`,
     ``,
-    base64Body(msg.text),
+    base64Body(text),
     ``,
     `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
     `Content-Transfer-Encoding: base64`,
     ``,
-    base64Body(msg.html),
+    base64Body(html),
     ``,
     `--${boundary}--`,
     ``,
