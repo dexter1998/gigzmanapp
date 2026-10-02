@@ -95,6 +95,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: "another dispatcher run is already in progress" });
   }
 
+  // Acknowledge now, send afterwards.
+  //
+  // A full tick takes ~20 seconds (gates make several AWS calls, then sends are paced). An
+  // EventBridge API destination stops waiting long before that and records a FailedInvocation —
+  // measured today: the rule fired on schedule every time, and the invocations at 11:38, 12:08
+  // and 12:23 all failed on timeout, so with retries off those ticks were simply lost and
+  // sending stalled for forty minutes while everything looked healthy.
+  //
+  // Returning first and continuing in the background fixes the symptom at its cause. App Runner
+  // is a long-lived server, not a per-request lambda, so the promise keeps running after the
+  // response is flushed. Overlap is already impossible (the lock above), and if the instance is
+  // recycled mid-run the lock row goes stale on its own and the next tick picks the work up —
+  // every send is idempotent per (recipient, campaign, step), so nothing is sent twice.
+  //
+  // A dry run stays synchronous: its entire purpose is to return what it found.
+  if (!dryRun) {
+    void run().catch((err) => console.error("outreach dispatcher failed", err));
+    return NextResponse.json({ accepted: true, startedAt: startedAt.toISOString() }, { status: 202 });
+  }
+  return run();
+
+  async function run(): Promise<Response> {
+
   try {
 
   // 1 + 2 — bring state up to date before anything is decided on it.
@@ -270,5 +293,6 @@ export async function GET(req: NextRequest) {
       SET updated_at = now() - (${STALE_MINUTES} || ' minutes')::interval
       WHERE name = ${LOCK}
     `;
+  }
   }
 }
