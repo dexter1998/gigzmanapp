@@ -208,6 +208,24 @@ export async function planCampaign(campaignId: string, capacity: number): Promis
   `) as unknown as StepRow[];
   if (steps.length === 0) return { sends: [], stalls: [], counts: { dueFollowups: 0, availableNew: 0, plannedFollowups: 0, plannedNew: 0 } };
 
+  // Recipients who have hit the cap must be retired explicitly.
+  //
+  // They are excluded by the `touch_count < max_touches` predicate below, which means the rule
+  // engine never sees them and never returns a stall for them. Without this query they stay
+  // 'active'/'warm' forever: still counted as live in the funnel, never given a
+  // recycle_eligible_at, and re-examined by every future tick for a decision that can only ever
+  // be "no". Caught by scripts/outreach-plan-test.ts, which asserted the stall count and found
+  // zero.
+  const cappedRows = (await sql`
+    SELECT id, email, values, touch_count, opened_distinct, clicked_distinct, verification_status
+    FROM campaign_recipients
+    WHERE campaign_id = ${campaignId}
+      AND do_not_send = false
+      AND state NOT IN ('suppressed', 'converted', 'stalled')
+      AND touch_count >= ${campaign.max_touches}
+    LIMIT 5000
+  `) as unknown as RecipientRow[];
+
   // Eligibility is one predicate, applied identically to both pools, so a suppressed or converted
   // person cannot slip in through whichever pool happens to have room.
   const dueFollowupsRows = (await sql`
@@ -264,7 +282,12 @@ export async function planCampaign(campaignId: string, capacity: number): Promis
   }
 
   const sends: PlannedSend[] = [];
-  const stalls: { id: string; reason: string }[] = [];
+  // Capped recipients are retired regardless of capacity — a finished journey should leave the
+  // active pool immediately, not wait for a day with room to spare.
+  const stalls: { id: string; reason: string }[] = cappedRows.map((r) => {
+    const d = decideNextStep(r, steps, new Set(), campaign.max_touches);
+    return { id: r.id, reason: d.action === "stall" ? d.reason : "max_touches" };
+  });
 
   for (const { r, isNew } of chosen) {
     const decision = decideNextStep(r, steps, sentByEmail.get(r.email) ?? new Set(), campaign.max_touches);
