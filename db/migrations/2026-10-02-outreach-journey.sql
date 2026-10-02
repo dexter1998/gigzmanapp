@@ -158,3 +158,11 @@ CREATE INDEX IF NOT EXISTS idx_outreach_runs_time ON outreach_runs(started_at DE
 -- re-deriving it from step_key string matching.
 ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS touch_no INT;
 ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS config_set TEXT;
+
+-- 2026-10-02 (later): provenance on each recipient.
+-- Which scrape a lead came from is the only way to answer "is this source worth scraping again" —
+-- engagement varies enormously between an audited agency list and a registry dump, and without
+-- this the funnel can only report one blended number that describes none of them.
+ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS category TEXT;
+CREATE INDEX IF NOT EXISTS idx_campaign_recipients_source ON campaign_recipients(campaign_id, source);

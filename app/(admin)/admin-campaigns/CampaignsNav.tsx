@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { IconRocket, IconPlus, IconArrowLeft, IconRoute } from "@tabler/icons-react";
+import { IconRocket, IconPlus, IconArrowLeft, IconRoute, IconChartBar } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,7 +23,8 @@ export function CampaignsNav({ email }: { email: string }) {
 
   const isList = pathname === "/admin-campaigns";
   const isNew = pathname.startsWith("/admin-campaigns/new");
-  const isDetail = !isList && !isNew && pathname.startsWith("/admin-campaigns/");
+  const isAnalytics = pathname.startsWith("/admin-campaigns/analytics");
+  const isDetail = !isList && !isNew && !isAnalytics && pathname.startsWith("/admin-campaigns/");
 
   return (
     <aside className="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
@@ -56,6 +57,10 @@ export function CampaignsNav({ email }: { email: string }) {
               <Link href="/admin-campaigns" className={cn("nav-link", isList && "active")} onClick={close}>
                 <span className="nav-link-icon d-md-none d-lg-inline-block"><IconRocket size={18} stroke={1.75} /></span>
                 <span className="nav-link-title">All campaigns</span>
+              </Link>
+              <Link href="/admin-campaigns/analytics" className={cn("nav-link", isAnalytics && "active")} onClick={close}>
+                <span className="nav-link-icon d-md-none d-lg-inline-block"><IconChartBar size={18} stroke={1.75} /></span>
+                <span className="nav-link-title">Prospect analytics</span>
               </Link>
               <Link href="/admin-campaigns/new" className={cn("nav-link", isNew && "active")} onClick={close}>
                 <span className="nav-link-icon d-md-none d-lg-inline-block"><IconPlus size={18} stroke={1.75} /></span>
