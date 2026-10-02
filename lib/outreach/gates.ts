@@ -104,7 +104,7 @@ async function recentRates(): Promise<{ bounceRate: number | null; complaintRate
 }
 
 /**
- * Our own bounce rate for this campaign, from our own records.
+ * This campaign's own bounce rate, over sends this pipeline actually made.
  *
  * Counts only bounces that say something about list quality. Validation suppressions are excluded
  * because SES stopped those before delivery was attempted — they are a cost, not a reputation
@@ -112,12 +112,23 @@ async function recentRates(): Promise<{ bounceRate: number | null; complaintRate
  * the wrong reason.
  */
 async function selfBounceRate(campaignId: string): Promise<{ rate: number | null; sample: number }> {
+  // Counted over sends THIS pipeline actually made, not over the imported backlog.
+  //
+  // Imported leads carry the bounce history of the campaigns they came from — 4,112 hard bounces
+  // from sends made months ago with Auto Validation switched off. Those addresses are already
+  // do_not_send and can never be mailed again, so charging them against today's health blocks
+  // every future run on a number nothing can improve. A synthetic email_sends row (one written
+  // to record a touch that happened before this campaign existed) has a NULL ses_message_id; a
+  // real send always has one, because sendBulkEmail writes it back from the SES response.
   const rows = await sql`
     SELECT
-      count(*) FILTER (WHERE touch_count > 0)::int AS attempted,
-      count(*) FILTER (WHERE bounce_kind IN ('hard_mta', 'mailbox_full', 'transient'))::int AS bad
-    FROM campaign_recipients
-    WHERE campaign_id = ${campaignId}
+      count(DISTINCT es.recipient)::int AS attempted,
+      count(DISTINCT es.recipient) FILTER (
+        WHERE cr.bounce_kind IN ('hard_mta', 'mailbox_full', 'transient')
+      )::int AS bad
+    FROM email_sends es
+    JOIN campaign_recipients cr ON cr.email = es.recipient AND cr.campaign_id = es.campaign_id
+    WHERE es.campaign_id = ${campaignId} AND es.ses_message_id IS NOT NULL
   `;
   const r = rows[0] as { attempted: number; bad: number } | undefined;
   if (!r || r.attempted < LIMITS.selfBounceMinSample) return { rate: null, sample: r?.attempted ?? 0 };
