@@ -14,9 +14,9 @@ export default async function EditStepPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <div className="adm-head">
-        <h1>Edit step: {step.step_key}</h1>
-      </div>
+      <div className="page-header d-print-none"><div className="container-xl">
+        <h2 className="page-title">Edit step: {step.step_key}</h2>
+      </div></div>
       <StepForm
         campaignId={id}
         variables={(campaign.variables as string[]) ?? []}

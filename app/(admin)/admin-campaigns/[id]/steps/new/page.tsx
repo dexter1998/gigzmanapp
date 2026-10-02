@@ -9,9 +9,9 @@ export default async function NewStepPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <div className="adm-head">
+      <div className="page-header d-print-none"><div className="container-xl">
         <h1>New step: {campaign.name}</h1>
-      </div>
+      </div></div>
       <StepForm campaignId={id} variables={(campaign.variables as string[]) ?? []} />
     </>
   );

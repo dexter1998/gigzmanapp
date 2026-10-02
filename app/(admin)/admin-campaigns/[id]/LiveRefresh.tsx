@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconCircleFilled } from "@tabler/icons-react";
 
 /**
  * Re-fetches the server component tree on an interval so the funnel reads as live.
@@ -32,8 +33,12 @@ export function LiveRefresh({ seconds = 15 }: { seconds?: number }) {
 
   return (
     <div className="live-ctl">
-      <button type="button" className={`live-toggle ${on ? "is-on" : ""}`} onClick={() => setOn((v) => !v)}>
-        <span className="live-dot" aria-hidden />
+      <button
+        type="button"
+        className={`btn btn-sm ${on ? "btn-outline-success" : "btn-outline-secondary"}`}
+        onClick={() => setOn((v) => !v)}
+      >
+        <IconCircleFilled size={8} className="me-1" />
         {on ? `Live · ${seconds}s` : "Paused"}
       </button>
       {last && <span className="live-last">updated {last.toLocaleTimeString("en-IN")}</span>}

@@ -1,113 +1,87 @@
-/* Visual break from the read-only /admin console (dark ink rail) — this rail is warm/red so it
-   never gets mistaken for the read-only surface at a glance. */
+/* Campaigns console — Tabler is the design system here, same as /admin
+   (docs/MANTIS_ADMIN_TABLER_SYSTEM.md). This file holds only what Tabler genuinely has no class
+   for: the flow diagram, the journey funnel, and the lead timeline.
 
-.camp-rail { background: #2a1414; }
-.camp-rail .adm-rail-brand .tag.camp-tag { color: #ff8a65; border-color: rgba(255, 138, 101, 0.45); }
-.camp-rail .adm-nav a.active { background: rgba(255, 138, 101, 0.16); color: #ff8a65; }
+   Everything is written against Tabler's own `--tblr-*` tokens rather than hardcoded colours, so
+   light and dark both work from one set of rules. The previous version of this file was written
+   against a `--g-*` custom-property set that the Tabler rebuild removed — the rules still
+   "applied", they just resolved to nothing, which is a far quieter failure than a missing file
+   and is why this console rendered as unstyled HTML for so long.
 
-.camp-banner {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 8px 14px;
-  background: var(--g-red-tint); color: var(--g-red-text); border-radius: var(--radius-md);
-  font-size: 12px; font-weight: 600;
+   Before adding anything here: if Tabler already has a class for it, use that instead. */
+
+/* ── Flow diagram: the SEQUENCE (what this campaign sends, in order) ──
+   Horizontal scroll is right HERE and wrong for the funnel below. A sequence is genuinely a
+   left-to-right list whose length is a property of the campaign, and seeing step 1 beside step 2
+   is the entire point. A funnel is a set of proportions — a different shape of data that wants a
+   different shape of layout. */
+.flow-diagram {
+  display: flex; align-items: stretch; gap: 4px; overflow-x: auto; padding: 6px 2px 14px;
 }
-
-.camp-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
-.camp-form label { font-size: 12px; font-weight: 600; color: var(--g-gray-500); }
-.camp-form input, .camp-form select {
-  padding: 8px 10px; border: 1px solid var(--g-border); border-radius: var(--radius-md); font-size: 13px;
-}
-.camp-form button {
-  padding: 9px 14px; border-radius: var(--radius-md); border: none; font-size: 13px; font-weight: 700;
-  cursor: pointer; background: var(--g-red-text); color: #fff;
-}
-.camp-form button:disabled { background: var(--g-gray-300); cursor: not-allowed; }
-.camp-msg { font-size: 12px; margin-top: 4px; }
-.camp-msg.ok { color: var(--g-green-text); }
-.camp-msg.err { color: var(--g-red-text); }
-.camp-form textarea { font-family: ui-monospace, monospace; font-size: 12px; padding: 8px 10px; border: 1px solid var(--g-border); border-radius: var(--radius-md); resize: vertical; }
-.camp-form select { background: #fff; }
-
-.camp-var-palette { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
-.camp-var-chip {
-  font-family: ui-monospace, monospace; font-size: 11.5px; padding: 3px 8px; border-radius: var(--radius-pill);
-  border: 1px solid var(--g-blue-tint); background: var(--g-blue-tint); color: var(--g-blue-text); cursor: pointer;
-}
-.camp-var-chip:hover { filter: brightness(0.95); }
-
-/* ── Flow diagram ── */
-.flow-diagram { display: flex; align-items: stretch; gap: 4px; overflow-x: auto; padding: 6px 2px 14px; }
 .flow-step {
-  min-width: 180px; max-width: 220px; background: #fff; border: 1px solid var(--g-border);
-  border-radius: var(--radius-lg); padding: 12px 14px; flex-shrink: 0;
+  min-width: 180px; max-width: 220px; flex: 0 0 auto; padding: 10px 12px;
+  background: var(--tblr-bg-surface); border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
 }
-.flow-step-multi_lead { border-top: 3px solid var(--g-blue-text); }
-.flow-step-single_lead { border-top: 3px solid #ff8a65; }
-.flow-step-type { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-gray-500); }
-.flow-step-key { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; color: var(--g-ink); margin-top: 2px; }
-.flow-step-subject { font-size: 11.5px; color: var(--g-ink-soft); margin-top: 6px; line-height: 1.35; }
-.flow-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--g-gray-500); flex-shrink: 0; padding: 0 2px; }
+.flow-step-multi_lead { border-top: 3px solid var(--tblr-primary); }
+.flow-step-single_lead { border-top: 3px solid var(--tblr-orange); }
+.flow-step-type {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--tblr-secondary);
+}
+.flow-step-key {
+  font-family: var(--tblr-font-monospace); font-size: 12px; font-weight: 600;
+  color: var(--tblr-body-color); margin-top: 2px;
+}
+.flow-step-subject { font-size: 11.5px; color: var(--tblr-secondary); margin-top: 6px; line-height: 1.35; }
+.flow-arrow {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--tblr-secondary); flex-shrink: 0; padding: 0 2px;
+}
 .flow-arrow span { font-size: 10.5px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; }
 
-/* ── Recipient status pills (mirrors my-leads' StatusPill look) ── */
-.status-pill { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.03em; }
-.status-pill.not_seen { background: var(--g-gray-100); color: var(--g-gray-500); }
-.status-pill.sent { background: var(--g-blue-tint); color: var(--g-blue-text); }
-.status-pill.opened { background: var(--g-amber-tint); color: #92610a; }
-.status-pill.registered { background: var(--g-green-mint); color: var(--g-green-text); }
+/* ── Journey funnel: WHERE EVERYBODY IS ──
+   Stacked rows, no internal scroll. The label column is capped in pixels rather than taken as a
+   grid fraction: at 1600px a `col-sm-4` label left a third of the card empty before the bar
+   started, putting the two things being compared — the label and its bar — as far apart as the
+   layout allowed. */
+.jf-stage { padding: 5px 0; }
+.jf-stage-label { flex: 0 0 auto; width: 210px; max-width: 42%; }
+.jf-tick { font-size: 11px; line-height: 1; opacity: 0.55; }
 
-/* ---------------------------------------------------------------------------
-   Journey flow — live funnel nodes (cold -> registered)
-   Horizontal scroll rather than wrapping: the sequence reads as one line, and a
-   wrapped funnel loses the thing the diagram exists to show.
-   --------------------------------------------------------------------------- */
-.jf-wrap { padding: 4px 0 2px; }
-.jf-row { display: flex; align-items: stretch; gap: 4px; overflow-x: auto; padding: 6px 2px 10px; }
-.jf-row-tight { padding-bottom: 2px; }
-.jf-node {
-  position: relative; flex: 0 0 auto; min-width: 116px; padding: 10px 12px;
-  border: 1px solid var(--g-line); border-radius: 10px; background: var(--g-surface);
+/* Counts line up digit over digit down the column. Without this, comparing 95 against 8 is
+   reading rather than glancing, which is the whole reason they are in a column. */
+.jf-num { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 575.98px) {
+  .jf-stage-label { width: 100%; max-width: none; }
 }
-.jf-node.jf-good    { border-top: 3px solid #2e9e5b; }
-.jf-node.jf-warm    { border-top: 3px solid #e2a03f; }
-.jf-node.jf-hot     { border-top: 3px solid #ff6b35; }
-.jf-node.jf-bad     { border-top: 3px solid #d9534f; }
-.jf-node.jf-mut     { border-top: 3px solid var(--g-gray-500); }
-.jf-node.jf-neutral { border-top: 3px solid var(--g-blue-text); }
-.jf-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-gray-500); }
-.jf-n { font-size: 20px; font-weight: 700; color: var(--g-ink); line-height: 1.2; margin-top: 3px; font-variant-numeric: tabular-nums; }
-.jf-sub { font-size: 11px; color: var(--g-ink-soft); margin-top: 3px; line-height: 1.3; }
-.jf-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--g-gray-500); flex-shrink: 0; padding: 0 2px; }
-.jf-arrow span { font-size: 10px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em; }
 
-/* Only drawn on nodes that actually hold people, so a pulsing dot always means
-   "there is something here", never decoration. */
-.jf-pulse { position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; border-radius: 50%; background: #2e9e5b; box-shadow: 0 0 0 0 rgba(46,158,91,.6); animation: jf-pulse 2.2s infinite; }
-@keyframes jf-pulse { 70% { box-shadow: 0 0 0 7px rgba(46,158,91,0); } 100% { box-shadow: 0 0 0 0 rgba(46,158,91,0); } }
-@media (prefers-reduced-motion: reduce) { .jf-pulse { animation: none; } }
-
-.jf-exits { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 2px; }
-.jf-branch { flex: 1 1 320px; min-width: 0; }
-.jf-exit-title { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-gray-500); margin-bottom: 2px; }
-.jf-note { font-size: 11.5px; color: var(--g-ink-soft); line-height: 1.5; margin: 8px 0 0; }
-.jf-note code { font-family: ui-monospace, monospace; font-size: 11px; }
-
-.live-ctl { display: inline-flex; align-items: center; gap: 8px; }
-.live-toggle { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--g-line); background: var(--g-surface); color: var(--g-ink-soft); cursor: pointer; }
-.live-toggle.is-on { color: #2e9e5b; border-color: #2e9e5b55; }
-.live-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.live-last { font-size: 11px; color: var(--g-gray-500); }
-
-/* Per-lead journey timeline */
+/* ── Lead timeline: what we sent and what SES said back, in one stream ── */
 .jt-list { list-style: none; margin: 0; padding: 0; }
-.jt-item { display: grid; grid-template-columns: 150px 120px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--g-line); font-size: 12.5px; align-items: baseline; }
+.jt-item {
+  display: grid; grid-template-columns: 160px 150px 1fr; gap: 12px; padding: 8px 0;
+  border-bottom: 1px solid var(--tblr-border-color); font-size: 12.5px; align-items: baseline;
+}
 .jt-item:last-child { border-bottom: 0; }
-.jt-when { color: var(--g-gray-500); font-variant-numeric: tabular-nums; }
-.jt-what { font-weight: 700; }
-.jt-detail { color: var(--g-ink-soft); word-break: break-word; }
-.jt-Delivery  { color: #2e9e5b; }
-.jt-Open      { color: #e2a03f; }
-.jt-Click     { color: #ff6b35; }
-.jt-Bounce    { color: #d9534f; }
-.jt-Complaint { color: #d9534f; }
-.jt-Send      { color: var(--g-blue-text); }
-@media (max-width: 640px) { .jt-item { grid-template-columns: 1fr; gap: 2px; } }
+.jt-when { color: var(--tblr-secondary); font-variant-numeric: tabular-nums; }
+.jt-what { font-weight: 600; }
+.jt-detail { color: var(--tblr-secondary); word-break: break-word; }
+
+/* Event colours track Tabler's semantic palette, so a green here means what a green badge means
+   everywhere else in the console. */
+.jt-Sent      { color: var(--tblr-secondary); }
+.jt-Send      { color: var(--tblr-secondary); }
+.jt-Delivery  { color: var(--tblr-green); }
+.jt-Open      { color: var(--tblr-yellow); }
+.jt-Click     { color: var(--tblr-orange); }
+.jt-Bounce    { color: var(--tblr-red); }
+.jt-Complaint { color: var(--tblr-red); }
+
+@media (max-width: 640px) {
+  .jt-item { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* ── Live refresh control ── */
+.live-ctl { display: inline-flex; align-items: center; gap: 8px; }
+.live-last { font-size: 11px; color: var(--tblr-secondary); font-variant-numeric: tabular-nums; }

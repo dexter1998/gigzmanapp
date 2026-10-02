@@ -13,6 +13,16 @@ import { usePathname } from "next/navigation";
  */
 const isWidgetFrame = (pathname: string | null) => Boolean(pathname?.startsWith("/widget"));
 
+/**
+ * Admin consoles are not public pages: they are gated to an allowlist, set no analytics cookies,
+ * and are the one place where a fixed bottom banner actively costs something — it sits over the
+ * last rows of whatever table is on screen, which on /admin-campaigns is the step list. The
+ * widget's own carve-out above exists for the same reason (it covered the Send button), so this
+ * follows that precedent rather than inventing a second mechanism.
+ * FounderWidgetScript already skips /admin by the same test.
+ */
+const isAdminSurface = (pathname: string | null) => Boolean(pathname?.startsWith("/admin"));
+
 
 const CONSENT_KEY = "mantis-cookie-consent";
 
@@ -57,7 +67,7 @@ export function CookieConsent() {
 
   if (!visible) return null;
 
-  if (isWidgetFrame(pathname)) return null;
+  if (isWidgetFrame(pathname) || isAdminSurface(pathname)) return null;
 
   return (
     <div

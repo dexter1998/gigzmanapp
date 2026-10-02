@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { sql } from "@/lib/db";
-import { Section, Table, Pill, fmtDT, fmtN } from "../../../admin/ui";
+import { PageHeader, CardRow, StatCard, Section, Table, Pill, fmtDT, fmtN } from "../../../admin/ui";
+import { IconRoute, IconMailOpened, IconClick, IconShieldCheck } from "@tabler/icons-react";
 import { classifyBounce } from "@/lib/outreach/events";
 
 /**
@@ -8,11 +9,11 @@ import { classifyBounce } from "@/lib/outreach/events";
  *
  * The funnel on the campaign page answers "where is everybody". This answers the question that
  * actually comes up when something looks wrong — "what happened to THIS person" — which no
- * aggregate can, because the interesting cases are always the individual ones: the address that
- * bounced on touch 3 after opening twice, the lead that clicked and then went quiet.
+ * aggregate can, because the interesting cases are always individual: the address that bounced on
+ * touch 3 after opening twice, the lead that clicked once and then went quiet.
  *
- * Joined on ses_message_id, which is the only identifier shared between what we sent
- * (email_sends) and what SES told us (email_events).
+ * Joined on ses_message_id, the only identifier shared between what we sent (email_sends) and
+ * what SES told us (email_events).
  */
 
 type Params = { params: Promise<{ id: string }>; searchParams: Promise<{ email?: string }> };
@@ -47,24 +48,38 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
     `;
     return (
       <>
-        <div className="adm-head"><h1>Lead journey</h1><Link href={`/admin-campaigns/${id}`}>← campaign</Link></div>
-        <Section title="Kis lead ko dekhna hai?" note="Neeche sabse recent activity wale leads hain. Kisi par click karo.">
-          <form method="get" style={{ marginBottom: 12 }}>
-            <input type="email" name="email" placeholder="email@example.com" required
-              style={{ padding: "6px 10px", minWidth: 280, borderRadius: 8, border: "1px solid var(--g-line)" }} />
-            <button type="submit" style={{ marginLeft: 8, padding: "6px 14px" }}>Dekho</button>
-          </form>
-          <Table
-            head={["Email", "State", "Verification", { label: "Touches", num: true }, { label: "Opened", num: true }, { label: "Clicked", num: true }, "Last event"]}
-            rows={recent.map((r) => [
-              <Link key="e" href={`/admin-campaigns/${id}/lead?email=${encodeURIComponent(r.email)}`}>{r.email}</Link>,
-              r.state, r.verification_status,
-              fmtN(r.touch_count), fmtN(r.opened_distinct), fmtN(r.clicked_distinct),
-              fmtDT(r.last_event_at),
-            ])}
-            empty="is campaign mein abhi koi recipient nahi hai"
-          />
-        </Section>
+        <PageHeader
+          pretitle="Campaign"
+          title="Lead journey"
+          sub="Kisi ek lead ka poora safar — jo bheja aur jo SES ne wapas bataya."
+          actions={<Link href={`/admin-campaigns/${id}`} className="btn btn-sm">← Campaign</Link>}
+        />
+        <div className="page-body">
+          <div className="container-xl">
+            <div className="row row-cards">
+              <Section title="Kis lead ko dekhna hai?" note="Neeche sabse recent activity wale leads hain.">
+                <form method="get" className="row g-2">
+                  <div className="col-auto">
+                    <input type="email" name="email" className="form-control" placeholder="email@example.com" required style={{ minWidth: 280 }} />
+                  </div>
+                  <div className="col-auto"><button type="submit" className="btn btn-primary">Dekho</button></div>
+                </form>
+              </Section>
+              <Table
+                title="Recent activity"
+                head={["Email", "State", "Verification", { label: "Touches", num: true }, { label: "Opened", num: true }, { label: "Clicked", num: true }, "Last event"]}
+                rows={recent.map((r) => [
+                  <Link key="e" href={`/admin-campaigns/${id}/lead?email=${encodeURIComponent(r.email)}`} className="text-reset fw-bold">{r.email}</Link>,
+                  <Pill key="s" tone={r.state === "converted" ? "ok" : r.state === "suppressed" ? "bad" : r.state === "hot" ? "ok" : r.state === "warm" ? "warn" : "info"}>{r.state}</Pill>,
+                  <span key="v" className="text-secondary">{r.verification_status}</span>,
+                  fmtN(r.touch_count), fmtN(r.opened_distinct), fmtN(r.clicked_distinct),
+                  fmtDT(r.last_event_at),
+                ])}
+                empty="is campaign mein abhi koi recipient nahi hai"
+              />
+            </div>
+          </div>
+        </div>
       </>
     );
   }
@@ -93,58 +108,82 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
   if (!lead) {
     return (
       <>
-        <div className="adm-head"><h1>Lead journey</h1><Link href={`/admin-campaigns/${id}/lead`}>← search</Link></div>
-        <Section title="Nahi mila"><p>{email} is campaign mein nahi hai.</p></Section>
+        <PageHeader pretitle="Campaign" title="Lead journey" actions={<Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">← Search</Link>} />
+        <div className="page-body"><div className="container-xl"><div className="row row-cards">
+          <Section title="Nahi mila"><p className="text-secondary mb-0">{email} is campaign mein nahi hai.</p></Section>
+        </div></div></div>
       </>
     );
   }
 
+  const stateTone = lead.state === "converted" ? "ok" : lead.state === "suppressed" ? "bad"
+    : lead.state === "hot" ? "ok" : lead.state === "warm" ? "warn" : "info";
+
   return (
     <>
-      <div className="adm-head">
-        <h1>{lead.email}</h1>
-        <Link href={`/admin-campaigns/${id}`}>← campaign</Link>
+      <PageHeader
+        pretitle="Lead journey"
+        title={lead.email}
+        sub={<>{lead.verification_status}{lead.bounce_kind ? ` · ${lead.bounce_kind}` : ""}</>}
+        actions={
+          <>
+            <Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">← Search</Link>
+            <Pill tone={stateTone}>{lead.state}</Pill>
+          </>
+        }
+      />
+      <div className="page-body">
+        <div className="container-xl">
+          <CardRow>
+            <StatCard label="Touches" value={fmtN(lead.touch_count)} detail={`${fmtN(lead.delivered_count)} delivered`} icon={<IconRoute size={20} />} />
+            <StatCard label="Opened" value={fmtN(lead.opened_distinct)} detail="distinct messages, events nahi" icon={<IconMailOpened size={20} />} />
+            <StatCard
+              label="Clicked"
+              value={fmtN(lead.clicked_distinct)}
+              detail={lead.clicked_distinct > 0 ? "asli intent signal" : "abhi tak nahi"}
+              tone={lead.clicked_distinct > 0 ? "up" : undefined}
+              icon={<IconClick size={20} />}
+            />
+            <StatCard
+              label="Bhej sakte hain?"
+              value={lead.do_not_send ? "Nahi" : "Haan"}
+              detail={lead.do_not_send ? lead.do_not_send_reason : `agla touch ${fmtDT(lead.next_due_at)}`}
+              tone={lead.do_not_send ? "bad" : "up"}
+              icon={<IconShieldCheck size={20} />}
+            />
+          </CardRow>
+
+          <div className="row row-cards">
+            <Section title="Agla kya hoga" note="Rule engine isi par faisla karega." col="col-12 col-xl-4">
+              <div className="datagrid">
+                <div className="datagrid-item"><div className="datagrid-title">Agla touch due</div><div className="datagrid-content">{fmtDT(lead.next_due_at)}</div></div>
+                <div className="datagrid-item"><div className="datagrid-title">Aakhri asli response</div><div className="datagrid-content">{fmtDT(lead.last_meaningful_response)}</div></div>
+                <div className="datagrid-item"><div className="datagrid-title">Stalled</div><div className="datagrid-content">{lead.stalled_at ? `${fmtDT(lead.stalled_at)} — ${lead.stalled_reason}` : "—"}</div></div>
+                <div className="datagrid-item"><div className="datagrid-title">Dobara eligible</div><div className="datagrid-content">{fmtDT(lead.recycle_eligible_at)}</div></div>
+                <div className="datagrid-item"><div className="datagrid-title">Transient bounces</div><div className="datagrid-content jf-num">{fmtN(lead.transient_bounces)}</div></div>
+              </div>
+            </Section>
+
+            <Section title="Timeline" note="Jo humne bheja aur SES ne jo wapas bataya — ek hi dhaare mein." col="col-12 col-xl-8">
+              <ul className="jt-list">
+                {timeline.map((t, i) => (
+                  <li className="jt-item" key={i}>
+                    <span className="jt-when">{fmtDT(t.at)}</span>
+                    <span className={`jt-what jt-${t.kind}`}>
+                      {t.kind}{t.touch_no ? ` · touch ${t.touch_no}` : ""}
+                    </span>
+                    <span className="jt-detail">
+                      {t.kind === "Bounce" ? bounceDetail(t.raw) ?? t.detail : t.detail}
+                      {t.kind === "Sent" && t.config_set ? ` · ${t.config_set}` : ""}
+                    </span>
+                  </li>
+                ))}
+                {timeline.length === 0 && <li className="jt-item"><span className="jt-detail">koi event nahi</span></li>}
+              </ul>
+            </Section>
+          </div>
+        </div>
       </div>
-
-      <div className="adm-cards">
-        <div className="adm-card"><div className="k">State</div><div className="v"><Pill tone={lead.state === "converted" ? "ok" : lead.state === "suppressed" ? "bad" : lead.state === "hot" ? "ok" : "info"}>{lead.state}</Pill></div></div>
-        <div className="adm-card"><div className="k">Verification</div><div className="v" style={{ fontSize: 14 }}>{lead.verification_status}</div>{lead.bounce_kind && <div className="d">{lead.bounce_kind}</div>}</div>
-        <div className="adm-card"><div className="k">Touches</div><div className="v">{fmtN(lead.touch_count)}</div><div className="d">{fmtN(lead.delivered_count)} delivered</div></div>
-        <div className="adm-card"><div className="k">Engagement</div><div className="v" style={{ fontSize: 14 }}>{fmtN(lead.opened_distinct)} open · {fmtN(lead.clicked_distinct)} click</div><div className="d">distinct messages, events nahi</div></div>
-      </div>
-
-      <Section title="Agla kya hoga" note="Rule engine isi par faisla karega.">
-        <Table
-          head={["Field", "Value"]}
-          rows={[
-            ["Bhej sakte hain?", lead.do_not_send ? <Pill key="d" tone="bad">nahi — {lead.do_not_send_reason}</Pill> : <Pill key="d" tone="ok">haan</Pill>],
-            ["Agla touch due", fmtDT(lead.next_due_at)],
-            ["Aakhri asli response", fmtDT(lead.last_meaningful_response)],
-            ["Stalled", lead.stalled_at ? `${fmtDT(lead.stalled_at)} — ${lead.stalled_reason}` : "—"],
-            ["Dobara eligible", fmtDT(lead.recycle_eligible_at)],
-            ["Transient bounces", fmtN(lead.transient_bounces)],
-          ]}
-          empty="—"
-        />
-      </Section>
-
-      <Section title="Timeline" note="Jo humne bheja aur SES ne jo wapas bataya — dono ek hi dhaare mein.">
-        <ul className="jt-list">
-          {timeline.map((t, i) => (
-            <li className="jt-item" key={i}>
-              <span className="jt-when">{fmtDT(t.at)}</span>
-              <span className={`jt-what jt-${t.kind}`}>
-                {t.kind}{t.touch_no ? ` · touch ${t.touch_no}` : ""}
-              </span>
-              <span className="jt-detail">
-                {t.kind === "Bounce" ? bounceDetail(t.raw) ?? t.detail : t.detail}
-                {t.kind === "Sent" && t.config_set ? ` · ${t.config_set}` : ""}
-              </span>
-            </li>
-          ))}
-          {timeline.length === 0 && <li className="jt-item"><span className="jt-detail">koi event nahi</span></li>}
-        </ul>
-      </Section>
     </>
   );
 }

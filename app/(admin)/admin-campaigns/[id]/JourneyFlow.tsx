@@ -1,16 +1,24 @@
 import type { ReactNode } from "react";
 
 /**
- * The campaign funnel as a live flow of nodes, cold lead through to registered.
+ * The campaign funnel: how many people sit at each stage, cold lead through to registered.
  *
- * The step FlowDiagram answers "what does this sequence send". This answers the different and
- * harder question "where is everybody right now" — how many people sit in each state, and which
- * way they left. Those are not the same picture: a sequence can look perfectly designed while the
- * entire list is parked in one node.
+ * The step FlowDiagram answers "what does this sequence send". This answers the harder question
+ * "where is everybody right now" — a sequence can look perfectly designed while the entire list
+ * is parked in one stage.
  *
- * Counts come from campaign_recipients.state, which the event reducer maintains, so what shows
- * here is what the rule engine will actually act on next tick, not a separately computed
- * approximation that can drift away from it.
+ * Built as stacked rows with proportional bars rather than a row of boxes that scrolls sideways.
+ * Three reasons, all of which the first version got wrong:
+ *   - A panel that scrolls inside itself hides data. The stages past the fold simply did not
+ *     exist for anyone who did not think to drag, and the stages that matter most on a bad day
+ *     (the exits) were the ones off-screen.
+ *   - Counts are only meaningful against the total. A bar makes "65 of 100" readable without
+ *     arithmetic; a box containing "65" does not.
+ *   - Hierarchy here comes from type size and whitespace, not from drawing a border around every
+ *     number, which is what made the first version read as a toolbar rather than a report.
+ *
+ * Counts come from campaign_recipients.state, the same column the rule engine reads, so what is
+ * on screen is what the next tick will act on rather than a parallel calculation that can drift.
  */
 
 export type JourneyCounts = {
@@ -32,87 +40,93 @@ export type JourneyCounts = {
   unsubscribed: number;
 };
 
-function pct(n: number, total: number): string {
-  if (total === 0) return "0%";
-  const p = (n / total) * 100;
-  return p > 0 && p < 0.1 ? "<0.1%" : `${p.toFixed(p < 10 ? 1 : 0)}%`;
+function pctOf(n: number, total: number): number {
+  return total === 0 ? 0 : (n / total) * 100;
 }
 
-function Node({
-  label, n, total, tone, sub, live,
+function pctLabel(n: number, total: number): string {
+  const p = pctOf(n, total);
+  if (p === 0) return "0%";
+  if (p < 0.1) return "<0.1%";
+  return `${p.toFixed(p < 10 ? 1 : 0)}%`;
+}
+
+/** One funnel stage. `indent` marks a stage as a subset of the one above it, so the shape of the
+ *  drop-off is visible without a second chart. */
+function Stage({
+  label, sub, n, total, tone, indent = false,
 }: {
-  label: string; n: number; total: number;
-  tone: "neutral" | "good" | "warm" | "hot" | "bad" | "mut";
-  sub?: string; live?: boolean;
+  label: string; sub?: string; n: number; total: number;
+  tone: "secondary" | "primary" | "green" | "yellow" | "orange" | "red";
+  indent?: boolean;
 }) {
   return (
-    <div className={`jf-node jf-${tone}`}>
-      {live && n > 0 && <span className="jf-pulse" aria-hidden />}
-      <div className="jf-label">{label}</div>
-      <div className="jf-n">{n.toLocaleString("en-IN")}</div>
-      <div className="jf-sub">{sub ?? pct(n, total)}</div>
+    <div className="d-flex align-items-center gap-3 jf-stage flex-wrap flex-sm-nowrap">
+      <div className="jf-stage-label d-flex align-items-center gap-2" style={indent ? { paddingLeft: "0.75rem" } : undefined}>
+        {indent && <span className="jf-tick text-secondary" aria-hidden>└</span>}
+        <div className="text-truncate">
+          <div className={indent ? "" : "fw-bold"}>{label}</div>
+          {sub && <div className="text-secondary" style={{ fontSize: 11.5 }}>{sub}</div>}
+        </div>
+      </div>
+      <div className="flex-fill">
+        <div className="progress progress-sm">
+          <div className={`progress-bar bg-${tone}`} style={{ width: `${pctOf(n, total)}%` }} role="progressbar"
+               aria-valuenow={n} aria-valuemin={0} aria-valuemax={total} aria-label={label} />
+        </div>
+      </div>
+      <div className="text-end flex-shrink-0" style={{ minWidth: 96 }}>
+        <span className="fw-bold jf-num">{n.toLocaleString("en-IN")}</span>
+        <span className="text-secondary ms-2" style={{ fontSize: 12 }}>{pctLabel(n, total)}</span>
+      </div>
     </div>
   );
 }
 
-function Arrow({ label }: { label?: string }) {
+/** A terminal outcome. Flat tiles, no bars: these are not stages people pass through, and giving
+ *  them bars would imply a funnel position they do not have. */
+function Exit({ label, n, sub, tone }: { label: string; n: number; sub?: ReactNode; tone: string }) {
   return (
-    <div className="jf-arrow">
-      {label && <span>{label}</span>}
-      <svg viewBox="0 0 40 12" width="34" height="12" aria-hidden>
-        <path d="M0 6h30m0 0l-6-5m6 5l-6 5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-      </svg>
+    <div className="col-6 col-lg-3">
+      <div className="text-secondary text-uppercase" style={{ fontSize: 10.5, letterSpacing: "0.06em", fontWeight: 700 }}>{label}</div>
+      <div className={`h2 mb-0 mt-1 jf-num text-${tone}`}>{n.toLocaleString("en-IN")}</div>
+      {sub && <div className="text-secondary" style={{ fontSize: 11.5 }}>{sub}</div>}
     </div>
   );
-}
-
-function Branch({ children }: { children: ReactNode }) {
-  return <div className="jf-branch">{children}</div>;
 }
 
 export function JourneyFlow({ c }: { c: JourneyCounts }) {
   const t = c.total;
+  const inPlay = c.new + c.active + c.warm + c.hot;
+
   return (
-    <div className="jf-wrap">
-      <div className="jf-row">
-        <Node label="Imported" n={t} total={t} tone="neutral" sub="poora pool" />
-        <Arrow label="validate" />
-        <Node label="Unverified" n={c.unverified} total={t} tone="mut" live />
-        <Arrow label="delivered" />
-        <Node label="Verified" n={c.verified} total={t} tone="good" live />
-        <Arrow label="opened" />
-        <Node label="Warm" n={c.warm} total={t} tone="warm" sub={`${pct(c.warm, t)} · khola, click nahi`} live />
-        <Arrow label="clicked" />
-        <Node label="Hot" n={c.hot} total={t} tone="hot" sub={`${pct(c.hot, t)} · click kiya`} live />
-        <Arrow label="signup" />
-        <Node label="Registered" n={c.converted} total={t} tone="good" sub={`${pct(c.converted, t)} · terminal`} />
+    <div className="jf">
+      <Stage label="Imported" sub="poora pool" n={t} total={t} tone="secondary" />
+      <Stage label="Verified" sub="kam se kam ek baar deliver hua" n={c.verified} total={t} tone="primary" indent />
+      <Stage label="Warm" sub="khola, click nahi" n={c.warm} total={t} tone="yellow" indent />
+      <Stage label="Hot" sub="click kiya" n={c.hot} total={t} tone="orange" indent />
+      <Stage label="Registered" sub="signup — terminal" n={c.converted} total={t} tone="green" indent />
+
+      <hr className="my-3" />
+
+      <div className="row g-3">
+        <Exit label="Invalid" n={c.invalid} tone="danger"
+              sub={<>{c.hardBounce.toLocaleString("en-IN")} hard · {c.validationSuppressed.toLocaleString("en-IN")} AV</>} />
+        <Exit label="Complaint" n={c.complaint} tone="danger" sub="sabse mehnga" />
+        <Exit label="Unsubscribed" n={c.unsubscribed} tone="danger" />
+        <Exit label="Stalled" n={c.stalled} tone="secondary" sub="cooldown mein" />
       </div>
 
-      {/* The exits. Kept visually below the main line rather than inline, because they are where
-          the list is lost and that number deserves to be readable on its own. */}
-      <div className="jf-exits">
-        <Branch>
-          <div className="jf-exit-title">Nikal gaye</div>
-          <div className="jf-row jf-row-tight">
-            <Node label="Invalid" n={c.invalid} total={t} tone="bad" sub={`${c.validationSuppressed.toLocaleString("en-IN")} AV · ${c.hardBounce.toLocaleString("en-IN")} hard`} />
-            <Node label="Complaint" n={c.complaint} total={t} tone="bad" />
-            <Node label="Unsubscribed" n={c.unsubscribed} total={t} tone="bad" />
-            <Node label="Stalled" n={c.stalled} total={t} tone="mut" sub={`${pct(c.stalled, t)} · cooldown`} />
-          </div>
-        </Branch>
-        <Branch>
-          <div className="jf-exit-title">Abhi queue mein</div>
-          <div className="jf-row jf-row-tight">
-            <Node label="Naye (touch 0)" n={c.new} total={t} tone="neutral" live />
-            <Node label="Chal rahe" n={c.active} total={t} tone="neutral" live />
-            <Node label="Aaj due" n={c.dueNow} total={t} tone="good" sub="agla tick inhe uthayega" live />
-          </div>
-        </Branch>
+      <hr className="my-3" />
+
+      <div className="row g-3">
+        <Exit label="Abhi chal rahe" n={inPlay} tone="body" sub={`${c.new.toLocaleString("en-IN")} naye, abhi tak nahi bheja`} />
+        <Exit label="Aaj due" n={c.dueNow} tone="primary" sub="agla tick inhe uthayega" />
       </div>
 
-      <p className="jf-note">
-        <strong>Invalid</strong> mein AV-suppressed aur asli hard bounce alag ginay gaye hain — SES dono ko
-        <code> Bounce/Permanent</code> bhejta hai, farq sirf <code>bounceSubType</code> se pata chalta hai.
+      <p className="text-secondary mt-3 mb-0" style={{ fontSize: 11.5, lineHeight: 1.55 }}>
+        <strong>Invalid</strong> mein AV-suppressed aur asli hard bounce alag ginay gaye hain. SES dono ko{" "}
+        <code>Bounce/Permanent</code> bhejta hai aur farq sirf <code>bounceSubType</code> se pata chalta hai —
         AV-suppressed kabhi kisi mail server tak pahuncha hi nahi, isliye wo list ki kharabi nahi hai.
       </p>
     </div>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
-import { Section, Table, Pill, fmtDT, fmtN } from "../../admin/ui";
+import { PageHeader, CardRow, StatCard, Section, Table, Pill, fmtDT, fmtN } from "../../admin/ui";
+import { IconUsers, IconMailOpened, IconClick, IconAlertTriangle } from "@tabler/icons-react";
 import { StatusControl } from "./StatusControl";
 import { ImportForm } from "./ImportForm";
 import { StartBatchForm } from "./StartBatchForm";
@@ -59,7 +60,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     complaint: jr.complaint, unsubscribed: (unsubRows[0] as { n: number }).n,
   };
 
-  const [[campaign], steps, batches, batchRuns, [suppressed], statusCounts, recipientSample] = await Promise.all([
+  const [[campaign], steps, batches, batchRuns, statusCounts, recipientSample] = await Promise.all([
     sql`SELECT id, name, sender, stream, status, created_by, created_at, variables FROM campaigns WHERE id = ${id}`,
     sql`
       SELECT cs.step_key, cs.step_order, cs.send_offset_minutes, cs.step_type, cs.subject,
@@ -68,12 +69,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     `,
     sql`SELECT batch, count(*)::int AS n FROM campaign_recipients WHERE campaign_id = ${id} GROUP BY batch ORDER BY batch`,
     sql`SELECT batch, started_at, started_by FROM campaign_batch_runs WHERE campaign_id = ${id}`,
-    sql`
-      SELECT count(*)::int AS n FROM campaign_recipients cr
-      JOIN campaigns c ON c.id = cr.campaign_id
-      WHERE cr.campaign_id = ${id}
-        AND EXISTS (SELECT 1 FROM email_unsubscribes eu WHERE eu.email = cr.email AND eu.stream IN ('all', c.stream))
-    `,
     // Status priority: registered (signed up on Mantis since) > opened/clicked (needs the SNS
     // event pipeline actually wired — see app/api/webhooks/ses-events) > sent > not yet sent.
     sql`
@@ -115,23 +110,36 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   if (!campaign) notFound();
 
   const runsByBatch = new Map(batchRuns.map((r) => [r.batch, r]));
-  const totalRecipients = batches.reduce((sum, b) => sum + Number(b.n), 0);
   const sc = statusCounts[0] ?? { registered: 0, opened: 0, sent: 0, not_seen: 0 };
+
+  const statusTone = campaign.status === "active" ? "ok" : campaign.status === "paused" ? "warn" : campaign.status === "done" ? "mut" : "info";
 
   return (
     <>
-      <div className="adm-head">
-        <h1>{campaign.name}</h1>
-        <span className="adm-asof">{campaign.id}</span>
-      </div>
+      <PageHeader
+        pretitle="Campaign"
+        title={campaign.name}
+        sub={<><code>{campaign.id}</code> · {campaign.stream} · {campaign.sender}</>}
+        actions={
+          <>
+            <Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">Lead journey</Link>
+            <Pill tone={statusTone}>{campaign.status}</Pill>
+          </>
+        }
+      />
+      <div className="page-body">
+        <div className="container-xl">
+          {/* The four numbers that decide whether anything below needs attention: how big the
+              pool is, how much of it is reachable, how much is engaged, and how much has been
+              lost. Everything else is detail that only matters once one of these looks wrong. */}
+          <CardRow>
+            <StatCard label="Recipients" value={fmtN(journey.total)} detail={`${fmtN(journey.dueNow)} due now`} icon={<IconUsers size={20} />} />
+            <StatCard label="Verified" value={fmtN(journey.verified)} detail="kam se kam ek baar deliver hua" tone="up" icon={<IconMailOpened size={20} />} />
+            <StatCard label="Engaged" value={fmtN(journey.hot)} detail={`${fmtN(journey.warm)} khola, click nahi`} icon={<IconClick size={20} />} />
+            <StatCard label="Suppressed" value={fmtN(journey.suppressed)} detail={`${fmtN(journey.hardBounce)} hard · ${fmtN(journey.validationSuppressed)} AV`} tone="bad" icon={<IconAlertTriangle size={20} />} />
+          </CardRow>
 
-      <div className="adm-cards">
-        <div className="adm-card"><div className="k">Status</div><div className="v"><Pill tone={campaign.status === "active" ? "ok" : campaign.status === "paused" ? "warn" : campaign.status === "done" ? "mut" : "info"}>{campaign.status}</Pill></div></div>
-        <div className="adm-card"><div className="k">Sender</div><div className="v" style={{ fontSize: 14 }}>{campaign.sender}</div></div>
-        <div className="adm-card"><div className="k">Stream</div><div className="v" style={{ fontSize: 14 }}>{campaign.stream}</div></div>
-        <div className="adm-card"><div className="k">Recipients</div><div className="v">{fmtN(totalRecipients)}</div><div className="d">{fmtN(suppressed.n)} suppressed</div></div>
-      </div>
-
+      <div className="row row-cards">
       <Section title="Change status" note="'active' se pehle batch start nahi ho sakta. 'paused' agla cron tick se sends turant rok deta hai.">
         <StatusControl campaignId={campaign.id} current={campaign.status} />
       </Section>
@@ -139,7 +147,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       <Section
         title="Journey — cold se registered tak"
         note="Har node par abhi kitne log khade hain. Yahi state rule engine agle tick par padhta hai."
-        actions={<><Link href={`/admin-campaigns/${id}/lead`} style={{ marginRight: 12, fontSize: 12 }}>Lead journey →</Link><LiveRefresh seconds={15} /></>}
+        actions={<LiveRefresh seconds={15} />}
       >
         <JourneyFlow c={journey} />
       </Section>
@@ -200,22 +208,24 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       </Section>
 
       <Section title="Batches" note="Har batch ek baar start/schedule hota hai (typed confirmation), uske baad cron khud steps chalata hai.">
-        <div className="adm-cards">
-          {batches.length === 0 && <div className="adm-empty">abhi koi recipient import nahi hua</div>}
+        <div className="row g-3">
+          {batches.length === 0 && <div className="col-12 text-secondary">abhi koi recipient import nahi hua</div>}
           {batches.map((b) => {
             const run = runsByBatch.get(b.batch);
             const scheduled = run && new Date(run.started_at) > new Date();
             return (
-              <div key={b.batch} className="adm-card" style={{ minWidth: 260 }}>
-                <div className="k">Batch {b.batch}</div>
-                <div className="v" style={{ fontSize: 15 }}>{fmtN(b.n)} recipients</div>
+              <div key={b.batch} className="col-12 col-md-6 col-xl-4">
+                <div className="card card-sm h-100"><div className="card-body">
+                <div className="subheader">Batch {b.batch}</div>
+                <div className="h3 mb-0 mt-1 jf-num">{fmtN(b.n)} recipients</div>
                 {run ? (
-                  <div className="d">{scheduled ? "scheduled for" : "started"} {fmtDT(run.started_at)} by {run.started_by}</div>
+                  <div className="text-secondary mt-1" style={{ fontSize: 12 }}>{scheduled ? "scheduled for" : "started"} {fmtDT(run.started_at)} by {run.started_by}</div>
                 ) : (
                   <div style={{ marginTop: 8 }}>
                     <StartBatchForm campaignId={campaign.id} batch={b.batch} recipientCount={Number(b.n)} />
                   </div>
                 )}
+                </div></div>
               </div>
             );
           })}
@@ -223,18 +233,21 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       </Section>
 
       <Section title="Recipient status" note={`registered = Mantis par signup ho gaya · opened = SNS event pipeline pe depend karta hai · pehle ${RECIPIENT_SAMPLE_LIMIT} recipients (import order)`}>
-        <div className="adm-cards">
-          <div className="adm-card"><div className="k">Not seen</div><div className="v">{fmtN(sc.not_seen)}</div></div>
-          <div className="adm-card"><div className="k">Sent</div><div className="v">{fmtN(sc.sent)}</div></div>
-          <div className="adm-card"><div className="k">Opened</div><div className="v">{fmtN(sc.opened)}</div></div>
-          <div className="adm-card"><div className="k">Registered</div><div className="v">{fmtN(sc.registered)}</div></div>
+        <div className="datagrid mb-3">
+          <div className="datagrid-item"><div className="datagrid-title">Not seen</div><div className="datagrid-content jf-num">{fmtN(sc.not_seen)}</div></div>
+          <div className="datagrid-item"><div className="datagrid-title">Sent</div><div className="datagrid-content jf-num">{fmtN(sc.sent)}</div></div>
+          <div className="datagrid-item"><div className="datagrid-title">Opened</div><div className="datagrid-content jf-num">{fmtN(sc.opened)}</div></div>
+          <div className="datagrid-item"><div className="datagrid-title">Registered</div><div className="datagrid-content jf-num">{fmtN(sc.registered)}</div></div>
         </div>
         <Table
           head={["Email", "Batch", "Status"]}
-          rows={recipientSample.map((r) => [r.email, r.batch, <span key="p" className={`status-pill ${r.status}`}>{r.status.replace("_", " ")}</span>])}
+          rows={recipientSample.map((r) => [r.email, r.batch, <Pill key="p" tone={r.status === "registered" ? "ok" : r.status === "opened" ? "warn" : r.status === "sent" ? "info" : "mut"}>{r.status.replace("_", " ")}</Pill>])}
           empty="abhi koi recipient nahi"
         />
       </Section>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
