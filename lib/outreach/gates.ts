@@ -32,9 +32,11 @@ export const LIMITS = {
   complaintWarn: 0.0005,
   /** Stop. AWS reviews at 0.001 and pauses at 0.005. */
   complaintStop: 0.001,
-  /** Never consume the whole quota — transactional mail (sign-in codes) shares this account. */
-  quotaUtilisation: 0.7,
-  /** Reserved headroom for transactional mail, subtracted before any campaign capacity. */
+  /** Share of the daily quota outreach may use. The rest is not spare: sign-in codes, password
+   *  resets and lifecycle mail share this account, and a prospecting campaign that eats the whole
+   *  quota locks real customers out of their own logins. */
+  quotaUtilisation: 0.9,
+  /** Hard floor kept back for transactional mail on top of the utilisation cap. */
   transactionalReserve: 2000,
   /** Our own bounce rate, over our own send history, excluding validation suppressions. */
   selfBounceStop: 0.04,

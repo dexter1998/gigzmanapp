@@ -29,17 +29,26 @@ import { planCampaign, recordTouch, stallRecipients } from "@/lib/outreach/plann
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** ~104s of sending at the interval below, comfortably inside maxDuration. */
-const CHUNK_LIMIT = 800;
-/** ~7.7/sec, under the account's confirmed 14/sec cap. Pacing is not politeness: Microsoft's
- *  554 5.7.7 policy block triggers on burst PATTERN rather than daily volume. */
-const SEND_INTERVAL_MS = 130;
+/** ~204s of sending at the interval below, inside maxDuration with room for the gate queries. */
+const CHUNK_LIMIT = 2400;
+/** ~11.8/sec, under the account's confirmed 14/sec cap with headroom for transactional mail
+ *  sharing the same rate limit. Pacing is not politeness: Microsoft's 554 5.7.7 policy block
+ *  triggers on burst PATTERN rather than daily volume. */
+const SEND_INTERVAL_MS = 85;
 
 /** First tranche of a tick, held back so a bad batch reveals itself on a small sample.
  *  The account-wide bounce rate is a trailing average — by the time it moves, a full batch has
  *  already gone. A canary is the only thing that catches a bad list inside a single tick. */
 const CANARY_SIZE = 50;
 const CANARY_BOUNCE_LIMIT = 0.02;
+
+type CampaignRow = {
+  id: string;
+  cooldown_days: number;
+  daily_target: number | null;
+  send_window_start_hour: number;
+  send_window_end_hour: number;
+};
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -55,6 +64,8 @@ export async function GET(req: NextRequest) {
 
   const dryRun = req.nextUrl.searchParams.get("dry") === "1";
   const onlyCampaign = req.nextUrl.searchParams.get("campaign");
+  /** Ignores the send window. For a deliberate operator-triggered run, not for the schedule. */
+  const force = req.nextUrl.searchParams.get("force") === "1";
   const startedAt = new Date();
 
   // 1 + 2 — bring state up to date before anything is decided on it.
@@ -62,7 +73,7 @@ export async function GET(req: NextRequest) {
   const converted = await syncConversions();
 
   const campaignRows = await sql`
-    SELECT id, cooldown_days FROM campaigns
+    SELECT id, cooldown_days, daily_target, send_window_start_hour, send_window_end_hour FROM campaigns
     WHERE status = 'active' AND config_set_unverified IS NOT NULL
       ${onlyCampaign ? sql`AND id = ${onlyCampaign}` : sql``}
     ORDER BY created_at ASC
@@ -71,8 +82,23 @@ export async function GET(req: NextRequest) {
   const perCampaign: Record<string, unknown>[] = [];
   let totalSent = 0, totalFailed = 0;
 
-  for (const row of campaignRows as unknown as { id: string; cooldown_days: number }[]) {
+  for (const row of campaignRows as unknown as CampaignRow[]) {
     const campaignId = row.id;
+
+    // Pacing. A tick that empties its whole allowance in one burst is the worst possible shape
+    // for deliverability: Microsoft's 554 5.7.7 policy block triggers on burst PATTERN rather
+    // than daily volume. The day's budget is spread evenly across the window instead.
+    //
+    // Deliberately remaining/hoursLeft rather than a fixed per-hour constant: if a tick is
+    // skipped (gate trip, deploy, window edge), the rest of the day absorbs the shortfall
+    // instead of silently losing it, and a day can never overshoot its budget either.
+    const istHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", hour12: false }).format(new Date()));
+    const inWindow = istHour >= row.send_window_start_hour && istHour < row.send_window_end_hour;
+    if (!inWindow && !force) {
+      perCampaign.push({ campaignId, skipped: `outside send window (IST ${istHour}:00, window ${row.send_window_start_hour}-${row.send_window_end_hour})` });
+      continue;
+    }
+    const hoursLeft = Math.max(1, row.send_window_end_hour - istHour);
 
     // 3 — gates. Checked per campaign, because a campaign's own list quality can be bad while the
     // account is still healthy, and that is precisely the case worth catching early.
@@ -91,12 +117,33 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    const capacity = Math.min(CHUNK_LIMIT, Math.floor(gate.metrics.quotaHeadroom * gate.capacityFactor));
+    // Today's remaining allowance, divided by the hours left in the window. Sent-so-far comes
+    // from outreach_runs rather than a counter, so a restart or a second manual run cannot double
+    // the day's volume.
+    const todayRows = await sql`
+      SELECT coalesce(sum(sent), 0)::int AS sent_today FROM outreach_runs
+      WHERE campaign_id = ${campaignId}
+        AND started_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    `;
+    const sentToday = (todayRows[0] as { sent_today: number }).sent_today;
+    // No warm-up ramp: this account is already an established sender, with 35,000-55,513
+    // delivered per day as recently as 2026-09-28. Ramping an account that has already proved
+    // the volume just leaves quota unused. The gates above are the safety net instead, and they
+    // are the ones that matter: a rate check catches a bad list on the day, where a volume ramp
+    // only ever delays it.
+    const dailyBudget = Math.min(
+      row.daily_target ?? Number.MAX_SAFE_INTEGER,
+      Math.floor(gate.metrics.quotaHeadroom * gate.capacityFactor)
+    );
+    const remainingToday = Math.max(0, dailyBudget - sentToday);
+    const perTick = Math.ceil(remainingToday / hoursLeft);
+    const capacity = Math.min(CHUNK_LIMIT, perTick);
     const plan = await planCampaign(campaignId, capacity);
 
     await sql`
       UPDATE outreach_runs
-      SET capacity = ${capacity}, planned_new = ${plan.counts.plannedNew}, planned_followup = ${plan.counts.plannedFollowups}
+      SET capacity = ${capacity}, planned_new = ${plan.counts.plannedNew}, planned_followup = ${plan.counts.plannedFollowups},
+          notes = notes || ${JSON.stringify({ istHour, hoursLeft, sentToday, dailyBudget, perTick })}::jsonb
       WHERE id = ${runId}
     `;
 

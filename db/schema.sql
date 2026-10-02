@@ -1028,3 +1028,6 @@ CREATE INDEX IF NOT EXISTS idx_outreach_runs_time ON outreach_runs(started_at DE
 ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS touch_no INT;
 ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS config_set TEXT;
 ALTER TABLE campaign_steps ADD COLUMN IF NOT EXISTS gap_minutes INT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_start_hour INT NOT NULL DEFAULT 9;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_end_hour INT NOT NULL DEFAULT 18;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS daily_target INT;

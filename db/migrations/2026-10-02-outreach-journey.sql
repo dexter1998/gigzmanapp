@@ -166,3 +166,12 @@ ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS config_set TEXT;
 ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS source TEXT;
 ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS category TEXT;
 CREATE INDEX IF NOT EXISTS idx_campaign_recipients_source ON campaign_recipients(campaign_id, source);
+
+-- 2026-10-02 (later still): hourly pacing window.
+-- A daily cron sending its whole allowance in one 104-second burst is the worst possible shape:
+-- Microsoft's 554 5.7.7 policy block triggers on burst PATTERN rather than daily volume, so the
+-- same number of mails spread across the day is materially safer than the same number at once.
+-- Hours are IST; sending inside the recipient's working day also just replies better.
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_start_hour INT NOT NULL DEFAULT 9;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_end_hour INT NOT NULL DEFAULT 18;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS daily_target INT;

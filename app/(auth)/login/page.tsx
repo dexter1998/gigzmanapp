@@ -8,6 +8,11 @@ import { AuthCarousel } from "@/components/auth/Carousel";
 type Tab = "signin" | "signup";
 
 export default function LoginPage() {
+  // Cold outreach links land here, and the recipient by definition has no account yet — opening
+  // on the sign-in form asks them to recall a password they never set, which is where a click
+  // turns into a bounce off the page. ?tab=signup lets the mail say which form it meant.
+  // Read in an effect rather than during render: this is a client component that still
+  // server-renders, and window is not available on that pass.
   const [tab, setTab] = useState<Tab>("signin");
   const isSignup = tab === "signup";
 
@@ -15,7 +20,9 @@ export default function LoginPage() {
   // dashboard they want. That answer has to survive an OAuth round trip, which drops query params,
   // so it is parked in a short-lived cookie that the onboarding flow reads back.
   useEffect(() => {
-    const mode = new URLSearchParams(window.location.search).get("mode");
+    const qs = new URLSearchParams(window.location.search);
+    if (qs.get("tab") === "signup") setTab("signup");
+    const mode = qs.get("mode");
     if (mode === "jobs" || mode === "leads") {
       document.cookie = `mantis_mode=${mode}; path=/; max-age=1800; samesite=lax`;
     }
