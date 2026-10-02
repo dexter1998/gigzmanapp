@@ -3,8 +3,11 @@ import {
   GetSendStatisticsCommand,
   GetAccountSendingEnabledCommand,
 } from "@aws-sdk/client-ses";
+import { CloudWatchClient, GetMetricStatisticsCommand } from "@aws-sdk/client-cloudwatch";
 import { ses } from "@/lib/ses";
 import { sql } from "@/lib/db";
+
+const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION ?? "ap-south-1" });
 
 /**
  * Pre-send safety gates. Every one of these runs before a tick sends anything, in code, with no
@@ -18,20 +21,38 @@ import { sql } from "@/lib/db";
  * pauses it; a complaint rate over 0.1% triggers review and over 0.5% pauses. Our limits sit well
  * below all four on purpose — by the time AWS acts, recovery is a support case, not a code change.
  *
- * Deliberately built on @aws-sdk/client-ses, which the app already depends on, rather than
- * CloudWatch. GetSendStatistics returns 15-minute buckets for the last two weeks, which is a
- * fresher and more granular read than the Reputation.* metrics, and it avoids adding a dependency
- * (and an IAM permission) to a deploy whose whole job is to be boring.
+ * STOPPING is decided on Reputation.BounceRate and Reputation.ComplaintRate — the metrics AWS
+ * itself reviews and suspends on. An earlier version computed its own ratio from
+ * GetSendStatistics over 24h and halted the campaign four separate times on days AWS had no
+ * objection to: measured 2026-10-02, that ratio read 3.49% and 44.83% at moments when the real
+ * figure was 1.046%. A short window has too few sends to average over, so one bad address, or a
+ * handful of deliberate test bounces, reads as a catastrophe.
+ *
+ * The ratio is still read, but only to throttle. A gate that stops sending is answering "will
+ * AWS act", and only AWS's own number answers that.
+ *
+ * Alongside the rates there is an absolute budget: a percentage of the day's quota, in bounces.
+ * A rate says nothing early in a day — two bounces out of ten is 20% — whereas "47 of a 2,577
+ * bounce budget used" is meaningful from the first send.
  */
 
 export const LIMITS = {
-  /** Warn: halve the day's capacity. */
+  /** Warn: halve the day's capacity. Read from the 24h ratio, which runs hot at low volume. */
   bounceWarn: 0.02,
-  /** Stop. AWS reviews at 0.05 and pauses at 0.10. */
-  bounceStop: 0.03,
+  /** Stop, on AWS's own Reputation.BounceRate. AWS reviews at 0.05 and pauses at 0.10. */
+  reputationBounceStop: 0.04,
+  /** Stop, on AWS's own Reputation.ComplaintRate. AWS reviews at 0.001 and pauses at 0.005. */
+  reputationComplaintStop: 0.0008,
+  /**
+   * The day's bounce allowance, as a share of the daily sending quota.
+   *
+   * Absolute rather than a ratio, because a ratio is meaningless until the denominator is large
+   * and most dangerous exactly when it is small. At an 85,900 quota this is 2,577 bounces — the
+   * number that would put the account at 3% if the whole quota were used, comfortably under AWS's
+   * 5% review line, and it reads the same at send 10 as at send 10,000.
+   */
+  dailyBouncePct: 0.03,
   complaintWarn: 0.0005,
-  /** Stop. AWS reviews at 0.001 and pauses at 0.005. */
-  complaintStop: 0.001,
   /** Share of the daily quota outreach may use. The rest is not spare: sign-in codes, password
    *  resets and lifecycle mail share this account, and a prospecting campaign that eats the whole
    *  quota locks real customers out of their own logins. */
@@ -85,8 +106,62 @@ export type GateVerdict = {
     complaintRate: number | null;
     selfBounceRate: number | null;
     selfSample: number;
+    /** AWS's own figures — the ones reviews and suspensions key off. */
+    reputationBounceRate: number | null;
+    reputationComplaintRate: number | null;
+    bounceBudget: number;
+    bouncesToday: number;
   };
 };
+
+/**
+ * AWS's own reputation figures, the ones it reviews and suspends on.
+ *
+ * Averaged over a rolling window far longer than a day, which is exactly why they are the right
+ * basis for stopping: they do not lurch on a quiet morning or a test batch. Returns null on
+ * failure, and the caller refuses to raise capacity on a metric it could not read rather than
+ * assuming the best.
+ */
+async function reputationRates(): Promise<{ bounce: number | null; complaint: number | null }> {
+  const now = new Date();
+  const read = async (metric: string): Promise<number | null> => {
+    try {
+      const out = await cloudwatch.send(new GetMetricStatisticsCommand({
+        Namespace: "AWS/SES",
+        MetricName: metric,
+        StartTime: new Date(now.getTime() - 6 * 60 * 60 * 1000),
+        EndTime: now,
+        Period: 3600,
+        Statistics: ["Maximum"],
+      }));
+      const points = (out.Datapoints ?? []).sort(
+        (a, b) => (a.Timestamp?.getTime() ?? 0) - (b.Timestamp?.getTime() ?? 0)
+      );
+      return points.length ? points[points.length - 1].Maximum ?? null : null;
+    } catch {
+      return null;
+    }
+  };
+  const [bounce, complaint] = await Promise.all([
+    read("Reputation.BounceRate"),
+    read("Reputation.ComplaintRate"),
+  ]);
+  return { bounce, complaint };
+}
+
+/** Real hard bounces this campaign has produced today — the budget's consumption. */
+async function bouncesToday(campaignId: string): Promise<number> {
+  const rows = await sql`
+    SELECT count(DISTINCT es.recipient)::int AS n
+    FROM email_sends es
+    JOIN campaign_recipients cr ON cr.email = es.recipient AND cr.campaign_id = es.campaign_id
+    WHERE es.campaign_id = ${campaignId}
+      AND es.ses_message_id IS NOT NULL
+      AND es.sent_at >= date_trunc('day', now())
+      AND cr.bounce_kind = 'hard_mta'
+  `;
+  return (rows[0] as { n: number }).n;
+}
 
 /**
  * Recent account-wide bounce/complaint rates from SES's own statistics.
@@ -154,11 +229,13 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     ok: false, blockedBy, reason, capacityFactor: 0, metrics: m,
   });
 
-  const [quota, sendingEnabledRes, rates, self] = await Promise.all([
+  const [quota, sendingEnabledRes, rates, self, rep, todaysBounces] = await Promise.all([
     ses.send(new GetSendQuotaCommand({})),
     ses.send(new GetAccountSendingEnabledCommand({})).catch(() => ({ Enabled: true })),
     recentRates(),
     selfBounceRate(campaignId),
+    reputationRates(),
+    bouncesToday(campaignId),
   ]);
 
   const max24Hour = quota.Max24HourSend ?? 0;
@@ -176,6 +253,10 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     complaintRate: rates.complaintRate,
     selfBounceRate: self.rate,
     selfSample: self.sample,
+    reputationBounceRate: rep.bounce,
+    reputationComplaintRate: rep.complaint,
+    bounceBudget: Math.floor(max24Hour * LIMITS.dailyBouncePct),
+    bouncesToday: todaysBounces,
   };
 
   // Gate 1 — account enforcement. Not a rate limit: it does not clear on its own, and every send
@@ -184,15 +265,25 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     return blocked("account_paused", "SES account sending is disabled — resolve with AWS before retrying", metrics);
   }
 
-  // Gate 2 — account complaint rate. Checked before bounce because its budget is ~50x tighter:
-  // 0.1% is one complaint per thousand sends.
-  if (rates.complaintRate !== null && rates.complaintRate >= LIMITS.complaintStop) {
-    return blocked("complaint_rate", `complaint rate ${(rates.complaintRate * 100).toFixed(3)}% >= ${(LIMITS.complaintStop * 100).toFixed(3)}%`, metrics);
+  // Gate 2 — AWS's own complaint rate. Checked before bounce because its budget is ~50x tighter:
+  // 0.1% is one complaint per thousand sends, and a complaint cannot be taken back.
+  if (rep.complaint !== null && rep.complaint >= LIMITS.reputationComplaintStop) {
+    return blocked("complaint_rate",
+      `AWS Reputation.ComplaintRate ${(rep.complaint * 100).toFixed(4)}% >= ${(LIMITS.reputationComplaintStop * 100).toFixed(4)}%`, metrics);
   }
 
-  // Gate 3 — account bounce rate.
-  if (rates.bounceRate !== null && rates.bounceRate >= LIMITS.bounceStop) {
-    return blocked("bounce_rate", `bounce rate ${(rates.bounceRate * 100).toFixed(2)}% >= ${(LIMITS.bounceStop * 100).toFixed(2)}%`, metrics);
+  // Gate 3 — AWS's own bounce rate. This is the number that gets accounts reviewed and suspended,
+  // so it is the one worth stopping on. The 24h ratio read below only throttles.
+  if (rep.bounce !== null && rep.bounce >= LIMITS.reputationBounceStop) {
+    return blocked("bounce_rate",
+      `AWS Reputation.BounceRate ${(rep.bounce * 100).toFixed(3)}% >= ${(LIMITS.reputationBounceStop * 100).toFixed(3)}%`, metrics);
+  }
+
+  // Gate 3b — the day's bounce allowance, in whole bounces rather than a ratio. Meaningful from
+  // the first send of the day, where a percentage is not.
+  if (metrics.bounceBudget > 0 && todaysBounces >= metrics.bounceBudget) {
+    return blocked("bounce_budget",
+      `${todaysBounces} hard bounces today, budget is ${metrics.bounceBudget} (${(LIMITS.dailyBouncePct * 100).toFixed(0)}% of a ${max24Hour.toLocaleString("en-IN")} quota)`, metrics);
   }
 
   // Gate 4 — this campaign's own record, as a hard stop only when it is unambiguously bad.
