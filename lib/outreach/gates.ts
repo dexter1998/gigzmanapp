@@ -38,8 +38,22 @@ export const LIMITS = {
   quotaUtilisation: 0.9,
   /** Hard floor kept back for transactional mail on top of the utilisation cap. */
   transactionalReserve: 2000,
-  /** Our own bounce rate, over our own send history, excluding validation suppressions. */
-  selfBounceStop: 0.04,
+  /**
+   * Our own bounce rate, over our own sends, excluding validation suppressions.
+   *
+   * Two levels, because one was wrong in both directions. A campaign-local rate is an early
+   * warning, not the number AWS enforces on: measured 2026-10-02, this campaign sat at 4.30%
+   * while AWS's own Reputation.BounceRate never moved off 1.046%, because a few thousand sends
+   * barely register against the account's rolling denominator. Stopping there halts a campaign
+   * nobody is complaining about.
+   *
+   * It cannot be ignored either, because the account metric LAGS — on 2026-09-20 the real rate
+   * reached 45.7% and nothing noticed until AWS suspended the account. So the local number
+   * throttles early and stops only when it is unambiguously bad; the account-level gates stay
+   * the hard line.
+   */
+  selfBounceWarn: 0.04,
+  selfBounceStop: 0.1,
   selfBounceMinSample: 200,
   /**
    * Attempts needed in the 24h window before the account rate is allowed to block anything.
@@ -181,8 +195,10 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
     return blocked("bounce_rate", `bounce rate ${(rates.bounceRate * 100).toFixed(2)}% >= ${(LIMITS.bounceStop * 100).toFixed(2)}%`, metrics);
   }
 
-  // Gate 4 — this campaign's own record. Catches a bad list before it moves the account-wide
-  // number, which is a trailing average over everything the account sends.
+  // Gate 4 — this campaign's own record, as a hard stop only when it is unambiguously bad.
+  // Catches a bad list long before it moves the account-wide number, which is a trailing average
+  // over everything the account sends and so the last thing to react. The warn band below throttles
+  // well before this point.
   if (self.rate !== null && self.rate >= LIMITS.selfBounceStop) {
     return blocked("self_bounce_rate", `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends`, metrics);
   }
@@ -197,7 +213,12 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
   // smaller batch limits how much new damage one tick can do while the cause is investigated.
   let capacityFactor = 1;
   let reason: string | null = null;
-  if (rates.complaintRate !== null && rates.complaintRate >= LIMITS.complaintWarn) {
+  if (self.rate !== null && self.rate >= LIMITS.selfBounceWarn) {
+    // Send less rather than stop. The list is worse than it should be, but AWS is not objecting,
+    // and a smaller batch limits how much new damage one tick can do while that remains true.
+    capacityFactor = 0.5;
+    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends — capacity halved`;
+  } else if (rates.complaintRate !== null && rates.complaintRate >= LIMITS.complaintWarn) {
     capacityFactor = 0.5;
     reason = `complaint rate ${(rates.complaintRate * 100).toFixed(3)}% in warn band — capacity halved`;
   } else if (rates.bounceRate !== null && rates.bounceRate >= LIMITS.bounceWarn) {
