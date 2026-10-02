@@ -68,6 +68,25 @@ export async function GET(req: NextRequest) {
   const force = req.nextUrl.searchParams.get("force") === "1";
   const startedAt = new Date();
 
+  // Only one dispatcher run at a time, ever.
+  //
+  // EventBridge API destinations give up waiting well before this route finishes (runs take
+  // 7-17s) and treat that as a failure, so without an explicit retry policy a single scheduled
+  // tick became six overlapping runs in seven minutes — two of them 23ms apart. No duplicate mail
+  // went out, because sendBulkEmail claims (recipient, campaign, step) on a unique index first,
+  // but each run took its own slice of the day's budget and the hourly pacing stopped meaning
+  // anything: a third of the daily allowance left in the first seven minutes.
+  //
+  // A Postgres advisory lock rather than a row or a flag: it is held by the connection and
+  // released automatically if the process dies, so a crashed run cannot wedge the schedule shut.
+  const LOCK_KEY = 4_217_900_301;
+  const lockRows = await sql`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS got`;
+  if (!(lockRows[0] as { got: boolean }).got) {
+    return NextResponse.json({ skipped: "another dispatcher run is already in progress" });
+  }
+
+  try {
+
   // 1 + 2 — bring state up to date before anything is decided on it.
   const events = await reduceOutreachEvents();
   const converted = await syncConversions();
@@ -233,4 +252,8 @@ export async function GET(req: NextRequest) {
 
   await recordCronRun("outreach", startedAt, true, { events, converted, sent: totalSent, failed: totalFailed });
   return NextResponse.json({ dryRun, events, converted, campaigns: perCampaign, sent: totalSent, failed: totalFailed });
+
+  } finally {
+    await sql`SELECT pg_advisory_unlock(${LOCK_KEY})`;
+  }
 }
