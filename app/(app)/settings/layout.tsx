@@ -40,15 +40,14 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
         style={{
           width: 232,
           flexShrink: 0,
-          borderRight: "1px solid var(--g-border)",
-          background: "var(--g-white)",
-          padding: "24px 14px",
+          background: "var(--surface)",
+          padding: "20px 12px",
           position: "sticky",
           top: 0,
           height: "100vh",
           overflowY: "auto",
         }}
-        className="settings-rail"
+        className="settings-rail rule-r"
       >
         <button
           type="button"
@@ -74,7 +73,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
           Go Back
         </button>
 
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 600, color: "var(--g-ink)", margin: "0 8px 22px" }}>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: "0 8px 20px" }}>
           Settings
         </h2>
 
@@ -83,11 +82,11 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
             <div
               style={{
                 fontSize: 10.5,
-                fontWeight: 700,
-                letterSpacing: "0.09em",
+                fontWeight: 600,
+                letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: "var(--g-gray-500)",
-                padding: "0 8px 8px",
+                color: "var(--ink-faint)",
+                padding: "0 10px 6px",
               }}
             >
               {group.title}
@@ -96,22 +95,20 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
               {group.items.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 const Icon = item.icon;
-                const color = active ? "var(--g-green-text)" : "var(--g-ink-soft)";
+                const color = active ? "var(--ink)" : "var(--ink-muted)";
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    className="nav-row"
+                    data-on={active ? "true" : "false"}
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
-                      padding: "9px 10px",
-                      borderRadius: "var(--radius-sm)",
+                      padding: "8px 10px",
                       textDecoration: "none",
                       fontSize: 13.5,
-                      fontWeight: active ? 700 : 600,
-                      color,
-                      background: active ? "var(--g-green-mint)" : "transparent",
                     }}
                   >
                     <Icon color={color} />

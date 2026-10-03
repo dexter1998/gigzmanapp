@@ -116,7 +116,7 @@ export default function ApplicationsPage() {
   return (
     <div style={{ padding: "28px 24px 80px", maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: 0 }}>
           Applications
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -124,7 +124,7 @@ export default function ApplicationsPage() {
           <CreditsIndicator />
         </div>
       </div>
-      <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
+      <p className="rule-b" style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 18px", paddingBottom: 14 }}>
         Roles you have saved or applied to. <Link href="/jobs/map" style={{ color: "var(--g-green-text)" }}>Find more on the map →</Link>
       </p>
 
@@ -134,7 +134,7 @@ export default function ApplicationsPage() {
           style={{
             display: "block", marginBottom: 18, padding: "12px 14px", borderRadius: "var(--radius-md)",
             background: "var(--g-green-mint)", color: "var(--g-green-text)", textDecoration: "none",
-            fontSize: 13, fontWeight: 700,
+            fontSize: 13, fontWeight: 600,
           }}
         >
           Finish your application profile — it fills in every application you send from here →
@@ -148,10 +148,11 @@ export default function ApplicationsPage() {
             type="button"
             onClick={() => setStatusFilter(t.key)}
             style={{
-              padding: "6px 14px", borderRadius: "var(--radius-pill)", fontSize: 12.5, fontWeight: 700,
-              cursor: "pointer", border: "1px solid var(--g-border)",
-              background: statusFilter === t.key ? "var(--g-green-mint)" : "var(--g-white)",
-              color: statusFilter === t.key ? "var(--g-green-text)" : "var(--g-ink)",
+              padding: "6px 14px", borderRadius: "var(--radius-pill)", fontSize: 12.5, fontWeight: 600,
+              cursor: "pointer",
+              border: `1px solid ${statusFilter === t.key ? "var(--accent)" : "var(--g-border)"}`,
+              background: statusFilter === t.key ? "var(--accent)" : "var(--g-white)",
+              color: statusFilter === t.key ? "var(--accent-ink)" : "var(--ink-muted)",
             }}
           >
             {t.label}
@@ -164,7 +165,7 @@ export default function ApplicationsPage() {
         <Muted>Nothing here yet. Save a role from the jobs map and it will show up here.</Muted>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="stagger" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {applications.map((app) => {
           const ctc = formatCtc(app.job.ctcMinInr, app.job.ctcMaxInr);
           return (
@@ -197,7 +198,7 @@ export default function ApplicationsPage() {
                 }
                 style={{ flex: "1 1 220px", minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit" }}
               >
-                <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--g-ink)" }}>{app.job.title}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)" }}>{app.job.title}</div>
                 <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
                   {app.company.name}
                   {app.job.location ? ` · ${app.job.location}` : ""}
@@ -206,7 +207,7 @@ export default function ApplicationsPage() {
                   {ctc ? ` · ${ctc}` : ""}
                 </div>
                 {!app.job.isOpen && (
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#a15c00", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#a15c00", marginTop: 4 }}>
                     This role has since closed
                   </div>
                 )}
@@ -234,7 +235,7 @@ export default function ApplicationsPage() {
                 disabled={app.status === "applied"}
                 style={{
                   padding: "9px 16px", borderRadius: "var(--radius-sm)", border: "none",
-                  fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap",
+                  fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
                   cursor: app.status === "applied" ? "default" : "pointer",
                   background: app.status === "applied" ? "var(--g-green-mint)" : "var(--g-green-darker)",
                   color: app.status === "applied" ? "var(--g-green-text)" : "#fff",
@@ -253,5 +254,9 @@ export default function ApplicationsPage() {
 }
 
 function Muted({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 13, color: "var(--g-gray-500)", padding: "30px 0" }}>{children}</p>;
+  return (
+    <p className="sunk" style={{ fontSize: 13, color: "var(--g-gray-500)", padding: "40px 20px", textAlign: "center", borderRadius: "var(--radius-md)", border: "1px solid var(--g-border)", margin: 0 }}>
+      {children}
+    </p>
+  );
 }

@@ -63,7 +63,7 @@ export default function JobsProfilePage() {
   return (
     <div style={{ padding: "28px 24px 100px", maxWidth: 720, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: 0 }}>
           Application profile
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -79,11 +79,11 @@ export default function JobsProfilePage() {
       {/* Completion meter */}
       <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 16, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--g-ink)" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>
             {complete ? "Profile complete — matches unlocked" : `${pct}% complete`}
           </span>
           {complete && (
-            <Link href="/jobs/map" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)" }}>
+            <Link href="/jobs/map" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)" }}>
               See your matches →
             </Link>
           )}
@@ -99,7 +99,7 @@ export default function JobsProfilePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {APPLICATION_SECTIONS.map((section) => (
             <div key={section.title} style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", padding: 20 }}>
-              <h2 style={{ fontSize: 14.5, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>{section.title}</h2>
+              <h2 style={{ fontSize: 14.5, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>{section.title}</h2>
               {section.note && (
                 <p style={{ fontSize: 12, color: "var(--g-gray-500)", margin: "0 0 14px", lineHeight: 1.5 }}>{section.note}</p>
               )}
@@ -123,7 +123,7 @@ export default function JobsProfilePage() {
               disabled={saving}
               style={{
                 padding: "12px 28px", borderRadius: "var(--radius-sm)", border: "none",
-                background: "var(--g-green-darker)", color: "#fff", fontSize: 13, fontWeight: 700,
+                background: "var(--g-green-darker)", color: "#fff", fontSize: 13, fontWeight: 600,
                 cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
               }}
             >
@@ -139,7 +139,7 @@ export default function JobsProfilePage() {
 
 function Field({ field, value, onChange }: { field: ApplicationField; value: string; onChange: (v: string) => void }) {
   const label = (
-    <label style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", marginBottom: 5 }}>
+    <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)", marginBottom: 5 }}>
       {field.label}
       {field.required && <span style={{ color: "var(--g-green-text)" }}> *</span>}
     </label>

@@ -42,7 +42,7 @@ export function PlansModal({
             <XIcon />
           </button>
 
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Add credits</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>Add credits</h2>
           <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 22px", maxWidth: 460 }}>
             Credits are spent only when Mantis does real work — adding a lead, or searching ground
             nobody has covered yet. Searching an area you&apos;ve already scanned is always free.
@@ -58,10 +58,10 @@ export function PlansModal({
           <CreditPackFootnote />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--g-border)" }}>
-            <Link href="/settings/billing" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "none" }}>
+            <Link href="/settings/billing" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none" }}>
               See what credits buy →
             </Link>
-            <Link href="/settings/usage" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink-soft)", textDecoration: "none" }}>
+            <Link href="/settings/usage" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink-soft)", textDecoration: "none" }}>
               Usage history
             </Link>
           </div>
@@ -79,7 +79,7 @@ export function PlansModal({
             }}
           >
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--g-ink)" }}>Partner with us</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--g-ink)" }}>Partner with us</div>
               <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2 }}>
                 Approved agency partners get higher limits, priority support and referral revenue.
               </div>
@@ -97,7 +97,7 @@ export function PlansModal({
                 background: "var(--g-green-dark)",
                 color: "#fff",
                 fontSize: 12,
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
                 flexShrink: 0,
                 fontFamily: "inherit",
@@ -131,7 +131,7 @@ const modalStyle: React.CSSProperties = {
   maxWidth: 880,
   background: "var(--g-white)",
   borderRadius: "var(--radius-lg)",
-  boxShadow: "var(--shadow-card)",
+  boxShadow: "var(--shadow-pop)",
   padding: 28,
   position: "relative",
   margin: "auto",

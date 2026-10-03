@@ -115,7 +115,7 @@ function JobSeekerDiscountBadge() {
   const [showNote, setShowNote] = useState(false);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", background: "var(--g-green-darker)", padding: "5px 12px", borderRadius: "var(--radius-pill)" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#fff", background: "var(--g-green-darker)", padding: "5px 12px", borderRadius: "var(--radius-pill)" }}>
         Up to {JOB_SEEKER_DISCOUNT_PCT}% off — job seekers only
       </span>
       <button
@@ -165,7 +165,7 @@ export function EnterpriseBand() {
       }}
     >
       <div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 6 }}>Enterprise — go custom</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--g-ink)", marginBottom: 6 }}>Enterprise — go custom</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 22px" }}>
           {["Volume discounts", "Invoicing & PO", "API access", "Dedicated support"].map((f) => (
             <span key={f} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--g-ink-soft)" }}>
@@ -182,7 +182,7 @@ export function EnterpriseBand() {
           background: "var(--g-ink)",
           color: "#fff",
           fontSize: 14,
-          fontWeight: 700,
+          fontWeight: 600,
           textDecoration: "none",
           whiteSpace: "nowrap",
         }}
@@ -238,7 +238,7 @@ function Card({
             top: -11,
             left: 22,
             fontSize: 10.5,
-            fontWeight: 700,
+            fontWeight: 600,
             padding: "4px 11px",
             borderRadius: "var(--radius-pill)",
             background: highlighted ? "var(--g-green-dark)" : "var(--g-ink)",
@@ -250,12 +250,12 @@ function Card({
         </span>
       )}
 
-      <div style={{ fontSize: 14, fontWeight: 800, color: highlighted ? "var(--g-green-text)" : "var(--g-ink)", marginBottom: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: highlighted ? "var(--g-green-text)" : "var(--g-ink)", marginBottom: 14 }}>
         {title}
       </div>
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <span style={{ fontSize: 30, fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+        <span style={{ fontSize: 30, fontWeight: 600, color: "var(--g-ink)", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
           {price}
         </span>
         {fullPrice && (
@@ -264,7 +264,7 @@ function Card({
       </div>
       <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 4, minHeight: 18 }}>{priceNote}</div>
 
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--g-ink)", margin: "18px 0 16px" }}>{headline}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--g-ink)", margin: "18px 0 16px" }}>{headline}</div>
 
       <div style={{ height: 1, background: highlighted ? "rgba(20,32,51,0.1)" : "var(--g-border)", marginBottom: 16 }} />
 
@@ -307,7 +307,7 @@ const btnStyle = (highlighted: boolean): React.CSSProperties => ({
   background: highlighted ? "var(--g-green-dark)" : "var(--g-white)",
   color: highlighted ? "#fff" : "var(--g-ink)",
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
 });
 
 /** Shown under the cards on every surface — the reassurance that stops "credits" reading as a

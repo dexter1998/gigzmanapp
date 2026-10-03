@@ -50,6 +50,7 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
   return (
     <>
       <aside
+        className="rule-r"
         style={{
           width: 240,
           flexShrink: 0,
@@ -58,12 +59,11 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
           top: 0,
           display: "flex",
           flexDirection: "column",
-          background: "var(--g-white)",
-          borderRight: "1px solid var(--g-border)",
-          padding: "20px 14px",
+          background: "var(--surface)",
+          padding: "16px 12px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", padding: "4px 8px 22px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "4px 6px 18px" }}>
           <Image src="/mantis-logo-wordmark.png" alt="mantis" width={130} height={31} style={{ objectFit: "contain", height: "auto" }} priority />
         </div>
 
@@ -77,22 +77,22 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
                 ? pathname === item.href
                 : pathname?.startsWith(item.href);
             const Icon = item.icon;
-            const color = active ? "var(--g-green-text)" : "var(--g-ink-soft)";
+            // The row's colours and its active marker now come from `.nav-row` in globals.css, so
+            // the icon just follows the text rather than carrying its own active palette.
+            const color = active ? "var(--ink)" : "var(--ink-muted)";
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                className="nav-row"
+                data-on={active ? "true" : "false"}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  padding: "9px 10px",
-                  borderRadius: "var(--radius-sm)",
+                  padding: "8px 10px",
                   textDecoration: "none",
                   fontSize: 13.5,
-                  fontWeight: 600,
-                  color,
-                  background: active ? "var(--g-green-mint)" : "transparent",
                 }}
               >
                 <Icon color={color} />
@@ -104,12 +104,12 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
 
         {/* Chat threads are a leads-mode surface — the chat planner only knows lead intents, so
             listing threads in jobs mode would offer a tool that cannot answer a jobs question. */}
-        <div style={{ marginTop: 22, display: isJobsMode ? "none" : undefined }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "0 10px 8px" }}>
+        <div style={{ marginTop: 20, display: isJobsMode ? "none" : undefined }}>
+          <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 10px 6px" }}>
             Your chats
           </div>
           {chats.length === 0 ? (
-            <div style={{ padding: "10px", fontSize: 12.5, color: "var(--g-gray-500)" }}>No chats yet</div>
+            <div style={{ padding: "8px 10px", fontSize: 12.5, color: "var(--ink-faint)" }}>No chats yet</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {chats.map((c) => {
@@ -118,15 +118,13 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
                   <Link
                     key={c.id}
                     href={`/chat/${c.id}`}
+                    className="nav-row"
+                    data-on={active ? "true" : "false"}
                     style={{
                       display: "block",
-                      padding: "8px 10px",
-                      borderRadius: "var(--radius-sm)",
+                      padding: "7px 10px",
                       textDecoration: "none",
                       fontSize: 12.5,
-                      fontWeight: 500,
-                      color: active ? "var(--g-green-text)" : "var(--g-ink-soft)",
-                      background: active ? "var(--g-green-mint)" : "transparent",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -142,41 +140,42 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
 
         <div style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 10, borderTop: "1px solid var(--g-border)" }}>
+        <div className="rule-t" style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>
           <a
             href="https://wa.me/"
             target="_blank"
             rel="noreferrer"
+            className="nav-row"
             style={sidebarUtilityLink}
           >
-            <WhatsAppIcon color="var(--g-ink-soft)" /> WhatsApp
+            <WhatsAppIcon color="var(--ink-muted)" /> WhatsApp
           </a>
-          <button type="button" onClick={() => setPartnerOpen(true)} style={{ ...sidebarUtilityLink, border: "none", background: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>
-            <PartnerIcon color="var(--g-ink-soft)" /> Partner with us
+          <button type="button" onClick={() => setPartnerOpen(true)} className="nav-row" style={{ ...sidebarUtilityLink, border: "none", background: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>
+            <PartnerIcon color="var(--ink-muted)" /> Partner with us
           </button>
-          <Link href="/profile" style={sidebarUtilityLink}>
-            <SettingsIcon color="var(--g-ink-soft)" /> Settings
+          <Link href="/profile" className="nav-row" style={sidebarUtilityLink}>
+            <SettingsIcon color="var(--ink-muted)" /> Settings
           </Link>
 
           <Link
             href="/profile"
+            className="nav-row"
             style={{
               display: "flex",
               alignItems: "center",
               gap: 10,
-              padding: "10px",
-              marginTop: 8,
-              borderRadius: "var(--radius-sm)",
+              padding: "8px 10px",
+              marginTop: 6,
               textDecoration: "none",
             }}
           >
             <div
               style={{
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 borderRadius: "50%",
-                background: "var(--g-green-mint)",
-                color: "var(--g-green-text)",
+                background: "var(--surface-sunk)",
+                color: "var(--ink-muted)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -188,10 +187,10 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
               {(name || email).charAt(0).toUpperCase()}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {name || email}
               </div>
-              <div style={{ fontSize: 11, color: "var(--g-gray-500)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
             </div>
           </Link>
         </div>
@@ -206,10 +205,7 @@ const sidebarUtilityLink: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  padding: "9px 10px",
-  borderRadius: "var(--radius-sm)",
+  padding: "8px 10px",
   textDecoration: "none",
   fontSize: 13,
-  fontWeight: 600,
-  color: "var(--g-ink-soft)",
 };

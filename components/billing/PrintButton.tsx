@@ -19,7 +19,7 @@ export function PrintButton() {
         background: "var(--g-ink)",
         color: "#fff",
         fontSize: 13.5,
-        fontWeight: 700,
+        fontWeight: 600,
         fontFamily: "inherit",
         cursor: "pointer",
       }}

@@ -960,7 +960,7 @@ export default function HomePage() {
               width: 340,
               background: "var(--g-white)",
               borderRadius: "var(--radius-lg)",
-              boxShadow: "var(--shadow-card)",
+              boxShadow: "var(--shadow-pop)",
               padding: 28,
               textAlign: "center",
             }}
@@ -997,7 +997,7 @@ export default function HomePage() {
                 background: "var(--g-green)",
                 color: "#fff",
                 fontSize: 14,
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
                 marginBottom: 12,
               }}
@@ -1037,11 +1037,11 @@ export default function HomePage() {
                 width: 240,
                 background: "var(--g-white)",
                 borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-card)",
+                boxShadow: "var(--shadow-pop)",
                 padding: 16,
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--g-gray-500)", letterSpacing: "0.04em", marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--g-gray-500)", letterSpacing: "0.04em", marginBottom: 12 }}>
                 MAP KEY
               </div>
               <MapKeyRow color="#fdba3f" title="No website" description="A business with no site yet. Tap it to build one." />
@@ -1067,7 +1067,7 @@ export default function HomePage() {
                 width: 240,
                 background: "var(--g-white)",
                 borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-card)",
+                boxShadow: "var(--shadow-pop)",
                 padding: "8px 0",
                 maxHeight: 420,
                 overflowY: "auto",
@@ -1133,7 +1133,7 @@ export default function HomePage() {
             width: 340,
             background: "var(--g-white)",
             borderRadius: "var(--radius-lg)",
-            boxShadow: "var(--shadow-card)",
+            boxShadow: "var(--shadow-pop)",
             padding: 20,
             // Above the toolbar rather than under it: the toolbar's container spans the full width
             // of the map, so anywhere the card reaches the top strip it would otherwise be painted
@@ -1189,8 +1189,8 @@ export default function HomePage() {
               />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 600, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
                 {formatCategory(selectedLead.category) ?? "Business"}
               </div>
               <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 3 }}>
@@ -1200,7 +1200,7 @@ export default function HomePage() {
           </div>
 
           {selectedLead.is_competitor && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 12.5, fontWeight: 700, color: "#dc2626" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 12.5, fontWeight: 600, color: "#dc2626" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
               Competitor — not a lead
             </div>
@@ -1212,7 +1212,7 @@ export default function HomePage() {
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16 }}>
                 <HeatGauge score={selectedLead.heat_score ?? 0} size={104} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)" }}>
                     <GlobeIcon color={selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)"} size={14} />
                     {selectedLead.has_website === false
                       ? "No website found"
@@ -1221,7 +1221,7 @@ export default function HomePage() {
                         : "Checking…"}
                   </div>
                   {selectedLead.rating !== null && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)", marginTop: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginTop: 8 }}>
                       <StarIcon />
                       {selectedLead.rating.toFixed(1)}
                       <span style={{ fontWeight: 500, color: "var(--g-gray-500)" }}>
@@ -1236,7 +1236,7 @@ export default function HomePage() {
                   review_count), no invented activity data. */}
               {topSignals(selectedLead).length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
                     Top Signals
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1245,7 +1245,7 @@ export default function HomePage() {
                         key={s.label}
                         style={{
                           fontSize: 11,
-                          fontWeight: 700,
+                          fontWeight: 600,
                           padding: "4px 10px",
                           borderRadius: "var(--radius-pill)",
                           background: SIGNAL_TONE_COLORS[s.tone].bg,
@@ -1263,7 +1263,7 @@ export default function HomePage() {
 
           {!selectedLead.is_competitor && selectedLead.is_unlocked && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)" }}>
                 <CheckIcon /> Added to your leads
               </div>
               <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--g-ink-soft)", lineHeight: 1.5 }}>
@@ -1292,7 +1292,7 @@ export default function HomePage() {
                 borderRadius: "var(--radius-pill)",
                 padding: "11px 0",
                 fontSize: 13.5,
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: addingLead ? "default" : "pointer",
                 opacity: addingLead ? 0.7 : 1,
               }}
@@ -1323,11 +1323,11 @@ export default function HomePage() {
             padding: "9px 18px",
             borderRadius: "var(--radius-pill)",
             fontSize: 12.5,
-            fontWeight: 700,
+            fontWeight: 600,
             display: "flex",
             alignItems: "center",
             gap: 8,
-            boxShadow: "var(--shadow-toolbar)",
+            boxShadow: "var(--shadow-pop)",
             zIndex: 25,
           }}
         >
@@ -1374,8 +1374,8 @@ export default function HomePage() {
             padding: "9px 18px",
             borderRadius: "var(--radius-pill)",
             fontSize: 12.5,
-            fontWeight: 700,
-            boxShadow: "var(--shadow-toolbar)",
+            fontWeight: 600,
+            boxShadow: "var(--shadow-pop)",
             zIndex: 25,
           }}
         >
@@ -1429,7 +1429,7 @@ export default function HomePage() {
                   fontWeight: 600,
                   color: "var(--g-ink)",
                   cursor: startingChat ? "default" : "pointer",
-                  boxShadow: "var(--shadow-toolbar)",
+                  boxShadow: "var(--shadow-pop)",
                   whiteSpace: "nowrap",
                   flexShrink: 0,
                 }}
@@ -1507,7 +1507,7 @@ function EnrichmentPanel({ leadId }: { leadId: string }) {
         style={{
           marginTop: 10,
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 600,
           color: "var(--g-green-text)",
           background: "none",
           border: "none",
@@ -1527,7 +1527,7 @@ function EnrichmentPanel({ leadId }: { leadId: string }) {
         <button
           type="button"
           onClick={start}
-          style={{ fontWeight: 700, color: "var(--g-green-text)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          style={{ fontWeight: 600, color: "var(--g-green-text)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
           Try again
         </button>
@@ -1541,7 +1541,7 @@ function EnrichmentPanel({ leadId }: { leadId: string }) {
     }
     return (
       <div style={{ marginTop: 10, fontSize: 12.5 }}>
-        <a href={enrichment.website_url} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)", fontWeight: 700 }}>
+        <a href={enrichment.website_url} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)", fontWeight: 600 }}>
           {enrichment.website_url}
         </a>
       </div>
@@ -1590,7 +1590,7 @@ function MapKeyRow({ color, title, description }: { color: string; title: string
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
       <div style={{ width: 12, height: 12, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>{title}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>{title}</div>
         <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", lineHeight: 1.4, marginTop: 1 }}>{description}</div>
       </div>
     </div>
@@ -1616,7 +1616,7 @@ function ToolbarButton({
         borderRadius: "var(--radius-sm)",
         border: "none",
         background: active ? "var(--g-green)" : "var(--g-white)",
-        boxShadow: "var(--shadow-toolbar)",
+        boxShadow: "var(--shadow-pop)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -1631,7 +1631,7 @@ function ToolbarButton({
 
 function FilterSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px 4px" }}>
+    <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px 4px" }}>
       {children}
     </div>
   );

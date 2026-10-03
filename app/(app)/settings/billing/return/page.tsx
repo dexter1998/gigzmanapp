@@ -127,7 +127,7 @@ const ring: React.CSSProperties = {
   margin: "0 auto 18px",
 };
 
-const heading: React.CSSProperties = { fontSize: 20, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" };
+const heading: React.CSSProperties = { fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" };
 const body: React.CSSProperties = { fontSize: 14, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 0 24px" };
 
 const primaryBtn: React.CSSProperties = {
@@ -137,6 +137,6 @@ const primaryBtn: React.CSSProperties = {
   background: "var(--g-green-dark)",
   color: "#fff",
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   textDecoration: "none",
 };

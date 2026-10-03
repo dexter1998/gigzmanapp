@@ -49,6 +49,148 @@
   --foreground: var(--g-ink);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════
+   DASHBOARD SURFACE TOKENS
+
+   The product surface (everything under app/(app)) is scoped to `.mantis-app` and re-points the
+   same --g-* names the dashboard's inline styles already use. The marketing site keeps the
+   original values above, so this changes the app without touching the landing page.
+
+   Three ideas carry the look, all borrowed from the Stickly dashboard:
+
+   1. An oklch ink/surface ramp instead of ad-hoc hex. oklch is perceptually even, so --ink ->
+      --ink-muted -> --ink-faint actually read as three evenly spaced weights; the hex greys above
+      do not, which is why secondary text used to look either too loud or too washed out depending
+      on the surface under it.
+   2. Structure from hairlines, not shadows. The old --shadow-card (0 4px 20px) was on every panel,
+      pill and card, so everything floated and nothing framed anything. Rules do the framing now
+      and the shadow is kept only for things genuinely above the page (map overlays, popovers).
+   3. A real sunk layer. There was no token between "page background" and "card", so active nav
+      items and empty states had to invent their own tint. --surface-sunk is that layer.
+   ═══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.mantis-app {
+  /* warm paper, not cold grey */
+  --canvas:       oklch(0.982 0.004 92);
+  --surface:      oklch(1 0 0);
+  --surface-sunk: oklch(0.962 0.005 92);
+  --ink:          oklch(0.20 0.012 68);
+  --ink-muted:    oklch(0.53 0.012 72);
+  --ink-faint:    oklch(0.68 0.010 76);
+  --rule:         oklch(0.905 0.005 85);
+  --rule-strong:  oklch(0.83 0.006 85);
+
+  /* The brand green stays — only its neutrals change. Mantis is not Stickly's violet, and the
+     green is the one thing in here that is actually ours. Restated in oklch so it sits on the
+     same ramp as everything else rather than clashing with it. */
+  --accent:       oklch(0.4810 0.1105 134.2);  /* #3f6420 */
+  --accent-ink:   oklch(0.99 0 0);
+  --accent-soft:  oklch(0.9640 0.0345 118.6);  /* #f4f8e9 */
+  --accent-text:  oklch(0.5390 0.1278 126.9);  /* #4c6b16 */
+
+  /* ── The existing --g-* names, re-pointed ──────────────────────────────────────────────────
+     Every inline style in app/(app) already references these, so re-pointing them here is what
+     moves the whole dashboard at once instead of a thousand hand edits. */
+  --g-cream:        var(--canvas);
+  --g-white:        var(--surface);
+  --g-ink:          var(--ink);
+  --g-ink-soft:     var(--ink-muted);
+  --g-gray-500:     var(--ink-muted);
+  --g-gray-300:     var(--rule-strong);
+  --g-gray-100:     var(--surface-sunk);
+  --g-border:       var(--rule);
+
+  --g-green-darker: var(--accent);
+  --g-green-mint:   var(--accent-soft);
+  --g-green-text:   var(--accent-text);
+
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+
+  /* Kept for the things that genuinely float. Everywhere else the rule utilities below replace it;
+     --shadow-card is deliberately near-invisible now so any panel still asking for it reads as a
+     framed card rather than a floating one, without needing to be found and edited first. */
+  --shadow-card:    0 1px 2px oklch(0.2 0.01 68 / 0.04);
+  --shadow-toolbar: 0 1px 2px oklch(0.2 0.01 68 / 0.05);
+  --shadow-pop:     0 1px 2px oklch(0.2 0.01 68 / 0.05),
+                    0 12px 32px -8px oklch(0.2 0.01 68 / 0.14);
+
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Hairline rules. This is the whole "structure from lines, not boxes" idea. */
+.mantis-app .rule-t { border-top: 1px solid var(--rule); }
+.mantis-app .rule-b { border-bottom: 1px solid var(--rule); }
+.mantis-app .rule-r { border-right: 1px solid var(--rule); }
+.mantis-app .rule-l { border-left: 1px solid var(--rule); }
+
+/* Every count, credit balance and score in this product is an amount. Amounts align. */
+.mantis-app .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* A panel: framed by its rule, sitting on the surface, no float. */
+.mantis-app .panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+}
+
+/* The layer between canvas and card — active nav rows, empty states, inset wells. */
+.mantis-app .sunk { background: var(--surface-sunk); }
+
+/* Nav row, with the 2px accent marker Stickly puts on the active item. A fill alone reads as a
+   hover state; the marker is what says "you are here". */
+.mantis-app .nav-row {
+  position: relative;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.mantis-app .nav-row:hover { background: color-mix(in oklab, var(--surface-sunk) 60%, transparent); color: var(--ink); }
+.mantis-app .nav-row[data-on="true"] { background: var(--surface-sunk); color: var(--ink); font-weight: 600; }
+.mantis-app .nav-row[data-on="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.mantis-app :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.mantis-app ::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* List entry motion — Stickly's `stagger`. Only on first paint of a list; anything that re-renders
+   on every pan (the map's own pins) deliberately does not use it. */
+.mantis-app .stagger > * { animation: mantis-rise 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.mantis-app .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.mantis-app .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.mantis-app .stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.mantis-app .stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.mantis-app .stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.mantis-app .stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.mantis-app .stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.mantis-app .stagger > *:nth-child(n+8) { animation-delay: 0.30s; }
+
+@keyframes mantis-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mantis-app .stagger > * { animation: none; }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -317,9 +459,17 @@ body {
 
 /* ---- app + pSEO pages on phones ------------------------------------------- */
 @media (max-width: 900px) {
-  /* Leads table above, detail panel below — a 340px fixed column leaves nothing for the table. */
-  .leads-split { grid-template-columns: 1fr !important; }
   .pseo-searchbar { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Leads table above, detail panel below — a 340px fixed column leaves nothing for the table.
+   This used to break at 900px, which was far too late: the split needs the table's own 640px
+   minimum, plus the 340px panel and the 20px gap (1000px of content area), plus the 240px app
+   sidebar — so it has to collapse at ~1240px. Below that and above 900px the table was being
+   squeezed under its min-width and scrolling horizontally, clipping the Score and Details columns
+   while business names got crushed to one word per line. */
+@media (max-width: 1240px) {
+  .leads-split { grid-template-columns: 1fr !important; }
 }
 
 /* Dashboard-mode badge (components/DashboardModeBadge.tsx). The dot pulses so a mode switch is

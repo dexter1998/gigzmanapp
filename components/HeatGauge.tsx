@@ -61,7 +61,7 @@ export function HeatGauge({ score, size = 120 }: { score: number; size?: number 
         style={{
           marginTop: Math.max(4, Math.round(size * 0.09)),
           fontSize,
-          fontWeight: 800,
+          fontWeight: 600,
           lineHeight: 1,
           color: "var(--g-ink, #1a1f2b)",
         }}

@@ -52,13 +52,13 @@ export function CreditsIndicator() {
           cursor: "pointer",
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--g-ink)" }}>
+        <span className="tnum" style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)" }}>
           {profile.credits.toLocaleString("en-IN")} credits
         </span>
         <span
           style={{
             fontSize: 11,
-            fontWeight: 700,
+            fontWeight: 600,
             padding: "4px 10px",
             borderRadius: "var(--radius-pill)",
             background: low ? "var(--g-green)" : "var(--g-green-mint)",

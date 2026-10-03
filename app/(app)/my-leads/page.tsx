@@ -127,8 +127,8 @@ export default function LeadsPage() {
 
   return (
     <div style={{ padding: "28px 24px 60px", maxWidth: 1280, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Leads</h1>
+      <div className="rule-b" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 14 }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: 0 }}>Leads</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <DashboardModeBadge />
           <CreditsIndicator />
@@ -152,7 +152,7 @@ export default function LeadsPage() {
             border: "1px solid var(--g-border)",
             background: "var(--g-white)",
             fontSize: 12.5,
-            fontWeight: 600,
+            fontWeight: 500,
             color: "var(--g-ink)",
             cursor: "pointer",
           }}
@@ -167,7 +167,7 @@ export default function LeadsPage() {
 
         <div style={{ flex: 1 }} />
 
-        <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
+        <span className="tnum" style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
           {selected.size > 0 ? `${selected.size} selected` : `${leads.length} leads`}
         </span>
         <button type="button" onClick={exportSelected} disabled={selected.size === 0} style={exportBtn(selected.size > 0)}>
@@ -177,7 +177,7 @@ export default function LeadsPage() {
       </div>
 
       {leads.length === 0 ? (
-        <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 24, textAlign: "center" }}>
+        <div className="sunk" style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 40, textAlign: "center" }}>
           <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: 0 }}>
             No leads added yet. Go to Home or Chat and add one to your leads.
           </p>
@@ -209,10 +209,10 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
         borderRadius: "var(--radius-pill)",
         padding: "8px 16px",
         fontSize: 12.5,
-        fontWeight: 700,
-        border: active ? "none" : "1px solid var(--g-border)",
-        background: active ? "var(--g-green)" : "var(--g-white)",
-        color: active ? "#fff" : "var(--g-ink)",
+        fontWeight: active ? 600 : 500,
+        border: `1px solid ${active ? "var(--accent)" : "var(--g-border)"}`,
+        background: active ? "var(--accent)" : "var(--g-white)",
+        color: active ? "var(--accent-ink)" : "var(--g-ink)",
         cursor: "pointer",
       }}
     >
@@ -229,10 +229,10 @@ function exportBtn(enabled: boolean): React.CSSProperties {
     padding: "8px 14px",
     borderRadius: "var(--radius-sm)",
     border: "none",
-    background: enabled ? "var(--g-green-dark)" : "var(--g-gray-100)",
-    color: enabled ? "#fff" : "var(--g-gray-500)",
+    background: enabled ? "var(--accent)" : "var(--g-gray-100)",
+    color: enabled ? "var(--accent-ink)" : "var(--g-gray-500)",
     fontSize: 12.5,
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: enabled ? "pointer" : "default",
   };
 }

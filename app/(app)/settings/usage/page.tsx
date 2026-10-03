@@ -46,7 +46,7 @@ export default async function UsagePage() {
 
   return (
     <div style={{ padding: "28px 24px 120px", maxWidth: 820, margin: "0 auto" }}>
-      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Usage</h1>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: "0 0 6px" }}>Usage</h1>
       <p style={{ fontSize: 14, color: "var(--g-gray-500)", margin: "0 0 28px" }}>
         Every credit spent and every credit added, newest first.
       </p>
@@ -59,7 +59,7 @@ export default async function UsagePage() {
       </div>
 
       {entries.length === 0 ? (
-        <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 30, textAlign: "center" }}>
+        <div className="sunk" style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 40, textAlign: "center" }}>
           <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", margin: 0 }}>
             Nothing yet. Credits are spent when you add a lead or search new ground.
           </p>
@@ -96,7 +96,7 @@ export default async function UsagePage() {
                 <span
                   style={{
                     fontSize: 13.5,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontVariantNumeric: "tabular-nums",
                     color: isCredit ? "var(--g-green-text)" : "var(--g-ink)",
                     whiteSpace: "nowrap",
@@ -117,7 +117,7 @@ export default async function UsagePage() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: "var(--g-white)", padding: "20px 18px" }}>
-      <div style={{ fontSize: 21, fontWeight: 800, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontSize: 21, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
       <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 3 }}>{label}</div>
     </div>
   );

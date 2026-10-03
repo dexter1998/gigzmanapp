@@ -39,7 +39,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ];
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "var(--g-cream)" }}>
+    // `mantis-app` is what scopes the dashboard token layer in app/globals.css. The marketing
+    // pages sit outside it and keep the original palette.
+    <div className="mantis-app" style={{ minHeight: "100vh", display: "flex", background: "var(--g-cream)" }}>
       <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} />
       <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
       <GeoBeacon />

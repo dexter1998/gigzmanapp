@@ -41,7 +41,7 @@ export default async function ProfilePage() {
     <div style={{ padding: "32px 24px 120px", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Settings</h1>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: 0 }}>Settings</h1>
           <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>Manage your account and preferences</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -165,7 +165,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 function CardHeader({ title }: { title: string }) {
-  return <div style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 14 }}>{title}</div>;
+  return <div style={{ fontSize: 15, fontWeight: 600, color: "var(--g-ink)", marginBottom: 14 }}>{title}</div>;
 }
 
 function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
@@ -180,7 +180,7 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
       }}
     >
       <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>{value}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>{value}</span>
     </div>
   );
 }
@@ -194,7 +194,7 @@ const pillPrimary: React.CSSProperties = {
   background: "var(--g-green-darker)",
   color: "#fff",
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
 };
 
@@ -206,7 +206,7 @@ const pillSecondary: React.CSSProperties = {
   background: "var(--g-white)",
   color: "var(--g-ink)",
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
 };
 
@@ -217,7 +217,7 @@ const pillSecondarySmall: React.CSSProperties = {
   background: "var(--g-white)",
   color: "var(--g-ink)",
   fontSize: 12.5,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
   flexShrink: 0,
 };

@@ -72,7 +72,7 @@ export function ChatComposer({
 
         <div style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-border)", fontSize: 12.5, fontWeight: 700, color: "var(--g-ink-soft)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-border)", fontSize: 12.5, fontWeight: 600, color: "var(--g-ink-soft)" }}>
           ⚡ Mantis Lite 1.2 <ChevronDownIcon size={12} color="var(--g-gray-500)" />
         </div>
         <button type="button" disabled title="Voice input (coming soon)" style={composerIconButton}>

@@ -115,8 +115,8 @@ export function CategoryPicker({
         style={{
           display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 14px 0 16px",
           border: "1px solid var(--g-green)", borderRadius: "var(--radius-pill)",
-          background: "var(--g-white)", boxShadow: "var(--shadow-toolbar)", cursor: "pointer",
-          fontFamily: "inherit", fontSize: 12.5, fontWeight: 700,
+          background: "var(--g-white)", boxShadow: "var(--shadow-pop)", cursor: "pointer",
+          fontFamily: "inherit", fontSize: 12.5, fontWeight: 600,
           color: isEverything ? "var(--g-green-text)" : "var(--g-ink)",
           maxWidth: 260, whiteSpace: "nowrap",
         }}
@@ -131,12 +131,12 @@ export function CategoryPicker({
             position: "absolute", top: 50, left: 0, zIndex: 40,
             width: 360, maxWidth: "calc(100vw - 32px)",
             background: "var(--g-white)", border: "1px solid var(--g-border)",
-            borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)",
+            borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-pop)",
             display: "flex", flexDirection: "column", overflow: "hidden",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "11px 14px", borderBottom: "1px solid var(--g-border)" }}>
-            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.04em", color: "var(--g-gray-500)" }}>CATEGORIES</span>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", color: "var(--g-gray-500)" }}>CATEGORIES</span>
             <span style={{ display: "flex", gap: 10 }}>
               <LinkBtn onClick={() => onChange(new Set(ALL_CATALOG_TYPES))} disabled={isEverything}>Select all</LinkBtn>
               <LinkBtn onClick={() => onChange(new Set())} disabled={selected.size === 0}>Clear</LinkBtn>
@@ -162,7 +162,7 @@ export function CategoryPicker({
           {/* The whole point of the rebuild: what this selection costs, before it is spent. */}
           <div style={{ padding: "10px 14px", borderTop: "1px solid var(--g-border)", background: "var(--g-green-mint)", fontSize: 12, color: "var(--g-ink-soft)" }}>
             {selected.size === 0 ? (
-              <span style={{ color: "var(--g-red-text)", fontWeight: 700 }}>Pick at least one category to search.</span>
+              <span style={{ color: "var(--g-red-text)", fontWeight: 600 }}>Pick at least one category to search.</span>
             ) : (
               <>
                 <b>{selected.size}</b> types · <b>{calls}</b> {calls === 1 ? "search" : "searches"} per area ·{" "}
@@ -184,7 +184,7 @@ function LinkBtn({ children, onClick, disabled }: { children: React.ReactNode; o
     <button
       type="button" onClick={onClick} disabled={disabled}
       style={{
-        border: "none", background: "none", padding: 0, fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+        border: "none", background: "none", padding: 0, fontFamily: "inherit", fontSize: 12, fontWeight: 600,
         color: disabled ? "var(--g-gray-300)" : "var(--g-green-text)", cursor: disabled ? "default" : "pointer",
       }}
     >
@@ -214,7 +214,7 @@ function CategoryRow({
       <Row indent={0} onClick={onToggleExpand}>
         <Caret open={expanded} />
         <Box state={state} onClick={() => onToggleTypes(types)} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)", flex: 1 }}>{cat.label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", flex: 1 }}>{cat.label}</span>
         <Count on={count} total={types.length} />
       </Row>
 
@@ -294,7 +294,7 @@ function Caret({ open }: { open: boolean }) {
 
 function Count({ on, total }: { on: number; total: number }) {
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, color: on === 0 ? "var(--g-gray-300)" : "var(--g-green-text)", flexShrink: 0 }}>
+    <span style={{ fontSize: 11, fontWeight: 600, color: on === 0 ? "var(--g-gray-300)" : "var(--g-green-text)", flexShrink: 0 }}>
       {on}/{total}
     </span>
   );

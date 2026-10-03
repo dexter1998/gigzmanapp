@@ -55,7 +55,7 @@ export function DashboardModeBadge() {
         background: "var(--g-white)",
         textDecoration: "none",
         fontSize: 12,
-        fontWeight: 700,
+        fontWeight: 600,
         color: "var(--g-ink)",
         whiteSpace: "nowrap",
       }}

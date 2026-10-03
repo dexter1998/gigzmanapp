@@ -115,8 +115,8 @@ export function ChatThread({ chatId, title, initialMessages }: { chatId: string;
       <div style={{ position: "sticky", bottom: 24 }}>
         {pendingClarification && (
           <div className="chat-glow-border" style={{ marginBottom: 10 }}>
-            <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 16 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", marginBottom: 10 }}>{pendingClarification.question}</div>
+            <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", border: "1px solid var(--g-border)", padding: 16 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 10 }}>{pendingClarification.question}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {pendingClarification.options.map((opt) => (
                   <button
@@ -133,7 +133,7 @@ export function ChatThread({ chatId, title, initialMessages }: { chatId: string;
                       cursor: sending ? "default" : "pointer",
                     }}
                   >
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink)" }}>{opt.label}</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)" }}>{opt.label}</div>
                     <div style={{ fontSize: 11, color: "var(--g-gray-500)" }}>{opt.description}</div>
                   </button>
                 ))}
@@ -152,7 +152,7 @@ export function ChatThread({ chatId, title, initialMessages }: { chatId: string;
                       cursor: sending ? "default" : "pointer",
                     }}
                   >
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-ink-soft)" }}>Other</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink-soft)" }}>Other</div>
                     <div style={{ fontSize: 11, color: "var(--g-gray-500)" }}>Type your own answer</div>
                   </button>
                 ) : (
@@ -193,7 +193,7 @@ export function ChatThread({ chatId, title, initialMessages }: { chatId: string;
                         background: otherDraft.trim() ? "var(--g-green-dark)" : "var(--g-gray-100)",
                         color: otherDraft.trim() ? "#fff" : "var(--g-gray-500)",
                         fontSize: 12.5,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         cursor: otherDraft.trim() ? "pointer" : "default",
                       }}
                     >
@@ -272,7 +272,7 @@ function AssistantTurn({
 
           {intent?.nextActions && intent.nextActions.length > 0 && (
             <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-white)", padding: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 8 }}>
                 <LightbulbIcon size={13} color="var(--g-gray-500)" />
                 Suggested next actions
               </div>

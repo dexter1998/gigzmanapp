@@ -37,13 +37,13 @@ export default async function BillingPage() {
 
   return (
     <div style={{ padding: "28px 20px 120px", maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Billing</h1>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: "0 0 6px" }}>Billing</h1>
       <p style={{ fontSize: 14, color: "var(--g-gray-500)", margin: "0 0 28px" }}>
         Credits are spent only when Mantis does real work for you. Searching ground you&apos;ve already covered is always free.
       </p>
 
       {!cashfreeIsLive() && (
-        <p style={{ fontSize: 12.5, fontWeight: 700, color: "#b45309", background: "var(--g-amber-tint)", padding: "9px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20 }}>
+        <p style={{ fontSize: 12.5, fontWeight: 600, color: "#b45309", background: "var(--g-amber-tint)", padding: "9px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20 }}>
           Test mode — payments here are sandbox transactions, no real money moves.
         </p>
       )}
@@ -80,7 +80,7 @@ export default async function BillingPage() {
             <div
               style={{
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 600,
                 whiteSpace: "nowrap",
                 color: row.credits === 0 ? "var(--g-green-text)" : "var(--g-ink)",
                 fontVariantNumeric: "tabular-nums",
@@ -121,7 +121,7 @@ export default async function BillingPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
                     {formatINR(p.amount_paise)}
                   </span>
                   <StatusPill status={p.status} />
@@ -130,7 +130,7 @@ export default async function BillingPage() {
                   {p.status === "paid" && (
                     <Link
                       href={`/settings/billing/invoice/${p.order_id}`}
-                      style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)", textDecoration: "none", whiteSpace: "nowrap" }}
+                      style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none", whiteSpace: "nowrap" }}
                     >
                       Invoice ↓
                     </Link>
@@ -148,7 +148,7 @@ export default async function BillingPage() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: "var(--g-white)", padding: "20px 18px" }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
       <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 3 }}>{label}</div>
     </div>
   );
@@ -164,7 +164,7 @@ function StatusPill({ status }: { status: string }) {
   };
   const s = map[status] ?? map.created;
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
+    <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
       {s.label}
     </span>
   );
@@ -172,7 +172,7 @@ function StatusPill({ status }: { status: string }) {
 
 const sectionTitle: React.CSSProperties = {
   fontSize: 17,
-  fontWeight: 800,
+  fontWeight: 600,
   color: "var(--g-ink)",
   margin: "0 0 16px",
 };

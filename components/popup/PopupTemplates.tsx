@@ -65,7 +65,7 @@ function MemeHero({ popup, onClose }: TemplateProps) {
           style={{
             display: "inline-flex", alignItems: "center", gap: 8, height: 32, padding: "0 16px",
             borderRadius: "var(--radius-pill)", background: style.tint, color: style.ink,
-            fontSize: 14, fontWeight: 700, whiteSpace: "nowrap",
+            fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
           }}
         >
           <Icon color={style.ink} size={16} />
@@ -124,7 +124,7 @@ function MemeHero({ popup, onClose }: TemplateProps) {
       <h2
         style={{
           margin: "0 0 10px", textAlign: "center", fontSize: "clamp(20px, 5.5vw, 24px)",
-          lineHeight: "1.2", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.01em",
+          lineHeight: "1.2", fontWeight: 600, color: "var(--g-ink)", letterSpacing: "-0.01em",
         }}
       >
         {popup.headerAccent && <span style={{ color: "var(--g-green-dark)" }}>{popup.headerAccent} </span>}
@@ -166,7 +166,7 @@ function PopupCtaButton({ popup, onClose }: TemplateProps) {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
     width: "100%", height: 48, borderRadius: 12, border: "none", cursor: "pointer",
     background: "var(--g-green-dark)", color: "#fff", fontFamily: "inherit",
-    fontSize: "clamp(14.5px, 3.8vw, 16px)", fontWeight: 700, textDecoration: "none",
+    fontSize: "clamp(14.5px, 3.8vw, 16px)", fontWeight: 600, textDecoration: "none",
   };
 
   if (!popup.cta.href) {

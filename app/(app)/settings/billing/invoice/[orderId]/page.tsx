@@ -48,7 +48,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
       >
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, marginBottom: 36 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.02em" }}>{COMPANY.brandLong}</div>
+            <div style={{ fontSize: 22, fontWeight: 600, color: "var(--g-ink)", letterSpacing: "-0.02em" }}>{COMPANY.brandLong}</div>
             <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.6, marginTop: 8, maxWidth: 260 }}>
               {COMPANY.legalName}
               <br />
@@ -58,7 +58,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--g-gray-500)" }}>Invoice</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--g-gray-500)" }}>Invoice</div>
             <div style={{ fontSize: 12.5, color: "var(--g-ink)", marginTop: 8, fontVariantNumeric: "tabular-nums" }}>
               {payment.order_id}
             </div>
@@ -69,7 +69,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
         </header>
 
         <section style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "var(--g-gray-500)", marginBottom: 6 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase", color: "var(--g-gray-500)", marginBottom: 6 }}>
             Billed to
           </div>
           <div style={{ fontSize: 14, color: "var(--g-ink)" }}>{profile?.name ?? session!.user!.name ?? userEmail}</div>
@@ -102,8 +102,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
 
         <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 14, borderTop: "2px solid var(--g-ink)" }}>
           <div style={{ display: "flex", gap: 40, alignItems: "baseline" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>Total paid</span>
-            <span style={{ fontSize: 20, fontWeight: 800, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>Total paid</span>
+            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
               {formatINR(payment.amount_paise)}
             </span>
           </div>
@@ -127,7 +127,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
 const thStyle: React.CSSProperties = {
   textAlign: "left",
   fontSize: 10.5,
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.09em",
   textTransform: "uppercase",
   color: "var(--g-gray-500)",
