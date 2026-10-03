@@ -100,7 +100,7 @@ export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnl
 
   return (
     <div style={panelStyle}>
-      <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>{lead.business_name}</h2>
+      <h2 style={{ fontSize: 17, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>{lead.business_name}</h2>
       <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>{formatCategory(lead.category) ?? "Business"}</div>
 
       {lead.heat_score !== null && (
@@ -142,7 +142,7 @@ export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnl
           )}
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--g-border)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 10 }}>
               <ClockIcon size={13} color="var(--g-gray-500)" />
               Live details
             </div>
@@ -178,12 +178,12 @@ export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnl
 
                 {enrichment.services && enrichment.services.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>
                       Services
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {enrichment.services.map((sv) => (
-                        <span key={sv} style={{ fontSize: 11.5, background: "var(--g-green-mint)", color: "var(--g-green-text)", borderRadius: 999, padding: "4px 10px" }}>
+                        <span key={sv} style={{ fontSize: 11.5, background: "var(--g-green-mint)", color: "var(--g-green-text)", borderRadius: 999, padding: "4px 10px", whiteSpace: "nowrap" }}>
                           {sv}
                         </span>
                       ))}
@@ -228,7 +228,7 @@ function Row({ icon, label, children }: { icon: React.ReactNode; label: string; 
     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
       <span style={{ flexShrink: 0, marginTop: 2 }}>{icon}</span>
       <div>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
+        <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
         <div style={{ fontSize: 13, color: "var(--g-ink)" }}>{children}</div>
       </div>
     </div>
@@ -253,6 +253,6 @@ const unlockBtn: React.CSSProperties = {
   background: "var(--g-green-darker)",
   color: "#fff",
   fontSize: 12.5,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
 };

@@ -51,9 +51,9 @@ export function LeadsTable({
   return (
     <div style={{ background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+        <table className="tnum" style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
           <thead>
-            <tr style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            <tr className="sunk" style={{ fontSize: 10.5, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
                 <input type="checkbox" checked={allSelected} onChange={onToggleAll} aria-label="Select all" style={{ cursor: "pointer" }} />
               </th>
@@ -80,8 +80,12 @@ export function LeadsTable({
                   <input type="checkbox" checked={selected.has(lead.id)} onChange={() => onToggle(lead.id)} style={{ cursor: "pointer" }} />
                 </td>
                 <td style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)" }}>{lead.business_name}</span>
+                  {/* Wraps as a unit: with flexShrink:0 + nowrap on the pill, a narrow column drops
+                      the whole chip onto its own line instead of either breaking "No website" in
+                      half (the original bug) or starving the business name down to one word a
+                      line (what pinning the pill without wrap did instead). */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap", rowGap: 4 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", minWidth: 0 }}>{lead.business_name}</span>
                     <StatusPill hasWebsite={lead.has_website} />
                   </div>
                   <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>{lead.address ?? "No address found"}</div>
@@ -136,7 +140,7 @@ function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) =
         href={lead.enrichment_website_url}
         target="_blank"
         rel="noreferrer"
-        style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-green-text)" }}
+        style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-green-text)" }}
       >
         Website found
       </a>
@@ -147,7 +151,7 @@ function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) =
 
   if (status === "pending" || status === "starting_instance" || status === "scraping") {
     return (
-      <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "var(--g-gray-100)", color: "var(--g-gray-500)" }}>
+      <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: "var(--g-gray-100)", color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>
         In queue
       </span>
     );
@@ -159,7 +163,7 @@ function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) =
       onClick={() => onEnrich?.(lead)}
       style={{
         fontSize: 11.5,
-        fontWeight: 700,
+        fontWeight: 600,
         padding: "6px 12px",
         borderRadius: "var(--radius-pill)",
         border: "1px solid var(--g-border)",
@@ -179,7 +183,7 @@ function StatusPill({ hasWebsite }: { hasWebsite: boolean | null }) {
   const bg = hasWebsite === null ? "var(--g-gray-100)" : hasWebsite ? "var(--g-green-mint)" : "var(--g-amber-tint)";
   const color = hasWebsite === null ? "var(--g-gray-500)" : hasWebsite ? "var(--g-green-text)" : "#b45309";
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: bg, color }}>
+    <span style={{ fontSize: 10.5, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: bg, color, whiteSpace: "nowrap", flexShrink: 0 }}>
       {label}
     </span>
   );

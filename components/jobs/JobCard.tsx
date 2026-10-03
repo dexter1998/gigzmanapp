@@ -91,7 +91,7 @@ export function JobCard({
             style={{
               width: 28, height: 28, borderRadius: 6, flexShrink: 0,
               background: "var(--g-cream)", border: "1px solid var(--g-border)",
-              display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "var(--g-gray-500)",
+              display: "grid", placeItems: "center", fontSize: 12, fontWeight: 600, color: "var(--g-gray-500)",
             }}
           >
             {job.company.name.charAt(0).toUpperCase()}
@@ -99,7 +99,7 @@ export function JobCard({
         )}
 
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--g-ink)", lineHeight: 1.3 }}>{job.title}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", lineHeight: 1.3 }}>{job.title}</div>
           <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
             {job.company.name}
             {job.location ? ` · ${job.location}` : ""}
@@ -109,7 +109,7 @@ export function JobCard({
         {golden && (
           <span
             style={{
-              fontSize: 10, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase",
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase",
               padding: "3px 8px", borderRadius: "var(--radius-pill)", whiteSpace: "nowrap",
               background: "#f5e6bf", color: "#7a5c12", flexShrink: 0,
             }}
@@ -141,7 +141,7 @@ export function JobCard({
             onSave(job);
           }}
           style={{
-            padding: "6px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, fontWeight: 700,
+            padding: "6px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, fontWeight: 600,
             border: "1px solid var(--g-border)", cursor: "pointer",
             background: job.applicationStatus ? "var(--g-green-mint)" : "var(--g-white)",
             color: job.applicationStatus ? "var(--g-green-text)" : "var(--g-ink)",
@@ -162,7 +162,7 @@ export function JobCard({
 function MatchPill({ score, scorable }: { score: number | null; scorable: boolean | null }) {
   if (score === null) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)" }}>
         <LockIcon />
         Add your resume to see match
       </span>
@@ -172,7 +172,7 @@ function MatchPill({ score, scorable }: { score: number | null; scorable: boolea
   // computed 0 (a genuine mismatch, e.g. wrong job family) must still show as a score below,
   // not read as if the profile just needs more filling in.
   if (scorable === false) {
-    return <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--g-gray-500)" }}>Not enough detail to score</span>;
+    return <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)" }}>Not enough detail to score</span>;
   }
   const band = matchBand(score);
   const tone =
@@ -185,8 +185,8 @@ function MatchPill({ score, scorable }: { score: number | null; scorable: boolea
   return (
     <span
       style={{
-        fontSize: 11.5, fontWeight: 800, padding: "4px 10px", borderRadius: "var(--radius-pill)",
-        background: tone.bg, color: tone.fg,
+        fontSize: 11.5, fontWeight: 600, padding: "4px 10px", borderRadius: "var(--radius-pill)",
+        background: tone.bg, color: tone.fg, whiteSpace: "nowrap", flexShrink: 0,
       }}
     >
       {score}% {band.label}
@@ -198,9 +198,9 @@ function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: "var(--radius-pill)",
+        fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: "var(--radius-pill)",
         background: "var(--g-cream)", color: "var(--g-ink-soft, var(--g-gray-500))",
-        border: "1px solid var(--g-border)",
+        border: "1px solid var(--g-border)", whiteSpace: "nowrap",
       }}
     >
       {children}

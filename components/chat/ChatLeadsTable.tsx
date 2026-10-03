@@ -76,9 +76,9 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
   return (
     <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+        <table className="tnum" style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
           <thead>
-            <tr style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            <tr className="sunk" style={{ fontSize: 10.5, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
                 {selectableIds.length > 0 && (
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" style={{ cursor: "pointer" }} />
@@ -104,7 +104,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
                       <input type="checkbox" checked={selected.has(lead.id)} onChange={() => toggle(lead.id)} style={{ cursor: "pointer" }} />
                     )}
                   </td>
-                  <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 700, color: "var(--g-ink)" }}>
+                  <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>
                     {lead.business_name}
                     {lead.verified_at && (
                       <span style={{ display: "block", fontSize: 10.5, fontWeight: 400, color: "var(--g-gray-500)", marginTop: 2 }}>
@@ -129,11 +129,12 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
                     <span
                       style={{
                         fontSize: 10.5,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         padding: "2px 8px",
                         borderRadius: "var(--radius-pill)",
                         background: lead.has_website ? "var(--g-green-mint)" : "var(--g-amber-tint)",
                         color: lead.has_website ? "var(--g-green-text)" : "#b45309",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {lead.has_website ? "Has website" : "No website"}
@@ -164,7 +165,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
             background: pendingCount > 0 ? "var(--g-green-dark)" : "var(--g-gray-100)",
             color: pendingCount > 0 ? "#fff" : "var(--g-gray-500)",
             fontSize: 12.5,
-            fontWeight: 700,
+            fontWeight: 600,
             cursor: pendingCount > 0 && !adding ? "pointer" : "default",
           }}
         >
