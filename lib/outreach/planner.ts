@@ -248,6 +248,12 @@ export async function planCampaign(campaignId: string, capacity: number): Promis
       AND do_not_send = false
       AND state NOT IN ('suppressed', 'converted', 'stalled')
       AND touch_count = 0
+      -- NULL is the normal case for a lead never touched; a date is a backoff written by
+      -- recordSendFailure. Without this clause a new lead cannot be deferred at all, only
+      -- retired, because nothing else in this predicate moves when a send fails — so three
+      -- malformed addresses were re-planned and re-rejected by every tick for ten hours
+      -- (2026-10-03), reported as planned_new 3 / sent 0 / failed 3, forever.
+      AND (next_due_at IS NULL OR next_due_at <= now())
     ORDER BY imported_at ASC
     LIMIT ${effectiveCapacity}
   `) as unknown as RecipientRow[];
@@ -349,6 +355,42 @@ export async function stallRecipients(ids: string[], reason: string, cooldownDay
 }
 
 /** Records a successful send against the journey, and schedules the next touch. */
+/**
+ * A send that threw. Without this a failure left the row completely untouched, so the next tick
+ * planned it again — three malformed addresses (`info@.duplexsofts.com` and friends) were
+ * re-attempted every 15 minutes for ten hours before anyone noticed, because the tick reported
+ * itself healthy: not blocked, capacity fine, just `planned_new 3 / sent 0 / failed 3`.
+ *
+ * Permanent rejections retire the address. Everything else gets a day's backoff rather than a
+ * retirement, because a throttle or a network blip says nothing about the recipient — but it
+ * must still move the row, or an unrecognised permanent error would loop exactly as before.
+ */
+export async function retireRecipient(recipientId: string, reason: string): Promise<void> {
+  await sql`
+    UPDATE campaign_recipients
+    SET do_not_send = true, do_not_send_reason = ${reason}, state_changed_at = now()
+    WHERE id = ${recipientId}
+  `;
+}
+
+export async function recordSendFailure(recipientId: string, permanent: boolean): Promise<void> {
+  if (permanent) {
+    await retireRecipient(recipientId, "send_rejected");
+    return;
+  }
+  await sql`
+    UPDATE campaign_recipients
+    SET next_due_at = now() + interval '1 day'
+    WHERE id = ${recipientId}
+  `;
+}
+
+/** SES rejected the address itself; retrying it on any schedule is wasted. */
+export function isPermanentSendFailure(message: string): boolean {
+  return /invalid.{0,20}email|email address.{0,20}(is )?invalid|MessageRejected|InvalidParameterValue|Local address contains control or whitespace|Domain contains(?: control or)? illegal character/i
+    .test(message);
+}
+
 export async function recordTouch(recipientId: string, gapMinutesToNext: number): Promise<void> {
   await sql`
     UPDATE campaign_recipients

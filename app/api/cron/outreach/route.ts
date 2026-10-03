@@ -4,7 +4,7 @@ import { sendBulkEmail, fillTemplate } from "@/lib/email/send-bulk";
 import { recordCronRun } from "@/lib/cron-runs";
 import { reduceOutreachEvents, syncConversions } from "@/lib/outreach/events";
 import { checkGates } from "@/lib/outreach/gates";
-import { planCampaign, recordTouch, stallRecipients } from "@/lib/outreach/planner";
+import { planCampaign, recordTouch, stallRecipients, recordSendFailure, isPermanentSendFailure, retireRecipient } from "@/lib/outreach/planner";
 import { computeCapacity } from "@/lib/outreach/pacing";
 
 /**
@@ -269,6 +269,17 @@ export async function GET(req: NextRequest) {
           sent++;
         } else {
           skipped++;
+          // A skip is as permanent as a rejection, and leaves the row just as untouched: the
+          // same recipient is planned, skipped and re-planned by every tick from their due date
+          // onward. 40 unsubscribed rows were sitting in exactly that state on 2026-10-03,
+          // waiting for their follow-up date to start the loop.
+          if (result.reason === "unsubscribed") {
+            await retireRecipient(item.recipientId, "unsubscribed");
+          } else if (result.reason === "already sent") {
+            // The send exists; only the touch was lost (a crash between the two). Recording it
+            // moves the recipient on to the next step rather than re-attempting this one.
+            await recordTouch(item.recipientId, item.gapMinutes);
+          }
         }
       } catch (err) {
         failed++;
@@ -280,6 +291,7 @@ export async function GET(req: NextRequest) {
           aborted = "account_paused_mid_tick";
           break;
         }
+        await recordSendFailure(item.recipientId, isPermanentSendFailure(text));
         console.error("outreach send failed", campaignId, item.stepKey, item.email, err);
       }
       await sleep(SEND_INTERVAL_MS);
