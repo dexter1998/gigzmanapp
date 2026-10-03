@@ -1031,3 +1031,20 @@ ALTER TABLE campaign_steps ADD COLUMN IF NOT EXISTS gap_minutes INT;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_start_hour INT NOT NULL DEFAULT 9;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS send_window_end_hour INT NOT NULL DEFAULT 18;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS daily_target INT;
+
+
+-- 2026-10-03: Stickly.live rewards widget. Users complete link tasks in the
+-- widget and earn Mantis credits; the grant arrives as a signed webhook and
+-- lands in credit_ledger like any other grant (reason 'stickly_reward',
+-- ref 'stickly:<claim id>', deduped by the partial unique index on (reason, ref)).
+--
+-- This table exists so Stickly never learns a Mantis email. Email is our only
+-- stable user id, so passing it through would export the customer list for no
+-- gain -- and phone-only signups carry a synthetic @phone.gigzmanapp.internal
+-- address that would leak the convention too. The widget sees an opaque id and
+-- the webhook maps it back. Deleting a row unlinks the user and nothing else.
+CREATE TABLE IF NOT EXISTS stickly_users (
+  stickly_id TEXT PRIMARY KEY,
+  user_email TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

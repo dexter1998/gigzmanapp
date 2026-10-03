@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 import { AppSidebar } from "@/components/AppSidebar";
 import { GeoBeacon } from "@/components/GeoBeacon";
 import { PopupHost } from "@/components/popup/PopupHost";
+import { SticklyScript } from "@/components/SticklyScript";
 import {
   FREE_500_GRANT_REASON, FREE_500_GRANT_REF_PREFIX, NEW_ACCOUNT_WINDOW_HOURS,
   type AudienceTag,
@@ -43,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
       <GeoBeacon />
       <PopupHost audience={audience} />
+      <SticklyScript />
     </div>
   );
 }
