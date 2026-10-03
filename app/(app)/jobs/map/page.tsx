@@ -34,6 +34,32 @@ const DEFAULT_CENTER = { lat: 28.4595, lng: 77.0266 }; // Gurugram — same defa
 const DEFAULT_ZOOM = 13;
 const IDLE_SETTLE_MS = 1200;
 
+/**
+ * Zoom bounds. The map had none at all, so it could be zoomed out to a continent -- at which point
+ * one `idle` asked the API for a bbox covering most of India (filling the 500-company LIMIT),
+ * rendered every one of those into the same few hundred pixels, and then billed a Places sweep for
+ * a "viewport" no user was actually looking at. The leads map has had a ZOOM_FLOOR since the same
+ * thing happened there; this is that floor, plus a hard minZoom so the state is hard to reach in
+ * the first place rather than merely handled once reached.
+ */
+const ZOOM_FLOOR = 11;
+const MIN_ZOOM = 9;
+const MAX_ZOOM = 19;
+
+/** Same ladder as the leads map: how many pins may render at a given zoom. Dense viewports hold
+ * several hundred companies and each one costs a marker plus an O(n^2) crowding comparison. */
+const PIN_CAP_BY_ZOOM: Array<[minZoom: number, cap: number]> = [
+  [17, 300],
+  [15, 150],
+  [13, 60],
+];
+
+/** A pin with this much clear space around it shows its full name; below it, a truncated one;
+ * below LABEL_MIN_SPACING_PX, no label at all. A 48px card with a ~110px chip under it needs
+ * appreciably more than the card's own width before two chips stop touching. */
+const LABEL_FULL_SPACING_PX = 120;
+const LABEL_MIN_SPACING_PX = 62;
+
 type Filters = { family: string; industry: string; workMode: string; goldenOnly: boolean };
 
 /** A discovered company with no open role yet -- the favicon-only dot, distinct from the green/
@@ -69,48 +95,6 @@ const CARD_RADIUS_RATIO = 12 / 48;
  * worth clicking, so putting it on every card would say nothing. */
 const GLOW_RINGS = new Set(["#d4a72c", "#1f8a54"]);
 
-function backgroundCardIcon(size: number, ringColor: string, elevated = false): google.maps.Icon {
-  const pad = 9;
-  const canvas = size + pad * 2;
-  const r = size * CARD_RADIUS_RATIO;
-  const dy = elevated ? 4 : 2;
-  const blur = elevated ? 6 : 4;
-  const opacity = elevated ? 0.36 : 0.3;
-  // A second, coloured shadow with no offset reads as a halo around the stroke rather than a
-  // drop shadow. Kept low-opacity and tight: at map density anything stronger turns into a smear
-  // where cards sit close together.
-  const glow = GLOW_RINGS.has(ringColor)
-    ? `<feDropShadow dx="0" dy="0" stdDeviation="${elevated ? 3 : 2}" flood-color="${ringColor}" flood-opacity="${elevated ? 0.75 : 0.55}"/>`
-    : "";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas}" height="${canvas}">
-    <defs>
-      <filter id="s" x="-60%" y="-60%" width="220%" height="220%">
-        <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#000000" flood-opacity="${opacity}"/>
-        ${glow}
-      </filter>
-    </defs>
-    <rect x="${pad}" y="${pad}" width="${size}" height="${size}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2" filter="url(#s)"/>
-  </svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(canvas, canvas),
-    anchor: new google.maps.Point(canvas / 2, canvas / 2),
-  };
-}
-/** A background-only card (no gradient/shadow needed -- it's a shadow layer itself, sitting behind
- * the front card) for the 2nd/3rd sliver of a fanned stack. Flat and slightly duller so it reads as
- * "behind", not another real target. */
-function fanSliverIcon(size: number): google.maps.Icon {
-  const r = size * CARD_RADIUS_RATIO;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <rect x="2" y="2" width="${size - 4}" height="${size - 4}" rx="${r}" fill="#f4f5ef" stroke="#dde0d4" stroke-width="1.5"/>
-  </svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(size, size),
-    anchor: new google.maps.Point(size / 2, size / 2),
-  };
-}
 // The reference's own card is 48px (44px for one inside a stack). The 105/120px tried before was
 // far too heavy on a real viewport -- a handful of companies swallowed the map.
 const ORDINARY_CARD_SIZE = 48;
@@ -127,6 +111,127 @@ const FAN_OFFSETS = [
   { dx: 6, dy: -5 }, // 2nd sliver, up-right
   { dx: 12, dy: -10 }, // 3rd sliver, further up-right
 ];
+
+const LABEL_FONT_SIZE = 12;
+const LABEL_HEIGHT = 19;
+const LABEL_GAP = 4; // reference's own card-edge-to-chip gap
+
+/**
+ * One SVG for the whole pin: fan slivers, card, glow, count badge and name chip together.
+ *
+ * Each of those used to be its OWN google.maps.Marker, positioned by converting a pixel offset
+ * into a lat/lng (the old offsetLatLng). That had two costs. The cheap one: three to five markers
+ * per company, which at a 500-company viewport meant well over a thousand legacy Markers. The
+ * expensive one: a geographic offset is only correct at the zoom it was computed for, so the label
+ * and the badge visibly slid away from their card during every zoom animation and only snapped
+ * back once a re-render recomputed them.
+ *
+ * Drawing them into a single canvas fixes both. The offsets below are plain SVG coordinates, so
+ * they are correct at every zoom by construction, and a pin is now at most two markers -- this one
+ * plus the favicon, which has to stay separate because it is a cross-origin image (see the
+ * canvas-tainting note on faviconOverlayIcon).
+ */
+type CompositeSpec = {
+  size: number;
+  ringColor: string;
+  elevated: boolean;
+  /** null hides the chip entirely -- what the crowding pass does when neighbours are too close. */
+  label: string | null;
+  /** >1 draws the red count badge at the card's top-right and a fanned stack behind it. */
+  count: number;
+};
+
+function estimateLabelWidth(label: string): number {
+  // A data-URI SVG cannot measure its own text, so the chip is sized from character count. 0.62em
+  // rather than the 0.55em used before: 0.55 is about right for lowercase Latin and too narrow for
+  // capitals, digits and Devanagari, which is why long/uppercase company names were spilling past
+  // the chip's rounded edge. Over-wide is invisible (the chip is centred); under-wide is a bug.
+  return Math.round(label.length * LABEL_FONT_SIZE * 0.62 + 12);
+}
+
+function compositeCardIcon(spec: CompositeSpec): google.maps.Icon {
+  const { size, ringColor, elevated, label, count } = spec;
+  const r = size * CARD_RADIUS_RATIO;
+  const slivers = Math.min(count, 3);
+  const fanSpreadX = slivers > 1 ? FAN_OFFSETS[slivers - 1].dx : 0;
+  const fanSpreadY = slivers > 1 ? -FAN_OFFSETS[slivers - 1].dy : 0;
+
+  // Room for the drop shadow, the badge sticking out of the top-right corner, and the fan.
+  const padX = 12 + fanSpreadX;
+  const padTop = 12 + fanSpreadY;
+  const badge = count > 1 ? 24 : 0;
+
+  const cardBoxW = size + padX * 2;
+  const labelW = label ? estimateLabelWidth(label) : 0;
+  const canvasW = Math.max(cardBoxW, labelW + 8);
+  const cardX = (canvasW - size) / 2;
+  const cardY = padTop;
+  const labelTop = cardY + size + LABEL_GAP;
+  const canvasH = labelTop + (label ? LABEL_HEIGHT + 6 : 0) + 12;
+
+  const dy = elevated ? 4 : 2;
+  const blur = elevated ? 6 : 4;
+  const opacity = elevated ? 0.36 : 0.3;
+  // A second, coloured shadow with no offset reads as a halo around the stroke rather than a
+  // drop shadow. Kept low-opacity and tight: at map density anything stronger turns into a smear
+  // where cards sit close together.
+  const glow = GLOW_RINGS.has(ringColor)
+    ? `<feDropShadow dx="0" dy="0" stdDeviation="${elevated ? 3 : 2}" flood-color="${ringColor}" flood-opacity="${elevated ? 0.75 : 0.55}"/>`
+    : "";
+
+  // Back-to-front: the deepest sliver first, so the real card ends up on top of its own stack.
+  let fan = "";
+  for (let i = slivers - 1; i >= 1; i--) {
+    const sx = cardX + FAN_OFFSETS[i].dx;
+    const sy = cardY + FAN_OFFSETS[i].dy;
+    fan += `<rect x="${sx}" y="${sy}" width="${size}" height="${size}" rx="${r}" fill="#f4f5ef" stroke="#dde0d4" stroke-width="1.5"/>`;
+  }
+
+  // Reference pins its badge at top:-8px right:-8px on a 48px card.
+  const badgeMarkup =
+    count > 1
+      ? `<circle cx="${cardX + size - badge * 0.25}" cy="${cardY + badge * 0.25}" r="${badge / 2 - 1}" fill="#e0483e" stroke="#ffffff" stroke-width="2"/>
+         <text x="${cardX + size - badge * 0.25}" y="${cardY + badge * 0.25 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">${count > 99 ? "99+" : count}</text>`
+      : "";
+
+  // Reference values: 13px/500 on a 90%-white chip, 4px radius, soft drop shadow (no border). A
+  // shadow rather than a stroke keeps the chip legible over both light and dark map tiles.
+  const labelMarkup = label
+    ? `<rect x="${(canvasW - labelW) / 2}" y="${labelTop}" width="${labelW}" height="${LABEL_HEIGHT}" rx="4" fill="rgba(255,255,255,0.92)" filter="url(#l)"/>
+       <text x="${canvasW / 2}" y="${labelTop + LABEL_HEIGHT / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${LABEL_FONT_SIZE}" font-weight="500" fill="#101214">${escapeXml(label)}</text>`
+    : "";
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}">
+    <defs>
+      <filter id="s" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#000000" flood-opacity="${opacity}"/>
+        ${glow}
+      </filter>
+      <filter id="l" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.2"/>
+      </filter>
+    </defs>
+    ${fan}
+    <rect x="${cardX}" y="${cardY}" width="${size}" height="${size}" rx="${r}" fill="#ffffff" stroke="${ringColor}" stroke-width="2" filter="url(#s)"/>
+    ${badgeMarkup}
+    ${labelMarkup}
+  </svg>`;
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(canvasW, canvasH),
+    // Anchored on the CARD's centre, not the canvas centre -- the canvas grows downwards for the
+    // label and sideways for the fan, and the pin must stay nailed to its own coordinates.
+    anchor: new google.maps.Point(canvasW / 2, cardY + size / 2),
+  };
+}
+
+/** `&` and `<` in a company name would otherwise produce an SVG that silently fails to parse,
+ * leaving a blank marker where a card should be. */
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // The reference's 48px card is border-box with a 2px border and 6px padding, leaving a 32px logo --
 // so the favicon fills 2/3 of the card, not the 44/60 measured earlier off the detail panel's own
 // (much larger) logo rather than the marker's.
@@ -138,52 +243,40 @@ function faviconOverlayIcon(faviconUrl: string, cardSize: number): google.maps.I
     anchor: new google.maps.Point(inner / 2, inner / 2),
   };
 }
-/** A small white name-label pill under an individual (non-clustered) company card -- the reference
- * shows one under every unlocked company ("Wingify", "Mintifi", "M2P Fintech" etc, confirmed via
- * Playwright), not just on hover. Width is estimated from character count since this is a data-URI
- * SVG icon, not real DOM text that can measure itself. */
-function nameLabelIcon(name: string): google.maps.Icon {
-  const label = name.length > 22 ? `${name.slice(0, 21)}…` : name;
-  // Reference values: 13px/500 on a 90%-white chip, 4px radius, 2px 6px padding, soft drop shadow
-  // (no border). A shadow rather than a stroke keeps the chip legible over both light and dark map
-  // tiles, which a 1px light-grey border does not.
-  const fontSize = 12;
-  const charWidth = fontSize * 0.55;
-  const padX = 6;
-  const pad = 4; // canvas breathing room so the shadow is not clipped
-  const width = Math.round(label.length * charWidth + padX * 2);
-  const height = 19;
-  const canvasW = width + pad * 2;
-  const canvasH = height + pad * 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}">
-    <defs>
-      <filter id="l" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.2"/>
-      </filter>
-    </defs>
-    <rect x="${pad}" y="${pad}" width="${width}" height="${height}" rx="4" fill="rgba(255,255,255,0.92)" filter="url(#l)" />
-    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="500" fill="#101214">${label}</text>
-  </svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(canvasW, canvasH),
-    anchor: new google.maps.Point(canvasW / 2, canvasH / 2),
-  };
+
+/**
+ * Icons are pure functions of their spec, and the same handful of specs recur across every pin on
+ * screen (two sizes x four ring colours x labelled-or-not). Building one means serialising an SVG
+ * and percent-encoding it, which was previously happening once per marker per render -- and twice
+ * more per mousemove, since hover rebuilt both the grown and the resting icon. Memoised here so a
+ * re-render is a Map lookup.
+ */
+const iconCache = new Map<string, google.maps.Icon>();
+
+function cachedCompositeIcon(spec: CompositeSpec): google.maps.Icon {
+  const key = `${spec.size}|${spec.ringColor}|${spec.elevated ? 1 : 0}|${spec.count}|${spec.label ?? ""}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    // Names make the key space unbounded over a long panning session; this is a plain bound, not an
+    // LRU, because the working set is one viewport and a full rebuild is cheap.
+    if (iconCache.size > 1500) iconCache.clear();
+    icon = compositeCardIcon(spec);
+    iconCache.set(key, icon);
+  }
+  return icon;
 }
-/** Small red count badge for a cluster of 2+ companies at (near enough) the same spot -- offset to
- * the card's top-right corner. Also a plain SVG with no external image, for the same canvas-taint
- * reason as the card above. */
-function clusterBadgeIcon(count: number): google.maps.Icon {
-  const size = 24; // reference's own badge diameter
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#e0483e" stroke="#ffffff" stroke-width="2"/>
-    <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">${count > 99 ? "99+" : count}</text>
-  </svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(size, size),
-    anchor: new google.maps.Point(size / 2, size / 2),
-  };
+
+const faviconIconCache = new Map<string, google.maps.Icon>();
+
+function cachedFaviconIcon(url: string, size: number): google.maps.Icon {
+  const key = `${size}|${url}`;
+  let icon = faviconIconCache.get(key);
+  if (!icon) {
+    if (faviconIconCache.size > 1500) faviconIconCache.clear();
+    icon = faviconOverlayIcon(url, size);
+    faviconIconCache.set(key, icon);
+  }
+  return icon;
 }
 
 /** Meters represented by one screen pixel at this latitude/zoom -- the standard Web Mercator
@@ -202,6 +295,25 @@ function metersPerPixel(lat: number, zoom: number): number {
 // not just one ordinary card's width, or a neighbor still lands inside the stack's visual footprint.
 const FAN_SPREAD = Math.max(...FAN_OFFSETS.map((o) => Math.hypot(o.dx, o.dy)));
 const CLUSTER_PIXEL_RADIUS = GOLDEN_CARD_SIZE + FAN_SPREAD + 8;
+
+/** One rendered pin: the composite card, the favicon on top of it when there is one, and enough
+ * state to decide on the next render whether anything about it actually changed. */
+type Pin = {
+  card: google.maps.Marker;
+  favicon: google.maps.Marker | null;
+  spec: { size: number; ringColor: string; label: string | null; count: number };
+  signature: string;
+  members: Array<{ id: string; name: string; roles: number; faviconUrl: string | null }>;
+};
+
+function destroyPin(pin: Pin) {
+  google.maps.event.clearInstanceListeners(pin.card);
+  pin.card.setMap(null);
+  if (pin.favicon) {
+    google.maps.event.clearInstanceListeners(pin.favicon);
+    pin.favicon.setMap(null);
+  }
+}
 
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000;
@@ -263,15 +375,17 @@ function nearbyJobTiles(center: google.maps.LatLng): SearchTile[] {
 export default function JobsPage() {
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  /** Every rendered pin, keyed by cluster identity, so a re-render can diff instead of rebuild. */
+  const pinsRef = useRef<Map<string, Pin>>(new Map());
 
   const [jobs, setJobs] = useState<JobCardData[]>([]);
   // Mirrors `jobs` synchronously for the discovery loop below -- setJobs's re-render isn't
   // guaranteed to land before the loop's next await resumes, and checking a stale `jobs` closure
   // against TARGET_JOBS would let the loop run past the target it's meant to stop at.
   const jobsRef = useRef<JobCardData[]>([]);
+  /** Guards against an older /api/jobs response landing after a newer one. */
+  const loadTokenRef = useRef(0);
   const [companyPins, setCompanyPins] = useState<CompanyPin[]>([]);
-  const companyMarkersRef = useRef<google.maps.Marker[]>([]);
   const [profileComplete, setProfileComplete] = useState(true);
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
@@ -303,6 +417,8 @@ export default function JobsPage() {
   const [availableIndustries, setAvailableIndustries] = useState<Set<string>>(new Set());
   const idleSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const discoveringRef = useRef(false);
+  const lastReloadRef = useRef(0);
+  const pendingReloadRef = useRef(false);
   // The tile queue for wherever the map is centered right now -- reset whenever the center moves
   // to a different snapped grid cell, otherwise consumed TILES_PER_ROUND at a time so a "Find
   // more" click continues outward from where the last round left off instead of re-covering the
@@ -396,6 +512,15 @@ export default function JobsPage() {
     const map = mapRef.current;
     const bounds = map?.getBounds();
     if (!bounds) return;
+    // Above the floor only. A continent-wide bbox fills the route's 500-company LIMIT with pins
+    // that all land on the same few pixels, for a view nobody is reading individual cards in.
+    if ((map?.getZoom() ?? DEFAULT_ZOOM) < ZOOM_FLOOR) {
+      jobsRef.current = [];
+      setJobs([]);
+      setCompanyPins([]);
+      setNotice("Zoom in to see companies and roles.");
+      return;
+    }
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
@@ -408,10 +533,14 @@ export default function JobsPage() {
     if (filters.workMode) params.set("work_mode", filters.workMode);
     if (filters.goldenOnly) params.set("golden", "true");
 
+    // A pan during an in-flight read used to let the older response land last and repaint the map
+    // with the previous viewport's pins. Each load now invalidates the one before it.
+    const token = ++loadTokenRef.current;
     setLoading(true);
     try {
       const res = await fetch(`/api/jobs?${params}`);
       const data = await res.json();
+      if (token !== loadTokenRef.current) return;
       jobsRef.current = data.jobs ?? [];
       setJobs(jobsRef.current);
       setCompanyPins(data.companies ?? []);
@@ -423,15 +552,16 @@ export default function JobsPage() {
         setAvailableIndustries((prev) => new Set([...prev, ...data.availableIndustries]));
       }
     } catch {
-      setNotice("Could not load jobs. Try again.");
+      if (token === loadTokenRef.current) setNotice("Could not load jobs. Try again.");
     } finally {
-      setLoading(false);
+      if (token === loadTokenRef.current) setLoading(false);
     }
   }, [filters]);
 
   // Map bootstrap.
   useEffect(() => {
     let cancelled = false;
+    const pins = pinsRef.current;
     loadGoogleMaps().then(() => {
       if (cancelled || !mapDivRef.current || mapRef.current) return;
       const map = new google.maps.Map(mapDivRef.current, {
@@ -441,15 +571,25 @@ export default function JobsPage() {
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: "greedy",
+        minZoom: MIN_ZOOM,
+        maxZoom: MAX_ZOOM,
       });
       mapRef.current = map;
-      map.addListener("zoom_changed", () => setMapZoom(map.getZoom() ?? DEFAULT_ZOOM));
       map.addListener("idle", () => {
+        // Zoom is read here rather than from `zoom_changed`. That event fires repeatedly through a
+        // smooth zoom, and since the render effect depends on this value, every one of those ticks
+        // used to re-cluster and rebuild the whole map mid-animation. Markers are anchored to
+        // lat/lng, so they follow the animation on their own; re-clustering once it settles is
+        // both correct and the only moment the result can actually be read.
+        setMapZoom(map.getZoom() ?? DEFAULT_ZOOM);
+
         // Stored listings for the new viewport go up first — free, and shouldn't wait on the
         // debounce below (matches app/(app)/home/page.tsx's own leads-first-then-discover order).
         void loadJobs();
 
         if (idleSearchTimerRef.current) clearTimeout(idleSearchTimerRef.current);
+        // Never bill a sweep for a view the user cannot read individual companies in.
+        if ((map.getZoom() ?? DEFAULT_ZOOM) < ZOOM_FLOOR) return;
         idleSearchTimerRef.current = setTimeout(() => {
           idleSearchTimerRef.current = null;
           if (!discoveringRef.current) void discoverHere();
@@ -460,6 +600,12 @@ export default function JobsPage() {
       cancelled = true;
       if (idleSearchTimerRef.current) clearTimeout(idleSearchTimerRef.current);
       if (hoverHideTimerRef.current) clearTimeout(hoverHideTimerRef.current);
+      // Markers hold listeners that close over component state; leaving them attached to a map
+      // this component no longer owns leaks both. Read into a local first: the lint rule is right
+      // that `pinsRef.current` may be a different Map by the time a cleanup runs, and here it
+      // genuinely is -- the render effect replaces entries throughout the component's life.
+      for (const pin of pins.values()) destroyPin(pin);
+      pins.clear();
     };
     // loadJobs/discoverHere intentionally not deps: the idle listener closes over the first
     // instance, and re-registering it on every filter/discovering change would stack duplicate
@@ -472,228 +618,296 @@ export default function JobsPage() {
     if (mapRef.current) void loadJobs();
   }, [filters, loadJobs]);
 
-  /** Pixel-offset a lat/lng -- used to place a cluster's count badge at the card's corner rather
-   * than dead center, at whatever zoom is currently active. */
-  function offsetLatLng(lat: number, lng: number, dxPixels: number, dyPixels: number, zoom: number) {
-    const mpp = metersPerPixel(lat, zoom);
-    return {
-      lat: lat + (dyPixels * mpp) / 111320,
-      lng: lng + (dxPixels * mpp) / (111320 * Math.cos((lat * Math.PI) / 180)),
-    };
-  }
-
   /**
-   * Renders one always-individual company card (golden-tier companies, and any singleton cluster)
-   * with click -> the right-docked company panel (not the single-job modal -- there may be several
-   * open roles here) and a hover elevation (a deeper drop shadow, same card, no size change) that
-   * lifts it slightly off the map -- the "slight shadow highlight on hover" from the reference.
+   * Every pin on the map, in one pass.
+   *
+   * This used to be two independent effects -- one for companies with open roles, one for the
+   * "found, nothing right now" pins -- each running its own clusterByPixelDistance over its own
+   * half of the data. CLUSTER_PIXEL_RADIUS only ever separated a set from itself, so a has-roles
+   * card and a no-roles card sitting at the same address stayed two full-size overlapping cards at
+   * every zoom. Clustering the union is the fix, and merging the effects is what makes that
+   * possible.
+   *
+   * It also no longer tears the map down to rebuild it. The old version called setMap(null) on
+   * every marker and recreated all of them whenever `jobs`, `companyPins` or the zoom changed,
+   * which at a few hundred companies was thousands of marker constructions per zoom tick. Pins are
+   * now keyed by cluster identity and diffed: an unchanged pin is left completely alone, a changed
+   * one gets setIcon, and only genuinely departed pins are destroyed.
    */
-  function renderIndividualCard(
-    refArr: google.maps.Marker[],
-    position: { lat: number; lng: number },
-    companyId: string,
-    faviconUrl: string | null,
-    size: number,
-    ringColor: string,
-    title: string,
-    map: google.maps.Map,
-    name: string,
-  ) {
-    const card = new google.maps.Marker({ position, map, zIndex: 2, icon: backgroundCardIcon(size, ringColor) });
-    refArr.push(card);
-    const topMarker = faviconUrl
-      ? new google.maps.Marker({ position, map, title, zIndex: 3, icon: faviconOverlayIcon(faviconUrl, size) })
-      : card;
-    if (topMarker !== card) refArr.push(topMarker);
-    topMarker.setTitle(title);
-    topMarker.addListener("click", () => setSelectedCompanyId(companyId));
-    // Card edge, then the reference's 4px gap, then half the label chip's own height.
-    const labelPosition = offsetLatLng(position.lat, position.lng, 0, size / 2 + 4 + 13, mapZoom);
-    refArr.push(
-      new google.maps.Marker({ position: labelPosition, map, zIndex: 3, clickable: false, icon: nameLabelIcon(name) }),
-    );
-    topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
-      // Grow the card and its logo slightly as well as deepening the shadow -- a shadow change
-      // alone is easy to miss on a busy map, and the lift should read as "this one is under the
-      // cursor" at a glance.
-      const grown = Math.round(size * HOVER_SCALE);
-      card.setIcon(backgroundCardIcon(grown, ringColor, true));
-      if (topMarker !== card && faviconUrl) topMarker.setIcon(faviconOverlayIcon(faviconUrl, grown));
-      card.setZIndex(6);
-      topMarker.setZIndex(7);
-      clearHoverHide();
-      const box = mapDivRef.current?.getBoundingClientRect();
-      const dom = e.domEvent as MouseEvent | undefined;
-      if (!box || !dom) return;
-      setHovered({ companyIds: [companyId], x: dom.clientX - box.left, y: dom.clientY - box.top });
-    });
-    topMarker.addListener("mouseout", () => {
-      card.setIcon(backgroundCardIcon(size, ringColor, false));
-      if (topMarker !== card && faviconUrl) topMarker.setIcon(faviconOverlayIcon(faviconUrl, size));
-      card.setZIndex(2);
-      topMarker.setZIndex(3);
-      scheduleHoverHide();
-    });
-  }
-
-  /** A fanned stack (up to 3 offset slivers, matching the reference's tiled-deck look) for a
-   * cluster of 2+ ordinary (non-golden) companies too close together to tell apart at this zoom --
-   * clicking it zooms in rather than opening one company's detail, since there is no single company
-   * to show yet. Golden companies are never in this cluster to begin with (see the split below). */
-  function renderClusterFan(
-    refArr: google.maps.Marker[],
-    front: { lat: number; lng: number; faviconUrl: string | null },
-    count: number,
-    title: string,
-    map: google.maps.Map,
-    memberIds: string[],
-  ) {
-    const size = ORDINARY_CARD_SIZE;
-    const slivers = Math.min(count, 3);
-    for (let i = slivers - 1; i >= 1; i--) {
-      const offset = offsetLatLng(front.lat, front.lng, FAN_OFFSETS[i].dx, FAN_OFFSETS[i].dy, mapZoom);
-      refArr.push(new google.maps.Marker({ position: offset, map, zIndex: 1, clickable: false, icon: fanSliverIcon(size) }));
-    }
-    const frontOffset = offsetLatLng(front.lat, front.lng, FAN_OFFSETS[0].dx, FAN_OFFSETS[0].dy, mapZoom);
-    const card = new google.maps.Marker({ position: frontOffset, map, zIndex: 2, icon: backgroundCardIcon(size, "#1f8a54") });
-    refArr.push(card);
-    const topMarker = front.faviconUrl
-      ? new google.maps.Marker({ position: frontOffset, map, title, zIndex: 3, icon: faviconOverlayIcon(front.faviconUrl, size) })
-      : card;
-    if (topMarker !== card) refArr.push(topMarker);
-    topMarker.setTitle(title);
-    topMarker.addListener("click", () => {
-      map.panTo(frontOffset);
-      map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, 20));
-    });
-    // A stack had no hover behaviour at all, so everything below individual-card zoom felt dead.
-    // It lists its companies instead of one company's roles -- there is no single company to show
-    // yet, and picking one from the list is the step that opens a panel.
-    topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
-      const grown = Math.round(size * HOVER_SCALE);
-      card.setIcon(backgroundCardIcon(grown, "#1f8a54", true));
-      if (topMarker !== card && front.faviconUrl) topMarker.setIcon(faviconOverlayIcon(front.faviconUrl, grown));
-      card.setZIndex(6);
-      topMarker.setZIndex(7);
-      clearHoverHide();
-      const box = mapDivRef.current?.getBoundingClientRect();
-      const dom = e.domEvent as MouseEvent | undefined;
-      if (!box || !dom) return;
-      setHovered({ companyIds: memberIds, x: dom.clientX - box.left, y: dom.clientY - box.top });
-    });
-    topMarker.addListener("mouseout", () => {
-      card.setIcon(backgroundCardIcon(size, "#1f8a54", false));
-      if (topMarker !== card && front.faviconUrl) topMarker.setIcon(faviconOverlayIcon(front.faviconUrl, size));
-      card.setZIndex(2);
-      topMarker.setZIndex(3);
-      scheduleHoverHide();
-    });
-    // Reference pins its badge at top:-8px right:-8px on a 48px card -- i.e. 20px out from centre.
-    const badgeOffset = offsetLatLng(frontOffset.lat, frontOffset.lng, size * (20 / 48), -size * (20 / 48), mapZoom);
-    refArr.push(new google.maps.Marker({ position: badgeOffset, map, zIndex: 4, icon: clusterBadgeIcon(count), clickable: false }));
-  }
-
-  // Pins follow whatever the list currently holds, so filtering the list filters the map too.
-  // Golden-tier companies never cluster -- they stay individually visible and clickable at every
-  // zoom (the reference's own "notable companies always shown individually" pattern; Anthropic,
-  // Figma etc. keep their own card even in a dense area). Everything else clusters by on-screen
-  // distance (see clusterByPixelDistance): a fanned stack + count badge at a wide zoom, separating
-  // into individual cards once zoomed in enough to tell them apart.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
 
-    const byCompany = new Map<string, JobCardData[]>();
-    for (const job of jobs) {
-      if (job.company.lat == null || job.company.lng == null) continue;
-      const list = byCompany.get(job.company.id) ?? [];
-      list.push(job);
-      byCompany.set(job.company.id, list);
+    // Nothing is rendered below the floor. At a country-wide view every pin lands in the same few
+    // pixels anyway, so the only thing a full render buys there is a stalled main thread.
+    if (mapZoom < ZOOM_FLOOR) {
+      for (const pin of pinsRef.current.values()) destroyPin(pin);
+      pinsRef.current.clear();
+      return;
     }
-    const companies = Array.from(byCompany.values()).map((companyJobs) => ({
-      lat: companyJobs[0].company.lat as number,
-      lng: companyJobs[0].company.lng as number,
-      companyJobs,
-    }));
-    const golden = companies.filter((c) => c.companyJobs[0].company.goldenTier);
-    const ordinary = companies.filter((c) => !c.companyJobs[0].company.goldenTier);
+
+    type PinSource = {
+      id: string;
+      lat: number;
+      lng: number;
+      name: string;
+      faviconUrl: string | null;
+      goldenTier: string | null;
+      roles: number;
+    };
+
+    // Roles first: a company with open listings is described by `jobs`, which carries the live
+    // per-user application state the companies array does not.
+    const byCompany = new Map<string, PinSource>();
+    for (const job of jobs) {
+      const c = job.company;
+      if (c.lat == null || c.lng == null) continue;
+      const existing = byCompany.get(c.id);
+      if (existing) existing.roles++;
+      else
+        byCompany.set(c.id, {
+          id: c.id,
+          lat: c.lat,
+          lng: c.lng,
+          name: c.name,
+          faviconUrl: c.faviconUrl,
+          goldenTier: c.goldenTier ?? null,
+          roles: 1,
+        });
+    }
+    // Then the discovered-but-not-hiring pins, skipping anything already described above so a
+    // company never gets two cards.
+    for (const c of companyPins) {
+      if (c.lat == null || c.lng == null || byCompany.has(c.id)) continue;
+      if (c.hasOpenJobs) continue;
+      byCompany.set(c.id, {
+        id: c.id,
+        lat: c.lat,
+        lng: c.lng,
+        name: c.name,
+        faviconUrl: c.faviconUrl,
+        goldenTier: c.goldenTier,
+        roles: 0,
+      });
+    }
+
+    // Dense viewports can hold several hundred companies, and every one of them is a marker plus
+    // an O(n^2) crowding comparison below. The leads map hit exactly this and capped by zoom
+    // (app/(app)/home/page.tsx); the same ladder applies here. Survivors are chosen by distance
+    // from the map centre, not by tier, so zooming into a corner never shows pins from elsewhere
+    // in preference to the ones actually under the viewport.
+    const centre = map.getCenter();
+    let all = Array.from(byCompany.values());
+    const cap = PIN_CAP_BY_ZOOM.find(([minZoom]) => mapZoom >= minZoom)?.[1] ?? 40;
+    if (all.length > cap && centre) {
+      const cLat = centre.lat();
+      const cLng = centre.lng();
+      all = all
+        .map((p) => ({ p, d: haversineMeters(cLat, cLng, p.lat, p.lng) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, cap)
+        .map((x) => x.p);
+    }
+
+    // Golden-tier companies never cluster -- they stay individually visible and clickable at every
+    // zoom (the reference's own "notable companies always shown individually" pattern). Everything
+    // else clusters by on-screen distance.
+    const golden = all.filter((c) => c.goldenTier);
+    const ordinary = all.filter((c) => !c.goldenTier);
+
+    type Rendered = {
+      key: string;
+      lat: number;
+      lng: number;
+      members: PinSource[];
+      size: number;
+      ringColor: string;
+      title: string;
+      /** Label text before the crowding pass has had its say. */
+      name: string;
+    };
+
+    const rendered: Rendered[] = [];
 
     for (const g of golden) {
-      const first = g.companyJobs[0];
-      const totalRoles = g.companyJobs.length;
-      renderIndividualCard(
-        markersRef.current, { lat: g.lat, lng: g.lng }, first.company.id, first.company.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
-        `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map, first.company.name,
-      );
+      rendered.push({
+        key: `g:${g.id}`,
+        lat: g.lat,
+        lng: g.lng,
+        members: [g],
+        size: GOLDEN_CARD_SIZE,
+        ringColor: "#d4a72c",
+        title: g.roles
+          ? `${g.name} — ${g.roles} open role${g.roles > 1 ? "s" : ""}`
+          : `${g.name} — no open roles right now`,
+        name: g.name,
+      });
     }
 
     for (const cluster of clusterByPixelDistance(ordinary, mapZoom)) {
-      const front = [...cluster].sort((a, b) => b.companyJobs.length - a.companyJobs.length)[0];
-      const first = front.companyJobs[0];
-      const totalRoles = cluster.reduce((n, c) => n + c.companyJobs.length, 0);
-      if (cluster.length > 1) {
-        renderClusterFan(
-          markersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: first.company.faviconUrl }, cluster.length,
-          `${cluster.length} companies here — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map,
-          cluster.map((c) => c.companyJobs[0].company.id),
-        );
-      } else {
-        renderIndividualCard(
-          markersRef.current, { lat: front.lat, lng: front.lng }, first.company.id, first.company.faviconUrl, ORDINARY_CARD_SIZE, "#1f8a54",
-          `${first.company.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`, map, first.company.name,
-        );
-      }
+      // The company with the most open roles fronts the stack -- it is the one worth clicking.
+      const front = [...cluster].sort((a, b) => b.roles - a.roles)[0];
+      const totalRoles = cluster.reduce((n, c) => n + c.roles, 0);
+      const hasRoles = totalRoles > 0;
+      rendered.push({
+        // Keyed by the whole membership, so a cluster that gains or loses a company is treated as a
+        // different pin rather than silently keeping a stale badge count.
+        key: `c:${cluster.map((c) => c.id).sort().join(",")}`,
+        lat: front.lat,
+        lng: front.lng,
+        members: cluster,
+        size: ORDINARY_CARD_SIZE,
+        // Grey means "checked, nothing here right now" -- the same signal the single no-roles card
+        // carried before, now also correct for a stack where none of the members are hiring.
+        ringColor: hasRoles ? "#1f8a54" : "#d8dcd0",
+        title:
+          cluster.length > 1
+            ? `${cluster.length} companies here${hasRoles ? ` — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}` : " — no open roles right now"}`
+            : hasRoles
+              ? `${front.name} — ${totalRoles} open role${totalRoles > 1 ? "s" : ""}`
+              : `${front.name} — no open roles right now`,
+        name: front.name,
+      });
     }
-  }, [jobs, mapZoom]);
 
-  // Favicon-only cards for companies discovered but with zero open roles right now -- matches the
-  // leads map showing a pin for every business found, has-website or not. Skips anything already
-  // covered by the cards above (hasOpenJobs=true there) so a company never gets two pins. Same
-  // golden-never-clusters + fanned-stack rules as the has-jobs cards above. Still clickable (opens
-  // the company panel, which shows its empty state) -- the reference lets you open any company
-  // regardless of whether it's currently hiring.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    companyMarkersRef.current.forEach((m) => m.setMap(null));
-    companyMarkersRef.current = [];
-
-    const withoutJobs = companyPins.filter((c) => !c.hasOpenJobs && c.lat != null && c.lng != null) as Array<
-      CompanyPin & { lat: number; lng: number }
-    >;
-    const golden = withoutJobs.filter((c) => c.goldenTier);
-    const ordinary = withoutJobs.filter((c) => !c.goldenTier);
-
-    for (const c of golden) {
-      renderIndividualCard(
-        companyMarkersRef.current, { lat: c.lat, lng: c.lng }, c.id, c.faviconUrl, GOLDEN_CARD_SIZE, "#d4a72c",
-        `${c.name} — no open roles right now`, map, c.name,
+    // ── Label crowding ────────────────────────────────────────────────────────────────────────
+    // Every pin used to carry its name unconditionally, which is what made the chips pile on top of
+    // each other wherever companies sit close together. Same idea as the leads map's label pass: a
+    // pin with room around it shows its full name, one with a near neighbour shows a truncated one,
+    // and one in a genuinely packed spot shows none at all. Done here in geographic space rather
+    // than against the DOM, so it needs no projection, no rAF and no second pass -- the pixel
+    // thresholds are converted to metres at the current zoom exactly as the clusterer does it.
+    const labels = new Map<string, string | null>();
+    for (const item of rendered) {
+      const mpp = metersPerPixel(item.lat, mapZoom);
+      const fullMeters = LABEL_FULL_SPACING_PX * mpp;
+      const anyMeters = LABEL_MIN_SPACING_PX * mpp;
+      let nearest = Infinity;
+      for (const other of rendered) {
+        if (other === item) continue;
+        const d = haversineMeters(item.lat, item.lng, other.lat, other.lng);
+        if (d < nearest) nearest = d;
+        if (nearest < anyMeters) break; // already as crowded as it gets; stop comparing
+      }
+      labels.set(
+        item.key,
+        nearest >= fullMeters
+          ? item.name.length > 22
+            ? `${item.name.slice(0, 21)}…`
+            : item.name
+          : nearest >= anyMeters
+            ? `${item.name.slice(0, 3)}····`
+            : null,
       );
     }
 
-    for (const cluster of clusterByPixelDistance(ordinary, mapZoom)) {
-      const front = cluster[0];
-      if (cluster.length > 1) {
-        renderClusterFan(
-          companyMarkersRef.current, { lat: front.lat, lng: front.lng, faviconUrl: front.faviconUrl }, cluster.length,
-          `${cluster.length} companies here — no open roles right now`, map,
-          cluster.map((c) => c.id),
-        );
-      } else {
-        renderIndividualCard(
-          companyMarkersRef.current, { lat: front.lat, lng: front.lng }, front.id, front.faviconUrl, ORDINARY_CARD_SIZE, "#d8dcd0",
-          `${front.name} — no open roles right now`, map, front.name,
-        );
+    // ── Diff ──────────────────────────────────────────────────────────────────────────────────
+    const live = new Set(rendered.map((r) => r.key));
+    for (const [key, pin] of pinsRef.current) {
+      if (!live.has(key)) {
+        destroyPin(pin);
+        pinsRef.current.delete(key);
       }
     }
-  }, [companyPins, mapZoom]);
+
+    for (const item of rendered) {
+      const label = labels.get(item.key) ?? null;
+      const count = item.members.length;
+      // The stack's front card wears the favicon of whichever member has the most open roles.
+      const faviconUrl = [...item.members].sort((a, b) => b.roles - a.roles)[0].faviconUrl;
+      const signature = `${item.size}|${item.ringColor}|${count}|${label ?? ""}|${faviconUrl ?? ""}`;
+
+      const existing = pinsRef.current.get(item.key);
+      if (existing) {
+        // The common case by far: same pin, same look, nothing to do. Even when the look has
+        // changed (a label truncating as neighbours arrive) this is two setIcon calls rather than
+        // a destroy-and-rebuild, so the marker never blinks.
+        if (existing.signature !== signature) {
+          existing.signature = signature;
+          existing.spec = { size: item.size, ringColor: item.ringColor, label, count };
+          existing.card.setIcon(cachedCompositeIcon({ ...existing.spec, elevated: false }));
+          if (existing.favicon && faviconUrl) existing.favicon.setIcon(cachedFaviconIcon(faviconUrl, item.size));
+        }
+        existing.members = item.members;
+        existing.card.setTitle(item.title);
+        if (existing.favicon) existing.favicon.setTitle(item.title);
+        continue;
+      }
+
+      const position = { lat: item.lat, lng: item.lng };
+      const spec = { size: item.size, ringColor: item.ringColor, label, count };
+      const card = new google.maps.Marker({
+        position,
+        map,
+        title: item.title,
+        zIndex: 2,
+        icon: cachedCompositeIcon({ ...spec, elevated: false }),
+      });
+      const favicon = faviconUrl
+        ? new google.maps.Marker({
+            position,
+            map,
+            title: item.title,
+            zIndex: 3,
+            icon: cachedFaviconIcon(faviconUrl, item.size),
+          })
+        : null;
+
+      const pin: Pin = { card, favicon, spec, signature, members: item.members };
+      pinsRef.current.set(item.key, pin);
+
+      // Listeners close over `pin`, not over this render's data, so a later diff that mutates
+      // pin.members is picked up without re-registering anything.
+      const topMarker = favicon ?? card;
+      topMarker.addListener("click", () => {
+        if (pin.members.length > 1) {
+          // No single company to show yet -- zoom until the stack separates into its own cards.
+          map.panTo(position);
+          map.setZoom(Math.min((map.getZoom() ?? DEFAULT_ZOOM) + 3, MAX_ZOOM));
+        } else {
+          setSelectedCompanyId(pin.members[0].id);
+        }
+      });
+      topMarker.addListener("mouseover", (e: google.maps.MapMouseEvent) => {
+        // Grow the card and its logo slightly as well as deepening the shadow -- a shadow change
+        // alone is easy to miss on a busy map, and the lift should read as "this one is under the
+        // cursor" at a glance.
+        const grown = Math.round(pin.spec.size * HOVER_SCALE);
+        pin.card.setIcon(cachedCompositeIcon({ ...pin.spec, size: grown, elevated: true }));
+        if (pin.favicon && faviconUrl) pin.favicon.setIcon(cachedFaviconIcon(faviconUrl, grown));
+        pin.card.setZIndex(6);
+        pin.favicon?.setZIndex(7);
+        clearHoverHide();
+        const box = mapDivRef.current?.getBoundingClientRect();
+        const dom = e.domEvent as MouseEvent | undefined;
+        if (!box || !dom) return;
+        setHovered({
+          companyIds: pin.members.map((m) => m.id),
+          x: dom.clientX - box.left,
+          y: dom.clientY - box.top,
+        });
+      });
+      topMarker.addListener("mouseout", () => {
+        pin.card.setIcon(cachedCompositeIcon({ ...pin.spec, elevated: false }));
+        if (pin.favicon && faviconUrl) pin.favicon.setIcon(cachedFaviconIcon(faviconUrl, pin.spec.size));
+        pin.card.setZIndex(2);
+        pin.favicon?.setZIndex(3);
+        scheduleHoverHide();
+      });
+    }
+    // clearHoverHide/scheduleHoverHide are intentionally not deps: they are re-created on every
+    // render, and listing them would re-run this whole diff (and so re-register every listener)
+    // on each one. They only ever touch a ref, so the instance captured here stays correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs, companyPins, mapZoom]);
 
   // Hard ceiling on how many small crawl batches ONE tile will chase before moving on, in case
   // something upstream keeps claiming hasMore (a stuck company, a bug) -- caps worst-case latency
   // per tile rather than looping indefinitely.
   const MAX_ROUNDS_PER_TILE = 10;
+
+  /** Floor on how often the incremental refresh inside a search may repaint the map. */
+  const RELOAD_MIN_INTERVAL_MS = 1500;
 
   function currentTileQueue(center: google.maps.LatLng) {
     const key = `${Math.round(center.lat() / JOBS_GRID_STEP_DEG)}_${Math.round(center.lng() / JOBS_GRID_STEP_DEG)}`;
@@ -729,6 +943,10 @@ export default function JobsPage() {
   async function discoverHere() {
     const map = mapRef.current;
     if (!map || discoveringRef.current) return;
+    if ((map.getZoom() ?? DEFAULT_ZOOM) < ZOOM_FLOOR) {
+      setNotice("Zoom in to search this area.");
+      return;
+    }
     const center = map.getCenter();
     if (!center) return;
     const queue = currentTileQueue(center);
@@ -773,9 +991,21 @@ export default function JobsPage() {
           if (data.placesCalls > 0) anyPlacesCalls = true;
           if (data.charged) anyCharged = true;
 
-          // Refresh after every round, not just at the end -- this is what makes discovery feel
-          // incremental instead of one long wait.
-          if (data.companies > 0 || data.placesCalls > 0) await loadJobs();
+          // Refresh as the crawl progresses -- this is what makes discovery feel incremental
+          // instead of one long wait. Rate-limited, though: a round can complete in well under a
+          // second, and reloading on every one of them meant the API's four queries plus a full
+          // re-render dozens of times inside a single search, which is most of what made searching
+          // feel slow. At most one refresh per RELOAD_MIN_INTERVAL_MS; the final one below is
+          // unconditional, so nothing is ever left unshown.
+          if (data.companies > 0 || data.placesCalls > 0) {
+            const now = Date.now();
+            if (now - lastReloadRef.current >= RELOAD_MIN_INTERVAL_MS) {
+              lastReloadRef.current = now;
+              await loadJobs();
+            } else {
+              pendingReloadRef.current = true;
+            }
+          }
           if (anyCharged) window.dispatchEvent(new Event("gigzman:credits-changed"));
 
           if (!data.hasMore) break;
@@ -784,6 +1014,11 @@ export default function JobsPage() {
         if (jobsRef.current.length >= TARGET_JOBS) break;
       }
 
+      if (pendingReloadRef.current) {
+        pendingReloadRef.current = false;
+        lastReloadRef.current = Date.now();
+        await loadJobs();
+      }
       setCanFindMore(queue.cursor < queue.tiles.length);
       if (jobsRef.current.length >= TARGET_JOBS) {
         setNotice(`Found ${jobsRef.current.length} roles nearby.`);
@@ -854,7 +1089,7 @@ export default function JobsPage() {
               <button
                 type="button"
                 onClick={() => setFilters((f) => ({ ...f, goldenOnly: !f.goldenOnly }))}
-                style={{ ...floatingSelectStyle, cursor: "pointer", background: filters.goldenOnly ? "#f5e6bf" : "var(--g-white)", color: filters.goldenOnly ? "#7a5c12" : "var(--g-ink)", fontWeight: 700 }}
+                style={{ ...floatingSelectStyle, cursor: "pointer", background: filters.goldenOnly ? "#f5e6bf" : "var(--g-white)", color: filters.goldenOnly ? "#7a5c12" : "var(--g-ink)", fontWeight: 600 }}
               >
                 ★ Golden only
               </button>
@@ -864,8 +1099,8 @@ export default function JobsPage() {
                 disabled={discovering}
                 style={{
                   padding: "8px 16px", borderRadius: "var(--radius-pill)", border: "none",
-                  background: "var(--g-green-darker)", color: "#fff", fontSize: 12.5, fontWeight: 700,
-                  cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1, boxShadow: "var(--shadow-card)",
+                  background: "var(--g-green-darker)", color: "#fff", fontSize: 12.5, fontWeight: 600,
+                  cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1, boxShadow: "var(--shadow-pop)",
                 }}
               >
                 {discovering
@@ -876,14 +1111,14 @@ export default function JobsPage() {
               </button>
             </div>
             {notice && (
-              <p style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-ink-soft)", background: "var(--g-white)", padding: "6px 12px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", margin: 0, maxWidth: 340 }}>
+              <p style={{ fontSize: 11.5, fontWeight: 500, color: "var(--g-ink-soft)", background: "var(--g-white)", border: "1px solid var(--g-border)", padding: "6px 12px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-pop)", margin: 0, maxWidth: 340 }}>
                 {notice}
               </p>
             )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
-            <div style={{ display: "flex", background: "var(--g-white)", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", padding: 3, gap: 2 }}>
+            <div style={{ display: "flex", background: "var(--g-white)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-pop)", padding: 3, gap: 2 }}>
               <ViewToggleButton active={viewMode === "map"} onClick={() => setViewMode("map")} icon={<MapsPinIcon size={14} color={viewMode === "map" ? "#fff" : "var(--g-ink-soft)"} />} label="Map" />
               <ViewToggleButton active={viewMode === "list"} onClick={() => setViewMode("list")} icon={<TableIcon size={14} color={viewMode === "list" ? "#fff" : "var(--g-ink-soft)"} />} label="List" />
             </div>
@@ -917,10 +1152,10 @@ export default function JobsPage() {
               position: "absolute", left: hovered.x + 14, top: hovered.y - 10,
               width: 250, maxHeight: 300, overflowY: "auto",
               background: "var(--g-white)", border: "1px solid var(--g-border)",
-              borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)", zIndex: 10, padding: 10,
+              borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-pop)", zIndex: 10, padding: 10,
             }}
           >
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
               {hoveredStack.length} companies here
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -936,7 +1171,7 @@ export default function JobsPage() {
                     background: "var(--g-white)", textAlign: "left", width: "100%",
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {c.name}
                   </span>
                   <span style={{ flexShrink: 0, fontSize: 10.5, color: "var(--g-gray-500)" }}>
@@ -962,12 +1197,12 @@ export default function JobsPage() {
               background: "var(--g-white)",
               border: "1px solid var(--g-border)",
               borderRadius: "var(--radius-md)",
-              boxShadow: "var(--shadow-card)",
+              boxShadow: "var(--shadow-pop)",
               zIndex: 10,
               padding: 10,
             }}
           >
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
               {hoveredCompany.name}
               {hoveredJobs.length > 0
                 ? ` · ${hoveredJobs.length} open role${hoveredJobs.length > 1 ? "s" : ""}`
@@ -989,7 +1224,7 @@ export default function JobsPage() {
                   onClick={() => setSelected(job)}
                 >
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {job.title}
                     </div>
                     {job.location && (
@@ -1005,7 +1240,7 @@ export default function JobsPage() {
                       void toggleSave(job);
                     }}
                     style={{
-                      flexShrink: 0, fontSize: 10.5, fontWeight: 700, padding: "5px 9px",
+                      flexShrink: 0, fontSize: 10.5, fontWeight: 600, padding: "5px 9px",
                       borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
                       background: job.applicationStatus ? "var(--g-green-mint)" : "var(--g-green-darker)",
                       color: job.applicationStatus ? "var(--g-green-text)" : "#fff",
@@ -1042,7 +1277,7 @@ export default function JobsPage() {
                 style={{
                   display: "block", padding: "9px 12px", borderRadius: "var(--radius-sm)",
                   background: "var(--g-green-mint)", color: "var(--g-green-text)", textDecoration: "none",
-                  fontSize: 12.5, fontWeight: 700,
+                  fontSize: 12.5, fontWeight: 600,
                 }}
               >
                 Add your resume to unlock your match on every job →
@@ -1050,7 +1285,7 @@ export default function JobsPage() {
             )}
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="stagger" style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
             {(loading || discovering) && !jobs.length && <Empty>{discovering ? "Searching this area…" : "Loading…"}</Empty>}
             {!loading && !discovering && !jobs.length && (
               <Empty>
@@ -1105,7 +1340,7 @@ function CompanyJobsPanel({
         display: "flex", flexDirection: "column",
       }}
     >
-      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : jobs.length ? "var(--g-green-darker)" : "var(--g-gray-500)" }}>
+      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : jobs.length ? "var(--g-green-darker)" : "var(--g-gray-500)" }}>
         {golden ? "Golden opportunity" : jobs.length ? "Hiring" : "No open roles"}
       </div>
       <div style={{ padding: 16, borderBottom: "1px solid var(--g-border)", display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -1114,7 +1349,7 @@ function CompanyJobsPanel({
           <img src={company.faviconUrl} alt="" width={40} height={40} style={{ borderRadius: 8, border: "1px solid var(--g-border)", flexShrink: 0 }} />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--g-ink)" }}>{company.name}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--g-ink)" }}>{company.name}</div>
           <div style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
             {loading ? "Loading roles…" : `${jobs.length} open role${jobs.length === 1 ? "" : "s"}`}
           </div>
@@ -1140,7 +1375,7 @@ function CompanyJobsPanel({
         )}
         {jobs.map((job) => (
           <div key={job.id} style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 12 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
               {job.jobFamily && <ChipTag>{JOB_FAMILY_LABEL[job.jobFamily] ?? job.jobFamily}</ChipTag>}
               {job.location && <ChipTag>{job.location}</ChipTag>}
@@ -1150,7 +1385,7 @@ function CompanyJobsPanel({
               <button
                 type="button"
                 onClick={() => onOpenJob(job)}
-                style={{ flex: 1, padding: "8px 0", borderRadius: "var(--radius-sm)", border: "1px solid var(--g-border)", background: "var(--g-white)", color: "var(--g-ink)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                style={{ flex: 1, padding: "8px 0", borderRadius: "var(--radius-sm)", border: "1px solid var(--g-border)", background: "var(--g-white)", color: "var(--g-ink)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 View details
               </button>
@@ -1158,7 +1393,7 @@ function CompanyJobsPanel({
                 type="button"
                 onClick={() => onSave(job)}
                 style={{
-                  padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
+                  padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
                   background: job.applicationStatus ? "var(--g-green-mint)" : "var(--g-green-darker)",
                   color: job.applicationStatus ? "var(--g-green-text)" : "#fff",
                 }}
@@ -1175,7 +1410,7 @@ function CompanyJobsPanel({
 
 function ChipTag({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--g-ink-soft)", background: "var(--g-cream)", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>
+    <span style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-ink-soft)", background: "var(--g-cream)", padding: "3px 8px", borderRadius: "var(--radius-pill)", whiteSpace: "nowrap" }}>
       {children}
     </span>
   );
@@ -1191,7 +1426,7 @@ function ViewToggleButton({ active, onClick, icon, label }: { active: boolean; o
         display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
         borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
         background: active ? "var(--g-green-darker)" : "transparent",
-        color: active ? "#fff" : "var(--g-ink-soft)", fontSize: 12, fontWeight: 700,
+        color: active ? "#fff" : "var(--g-ink-soft)", fontSize: 12, fontWeight: 600,
       }}
     >
       {icon} {label}
@@ -1201,7 +1436,7 @@ function ViewToggleButton({ active, onClick, icon, label }: { active: boolean; o
 
 function StatPill({ label, loading }: { label: string; loading?: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--g-white)", padding: "7px 14px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-card)", fontSize: 12, fontWeight: 700, color: loading ? "var(--g-gray-500)" : "var(--g-ink)" }}>
+    <span className="tnum" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--g-white)", border: "1px solid var(--g-border)", padding: "6px 13px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-pop)", fontSize: 12, fontWeight: 600, color: loading ? "var(--g-gray-500)" : "var(--g-ink)" }}>
       {loading && <Spinner />}
       {loading ? `Loading ${label}…` : label}
     </span>
@@ -1222,19 +1457,19 @@ function Spinner() {
 }
 
 const floatingSelectStyle: React.CSSProperties = {
-  padding: "8px 12px",
+  padding: "7px 12px",
   borderRadius: "var(--radius-pill)",
-  border: "none",
+  border: "1px solid var(--g-border)",
   background: "var(--g-white)",
   color: "var(--g-ink)",
   fontSize: 12,
   fontFamily: "inherit",
-  boxShadow: "var(--shadow-card)",
+  boxShadow: "var(--shadow-pop)",
 };
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", textAlign: "center", padding: "40px 20px", lineHeight: 1.6 }}>
+    <p className="sunk" style={{ fontSize: 12.5, color: "var(--g-gray-500)", textAlign: "center", padding: "40px 20px", lineHeight: 1.6, borderRadius: "var(--radius-md)", margin: 0 }}>
       {children}
     </p>
   );

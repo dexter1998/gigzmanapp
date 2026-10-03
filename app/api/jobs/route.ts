@@ -38,16 +38,14 @@ export async function GET(req: NextRequest) {
   const centerLat = bounded ? (swLat + neLat) / 2 : null;
   const centerLng = bounded ? (swLng + neLng) / 2 : null;
 
-  const [profile] = await sql`SELECT * FROM applicant_profiles WHERE user_email = ${userEmail}`;
-  const profileComplete = isProfileComplete(profile ?? null);
 
   // Facets: what the Job Profile / Industry dropdowns actually offer. Bounded and is_open-scoped
   // the same as the main query, but deliberately ignoring the family/industry filters themselves —
   // a filter shows what else is available, not just what the current selection already narrowed to.
   // Built from real scraped data on purpose (per product decision): a family with zero open
   // listings anywhere on screen has nothing behind it and would just be a dead dropdown entry.
-  const facetRows = bounded
-    ? await sql`
+  const facetRowsQuery = bounded
+    ? sql`
         SELECT DISTINCT j.job_family, c.category
           FROM job_listings j
           JOIN job_companies c ON c.id = j.company_id
@@ -55,16 +53,12 @@ export async function GET(req: NextRequest) {
            AND c.lat BETWEEN ${Math.min(swLat, neLat)} AND ${Math.max(swLat, neLat)}
            AND c.lng BETWEEN ${Math.min(swLng, neLng)} AND ${Math.max(swLng, neLng)}
       `
-    : await sql`
+    : sql`
         SELECT DISTINCT j.job_family, c.category
           FROM job_listings j
           JOIN job_companies c ON c.id = j.company_id
          WHERE j.is_open = true
       `;
-  const availableFamilies = Array.from(new Set(facetRows.map((r) => r.job_family).filter(Boolean)));
-  const availableIndustries = Array.from(
-    new Set(facetRows.map((r) => (r.category ? TYPE_TO_SECTION[r.category as string] : null)).filter(Boolean))
-  );
 
   // Every discovered company in view, not just ones with an open role -- mirrors the leads map,
   // where a business gets a pin the moment it's found regardless of whether it turned out to need
@@ -72,8 +66,8 @@ export async function GET(req: NextRequest) {
   // full green/gold marker (rendered from `jobs` below) or the plain "checked, nothing right now"
   // dot the map falls back to. Without this a company with zero listings was invisible even though
   // real crawl money had just been spent finding it.
-  const companies = bounded
-    ? await sql`
+  const companiesQuery = bounded
+    ? sql`
         SELECT c.id, c.domain, c.company_name, c.favicon_url, c.lat, c.lng, c.golden_tier,
                c.scrape_status, EXISTS (
                  SELECT 1 FROM job_listings j WHERE j.company_id = c.id AND j.is_open = true
@@ -94,9 +88,11 @@ export async function GET(req: NextRequest) {
            }
          LIMIT ${MAX_LIMIT}
       `
-    : [];
+    // Unbounded (no viewport) means no company pins to draw at all, so this resolves immediately
+    // rather than issuing a query.
+    : Promise.resolve([]);
 
-  const rows = await sql`
+  const rowsQuery = sql`
     SELECT j.id, j.title, j.apply_url, j.location, j.description,
            j.job_family, j.seniority, j.seniority_rank, j.work_mode, j.employment_type,
            j.min_experience_years, j.max_experience_years,
@@ -132,6 +128,23 @@ export async function GET(req: NextRequest) {
      }
      LIMIT ${limit}
   `;
+
+  // These four reads are independent of each other, and every one of them is a separate round trip
+  // to RDS. Awaited in sequence they stacked four latencies onto a request the map fires on every
+  // single pan — which is most of what "the jobs map is slow" was. Nothing here reads another's
+  // result, so they go out together.
+  const [profileRows, facetRows, companies, rows] = await Promise.all([
+    sql`SELECT * FROM applicant_profiles WHERE user_email = ${userEmail}`,
+    facetRowsQuery,
+    companiesQuery,
+    rowsQuery,
+  ]);
+  const profile = profileRows[0];
+  const profileComplete = isProfileComplete(profile ?? null);
+  const availableFamilies = Array.from(new Set(facetRows.map((r) => r.job_family).filter(Boolean)));
+  const availableIndustries = Array.from(
+    new Set(facetRows.map((r) => (r.category ? TYPE_TO_SECTION[r.category as string] : null)).filter(Boolean))
+  );
 
   const jobs = rows.map((r) => {
     // The opportunity score is locked, not merely hidden: with no profile there is nothing to
@@ -200,7 +213,14 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const companyPins = companies.map((c) => ({
+  // The tagged-template result is untyped rows; naming the shape here is what the pin mapping
+  // below is actually relying on.
+  type CompanyPinRow = {
+    id: string; domain: string; company_name: string | null; favicon_url: string | null;
+    lat: number | null; lng: number | null; golden_tier: string | null;
+    scrape_status: string | null; has_open_jobs: boolean;
+  };
+  const companyPins = (companies as unknown as CompanyPinRow[]).map((c) => ({
     id: c.id,
     domain: c.domain,
     name: c.company_name ?? c.domain,
