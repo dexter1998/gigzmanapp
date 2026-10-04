@@ -20,23 +20,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const email = await requireAdmin();
   return (
     <>
-      {/* Runs before hydration so there's no light-mode flash on a full page load/refresh —
-          ThemeSetter's effect (below) only fires after mount, which would otherwise paint once
-          in the wrong theme first. */}
-      <script dangerouslySetInnerHTML={{ __html: "document.documentElement.setAttribute('data-bs-theme','dark')" }} />
+      {/* Tabler's stylesheet is still loaded (above) because the pages not yet rebuilt use its
+          classes; its dark mode keys off `data-bs-theme` on <html>, which this layout does not own.
+          The shell and the Overview are on the console's own tokens now, so the two coexist the way
+          Tailwind and Bootstrap already do here — see docs/MANTIS_ADMIN_TABLER_SYSTEM.md. */}
+      <script dangerouslySetInnerHTML={{ __html: "document.documentElement.setAttribute('data-bs-theme','dark');document.documentElement.setAttribute('data-admin','')" }} />
       <ThemeSetter />
-      <div className="page">
+      <div className="mantis-admin flex min-h-screen">
         <AdminNav email={email} />
-        <div className="page-wrapper">
+        <div className="flex min-w-0 flex-1 flex-col pt-12 lg:pt-0">
           <Header email={email} />
-          {children}
-          <footer className="footer footer-transparent d-print-none">
-            <div className="container-xl">
-              <div className="row text-secondary" style={{ fontSize: 11.5 }}>
-                <div className="col">Mantis Admin · read-only console</div>
-                <div className="col-auto">Tabler Admin Template · MIT</div>
-              </div>
-            </div>
+          <main className="min-w-0 flex-1">{children}</main>
+          <footer className="rule-t px-5 py-3">
+            <p className="m-0 text-[11px] text-[var(--ink-faint)]">Mantis Admin · read-only console</p>
           </footer>
         </div>
       </div>

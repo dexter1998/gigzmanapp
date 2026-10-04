@@ -2,98 +2,106 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  IconLayoutDashboard, IconUsers, IconChartBar, IconMailbox, IconBriefcase,
-  IconMail, IconSearch, IconActivity, IconRocket,
+  IconLayoutGrid, IconUsers, IconChartBar, IconMail, IconSearch, IconActivity,
+  IconBriefcase, IconInbox, IconRocket, IconMenu2, IconX,
 } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
 import { NAV, CAMPAIGNS_LINK } from "./nav-data";
 
-/** Real @tabler/icons-react glyphs — replaces the hand-drawn inline SVGs the previous custom
- * design used, per the Tabler-library-first redesign (docs/MANTIS_ADMIN_TABLER_SYSTEM.md). */
+/**
+ * The console's own rail.
+ *
+ * Was Tabler's `navbar-vertical`, which meant the shell sat on Tabler's navy dark while the pages
+ * being rebuilt sat on the product's warm dark — two different darks touching down the middle of
+ * the screen. Nav structure still comes from nav-data.ts, so the sidebar and the breadcrumb cannot
+ * drift apart; only the clothes changed.
+ */
 const ICONS: Record<string, React.ReactNode> = {
-  overview: <IconLayoutDashboard size={18} stroke={1.75} />,
-  users: <IconUsers size={18} stroke={1.75} />,
-  economics: <IconChartBar size={18} stroke={1.75} />,
-  mailing: <IconMail size={18} stroke={1.75} />,
-  pseo: <IconSearch size={18} stroke={1.75} />,
-  health: <IconActivity size={18} stroke={1.75} />,
-  inbound: <IconMailbox size={18} stroke={1.75} />,
-  campaigns: <IconRocket size={18} stroke={1.75} />,
-  jobs: <IconBriefcase size={18} stroke={1.75} />,
+  overview: <IconLayoutGrid size={16} />,
+  users: <IconUsers size={16} />,
+  economics: <IconChartBar size={16} />,
+  inbound: <IconInbox size={16} />,
+  jobs: <IconBriefcase size={16} />,
+  mailing: <IconMail size={16} />,
+  pseo: <IconSearch size={16} />,
+  health: <IconActivity size={16} />,
+  campaigns: <IconRocket size={16} />,
 };
 
-/**
- * Tabler's real `navbar navbar-vertical` structure (aside + navbar-nav + nav-item/nav-link),
- * `data-bs-theme="dark"` for the dark rail Tabler ships out of the box. Interactivity (mobile
- * collapse) is plain React state rather than Bootstrap's data-bs-toggle JS — see
- * docs/MANTIS_ADMIN_TABLER_SYSTEM.md for why: Radix/React state avoids the imperative-DOM vs
- * virtual-DOM conflicts Bootstrap's own JS can hit inside a React tree.
- */
 export function AdminNav({ email }: { email: string }) {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => setMobileOpen(false), [pathname]);
+  const pathname = usePathname() ?? "";
+  const [open, setOpen] = useState(false);
+  const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
-  function isActive(href: string) {
-    return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
-  }
+  const body = (
+    <>
+      <div className="flex items-center gap-2 px-4 py-4">
+        <Link href="/admin" className="flex items-center gap-2 no-underline">
+          <span className="text-[15px] font-semibold tracking-tight text-[var(--ink)]">Mantis</span>
+          <span className="rounded-full border border-[var(--rule)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">
+            Admin
+          </span>
+        </Link>
+      </div>
+
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4">
+        {[...NAV, { group: CAMPAIGNS_LINK.group, items: [CAMPAIGNS_LINK] }].map(({ group, items }) => (
+          <div key={group}>
+            <p className="m-0 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">
+              {group}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {items.map((it) => {
+                const on = isActive(it.href);
+                return (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    onClick={() => setOpen(false)}
+                    className="adm-nav-row flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] no-underline"
+                    data-on={on ? "true" : "false"}
+                  >
+                    <span className="shrink-0">{ICONS[it.icon]}</span>
+                    <span className="truncate">{it.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="rule-t px-4 py-3">
+        <p className="m-0 truncate text-[12px] text-[var(--ink-muted)]">{email}</p>
+        <p className="m-0 text-[10.5px] text-[var(--ink-faint)]">read-only console</p>
+      </div>
+    </>
+  );
 
   return (
-    <aside className="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
-      <div className="container-fluid">
-        <button
-          className="navbar-toggler"
-          type="button"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon" />
-        </button>
+    <>
+      {/* Mobile opener. The drawer is React state, not Bootstrap's data-bs-toggle — same reason
+          the rest of this console uses Radix over Bootstrap JS. */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        className="rule-b fixed inset-x-0 top-0 z-50 flex h-12 items-center gap-2 border-0 bg-[var(--surface)] px-4 text-[13px] text-[var(--ink)] lg:hidden"
+      >
+        {open ? <IconX size={18} /> : <IconMenu2 size={18} />}
+        <span className="font-semibold">Mantis Admin</span>
+      </button>
 
-        <h1 className="navbar-brand navbar-brand-autodark">
-          <Link href="/admin" className="d-flex align-items-center gap-2 text-white text-decoration-none">
-            <span className="fw-bold">Mantis</span>
-            <span className="badge bg-blue-lt">Admin</span>
-          </Link>
-        </h1>
+      <aside className="rule-r sticky top-0 hidden h-screen w-56 shrink-0 flex-col bg-[var(--surface)] lg:flex">
+        {body}
+      </aside>
 
-        <button type="button" className="btn-close btn-close-white d-lg-none ms-auto" onClick={() => setMobileOpen(false)} aria-label="Close" style={mobileOpen ? undefined : { display: "none" }} />
-
-        <div className={cn("navbar-collapse adm-navbar-collapse", mobileOpen && "is-open")}>
-          <ul className="navbar-nav pt-lg-3">
-            {NAV.map(({ group, items }) => (
-              <li className="nav-item" key={group}>
-                <div className="navbar-nav-label px-3 pt-3 pb-1 text-uppercase text-secondary" style={{ fontSize: 10.5, letterSpacing: "0.07em", fontWeight: 700 }}>
-                  {group}
-                </div>
-                {items.map((it) => (
-                  <Link key={it.href} href={it.href} className={cn("nav-link", isActive(it.href) && "active")}>
-                    <span className="nav-link-icon d-md-none d-lg-inline-block">{ICONS[it.icon]}</span>
-                    <span className="nav-link-title">{it.label}</span>
-                  </Link>
-                ))}
-              </li>
-            ))}
-
-            <li className="nav-item mt-3">
-              <div className="navbar-nav-label px-3 pt-3 pb-1 text-uppercase text-secondary" style={{ fontSize: 10.5, letterSpacing: "0.07em", fontWeight: 700 }}>
-                Outreach
-              </div>
-              <a href={CAMPAIGNS_LINK.href} className="nav-link text-warning">
-                <span className="nav-link-icon d-md-none d-lg-inline-block">{ICONS[CAMPAIGNS_LINK.icon]}</span>
-                <span className="nav-link-title">{CAMPAIGNS_LINK.label}</span>
-              </a>
-            </li>
-          </ul>
-
-          <div className="mt-auto px-3 py-3 text-secondary" style={{ fontSize: 11.5 }}>
-            {email}
-            <br />read-only console
-          </div>
-        </div>
-      </div>
-    </aside>
+      {open && (
+        <aside className="fixed inset-x-0 bottom-0 top-12 z-40 flex flex-col overflow-y-auto bg-[var(--surface)] lg:hidden">
+          {body}
+        </aside>
+      )}
+    </>
   );
 }

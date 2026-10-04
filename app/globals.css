@@ -122,6 +122,125 @@
   font-feature-settings: "cv11", "ss01";
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════
+   ADMIN CONSOLE TOKENS
+
+   The admin is the same design language as the product surface above, stepped for a dark canvas —
+   not an inverted copy of it. Dark mode is selected, not flipped: each value is its own step off
+   the same oklch ramps, chosen against the dark surface.
+
+   Scoped to `.mantis-admin` so it cannot leak into the product or the marketing site, exactly as
+   `.mantis-app` is scoped. The console still loads Tabler for the pages not yet moved across, and
+   the two coexist the way Tailwind and Bootstrap already do here — see
+   docs/MANTIS_ADMIN_TABLER_SYSTEM.md.
+   ═══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.mantis-admin {
+  --canvas:       oklch(0.168 0.006 72);
+  --surface:      oklch(0.208 0.007 72);
+  --surface-sunk: oklch(0.148 0.006 72);
+  --ink:          oklch(0.955 0.004 90);
+  --ink-muted:    oklch(0.675 0.010 80);
+  --ink-faint:    oklch(0.50 0.010 78);
+  --rule:         oklch(0.285 0.007 72);
+  --rule-strong:  oklch(0.38 0.008 72);
+
+  /* The brand green, lifted for a dark canvas — the product's own accent reads too dark here. */
+  --accent:       oklch(0.7200 0.1690 131.5);
+  --accent-ink:   oklch(0.168 0.006 72);
+  --accent-soft:  oklch(0.3100 0.0720 132.0);
+  --accent-text:  oklch(0.8100 0.1750 131.0);
+
+  /* Status. Fixed, never themed, and never the only carrier of meaning — every use pairs with a
+     glyph or a word. */
+  --ok:       #0ca30c;
+  --warn:     #fab219;
+  --serious:  #ec835a;
+  --critical: #d03b3b;
+
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+
+  --shadow-pop: 0 1px 2px oklch(0 0 0 / 0.4), 0 16px 40px -10px oklch(0 0 0 / 0.55);
+
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Grid, under our own class names.
+   -------------------------------------------------------------------------------------------
+   Tailwind's `.grid` and Bootstrap's `.grid` are the same name with different meanings, and this
+   console loads both: Bootstrap 5 ships `.grid { display:grid; grid-template-columns: repeat(12,
+   1fr) }` as its own grid system, while Tailwind's is display-only with the track count coming
+   from a separate `grid-cols-*` utility. Tailwind's utilities live in a CSS layer, so unlayered
+   Bootstrap wins the template outright — asking for `grid-cols-3` produced six columns, and
+   `grid-cols-6` produced six content-sized ones. Exactly the `.collapse` collision documented in
+   docs/MANTIS_ADMIN_TABLER_SYSTEM.md, one class along.
+
+   Same fix as that one: never put the literal colliding name on the element. These do the job
+   under names only this console uses, so there is nothing to lose the cascade to. */
+.mantis-admin .adm-grid { display: grid; gap: 12px; }
+.mantis-admin .adm-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mantis-admin .adm-grid-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mantis-admin .adm-grid-3 { grid-template-columns: minmax(0, 1fr); }
+.mantis-admin .adm-grid-2 { grid-template-columns: minmax(0, 1fr); }
+.mantis-admin .adm-gap-4 { gap: 16px; }
+
+@media (min-width: 768px) {
+  .mantis-admin .adm-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mantis-admin .adm-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mantis-admin .adm-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .mantis-admin .adm-grid-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .mantis-admin .adm-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* The wide member of a 3-up row. */
+@media (min-width: 1200px) {
+  .mantis-admin .adm-span-2 { grid-column: span 2 / span 2; }
+}
+
+/* Nav row, with the accent marker on the active item — the same treatment the product sidebar
+   uses, so the two consoles read as one system. */
+.mantis-admin .adm-nav-row {
+  position: relative; color: var(--ink-muted);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.mantis-admin .adm-nav-row:hover { background: var(--surface-sunk); color: var(--ink); }
+.mantis-admin .adm-nav-row[data-on="true"] { background: var(--surface-sunk); color: var(--ink); font-weight: 600; }
+.mantis-admin .adm-nav-row[data-on="true"]::before {
+  content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 16px; border-radius: 999px; background: var(--accent);
+}
+
+/* The console owns the document background while it is mounted — see ThemeSetter.tsx. Paired with
+   the inline script in the admin layout so there is no flash of Tabler navy on a hard refresh. */
+html[data-admin], html[data-admin] body { background: oklch(0.168 0.006 72); }
+
+.mantis-admin .rule-t { border-top: 1px solid var(--rule); }
+.mantis-admin .rule-b { border-bottom: 1px solid var(--rule); }
+.mantis-admin .rule-r { border-right: 1px solid var(--rule); }
+.mantis-admin .rule-l { border-left: 1px solid var(--rule); }
+.mantis-admin .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.mantis-admin .sunk { background: var(--surface-sunk); }
+
+/* Faint graph-paper ground behind the top of a page — the same "ledger" texture the product uses,
+   at the lower opacity a dark surface needs. */
+.mantis-admin .ledger-ground {
+  background-image:
+    linear-gradient(to right, var(--rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, #000, transparent 85%);
+  opacity: 0.5;
+}
+
+.mantis-admin :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+.mantis-admin ::selection { background: var(--accent); color: var(--accent-ink); }
+
 /* Hairline rules. This is the whole "structure from lines, not boxes" idea. */
 .mantis-app .rule-t { border-top: 1px solid var(--rule); }
 .mantis-app .rule-b { border-bottom: 1px solid var(--rule); }

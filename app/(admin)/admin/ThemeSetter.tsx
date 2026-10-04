@@ -12,7 +12,14 @@ import { useEffect } from "react";
 export function ThemeSetter() {
   useEffect(() => {
     document.documentElement.setAttribute("data-bs-theme", "dark");
-    return () => document.documentElement.removeAttribute("data-bs-theme");
+    // Also flags the document so <body> can take the console's canvas. The console's own wrapper
+    // cannot paint it: Tabler's dark <body> sits behind and outside that element, and showed as a
+    // navy band under the footer and past the end of a short page.
+    document.documentElement.setAttribute("data-admin", "");
+    return () => {
+      document.documentElement.removeAttribute("data-bs-theme");
+      document.documentElement.removeAttribute("data-admin");
+    };
   }, []);
   return null;
 }
