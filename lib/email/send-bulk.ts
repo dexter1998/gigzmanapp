@@ -58,6 +58,11 @@ export type BulkSend = {
   /** Which touch in the recipient's journey this is. Stored so the journey view can show sequence
    *  position without re-deriving it from step_key string matching. */
   touchNo?: number | null;
+  /** Where a human reply should land. The default sender is no-reply@, so any message that asks
+   *  for a reply — the partner approval mail asks people to send back their badge URL, and their
+   *  credits depend on it — must set this or the answer goes to a mailbox nobody reads. Reply-To
+   *  is not authenticated by SPF or DMARC, so it can name a different domain than From. */
+  replyTo?: string | null;
 };
 
 export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; reason?: string }> {
@@ -94,6 +99,7 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
     `From: ${msg.sender ?? SENDER}`,
     `To: ${msg.to}`,
     `Subject: ${encodeHeader(msg.subject)}`,
+    ...(msg.replyTo ? [`Reply-To: ${msg.replyTo}`] : []),
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${sendId}@${domain}>`,
     `MIME-Version: 1.0`,

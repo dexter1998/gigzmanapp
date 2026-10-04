@@ -563,3 +563,157 @@ export const PARTNERSHIP_HTML = `<!doctype html>
 </td></tr></table>
 </body></html>`;
 export const PARTNERSHIP_TEXT = "Let's help you find more local clients.\n\nMantis Ai is inviting selected web, tech and marketing agencies to access our lead intelligence portal for free.\n\n01 Fill the short form\n02 Get portal access\n03 Find and pitch clients\n\nApply: {{partnership_url}}\nNo payment required. Partner access is subject to approval.\n\nUnsubscribe: {{unsubscribe_url}}";
+
+/** Sent once to each approved partner_applications row.
+ *  Placeholders: {{first_name}}, {{brand_kit_url}}, {{unsubscribe_url}}
+ *  The CTA and step 2 both matter: the badge page is the only link, and the reply is how credits
+ *  get activated -- so this one must be sent with a replyTo, since the default sender is no-reply@. */
+export const PARTNER_APPROVED_HTML = `<!doctype html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head><!--dm-pinned-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="only light">
+<title>Partner access &middot; Mantis Ai</title>
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+<style>
+  :root{color-scheme:only light;supported-color-schemes:only light;}
+  html,body{margin:0!important;padding:0!important;width:100%!important;background:#f7f7f3;}
+  table,td{border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;}
+  img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;display:block;}
+  a{text-decoration:none;}
+  @media only screen and (max-width:620px){
+    .c{width:100%!important;}
+    .p{padding-left:18px!important;padding-right:18px!important;}
+    .stack{display:block!important;width:100%!important;max-width:100%!important;}
+    .h1{font-size:32px!important;line-height:1.12!important;}
+    .hide-sm{display:none!important;}
+  }
+</style>
+
+<style>
+  @media (prefers-color-scheme: dark) {
+  html,body{background:#f7f7f3!important;}
+  .dmb-111315{background-color:#111315!important}
+  .dmb-b5e21d{background-color:#b5e21d!important}
+  .dmb-f5f8e9{background-color:#f5f8e9!important}
+  .dmb-f7f7f3{background-color:#f7f7f3!important}
+  .dmb-f7faef{background-color:#f7faef!important}
+  .dmb-ffffff{background-color:#ffffff!important}
+  .dmc-111315{color:#111315!important}
+  .dmc-565b5d{color:#565b5d!important}
+  .dmc-5d8508{color:#5d8508!important}
+  .dmc-606768{color:#606768!important}
+  .dmc-60850b{color:#60850b!important}
+  .dmc-687071{color:#687071!important}
+  .dmc-697071{color:#697071!important}
+  .dmc-6a930a{color:#6a930a!important}
+  .dmc-707677{color:#707677!important}
+  .dmc-737879{color:#737879!important}
+  .dmc-b7e51d{color:#b7e51d!important}
+  .dmc-f7f7f3{color:#f7f7f3!important}
+  .dmc-ffffff{color:#ffffff!important}
+  .dmk-9fc725{border-color:#9fc725!important}
+  .dmk-b3cf68{border-color:#b3cf68!important}
+  .dmk-dce8bb{border-color:#dce8bb!important}
+  .dmk-dfe2d9{border-color:#dfe2d9!important}
+  .dmk-dfe3d9{border-color:#dfe3d9!important}
+  .dmk-e1e4dd{border-color:#e1e4dd!important}
+  .dmk-e4e6df{border-color:#e4e6df!important}
+  .dmk-e7e8e2{border-color:#e7e8e2!important}
+  .dmk-edf0e8{border-color:#edf0e8!important}
+  }
+  [data-ogsc] .dmb-111315,[data-ogsb] .dmb-111315{background-color:#111315!important}
+  [data-ogsc] .dmb-b5e21d,[data-ogsb] .dmb-b5e21d{background-color:#b5e21d!important}
+  [data-ogsc] .dmb-f5f8e9,[data-ogsb] .dmb-f5f8e9{background-color:#f5f8e9!important}
+  [data-ogsc] .dmb-f7f7f3,[data-ogsb] .dmb-f7f7f3{background-color:#f7f7f3!important}
+  [data-ogsc] .dmb-f7faef,[data-ogsb] .dmb-f7faef{background-color:#f7faef!important}
+  [data-ogsc] .dmb-ffffff,[data-ogsb] .dmb-ffffff{background-color:#ffffff!important}
+  [data-ogsc] .dmc-111315,[data-ogsb] .dmc-111315{color:#111315!important}
+  [data-ogsc] .dmc-565b5d,[data-ogsb] .dmc-565b5d{color:#565b5d!important}
+  [data-ogsc] .dmc-5d8508,[data-ogsb] .dmc-5d8508{color:#5d8508!important}
+  [data-ogsc] .dmc-606768,[data-ogsb] .dmc-606768{color:#606768!important}
+  [data-ogsc] .dmc-60850b,[data-ogsb] .dmc-60850b{color:#60850b!important}
+  [data-ogsc] .dmc-687071,[data-ogsb] .dmc-687071{color:#687071!important}
+  [data-ogsc] .dmc-697071,[data-ogsb] .dmc-697071{color:#697071!important}
+  [data-ogsc] .dmc-6a930a,[data-ogsb] .dmc-6a930a{color:#6a930a!important}
+  [data-ogsc] .dmc-707677,[data-ogsb] .dmc-707677{color:#707677!important}
+  [data-ogsc] .dmc-737879,[data-ogsb] .dmc-737879{color:#737879!important}
+  [data-ogsc] .dmc-b7e51d,[data-ogsb] .dmc-b7e51d{color:#b7e51d!important}
+  [data-ogsc] .dmc-f7f7f3,[data-ogsb] .dmc-f7f7f3{color:#f7f7f3!important}
+  [data-ogsc] .dmc-ffffff,[data-ogsb] .dmc-ffffff{color:#ffffff!important}
+  [data-ogsc] .dmk-9fc725,[data-ogsb] .dmk-9fc725{border-color:#9fc725!important}
+  [data-ogsc] .dmk-b3cf68,[data-ogsb] .dmk-b3cf68{border-color:#b3cf68!important}
+  [data-ogsc] .dmk-dce8bb,[data-ogsb] .dmk-dce8bb{border-color:#dce8bb!important}
+  [data-ogsc] .dmk-dfe2d9,[data-ogsb] .dmk-dfe2d9{border-color:#dfe2d9!important}
+  [data-ogsc] .dmk-dfe3d9,[data-ogsb] .dmk-dfe3d9{border-color:#dfe3d9!important}
+  [data-ogsc] .dmk-e1e4dd,[data-ogsb] .dmk-e1e4dd{border-color:#e1e4dd!important}
+  [data-ogsc] .dmk-e4e6df,[data-ogsb] .dmk-e4e6df{border-color:#e4e6df!important}
+  [data-ogsc] .dmk-e7e8e2,[data-ogsb] .dmk-e7e8e2{border-color:#e7e8e2!important}
+  [data-ogsc] .dmk-edf0e8,[data-ogsb] .dmk-edf0e8{border-color:#edf0e8!important}
+  [data-ogsb] body,[data-ogsc] body{background:#f7f7f3!important;}
+</style>
+</head>
+<body class="dmb-f7f7f3" style="margin:0;padding:0;background:#f7f7f3;">
+<div class="dmc-f7f7f3" style="display:none;font-size:1px;color:#f7f7f3;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">You&rsquo;re approved &mdash; here&rsquo;s how to activate your 2,000 credits.</div>
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
+<table class="dmb-f7f7f3" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f7f7f3" style="background:#f7f7f3;">
+<tr><td align="center" style="padding:32px 12px;">
+<!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" class="c dmb-ffffff dmk-e7e8e2" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:600px;max-width:600px;background:#ffffff;border:1px solid #e7e8e2;border-radius:22px;overflow:hidden;">
+<tr><td class="p" style="padding:34px 30px 20px;">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
+   <img src="https://mantisai.in/email/v1/logo.png" width="180" height="39" alt="Mantis" style="display:block;border:0;width:180px;height:39px;max-width:100%;margin:0 auto;"></td></tr></table>
+ <div style="line-height:14px;font-size:14px;height:14px;">&nbsp;</div>
+ <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="dmc-60850b dmb-f7faef dmk-9fc725" style="background:#f7faef;border:1px solid #9fc725;border-radius:999px;padding:9px 19px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#60850b;white-space:nowrap;">Approved</td></tr></table>
+ <div style="line-height:16px;font-size:16px;height:16px;">&nbsp;</div>
+ <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">You&rsquo;re a Mantis Ai<br>Leads Partner.</div>
+ <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15.5px;line-height:1.5;color:#565b5d;font-weight:400;margin:0 0 22px;text-align:center;">Hi {{first_name}}, your partnership application has been approved.<br>You get <strong class="dmc-111315" style="color:#111315;">1 month of the Starter plan free</strong>, including <strong class="dmc-111315" style="color:#111315;">2,000 credits</strong>.</div>
+
+ <table class="dmk-dfe2d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe2d9;border-radius:16px;">
+  <tr><td class="p" style="padding:20px 22px 6px;">
+   <div class="dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:750;color:#111315;padding-bottom:14px;">To activate your credits &mdash; two steps</div>
+
+   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td width="30" valign="top" style="width:30px;"><div class="dmc-ffffff dmb-111315" style="background:#111315;color:#ffffff;width:22px;height:22px;border-radius:999px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;line-height:22px;text-align:center;">1</div></td>
+    <td valign="top" class="dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14.5px;line-height:1.55;color:#111315;padding-bottom:16px;">
+      <strong>Add the partner badge to your site</strong><br>
+      <span class="dmc-565b5d" style="color:#565b5d;">Pick a badge and copy the code. Nothing to download or upload &mdash; the badge is served from our servers, so it&rsquo;s one paste into your footer or landing page.</span></td></tr>
+    <tr>
+    <td width="30" valign="top" style="width:30px;"><div class="dmc-ffffff dmb-111315" style="background:#111315;color:#ffffff;width:22px;height:22px;border-radius:999px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;line-height:22px;text-align:center;">2</div></td>
+    <td valign="top" class="dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14.5px;line-height:1.55;color:#111315;padding-bottom:16px;">
+      <strong>Reply with your link</strong><br>
+      <span class="dmc-565b5d" style="color:#565b5d;">Just reply to this email with the page the badge is live on. We&rsquo;ll verify it and your 2,000 credits go into your Mantis portal the same day.</span></td></tr>
+   </table>
+  </td></tr>
+ </table>
+
+ <div style="line-height:20px;font-size:20px;height:20px;">&nbsp;</div>
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{brand_kit_url}}" style="height:56px;v-text-anchor:middle;width:540px;" arcsize="20%" stroke="f" fillcolor="#111315"><w:anchorlock/><center class="dmc-ffffff" style="color:#ffffff;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;">Get your partner badge &rarr;</center></v:roundrect><![endif]-->
+<!--[if !mso]><!-- -->
+<a class="dmc-ffffff dmb-111315" href="{{brand_kit_url}}" style="background:#111315;border-radius:12px;color:#ffffff;display:block;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;line-height:1.2;text-align:center;padding:18px 26px;text-decoration:none;">Get your partner badge <span class="dmc-b7e51d" style="color:#b7e51d;">&rarr;</span></a>
+<!--<![endif]-->
+ </td></tr></table>
+
+ <div style="line-height:18px;font-size:18px;height:18px;">&nbsp;</div>
+ <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.55;color:#565b5d;text-align:center;"><strong class="dmc-111315" style="color:#111315;">Optional: announce it.</strong> On the same page you can add your logo to the partner graphic and download it &mdash; takes a few seconds, no design tool needed. Post it and we&rsquo;ll repost from the official Mantis Ai account.</div>
+
+ <table class="dmk-e4e6df" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;border-top:1px solid #e4e6df;"><tr>
+  <td width="66" valign="top" class="stack" style="width:66px;padding-top:20px;"><img src="https://mantisai.in/email/v1/05-mark.png" width="50" height="50" alt="" style="display:block;border:0;width:50px;height:50px;max-width:100%;"></td>
+  <td valign="top" class="stack dmc-111315" style="padding-top:20px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.55;color:#111315;">
+    <strong style="font-size:14px;">Tarun Kumar</strong><br>
+    Founder, Mantis Ai<br>Reverblunt Pvt. Ltd. &middot; Gurugram, India</td>
+  <td valign="top" align="right" class="stack dmc-737879" style="padding-top:20px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:11.5px;line-height:1.8;color:#737879;text-align:right;">
+    <a class="dmc-606768" href="{{unsubscribe_url}}" style="color:#606768;text-decoration:underline;">Unsubscribe</a><br>&copy; 2026 Mantis Ai</td>
+ </tr></table>
+</td></tr>
+<tr><td class="dmb-b5e21d" bgcolor="#b5e21d" style="background:#b5e21d;height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table>
+</body></html>`;
+export const PARTNER_APPROVED_TEXT = "Hi {{first_name}},\n\nYour partnership application with Mantis Ai has been approved.\n\nAs a Mantis Ai Leads Partner you get 1 month of the Starter plan free, including 2,000 credits.\n\nTo activate your credits - two steps\n\n1. Add the partner badge to your site\nPick a badge and copy the code here: {{brand_kit_url}}\nNothing to download or upload - the badge is served from our servers, so it's one paste into your\nfooter or landing page.\n\n2. Reply with your link\nJust reply to this email with the page the badge is live on. We'll verify it and your 2,000 credits\ngo into your Mantis portal the same day.\n\nOptional: announce it\nOn the same page you can add your logo to the partner graphic and download it - takes a few seconds,\nno design tool needed. Post it and we'll repost from the official Mantis Ai account.\n\nWelcome aboard.\n\nTarun Kumar\nFounder, Mantis Ai\nmantisai.in\n\nUnsubscribe: {{unsubscribe_url}}";
