@@ -82,64 +82,69 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
   if (claimed.length === 0) return { sent: false, reason: "already sent" };
   const sendId = (claimed[0] as { id: string }).id;
 
-  const unsubUrl = `${COMPANY.site}/u/${signUnsubscribeToken(msg.to, msg.stream)}`;
-
-  // Every bulk template carries an {{unsubscribe_url}} in its footer, and it is the one merge tag
-  // no caller can supply: the link is signed per recipient and only exists here. Filling it at
-  // this layer means a template can never ship with the literal text "{{unsubscribe_url}}" in the
-  // place its opt-out link should be -- which is both the ugliest possible failure and, with
-  // Gmail and Yahoo's bulk-sender rules, a compliance one. (This has already happened: the
-  // 2026-09-24 agency send went out with several tags unfilled.)
-  const html = msg.html.replaceAll("{{unsubscribe_url}}", unsubUrl);
-  const text = msg.text.replaceAll("{{unsubscribe_url}}", unsubUrl);
-  const boundary = `--mantis-${sendId}`;
-  const domain = new URL(COMPANY.site).hostname;
-
-  const headers = [
-    `From: ${msg.sender ?? SENDER}`,
-    `To: ${msg.to}`,
-    `Subject: ${encodeHeader(msg.subject)}`,
-    ...(msg.replyTo ? [`Reply-To: ${msg.replyTo}`] : []),
-    `Date: ${new Date().toUTCString()}`,
-    `Message-ID: <${sendId}@${domain}>`,
-    `MIME-Version: 1.0`,
-    `List-Unsubscribe: <${unsubUrl}>, <mailto:unsubscribe@${domain}?subject=unsubscribe>`,
-    `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
-    // Only set once SES_CONFIGURATION_SET actually names a live configuration set -- SES rejects
-    // the whole send with ConfigurationSetDoesNotExist if this header names one that isn't real,
-    // so this must never be hardcoded to a default that might not exist in the account.
-    ...((msg.configSet ?? process.env.SES_CONFIGURATION_SET)
-      ? [`X-SES-CONFIGURATION-SET: ${msg.configSet ?? process.env.SES_CONFIGURATION_SET}`]
-      : []),
-    `X-Mantis-Campaign-Id: ${msg.campaignId}`,
-    `X-Mantis-Step: ${msg.stepKey}`,
-    // The dimensions SES splits its own open/click/bounce metrics on, so reporting lines up with
-    // what's stored in email_sends rather than being a separate universe.
-    `X-SES-MESSAGE-TAGS: campaign_id=${msg.campaignId}, stream=${msg.stream}, template=${msg.template.replace(/-/g, "_")}`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-  ].join("\r\n");
-
-  // Base64 rather than quoted-printable: the HTML has long lines and SMTP caps a line at 998
-  // octets, and base64 wrapped at 76 can't trip that however the template changes.
-  const body = [
-    ``,
-    `--${boundary}`,
-    `Content-Type: text/plain; charset=UTF-8`,
-    `Content-Transfer-Encoding: base64`,
-    ``,
-    base64Body(text),
-    ``,
-    `--${boundary}`,
-    `Content-Type: text/html; charset=UTF-8`,
-    `Content-Transfer-Encoding: base64`,
-    ``,
-    base64Body(html),
-    ``,
-    `--${boundary}--`,
-    ``,
-  ].join("\r\n");
-
+  // Everything from here on is inside the try, not just the SES call. The claim is already
+  // written, so anything that throws before it is released leaves the row consumed and that
+  // recipient can never be sent this step again -- silently, because the unique index then
+  // reports "already sent" forever. Hit for real on 2026-10-04: a missing AUTH_SECRET threw in
+  // signUnsubscribeToken, three lines below the claim and outside the old try.
   try {
+    const unsubUrl = `${COMPANY.site}/u/${signUnsubscribeToken(msg.to, msg.stream)}`;
+
+    // Every bulk template carries an {{unsubscribe_url}} in its footer, and it is the one merge tag
+    // no caller can supply: the link is signed per recipient and only exists here. Filling it at
+    // this layer means a template can never ship with the literal text "{{unsubscribe_url}}" in the
+    // place its opt-out link should be -- which is both the ugliest possible failure and, with
+    // Gmail and Yahoo's bulk-sender rules, a compliance one. (This has already happened: the
+    // 2026-09-24 agency send went out with several tags unfilled.)
+    const html = msg.html.replaceAll("{{unsubscribe_url}}", unsubUrl);
+    const text = msg.text.replaceAll("{{unsubscribe_url}}", unsubUrl);
+    const boundary = `--mantis-${sendId}`;
+    const domain = new URL(COMPANY.site).hostname;
+
+    const headers = [
+      `From: ${msg.sender ?? SENDER}`,
+      `To: ${msg.to}`,
+      `Subject: ${encodeHeader(msg.subject)}`,
+      ...(msg.replyTo ? [`Reply-To: ${msg.replyTo}`] : []),
+      `Date: ${new Date().toUTCString()}`,
+      `Message-ID: <${sendId}@${domain}>`,
+      `MIME-Version: 1.0`,
+      `List-Unsubscribe: <${unsubUrl}>, <mailto:unsubscribe@${domain}?subject=unsubscribe>`,
+      `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
+      // Only set once SES_CONFIGURATION_SET actually names a live configuration set -- SES rejects
+      // the whole send with ConfigurationSetDoesNotExist if this header names one that isn't real,
+      // so this must never be hardcoded to a default that might not exist in the account.
+      ...((msg.configSet ?? process.env.SES_CONFIGURATION_SET)
+        ? [`X-SES-CONFIGURATION-SET: ${msg.configSet ?? process.env.SES_CONFIGURATION_SET}`]
+        : []),
+      `X-Mantis-Campaign-Id: ${msg.campaignId}`,
+      `X-Mantis-Step: ${msg.stepKey}`,
+      // The dimensions SES splits its own open/click/bounce metrics on, so reporting lines up with
+      // what's stored in email_sends rather than being a separate universe.
+      `X-SES-MESSAGE-TAGS: campaign_id=${msg.campaignId}, stream=${msg.stream}, template=${msg.template.replace(/-/g, "_")}`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ].join("\r\n");
+
+    // Base64 rather than quoted-printable: the HTML has long lines and SMTP caps a line at 998
+    // octets, and base64 wrapped at 76 can't trip that however the template changes.
+    const body = [
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/plain; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      base64Body(text),
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      base64Body(html),
+      ``,
+      `--${boundary}--`,
+      ``,
+    ].join("\r\n");
+
     const res = await ses.send(
       new SendRawEmailCommand({ RawMessage: { Data: Buffer.from(headers + "\r\n" + body, "utf-8") } })
     );

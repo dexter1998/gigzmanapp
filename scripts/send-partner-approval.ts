@@ -32,7 +32,11 @@ type Row = {
 
 /** Never an empty name and never a literal placeholder: the greeting reads "Hi <this>,". */
 function firstName(r: Row): string {
-  const fromFull = (r.full_name ?? "").trim().split(/\s+/)[0];
+  const full = (r.full_name ?? "").trim();
+  const fromFull = full.split(/\s+/)[0];
+  // "Hi P," reads like a mail merge that went wrong. An initial is a real first token for some
+  // names (P SREE HARI), so use the whole name rather than dropping to the agency.
+  if (fromFull.length <= 2 && full.length > fromFull.length) return full;
   if (fromFull) return fromFull;
   const fromAgency = (r.agency_name ?? "").trim();
   if (fromAgency) return fromAgency;
