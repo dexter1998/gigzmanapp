@@ -7,7 +7,7 @@ import { FooterBadges } from "./FooterBadges";
 // /pricing, /partner, /about and /contact too, where a bare "#capabilities" points at nothing on
 // the current page instead of navigating home to that section.
 const COLUMNS = [
-  { title: "Product", links: [["Features", "/#capabilities"], ["Lead Search", "/#capabilities"], ["Local Lead Market", "/leads"], ["Jobs", "/jobs", "NEW"], ["Pricing", "/pricing"]] },
+  { title: "Product", links: [["Features", "/#capabilities"], ["Lead Search", "/#capabilities"], ["Local Lead Market", "/leads"], ["Jobs", "/jobs", "SOON"], ["Pricing", "/pricing"]] },
   // The no-website pages, and where "Free Leads" lives now that it is out of the nav. A footer link
   // is still site-wide, so these keep a link from every page on the site — which was the only
   // reason the nav slot mattered.

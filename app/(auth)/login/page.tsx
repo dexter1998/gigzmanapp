@@ -22,8 +22,11 @@ export default function LoginPage() {
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
     if (qs.get("tab") === "signup") setTab("signup");
+    // Only "leads" survives the round trip now. Jobs is closed to new sign-ups, and the old
+    // /login?mode=jobs links are still out there on the marketing pages and in people's history --
+    // parking that answer in a cookie would just hand onboarding a choice it can no longer honour.
     const mode = qs.get("mode");
-    if (mode === "jobs" || mode === "leads") {
+    if (mode === "leads") {
       document.cookie = `mantis_mode=${mode}; path=/; max-age=1800; samesite=lax`;
     }
   }, []);

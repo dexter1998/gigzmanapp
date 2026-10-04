@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { sql } from "@/lib/db";
+import { hasJobsAccess } from "@/lib/jobs/access";
 
 /**
  * Post-login landing router.
@@ -18,6 +18,8 @@ export default async function StartPage() {
   const session = await auth();
   if (!session?.user?.email) redirect("/login");
 
-  const [profile] = await sql`SELECT dashboard_mode FROM user_profiles WHERE email = ${session.user.email}`;
-  redirect(profile?.dashboard_mode === "jobs" ? "/jobs/map" : "/home");
+  // hasJobsAccess rather than a bare mode check: the two happen to agree today, but this page is
+  // the one that decides where an account opens, and it should ask the same question every other
+  // jobs entry point asks rather than keeping its own copy of the rule.
+  redirect((await hasJobsAccess(session.user.email)) ? "/jobs/map" : "/home");
 }

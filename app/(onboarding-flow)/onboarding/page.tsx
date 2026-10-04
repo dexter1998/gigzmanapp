@@ -39,7 +39,10 @@ function OnboardingFlow() {
   // Step 1's own choice, separate from the flow's committed productMode -- lets ?mode=jobs arrive
   // with Jobs already highlighted on step 1 (still showing both options, per the actual ask)
   // without silently skipping the step the way the old skippedProductStep flag used to.
-  const [pendingProductMode, setPendingProductMode] = useState<ProductMode | null>(null);
+  // Leads is pre-selected: it is the only dashboard open to new accounts while jobs is closed, so
+  // the step is now a "here is what you are getting, and what is coming" confirmation rather than a
+  // real fork. Kept as a step instead of skipped so the Jobs card can still announce itself.
+  const [pendingProductMode, setPendingProductMode] = useState<ProductMode | null>("leads");
 
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -64,8 +67,11 @@ function OnboardingFlow() {
     const fromUrl = searchParams.get("mode");
     const fromCookie = document.cookie.match(/(?:^|;\s*)mantis_mode=(jobs|leads)/)?.[1];
     const mode = fromUrl ?? fromCookie;
-    if (mode !== "jobs" && mode !== "leads") return;
+    // "jobs" is deliberately not honoured any more -- old links and bookmarks still carry it, and
+    // it must not preselect a dashboard this account cannot be given. The cookie is cleared either
+    // way so a stale one does not follow the user around.
     document.cookie = "mantis_mode=; path=/; max-age=0";
+    if (mode !== "leads") return;
     // Reads browser-only state after mount; doing it during render would desync hydration.
     // See the note on `flow` above.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -184,7 +190,7 @@ function OnboardingFlow() {
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>What are you here to find?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
-                Mantis has two dashboards. You can switch between them any time from settings.
+                Leads is live today. Jobs is coming back soon — we&apos;ll let you know.
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -199,8 +205,9 @@ function OnboardingFlow() {
                   icon={<TableIcon />}
                   title="Jobs"
                   desc="Open roles at businesses near me, with one-click applications."
-                  onClick={() => setPendingProductMode("jobs")}
-                  selected={pendingProductMode === "jobs"}
+                  onClick={() => {}}
+                  badge="Coming soon"
+                  disabled
                 />
               </div>
 
@@ -346,14 +353,19 @@ function OnboardingFlow() {
 }
 
 function WorkModeCard({
-  icon, title, desc, onClick, selected,
+  icon, title, desc, onClick, selected, badge, disabled,
 }: {
   icon: React.ReactNode; title: string; desc: string; onClick: () => void; selected?: boolean;
+  /** Small pill beside the title -- currently only "Coming soon" on the closed Jobs card. */
+  badge?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -363,7 +375,10 @@ function WorkModeCard({
         borderRadius: "var(--radius-md)",
         border: selected ? "2px solid var(--g-green)" : "1px solid var(--g-border)",
         background: selected ? "var(--g-green-mint)" : "var(--g-white)",
-        cursor: "pointer",
+        // Dimmed rather than hidden: the card still says what Jobs is, so someone who came looking
+        // for it learns it exists and is coming back, instead of wondering if they misremembered.
+        opacity: disabled ? 0.55 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
       <span
@@ -381,7 +396,14 @@ function WorkModeCard({
         {icon}
       </span>
       <span>
-        <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 2 }}>{title}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "var(--g-ink)", marginBottom: 2 }}>
+          {title}
+          {badge && (
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", padding: "2px 7px", borderRadius: "var(--radius-pill)", background: "var(--g-gray-100)", color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>
+              {badge}
+            </span>
+          )}
+        </span>
         <span style={{ display: "block", fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.4 }}>{desc}</span>
       </span>
     </button>

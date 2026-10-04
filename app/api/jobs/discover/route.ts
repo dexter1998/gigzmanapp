@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasJobsAccess } from "@/lib/jobs/access";
 import { sql } from "@/lib/db";
 import { chargeCredits, allowanceFor } from "@/lib/credits/server";
 import { CREDIT_COST } from "@/lib/credits/pricing";
@@ -72,6 +73,10 @@ function metersBetween(lat1: number, lng1: number, lat2: number, lng2: number): 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
   const userEmail = session.user.email;
 
   const body = await req.json().catch(() => ({}));

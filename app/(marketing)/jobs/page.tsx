@@ -1,26 +1,19 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ogImageMeta } from "@/lib/og";
-import { LandingFaq, type Faq } from "@/components/landing/LandingFaq";
-import { LandingCta } from "@/components/landing/LandingCta";
-import { JobsHero } from "@/components/landing/jobs/JobsHero";
-import { JobsCapabilities } from "@/components/landing/jobs/JobsCapabilities";
-import { JobsPipeline } from "@/components/landing/jobs/JobsPipeline";
-import { JobsWebSearch } from "@/components/landing/jobs/JobsWebSearch";
-import { JobsIntelligence } from "@/components/landing/jobs/JobsIntelligence";
-import { JobsNearby } from "@/components/landing/jobs/JobsNearby";
-import { JobsTestimonials } from "@/components/landing/jobs/JobsTestimonials";
-import { JobsPricing } from "@/components/landing/jobs/JobsPricing";
 
 const SITE_URL = "https://mantisai.in";
 
 export const metadata: Metadata = {
-  title: "Jobs on a map — find who's hiring near you",
+  title: "Jobs — coming soon",
   description:
-    "Mantis reads the careers pages of real businesses around you and puts every open role on a map. " +
-    "Normalized levels, work mode, pay bands, and a match score against your own resume.",
+    "Mantis Jobs is being rebuilt and is closed to new sign-ups. Mantis Leads is live today.",
   alternates: { canonical: `${SITE_URL}/jobs` },
+  // Hold page: nothing here deserves to rank, and a thin placeholder on these queries is worse
+  // than absence. Drop this line when the real page comes back.
+  robots: { index: false, follow: true },
   openGraph: {
     images: ogImageMeta({
       v: "jobs",
@@ -36,20 +29,20 @@ export const metadata: Metadata = {
   },
 };
 
-const JOBS_FAQS: Faq[] = [
-  { q: "How does Mantis find jobs?", a: "Mantis searches live company career pages, ATS platforms (Greenhouse, Lever and others) and the open web, then verifies freshness before adding a role to the map." },
-  { q: "Are the jobs really real-time?", a: "Every company on the map is re-scraped roughly every 10 days, and a role that disappears from its source is marked closed rather than left up." },
-  { q: "How does the match score work?", a: "Add your resume and a few details once — job profile, level, experience, expected CTC. Every listing is then scored against that profile, with the reasons shown alongside the number." },
-  { q: "Can I track my applications?", a: "Yes — save a role or mark it applied and it moves into your Applications tab, with status columns from Saved through Offer." },
-  { q: "Can I find recruiter contact details?", a: "When a listing's source publishes them, yes. Coverage depends on what the employer's own careers page or ATS makes public." },
-  { q: "Is my profile data secure?", a: "Your résumé and details are stored against your account only and used to compute your own match score — they are never shown to other users or sold to third parties." },
-  { q: "Is there a free plan?", a: "Yes — the free tier includes live job search and basic match scoring, no card required." },
-];
-
 /**
- * Public landing for jobs mode. See components/landing/jobs/ for each section — built from the
- * mantis-jobs-sections reference screenshots, now wired to the real exported assets in
- * public/landing/jobs/ (mantis-jobs-assets-transparent pack) rather than hand-built placeholders.
+ * Public landing for jobs mode — currently a hold page.
+ *
+ * Jobs is closed to new sign-ups while it is rebuilt (see lib/jobs/access.ts). The page stays up
+ * rather than 404ing: it is linked from the nav and footer, it has accumulated real links, and a
+ * live page that says "coming soon" keeps that equity while a dead one throws it away.
+ *
+ * The full pitch it used to render (hero, capabilities, pipeline, intelligence, pricing, FAQs) is
+ * not deleted, just no longer imported here: every section still lives in components/landing/jobs/,
+ * and the FAQ copy is one `git show` away in the commit that introduced this hold page. Re-opening
+ * jobs is re-importing them, not rewriting them.
+ *
+ * noindex while it is a hold page: there is nothing to rank for "jobs on a map" right now, and a
+ * thin placeholder sitting on those queries is worse than being absent from them.
  *
  * No <LandingNav>/<LandingFooter>/<main> here — app/(marketing)/layout.tsx already wraps every
  * page in this route group with all three; rendering them again here is what produced a doubled
@@ -62,29 +55,49 @@ export default async function JobsLandingPage() {
   if (session) redirect("/start");
 
   return (
-    <>
-      <JobsHero />
-      <JobsCapabilities />
-      <JobsPipeline />
-      <JobsWebSearch />
-      <JobsIntelligence />
-      <JobsNearby />
-      <JobsTestimonials />
-      <JobsPricing />
-      <LandingFaq
-        faqs={JOBS_FAQS}
-        title="Questions,"
-        accent="answered."
-        sub="Everything you need to know before finding your next opportunity."
-      />
-      <LandingCta
-        pill="Fresh opportunities near you"
-        title="Your next opportunity is"
-        accent="already nearby."
-        sub="Discover hot roles around you before they become crowded."
-        primary={{ label: "Find Jobs Near Me →", href: "/login?mode=jobs" }}
-        secondary={{ label: "Explore how it works ›", href: "#how-it-works" }}
-      />
-    </>
+    <section style={{ padding: "120px 24px 140px", display: "flex", justifyContent: "center" }}>
+      <div style={{ maxWidth: 560, textAlign: "center" }}>
+        <span
+          style={{
+            display: "inline-block", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: "0.08em", padding: "6px 14px", borderRadius: "var(--radius-pill)",
+            background: "var(--g-gray-100)", color: "var(--g-gray-500)", marginBottom: 20,
+          }}
+        >
+          Coming soon
+        </span>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, lineHeight: 1.15, color: "var(--g-ink)", margin: "0 0 16px" }}>
+          Mantis Jobs is being rebuilt.
+        </h1>
+        <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--g-gray-500)", margin: "0 0 32px" }}>
+          Open roles at real businesses, on a map, scored against your own resume. We&apos;ve paused
+          new sign-ups while we make it properly good. Accounts already using Jobs are unaffected.
+        </p>
+        {/* Plain buttons rather than <LandingCta>: that component is a full-bleed section with its
+            own artwork, and dropping it into this narrow column put the mantis illustration on top
+            of its own headline. A hold page does not need a second hero anyway. */}
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link
+            href="/login"
+            style={{
+              padding: "13px 24px", borderRadius: "var(--radius-pill)", background: "var(--g-ink)",
+              color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap",
+            }}
+          >
+            Try Mantis Leads →
+          </Link>
+          <Link
+            href="/#capabilities"
+            style={{
+              padding: "13px 24px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-border)",
+              background: "var(--g-white)", color: "var(--g-ink)", fontSize: 14, fontWeight: 600,
+              textDecoration: "none", whiteSpace: "nowrap",
+            }}
+          >
+            See how it works ›
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }

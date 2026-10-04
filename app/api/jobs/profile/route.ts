@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasJobsAccess } from "@/lib/jobs/access";
 import { sql } from "@/lib/db";
 import {
   ALL_APPLICATION_FIELDS,
@@ -15,6 +16,10 @@ import {
 export async function GET() {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
 
   const [profile] = await sql`SELECT * FROM applicant_profiles WHERE user_email = ${session.user.email}`;
   return NextResponse.json({
@@ -42,6 +47,10 @@ const NUMERIC = new Set([
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
   const userEmail = session.user.email;
 
   const body = await req.json().catch(() => ({}));

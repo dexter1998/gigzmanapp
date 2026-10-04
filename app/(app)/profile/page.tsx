@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { sql } from "@/lib/db";
+import { hasJobsAccess } from "@/lib/jobs/access";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 
@@ -17,6 +18,7 @@ export default async function ProfilePage() {
     SELECT name, plan, credits, credits_limit, dashboard_mode FROM user_profiles WHERE email = ${email}
   `;
   const [unlockCount] = await sql`SELECT COUNT(*)::int AS count FROM unlocks WHERE unlocked_by = ${email}`;
+  const jobsAccess = await hasJobsAccess(email);
 
   async function updateName(formData: FormData) {
     "use server";
@@ -30,6 +32,9 @@ export default async function ProfilePage() {
     "use server";
     const mode = String(formData.get("dashboard_mode") ?? "");
     if (mode !== "leads" && mode !== "jobs") return;
+    // The form value arrives from the client, so hiding the option in the markup is presentation,
+    // not enforcement. Same rule as /api/user/profile: jobs is closed to anyone not already on it.
+    if (mode === "jobs" && !(await hasJobsAccess(email))) return;
     await sql`UPDATE user_profiles SET dashboard_mode = ${mode}, updated_at = now() WHERE email = ${email}`;
     // Both dashboards read this, and the sidebar's nav is built from it, so the whole authenticated
     // shell has to re-render — not just this page.
@@ -86,26 +91,35 @@ export default async function ProfilePage() {
         {/* Dashboard mode — which of the two product surfaces this account opens into. The
             pulsing badge in the app toolbar links straight here, so this card is the one place
             the switch lives. */}
-        <Card>
-          <CardHeader title="Dashboard" />
-          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-            Mantis has two dashboards. <strong>Leads</strong> finds local businesses that need a
-            website. <strong>Jobs</strong> finds open roles at businesses near you.
-          </p>
-          <form action={updateDashboardMode} style={{ display: "flex", gap: 8 }}>
-            <select
-              name="dashboard_mode"
-              defaultValue={profile?.dashboard_mode ?? "leads"}
-              style={{ ...nameInput, maxWidth: "none", flex: 1 }}
-            >
-              <option value="leads">Leads — find businesses to pitch</option>
-              <option value="jobs">Jobs — find roles to apply to</option>
-            </select>
-            <button type="submit" style={pillSecondarySmall}>
-              Switch
-            </button>
-          </form>
-        </Card>
+        {jobsAccess && (
+          <Card>
+            <CardHeader title="Dashboard" />
+            <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
+              Mantis has two dashboards. <strong>Leads</strong> finds local businesses that need a
+              website. <strong>Jobs</strong> finds open roles at businesses near you.
+            </p>
+            {/* Switching to Leads is one-way while jobs is closed: access is proved by the mode
+                itself (see lib/jobs/access.ts), so giving it up gives up the dashboard. Said out
+                loud here rather than letting someone discover it afterwards. */}
+            <p style={{ fontSize: 12, color: "var(--g-amber-text, #b45309)", background: "var(--g-amber-tint)", padding: "8px 10px", borderRadius: "var(--radius-sm)", marginBottom: 14 }}>
+              Jobs is closed to new sign-ups while we rebuild it. Your account keeps access — but if
+              you switch to Leads you will not be able to switch back.
+            </p>
+            <form action={updateDashboardMode} style={{ display: "flex", gap: 8 }}>
+              <select
+                name="dashboard_mode"
+                defaultValue={profile?.dashboard_mode ?? "leads"}
+                style={{ ...nameInput, maxWidth: "none", flex: 1 }}
+              >
+                <option value="leads">Leads — find businesses to pitch</option>
+                <option value="jobs">Jobs — find roles to apply to</option>
+              </select>
+              <button type="submit" style={pillSecondarySmall}>
+                Switch
+              </button>
+            </form>
+          </Card>
+        )}
 
         {/* Billing & usage — links out to the real billing/usage pages (both already fully
             wired with Cashfree + credit ledger) rather than duplicating them here. */}

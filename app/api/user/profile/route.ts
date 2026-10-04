@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { hasJobsAccess } from "@/lib/jobs/access";
 
 export async function GET() {
   const session = await auth();
@@ -43,6 +44,13 @@ export async function PATCH(req: Request) {
   if (body?.dashboard_mode !== undefined) {
     const mode = String(body.dashboard_mode).trim();
     if (!DASHBOARD_MODES.has(mode)) return NextResponse.json({ error: "invalid dashboard_mode" }, { status: 400 });
+    // The hard gate on jobs being closed to new signups. Onboarding no longer offers the choice
+    // and the settings switcher hides it, but neither of those stops a direct PATCH -- and this
+    // endpoint is the only way the value is ever written, so refusing here is what actually
+    // freezes the grandfathered set that lib/jobs/access.ts reads back.
+    if (mode === "jobs" && !(await hasJobsAccess(session.user.email))) {
+      return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
+    }
     updates.dashboard_mode = mode;
   }
 

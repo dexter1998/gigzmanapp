@@ -16,10 +16,10 @@ import { ChevronDownIcon } from "@/components/icons";
 // site-wide, so /find-businesses-without-websites keeps a link from every page on the site, which
 // was the point of putting it here. "Resources" stays in the nav: 87 articles had no inbound link
 // from anywhere before it was added, and that is the one link doing real work.
-const NAV_LINKS = [
+const NAV_LINKS: Array<{ label: string; href: string; badge?: string }> = [
   { label: "Product", href: "/#capabilities" },
   { label: "Resources", href: "/resources" },
-  { label: "Jobs", href: "/jobs" },
+  { label: "Jobs", href: "/jobs", badge: "Soon" },
   { label: "Pricing", href: "/pricing" },
   { label: "About", href: "/company" },
   { label: "Contact", href: "/contact" },
@@ -30,8 +30,9 @@ export function LandingNav() {
   // The jobs landing page's CTAs carry ?mode=jobs so onboarding can skip asking the question this
   // page already answered (see app/(onboarding-flow)/onboarding/page.tsx) — the shared nav's login
   // links need the same hint when rendered on that page, not just the page body's own buttons.
-  const isJobsPage = pathname === "/jobs";
-  const loginHref = isJobsPage ? "/login?mode=jobs" : "/login";
+  // Was "/login?mode=jobs" on the jobs page, to preselect that dashboard through the OAuth round
+  // trip. Jobs is closed to new sign-ups, so there is nothing to preselect and the hint is gone.
+  const loginHref = "/login";
 
   return (
     <header
@@ -78,6 +79,11 @@ export function LandingNav() {
                 }}
               >
                 {link.label}
+                {"badge" in link && link.badge && (
+                  <span style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", padding: "2px 6px", borderRadius: "var(--radius-pill)", background: "var(--g-gray-100)", color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>
+                    {link.badge}
+                  </span>
+                )}
                 {link.label === "Product" && <ChevronDownIcon size={13} color="var(--g-gray-500)" />}
               </Link>
             );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasJobsAccess } from "@/lib/jobs/access";
 import { sql } from "@/lib/db";
 
 /**
@@ -17,6 +18,10 @@ import { sql } from "@/lib/db";
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
 
   const companyId = req.nextUrl.searchParams.get("id");
   if (!companyId) return NextResponse.json({ error: "id required" }, { status: 400 });

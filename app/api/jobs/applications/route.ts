@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasJobsAccess } from "@/lib/jobs/access";
 import { sql } from "@/lib/db";
 
 /**
@@ -12,6 +13,10 @@ const VALID_STATUS = new Set(["saved", "applied", "interviewing", "rejected", "o
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
 
   const status = req.nextUrl.searchParams.get("status");
 
@@ -71,6 +76,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const jobId = String(body?.jobId ?? "").trim();
@@ -104,6 +113,10 @@ export async function POST(req: Request) {
 export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Jobs is closed to new signups; see lib/jobs/access.ts. Gating the API too, not just the
+  // pages, because /api/jobs/discover spends real money per call and none of these should
+  // answer for an account that cannot open the dashboard.
+  if (!(await hasJobsAccess(session.user.email))) return NextResponse.json({ error: "jobs_closed" }, { status: 403 });
 
   const jobId = req.nextUrl.searchParams.get("jobId");
   if (!jobId) return NextResponse.json({ error: "jobId is required" }, { status: 400 });

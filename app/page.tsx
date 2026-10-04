@@ -8,7 +8,6 @@ import { LandingCapabilities } from "@/components/landing/LandingCapabilities";
 import { LandingPipeline } from "@/components/landing/LandingPipeline";
 import { LandingWebSearch } from "@/components/landing/LandingWebSearch";
 import { LandingEnrichment } from "@/components/landing/LandingEnrichment";
-import { LandingJobsSection } from "@/components/landing/LandingJobsSection";
 import { LandingDirectories } from "@/components/landing/LandingDirectories";
 import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { LandingPricing } from "@/components/landing/LandingPricing";
@@ -89,7 +88,6 @@ export default async function RootPage() {
         <LandingPipeline />
         <LandingWebSearch />
         <LandingEnrichment />
-        <LandingJobsSection />
         <LandingDirectories />
         <LandingTestimonials />
         <LandingPricing />
