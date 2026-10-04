@@ -28,23 +28,15 @@ export default async function AdminCampaignsLayout({ children }: { children: Rea
   const email = await requireAdmin();
   return (
     <>
-      {/* Set before hydration so a full page load never flashes light mode first — ThemeSetter's
-          effect only runs after mount. Its cleanup is what stops the dark theme leaking onto the
-          public site after a client-side navigation away. */}
-      <script dangerouslySetInnerHTML={{ __html: "document.documentElement.setAttribute('data-bs-theme','dark')" }} />
+      <script dangerouslySetInnerHTML={{ __html: "document.documentElement.setAttribute('data-bs-theme','dark');document.documentElement.setAttribute('data-admin','')" }} />
       <ThemeSetter />
-      <div className="page">
+      <div className="mantis-admin flex min-h-screen">
         <CampaignsNav email={email} />
-        <div className="page-wrapper">
+        <div className="flex min-w-0 flex-1 flex-col pt-12 lg:pt-0">
           <CampaignsHeader email={email} />
-          {children}
-          <footer className="footer footer-transparent d-print-none">
-            <div className="container-xl">
-              <div className="row text-secondary" style={{ fontSize: 11.5 }}>
-                <div className="col">Mantis Admin · campaigns console</div>
-                <div className="col-auto">Tabler Admin Template · MIT</div>
-              </div>
-            </div>
+          <main className="min-w-0 flex-1 p-5">{children}</main>
+          <footer className="rule-t px-5 py-3">
+            <p className="m-0 text-[11px] text-[var(--ink-faint)]">Mantis Admin · campaigns console · sends email</p>
           </footer>
         </div>
       </div>

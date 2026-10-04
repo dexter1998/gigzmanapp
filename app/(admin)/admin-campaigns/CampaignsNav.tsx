@@ -3,97 +3,99 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { IconRocket, IconPlus, IconArrowLeft, IconRoute, IconChartBar } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
+import { IconList, IconChartBar, IconPlus, IconArrowLeft, IconMenu2, IconX } from "@tabler/icons-react";
 
 /**
- * Sidebar for the mutating campaigns console.
+ * The campaigns rail — the console's own system, same as /admin's.
  *
- * Structurally identical to the read-only console's nav (Tabler's `navbar navbar-vertical`, React
- * state for the mobile drawer rather than Bootstrap's data-bs-toggle — see
- * docs/MANTIS_ADMIN_TABLER_SYSTEM.md) but deliberately wearing a red brand badge instead of the
- * blue "Admin" one. These two surfaces look alike and behave very differently: one of them sends
- * real email to real people. The colour is the only thing standing between "I'm reading the
- * dashboard" and "I just started a batch", so it is not decoration.
+ * These are sibling route groups, so this inherits nothing from the read-only console's layout and
+ * has to carry its own copy of the shell. Kept visually identical on purpose: a send trigger
+ * living in a different-looking console is how someone clicks it thinking they are somewhere safe.
+ * The amber "sends email" marker is the one thing that is deliberately not identical.
  */
+const LINKS = [
+  { href: "/admin-campaigns", label: "All campaigns", icon: <IconList size={16} />, exact: true },
+  { href: "/admin-campaigns/analytics", label: "Analytics", icon: <IconChartBar size={16} /> },
+  { href: "/admin-campaigns/new", label: "New campaign", icon: <IconPlus size={16} /> },
+];
+
 export function CampaignsNav({ email }: { email: string }) {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const close = () => setMobileOpen(false);
+  const pathname = usePathname() ?? "";
+  const [open, setOpen] = useState(false);
+  const on = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
-  const isList = pathname === "/admin-campaigns";
-  const isNew = pathname.startsWith("/admin-campaigns/new");
-  const isAnalytics = pathname.startsWith("/admin-campaigns/analytics");
-  const isDetail = !isList && !isNew && !isAnalytics && pathname.startsWith("/admin-campaigns/");
+  const body = (
+    <>
+      <div className="px-4 py-4">
+        <Link href="/admin-campaigns" className="flex items-center gap-2 no-underline">
+          <span className="text-[15px] font-semibold tracking-tight text-[var(--ink)]">Mantis</span>
+          <span
+            className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]"
+            style={{ borderColor: "color-mix(in oklab, var(--warn) 45%, transparent)", color: "var(--warn)" }}
+          >
+            Campaigns
+          </span>
+        </Link>
+        <p className="m-0 mt-1.5 text-[10.5px]" style={{ color: "var(--warn)" }}>
+          This console sends email.
+        </p>
+      </div>
 
-  return (
-    <aside className="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
-      <div className="container-fluid">
-        <button className="navbar-toggler" type="button" onClick={() => setMobileOpen((v) => !v)} aria-label="Toggle navigation">
-          <span className="navbar-toggler-icon" />
-        </button>
-
-        <h1 className="navbar-brand navbar-brand-autodark">
-          <Link href="/admin-campaigns" className="d-flex align-items-center gap-2 text-white text-decoration-none">
-            <span className="fw-bold">Mantis</span>
-            <span className="badge bg-red-lt">Campaigns</span>
-          </Link>
-        </h1>
-
-        <button
-          type="button"
-          className="btn-close btn-close-white d-lg-none ms-auto"
-          onClick={close}
-          aria-label="Close"
-          style={mobileOpen ? undefined : { display: "none" }}
-        />
-
-        <div className={cn("navbar-collapse adm-navbar-collapse", mobileOpen && "is-open")}>
-          <ul className="navbar-nav pt-lg-3">
-            <li className="nav-item">
-              <div className="navbar-nav-label px-3 pt-3 pb-1 text-uppercase text-secondary" style={{ fontSize: 10.5, letterSpacing: "0.07em", fontWeight: 700 }}>
-                Outreach
-              </div>
-              <Link href="/admin-campaigns" className={cn("nav-link", isList && "active")} onClick={close}>
-                <span className="nav-link-icon d-md-none d-lg-inline-block"><IconRocket size={18} stroke={1.75} /></span>
-                <span className="nav-link-title">All campaigns</span>
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4">
+        <div>
+          <p className="m-0 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">Outreach</p>
+          <div className="flex flex-col gap-0.5">
+            {LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setOpen(false)}
+                className="adm-nav-row flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] no-underline"
+                data-on={on(l.href, l.exact) ? "true" : "false"}
+              >
+                <span className="shrink-0">{l.icon}</span>
+                <span className="truncate">{l.label}</span>
               </Link>
-              <Link href="/admin-campaigns/analytics" className={cn("nav-link", isAnalytics && "active")} onClick={close}>
-                <span className="nav-link-icon d-md-none d-lg-inline-block"><IconChartBar size={18} stroke={1.75} /></span>
-                <span className="nav-link-title">Prospect analytics</span>
-              </Link>
-              <Link href="/admin-campaigns/new" className={cn("nav-link", isNew && "active")} onClick={close}>
-                <span className="nav-link-icon d-md-none d-lg-inline-block"><IconPlus size={18} stroke={1.75} /></span>
-                <span className="nav-link-title">New campaign</span>
-              </Link>
-              {/* Only shown while inside a campaign: a journey link with no campaign to point at
-                  would have to guess one, and guessing wrong on a console that sends mail is
-                  worse than the link not being there. */}
-              {isDetail && (
-                <span className={cn("nav-link", "active")}>
-                  <span className="nav-link-icon d-md-none d-lg-inline-block"><IconRoute size={18} stroke={1.75} /></span>
-                  <span className="nav-link-title">Current campaign</span>
-                </span>
-              )}
-            </li>
-
-            <li className="nav-item mt-3">
-              <div className="navbar-nav-label px-3 pt-3 pb-1 text-uppercase text-secondary" style={{ fontSize: 10.5, letterSpacing: "0.07em", fontWeight: 700 }}>
-                Elsewhere
-              </div>
-              <Link href="/admin" className="nav-link" onClick={close}>
-                <span className="nav-link-icon d-md-none d-lg-inline-block"><IconArrowLeft size={18} stroke={1.75} /></span>
-                <span className="nav-link-title">Read-only admin</span>
-              </Link>
-            </li>
-          </ul>
-
-          <div className="mt-auto px-3 py-3 text-secondary" style={{ fontSize: 11 }}>
-            <div className="text-truncate">{email}</div>
-            <div className="text-red mt-1">mutating console — sends real email</div>
+            ))}
           </div>
         </div>
+        <div>
+          <p className="m-0 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">Back</p>
+          <Link
+            href="/admin"
+            onClick={() => setOpen(false)}
+            className="adm-nav-row flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] no-underline"
+            data-on="false"
+          >
+            <span className="shrink-0"><IconArrowLeft size={16} /></span>
+            <span className="truncate">Read-only console</span>
+          </Link>
+        </div>
+      </nav>
+
+      <div className="rule-t px-4 py-3">
+        <p className="m-0 truncate text-[12px] text-[var(--ink-muted)]">{email}</p>
+        <p className="m-0 text-[10.5px]" style={{ color: "var(--warn)" }}>can send email</p>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        className="rule-b fixed inset-x-0 top-0 z-50 flex h-12 items-center gap-2 border-0 bg-[var(--surface)] px-4 text-[13px] text-[var(--ink)] lg:hidden"
+      >
+        {open ? <IconX size={18} /> : <IconMenu2 size={18} />}
+        <span className="font-semibold">Campaigns</span>
+      </button>
+
+      <aside className="rule-r sticky top-0 hidden h-screen w-56 shrink-0 flex-col bg-[var(--surface)] lg:flex">{body}</aside>
+      {open && (
+        <aside className="fixed inset-x-0 bottom-0 top-12 z-40 flex flex-col overflow-y-auto bg-[var(--surface)] lg:hidden">{body}</aside>
+      )}
+    </>
   );
 }

@@ -11,10 +11,17 @@ import { FlowDiagram } from "./FlowDiagram";
 import { JourneyFlow, type JourneyCounts } from "./JourneyFlow";
 import { LiveRefresh } from "./LiveRefresh";
 
-const RECIPIENT_SAMPLE_LIMIT = 50;
+const RECIPIENT_PAGE_SIZE = 50;
 
-export default async function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CampaignDetailPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { id } = await params;
+  const page = Math.max(1, Number((await searchParams).page) || 1);
+  const offset = (page - 1) * RECIPIENT_PAGE_SIZE;
 
   // The journey funnel, straight off campaign_recipients.state — the same column the rule engine
   // reads — so what is on screen is what the next tick will act on, not a parallel calculation
@@ -60,7 +67,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     complaint: jr.complaint, unsubscribed: (unsubRows[0] as { n: number }).n,
   };
 
-  const [[campaign], steps, batches, batchRuns, statusCounts, recipientSample] = await Promise.all([
+  const [[campaign], steps, batches, [recipientTotal], batchRuns, statusCounts, recipientSample] = await Promise.all([
     sql`SELECT id, name, sender, stream, status, created_by, created_at, variables FROM campaigns WHERE id = ${id}`,
     sql`
       SELECT cs.step_key, cs.step_order, cs.send_offset_minutes, cs.step_type, cs.subject,
@@ -68,6 +75,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       FROM campaign_steps cs WHERE cs.campaign_id = ${id} ORDER BY cs.step_order
     `,
     sql`SELECT batch, count(*)::int AS n FROM campaign_recipients WHERE campaign_id = ${id} GROUP BY batch ORDER BY batch`,
+    sql`SELECT count(*)::int AS n FROM campaign_recipients WHERE campaign_id = ${id}`,
     sql`SELECT batch, started_at, started_by FROM campaign_batch_runs WHERE campaign_id = ${id}`,
     // Status priority: registered (signed up on Mantis since) > opened/clicked (needs the SNS
     // event pipeline actually wired — see app/api/webhooks/ses-events) > sent > not yet sent.
@@ -103,7 +111,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       ) ev ON true
       WHERE cr.campaign_id = ${id}
       ORDER BY cr.imported_at
-      LIMIT ${RECIPIENT_SAMPLE_LIMIT}
+      LIMIT ${RECIPIENT_PAGE_SIZE} OFFSET ${offset}
     `,
   ]);
 
@@ -111,6 +119,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   const runsByBatch = new Map(batchRuns.map((r) => [r.batch, r]));
   const sc = statusCounts[0] ?? { registered: 0, opened: 0, sent: 0, not_seen: 0 };
+  const totalPages = Math.max(1, Math.ceil((recipientTotal?.n ?? 0) / RECIPIENT_PAGE_SIZE));
 
   const statusTone = campaign.status === "active" ? "ok" : campaign.status === "paused" ? "warn" : campaign.status === "done" ? "mut" : "info";
 
@@ -232,18 +241,40 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
         </div>
       </Section>
 
-      <Section title="Recipient status" note={`registered = Mantis par signup ho gaya · opened = SNS event pipeline pe depend karta hai · pehle ${RECIPIENT_SAMPLE_LIMIT} recipients (import order)`}>
-        <div className="datagrid mb-3">
-          <div className="datagrid-item"><div className="datagrid-title">Not seen</div><div className="datagrid-content jf-num">{fmtN(sc.not_seen)}</div></div>
-          <div className="datagrid-item"><div className="datagrid-title">Sent</div><div className="datagrid-content jf-num">{fmtN(sc.sent)}</div></div>
-          <div className="datagrid-item"><div className="datagrid-title">Opened</div><div className="datagrid-content jf-num">{fmtN(sc.opened)}</div></div>
-          <div className="datagrid-item"><div className="datagrid-title">Registered</div><div className="datagrid-content jf-num">{fmtN(sc.registered)}</div></div>
+      <Section
+        title="Recipient status"
+        note={`registered = Mantis par signup ho gaya · opened = SNS event pipeline pe depend karta hai · page ${page} of ${fmtN(totalPages)} (import order)`}
+      >
+        <div className="mb-3 flex flex-wrap gap-3">
+          {([["Not seen", sc.not_seen], ["Sent", sc.sent], ["Opened", sc.opened], ["Registered", sc.registered]] as const).map(([label, n]) => (
+            <div key={label} className="min-w-[110px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">{label}</div>
+              <div className="tnum mt-0.5 text-[16px] font-semibold text-[var(--ink)]">{fmtN(n)}</div>
+            </div>
+          ))}
         </div>
         <Table
           head={["Email", "Batch", "Status"]}
           rows={recipientSample.map((r) => [r.email, r.batch, <Pill key="p" tone={r.status === "registered" ? "ok" : r.status === "opened" ? "warn" : r.status === "sent" ? "info" : "mut"}>{r.status.replace("_", " ")}</Pill>])}
           empty="abhi koi recipient nahi"
         />
+        {/* The list used to stop dead at the first 50 with no way to reach the rest — on a campaign
+            with tens of thousands of recipients that is a sample, not a list. */}
+        {totalPages > 1 && (
+          <div className="mt-3 flex items-center justify-between">
+            <span className="tnum text-[11px] text-[var(--ink-faint)]">
+              {fmtN(recipientTotal.n)} recipients · page {page} of {fmtN(totalPages)}
+            </span>
+            <span className="flex gap-2">
+              {page > 1 ? (
+                <Link href={`/admin-campaigns/${id}?page=${page - 1}`} className="rounded-full border border-[var(--rule)] px-3 py-1 text-[11.5px] text-[var(--ink)] no-underline">← Previous</Link>
+              ) : <span className="rounded-full border border-[var(--rule)] px-3 py-1 text-[11.5px] text-[var(--ink-faint)]">← Previous</span>}
+              {page < totalPages ? (
+                <Link href={`/admin-campaigns/${id}?page=${page + 1}`} className="rounded-full border border-[var(--rule)] px-3 py-1 text-[11.5px] text-[var(--ink)] no-underline">Next →</Link>
+              ) : <span className="rounded-full border border-[var(--rule)] px-3 py-1 text-[11.5px] text-[var(--ink-faint)]">Next →</span>}
+            </span>
+          </div>
+        )}
       </Section>
           </div>
         </div>
