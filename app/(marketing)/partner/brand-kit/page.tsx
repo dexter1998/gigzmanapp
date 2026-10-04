@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { COMPANY } from "@/lib/company";
 import { EyebrowPill, SectionHeading } from "@/components/marketing/MarketingPieces";
 import { CopyField } from "./CopyField";
+import { AnnouncementMaker } from "./AnnouncementMaker";
 
 /**
  * The page approved partners are sent to.
@@ -133,33 +134,12 @@ export default function PartnerBrandKitPage() {
             align="left"
             title="Announce it"
             accent="(optional)"
-            sub="A graphic for LinkedIn, X or Instagram. Add your own logo in the marked space, post it, and we'll repost it from the official Mantis Ai account."
+            sub="A graphic for LinkedIn, X or Instagram. Drop your logo in, download it, and we'll repost it from the official Mantis Ai account."
           />
 
           <div style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-white)", overflow: "hidden" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed asset from our own public/ */}
-            <img
-              src={`${SOCIAL}/mantis-official-lead-partner-preview.webp`}
-              alt="Mantis Official Lead Partner announcement graphic, with a marked space for the partner's own logo"
-              width={1672}
-              height={941}
-              style={{ display: "block", width: "100%", height: "auto" }}
-            />
-            <div style={{ padding: 24 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--g-ink)", margin: 0 }}>
-                  Official Lead Partner
-                </h3>
-                <a href={`${SOCIAL}/mantis-official-lead-partner-template.png`} download style={dl}>
-                  PNG template
-                </a>
-                <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>1672 × 941 · 16:9</span>
-              </div>
-              <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", margin: "0 0 18px", lineHeight: 1.6 }}>
-                Drop your logo into the dashed box on the right, then export and post. The file is
-                lossless PNG so re-exporting it does not soften the artwork.
-              </p>
-
+            <AnnouncementMaker baseSrc={`${SOCIAL}/announcement-base.webp`} />
+            <div style={{ padding: "0 24px 24px" }}>
               <CopyField label="Suggested caption" code={CAPTION} wrap />
             </div>
           </div>
