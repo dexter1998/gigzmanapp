@@ -1,10 +1,28 @@
 import type { ReactNode } from "react";
 
-/** Shared read-only building blocks for the admin pages — real Tabler markup (card, card-header,
- * table card-table, badge, status-dot, page-header) so every /admin page inherits the actual
- * Tabler component library, not a look-alike. Server components — no state, no handlers; anything
- * interactive would contradict the panel's analysis-only contract. See
- * docs/MANTIS_ADMIN_TABLER_SYSTEM.md for the full component/class reference. */
+/** Shared read-only building blocks for the admin pages.
+ *
+ * These were Tabler markup; they render on the console's own tokens now (see kit.tsx and the
+ * `.mantis-admin` block in app/globals.css). **The signatures did not change** — that is the whole
+ * point. Nine pages were written against this API, and reimplementing it moved all of them at once
+ * instead of rewriting each by hand and getting nine slightly different results.
+ *
+ * `col` props still arrive as Bootstrap strings ("col-lg-6", "col-sm-6 col-lg-3") because the
+ * pages pass them. Rather than edit every call site, colBasis() reads the widest hint out of the
+ * string and turns it into a flex basis — so the old vocabulary keeps working and no page had to
+ * know the grid underneath was replaced.
+ *
+ * Server components: no state, no handlers. Anything interactive would contradict the console's
+ * analysis-only contract. */
+
+/** "col-sm-6 col-lg-3" -> 25%. Falls back to an equal share when there is no hint. */
+function colBasis(col?: string): string {
+  if (!col) return "0 0 auto";
+  const lg = col.match(/col-(?:lg|xl)-(\d{1,2})/);
+  const any = col.match(/col-(?:sm-|md-)?(\d{1,2})/);
+  const n = Number(lg?.[1] ?? any?.[1] ?? 12);
+  return `1 1 calc(${(n / 12) * 100}% - 12px)`;
+}
 
 const IST = "Asia/Kolkata";
 
@@ -33,220 +51,200 @@ export const fmtN = (n: number) => n.toLocaleString("en-IN");
  * built from `page-header`/`page-pretitle`/`page-title` instead of a hand-rolled div. */
 export function PageHeader({ pretitle, title, sub, actions }: { pretitle: string; title: string; sub?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="page-header d-print-none">
-      <div className="container-xl">
-        <div className="row g-2 align-items-center">
-          <div className="col">
-            <div className="page-pretitle">{pretitle}</div>
-            <h2 className="page-title">{title}</h2>
-            {sub != null && <div className="text-secondary mt-1" style={{ fontSize: 12.5 }}>{sub}</div>}
-          </div>
-          {actions != null && <div className="col-auto ms-auto d-print-none"><div className="btn-list">{actions}</div></div>}
-        </div>
+    <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
+        <p className="m-0 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-faint)]">{pretitle}</p>
+        <h1 className="m-0 mt-1 text-[26px] font-semibold leading-none tracking-[-0.01em] text-[var(--ink)]">{title}</h1>
+        {sub && <p className="m-0 mt-1.5 text-[11.5px] text-[var(--ink-faint)]">{sub}</p>}
       </div>
-    </div>
+      {actions}
+    </header>
   );
 }
 
-/** A row of metric cards — real Bootstrap grid (`row row-deck row-cards`), so every card in the
- * row stretches to the tallest one, exactly like Tabler's own dashboard. Children are usually
- * StatCard/MiniStatCard, which supply their own `col-*` wrapper. */
 export function CardRow({ children }: { children: ReactNode }) {
-  return (
-    <div className="row row-deck row-cards mb-3">
-      {children}
-    </div>
-  );
+  return <div className="mb-3 flex flex-wrap gap-3">{children}</div>;
 }
 
-/** The big metric card — Tabler's `subheader` + `h1` + optional trend + optional sparkline. Owns
- * its own grid column so callers just list StatCards inside a CardRow, same call shape as before
- * this redesign. */
 export function StatCard({
   label, value, detail, tone, icon, spark, col = "col-sm-6 col-lg-3",
 }: {
   label: string;
   value: ReactNode;
   detail?: ReactNode;
+  /** Kept as the original union ("bad", not "down") — nine pages already pass these strings. */
   tone?: "up" | "bad";
   icon?: ReactNode;
   spark?: ReactNode;
   col?: string;
 }) {
+  const toneColour = tone === "up" ? "var(--ok)" : tone === "bad" ? "var(--critical)" : "var(--ink-faint)";
   return (
-    <div className={col}>
-      <div className="card h-100">
-        <div className="card-body">
-          <div className="d-flex align-items-center">
-            <div className="subheader">{label}</div>
-            {icon != null && <div className="ms-auto text-secondary lh-1">{icon}</div>}
-          </div>
-          <div className="h1 mb-0 mt-1">{value}</div>
-          {detail != null && (
-            <div className={`mt-1 ${tone === "up" ? "text-success" : tone === "bad" ? "text-danger" : "text-secondary"}`} style={{ fontSize: 12.5 }}>
-              {detail}
-            </div>
-          )}
-          {spark != null && <div className="mt-2">{spark}</div>}
+    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+      <div className="h-full rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">{label}</p>
+          {icon != null && <span className="shrink-0 leading-none text-[var(--ink-faint)]">{icon}</span>}
         </div>
+        <p className="tnum m-0 mt-1.5 text-[22px] font-semibold leading-none text-[var(--ink)]">{value}</p>
+        {detail != null && <p className="m-0 mt-1 text-[11px]" style={{ color: toneColour }}>{detail}</p>}
+        {spark != null && <div className="mt-2">{spark}</div>}
       </div>
     </div>
   );
 }
 
-/** The compact "avatar + two lines" card — Tabler's `card-sm` pattern used for the smaller status
- * row (132 Sales / 78 Orders style in the reference). */
 export function MiniStatCard({
   icon, tone = "primary", title, sub, col = "col-sm-6 col-lg-3",
 }: {
-  icon: ReactNode;
-  tone?: "primary" | "green" | "red" | "yellow" | "azure";
-  title: ReactNode;
-  sub: ReactNode;
-  col?: string;
+  icon?: ReactNode; tone?: string; title: ReactNode; sub?: string; col?: string;
 }) {
   return (
-    <div className={col}>
-      <div className="card card-sm h-100">
-        <div className="card-body">
-          <div className="row align-items-center">
-            <div className="col-auto"><span className={`bg-${tone} text-white avatar`}>{icon}</span></div>
-            <div className="col">
-              <div className="font-weight-medium">{title}</div>
-              <div className="text-secondary" style={{ fontSize: 12.5 }}>{sub}</div>
-            </div>
-          </div>
+    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+      <div className="flex h-full items-center gap-3 rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
+        {icon && (
+          <span className="sunk grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--ink-muted)]" data-tone={tone}>
+            {icon}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="tnum m-0 truncate text-[13.5px] font-semibold text-[var(--ink)]">{title}</p>
+          {sub && <p className="m-0 text-[11px] text-[var(--ink-faint)]">{sub}</p>}
         </div>
       </div>
     </div>
   );
 }
 
-/** Generic content card (chart cards, list cards, anything that isn't a table). Table gets its
- * own component below because Tabler's table cards omit card-body padding around the table. */
 export function Section({ title, note, children, actions, col = "col-12" }: { title: string; note?: ReactNode; children: ReactNode; actions?: ReactNode; col?: string }) {
   return (
-    <div className={col}>
-      <div className="card h-100">
-        <div className="card-header">
-          <h3 className="card-title">{title}</h3>
-          {actions != null && <div className="card-actions">{actions}</div>}
+    <div style={{ flex: colBasis(col), minWidth: 260 }}>
+      <div className="flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]">
+        <div className="rule-b flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="m-0 text-[13px] font-semibold text-[var(--ink)]">{title}</p>
+            {note && <p className="m-0 mt-0.5 text-[11.5px] text-[var(--ink-muted)]">{note}</p>}
+          </div>
+          {actions}
         </div>
-        <div className="card-body">
-          {note != null && <div className="text-secondary mb-3" style={{ fontSize: 12 }}>{note}</div>}
-          {children}
-        </div>
+        <div className="min-w-0 flex-1 p-4">{children}</div>
       </div>
     </div>
   );
 }
 
-/** Tabler's real table card: `card > card-header (title) > table-responsive > table card-table
- * table-vcenter`. No card-body padding wrapper — the table sits flush, exactly like the reference. */
 export function Table({
-  title, note, head, rows, empty, col = "col-12",
+  title, note, head, rows, empty, col = "col-12", actions,
 }: {
-  title?: string;
-  note?: ReactNode;
+  title?: string; note?: ReactNode;
   head: (string | { label: string; num?: boolean })[];
-  rows: ReactNode[][];
-  empty: string;
-  col?: string;
+  rows: ReactNode[][]; empty: string; col?: string; actions?: ReactNode;
 }) {
-  const body = rows.length === 0 ? (
-    <div className="card-body text-secondary" style={{ fontSize: 12.5 }}>{empty}</div>
-  ) : (
-    <div className="table-responsive">
-      <table className="table card-table table-vcenter">
+  const cols = head.map((h) => (typeof h === "string" ? { label: h, num: false } : { label: h.label, num: !!h.num }));
+  const table = rows.length ? (
+    <div className="min-w-0 overflow-x-auto">
+      <table className="w-full border-collapse text-[12px]">
         <thead>
-          <tr>{head.map((h, i) => (typeof h === "string" ? <th key={i}>{h}</th> : <th key={i} className={h.num ? "text-end" : undefined}>{h.label}</th>))}</tr>
+          <tr className="sunk">
+            {cols.map((c) => (
+              <th key={c.label} className={`whitespace-nowrap px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)] ${c.num ? "text-right" : "text-left"}`}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
         </thead>
-        <tbody>
-          {rows.map((cells, i) => (
-            <tr key={i}>{cells.map((c, j) => {
-              const numHead = typeof head[j] === "object" && (head[j] as { num?: boolean }).num;
-              return <td key={j} className={numHead ? "text-end" : undefined}>{c}</td>;
-            })}</tr>
+        <tbody className="tnum">
+          {rows.map((r, ri) => (
+            <tr key={ri} className="rule-t">
+              {r.map((cell, ci) => (
+                <td key={ci} className={`px-4 py-2 align-top ${cols[ci]?.num ? "text-right text-[var(--ink-muted)]" : "text-left text-[var(--ink)]"}`}>{cell}</td>
+              ))}
+            </tr>
           ))}
         </tbody>
       </table>
     </div>
+  ) : (
+    <p className="m-0 px-4 py-8 text-center text-[12px] text-[var(--ink-faint)]">{empty}</p>
   );
 
-  if (!title) return <div className={col}><div className="card">{body}</div></div>;
-
+  if (!title) return <div style={{ flex: colBasis(col), minWidth: 260 }}>{table}</div>;
   return (
-    <div className={col}>
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">{title}</h3>
-        </div>
-        {note != null && <div className="card-body py-2 text-secondary" style={{ fontSize: 12 }}>{note}</div>}
-        {body}
-      </div>
-    </div>
-  );
-}
-
-/** The only badge component — Tabler's soft `badge bg-{color}-lt`. Every status in the admin
- * section (payment status, PRO domain flag, dashboard mode, cron result) routes through this. */
-export function Pill({ tone, children }: { tone: "ok" | "warn" | "bad" | "mut" | "info"; children: ReactNode }) {
-  const cls = { ok: "bg-green-lt", warn: "bg-yellow-lt", bad: "bg-red-lt", mut: "bg-secondary-lt", info: "bg-blue-lt" }[tone];
-  return <span className={`badge ${cls}`}>{children}</span>;
-}
-
-/** Health tile — Tabler's `status-dot` + card-sm. Green only from real evidence; grey means "no
- * signal", never a fake green. */
-export function HealthItem({ tone, title, sub, col = "col-sm-6 col-lg-3" }: { tone: "ok" | "warn" | "bad" | "mut"; title: string; sub: string; col?: string }) {
-  const dot = { ok: "bg-green", warn: "bg-yellow", bad: "bg-red", mut: "bg-secondary" }[tone];
-  const animated = tone === "ok" ? " status-dot-animated" : "";
-  return (
-    <div className={col}>
-      <div className="card card-sm h-100">
-        <div className="card-body">
-          <div className="row align-items-center">
-            <div className="col-auto"><span className={`status-dot${animated} ${dot}`} /></div>
-            <div className="col">
-              <div className="font-weight-medium" style={{ fontSize: 12.5 }}>{title}</div>
-              <div className="text-secondary" style={{ fontSize: 11.5 }}>{sub}</div>
-            </div>
+    <div style={{ flex: colBasis(col), minWidth: 260 }}>
+      <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]">
+        <div className="rule-b flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="m-0 text-[13px] font-semibold text-[var(--ink)]">{title}</p>
+            {note && <p className="m-0 mt-0.5 text-[11.5px] text-[var(--ink-muted)]">{note}</p>}
           </div>
+          {actions}
+        </div>
+        {table}
+      </div>
+    </div>
+  );
+}
+
+const TONE: Record<string, string> = {
+  ok: "var(--ok)", warn: "var(--warn)", bad: "var(--critical)",
+  mut: "var(--ink-faint)", info: "#3987e5",
+};
+
+export function Pill({ tone, children }: { tone: "ok" | "warn" | "bad" | "mut" | "info"; children: ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+      style={{ borderColor: `color-mix(in oklab, ${TONE[tone]} 45%, transparent)`, color: TONE[tone] }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Status never rests on the dot alone — the title and sub beside it carry the meaning. */
+export function HealthItem({ tone, title, sub, col = "col-sm-6 col-lg-3" }: { tone: "ok" | "warn" | "bad" | "mut"; title: string; sub: string; col?: string }) {
+  return (
+    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+      <div className="flex h-full items-start gap-2.5 rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
+        <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ background: TONE[tone] }} aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="m-0 text-[12.5px] text-[var(--ink)]">{title}</p>
+          <p className="m-0 text-[11px] text-[var(--ink-faint)]">{sub}</p>
         </div>
       </div>
     </div>
   );
 }
 
-/** Tabler `list-group` activity row — timestamp + label + a tone-colored badge, used for cron
- * runs / recent-error style feeds. */
-export function ActivityRow({ when, label, tone, badge }: { when: string; label: ReactNode; tone?: "ok" | "warn" | "bad" | "mut" | "info"; badge?: string }) {
+export function ActivityRow({ when, label, tone = "mut", badge }: { when: string; label: ReactNode; tone?: "ok" | "warn" | "bad" | "mut" | "info"; badge?: string }) {
   return (
-    <div className="list-group-item">
-      <div className="row align-items-center">
-        <div className="col-auto text-secondary" style={{ fontSize: 11.5, minWidth: 108 }}>{when}</div>
-        <div className="col text-truncate">{label}</div>
-        {badge != null && tone != null && <div className="col-auto"><Pill tone={tone}>{badge}</Pill></div>}
+    <div className="rule-b flex items-start gap-3 py-2 last:border-0">
+      <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: TONE[tone] }} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[12.5px] text-[var(--ink)]">{label}</div>
+        <div className="text-[10.5px] text-[var(--ink-faint)]">{when}</div>
       </div>
+      {badge && <Pill tone={tone}>{badge}</Pill>}
     </div>
   );
 }
 
-/** Tabler `progress` bar — quota/budget-style metrics (Places API spend, credit pool usage). */
 export function ProgressStat({ label, pct, sub, tone = "primary" }: { label: string; pct: number; sub?: string; tone?: "primary" | "yellow" | "red" | "green" }) {
+  const colour = tone === "red" ? "var(--critical)" : tone === "yellow" ? "var(--warn)" : tone === "green" ? "var(--ok)" : "var(--accent)";
   return (
     <div className="mb-3">
-      <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12.5 }}>
-        <span>{label}</span>
-        <span className="text-secondary">{sub ?? `${pct}%`}</span>
+      <div className="flex items-baseline justify-between text-[12px]">
+        <span className="text-[var(--ink-muted)]">{label}</span>
+        <span className="tnum text-[var(--ink)]">{Math.round(pct)}%</span>
       </div>
-      <div className="progress progress-sm">
-        <div className={`progress-bar bg-${tone}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} role="progressbar" />
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-sunk)]">
+        <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: colour }} />
       </div>
+      {sub && <p className="m-0 mt-1 text-[10.5px] text-[var(--ink-faint)]">{sub}</p>}
     </div>
   );
 }
 
-/** 30 day buckets (oldest→newest) from rows of {day, n}. */
 export function toDayBuckets(rows: { day: string | Date; n: number }[], days = 30): number[] {
   const map = new Map(rows.map((r) => [new Date(r.day).toISOString().slice(0, 10), Number(r.n)]));
   const out: number[] = [];

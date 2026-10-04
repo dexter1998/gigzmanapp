@@ -733,6 +733,10 @@ CREATE INDEX IF NOT EXISTS idx_job_companies_latlng ON job_companies(lat, lng);
 CREATE INDEX IF NOT EXISTS idx_job_companies_refresh ON job_companies(next_refresh_at)
   WHERE scrape_status <> 'no_careers_page';
 CREATE INDEX IF NOT EXISTS idx_job_companies_city ON job_companies(city_slug);
+-- /admin/jobs lists the most recently scraped companies. Without this the ORDER BY was a full
+-- seq scan plus a top-N sort over every row in the table — measured at 2.6s on its own against
+-- 172k rows, and that page fires ten queries at once.
+CREATE INDEX IF NOT EXISTS idx_job_companies_scraped_at ON job_companies(scraped_at DESC NULLS LAST);
 
 -- One row per open role. `source_hash` (not the URL) is the identity key: the same role often
 -- moves URL between refreshes on heuristic-scraped sites, and a plain URL key would resurrect it

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { sql } from "@/lib/db";
 import { PageHeader, StatCard, CardRow, Table, Pill, fmtAgo, fmtDT, fmtN } from "../ui";
 
@@ -20,7 +21,18 @@ function appTone(status: string): "ok" | "warn" | "bad" | "mut" | "info" {
   return "mut"; // saved
 }
 
-export default async function JobsPage() {
+/**
+ * Ten queries over the jobs tables, cached.
+ *
+ * This page was the slowest in the console by a wide margin — 22s on a cold load — because every
+ * refresh re-ran all ten, several of them full scans of job_companies (172k rows) and job_listings.
+ * The worst single one was the "recently scraped" list: ORDER BY scraped_at with no index on it,
+ * measured at 2.6s by itself (parallel seq scan + top-N heapsort over the whole table). That index
+ * now exists in db/schema.sql; this cache is what stops the other nine being paid for on every
+ * keypress.
+ */
+const getJobsOps = unstable_cache(
+  async () => {
   const [
     [modeSplit], [companyKpi], [listingKpi], [applicantKpi], [bandKpi],
     scrapeBreakdown, statusBreakdown, familyBreakdown, companies, applications,
@@ -49,6 +61,20 @@ export default async function JobsPage() {
         JOIN job_companies jc ON jc.id = jl.company_id
         ORDER BY ja.created_at DESC LIMIT 20`,
   ]);
+    return { modeSplit, companyKpi, listingKpi, applicantKpi, bandKpi,
+             scrapeBreakdown, statusBreakdown, familyBreakdown, companies, applications };
+  },
+  ["admin:jobs-ops"],
+  { revalidate: 60 },
+);
+
+export const dynamic = "force-dynamic";
+
+export default async function JobsPage() {
+  const {
+    modeSplit, companyKpi, listingKpi, applicantKpi, bandKpi,
+    scrapeBreakdown, statusBreakdown, familyBreakdown, companies, applications,
+  } = await getJobsOps();
 
   const jobsAdoptionPct = modeSplit.all_users > 0 ? Math.round((modeSplit.jobs_users / modeSplit.all_users) * 100) : 0;
   const applicantCompletePct = applicantKpi.total > 0 ? Math.round((applicantKpi.complete / applicantKpi.total) * 100) : 0;
