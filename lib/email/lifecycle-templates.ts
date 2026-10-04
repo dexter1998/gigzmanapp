@@ -658,7 +658,7 @@ export const PARTNER_APPROVED_HTML = `<!doctype html>
 </style>
 </head>
 <body class="dmb-f7f7f3" style="margin:0;padding:0;background:#f7f7f3;">
-<div class="dmc-f7f7f3" style="display:none;font-size:1px;color:#f7f7f3;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">You&rsquo;re approved &mdash; here&rsquo;s how to activate your 2,000 credits.</div>
+<div class="dmc-f7f7f3" style="display:none;font-size:1px;color:#f7f7f3;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Approved &mdash; Mantis Ai is now your lead partner. Here&rsquo;s how to activate your 2,000 credits.</div>
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
 <table class="dmb-f7f7f3" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f7f7f3" style="background:#f7f7f3;">
 <tr><td align="center" style="padding:32px 12px;">
@@ -670,7 +670,7 @@ export const PARTNER_APPROVED_HTML = `<!doctype html>
  <div style="line-height:14px;font-size:14px;height:14px;">&nbsp;</div>
  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="dmc-60850b dmb-f7faef dmk-9fc725" style="background:#f7faef;border:1px solid #9fc725;border-radius:999px;padding:9px 19px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#60850b;white-space:nowrap;">Approved</td></tr></table>
  <div style="line-height:16px;font-size:16px;height:16px;">&nbsp;</div>
- <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">You&rsquo;re a Mantis Ai<br>Leads Partner.</div>
+ <div class="h1 dmc-111315" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:37px;line-height:1.1;letter-spacing:-1.1px;font-weight:800;color:#111315;margin:0 0 12px;text-align:center;">Mantis Ai is now your<br>official lead partner.</div>
  <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:15.5px;line-height:1.5;color:#565b5d;font-weight:400;margin:0 0 22px;text-align:center;">Hi {{first_name}}, your partnership application has been approved.<br>You get <strong class="dmc-111315" style="color:#111315;">1 month of the Starter plan free</strong>, including <strong class="dmc-111315" style="color:#111315;">2,000 credits</strong>.</div>
 
  <table class="dmk-dfe2d9" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dfe2d9;border-radius:16px;">

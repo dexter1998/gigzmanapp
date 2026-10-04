@@ -20,7 +20,7 @@ const BRAND_KIT_URL = "https://mantisai.in/partner/brand-kit";
  *  so without this the answer lands nowhere. Reply-To is not SPF/DMARC-checked, so a different
  *  domain than From is fine. */
 const REPLY_TO = "Tarun Kumar <tarun@gigzman.com>";
-const SUBJECT = "You're approved — Mantis Ai Leads Partner";
+const SUBJECT = "You're approved — Mantis Ai is now your lead partner";
 
 type Row = {
   id: string;
