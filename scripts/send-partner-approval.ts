@@ -21,6 +21,19 @@ const BRAND_KIT_URL = "https://mantisai.in/partner/brand-kit";
  *  domain than From is fine. */
 const REPLY_TO = "Tarun Kumar <tarun@gigzman.com>";
 const SUBJECT = "You're approved — Mantis Ai is now your lead partner";
+/**
+ * Named here rather than left to SES_CONFIGURATION_SET.
+ *
+ * That variable lives in the App Runner environment, not in .env.local, and this script runs on a
+ * laptop — so the first 55 sends on 2026-10-04 went out with no configuration set at all and
+ * therefore no event destination. SES accepted every one and returned a message id, so the run
+ * looked clean, but nothing came back: no delivery, no bounce, no complaint. A complaint we never
+ * see is one we can never suppress, and the address stays "good" in our records forever.
+ *
+ * An ambient variable that is absent on the machine the script actually runs on is not a default,
+ * it is a silent downgrade.
+ */
+const CONFIG_SET = "mantis-transactional";
 
 type Row = {
   id: string;
@@ -67,6 +80,7 @@ async function main() {
       to: only, subject: SUBJECT, html, text,
       campaignId: CAMPAIGN_ID, stepKey: `partner-approval:test:${Date.now()}`,
       template: "partner_approved", stream: "lifecycle", replyTo: REPLY_TO,
+      configSet: CONFIG_SET,
     });
     console.log(res.sent ? `sent test -> ${only}` : `NOT sent -> ${only}: ${res.reason}`);
     await sql.end();
@@ -93,6 +107,7 @@ async function main() {
         to: r.email, subject: SUBJECT, html, text,
         campaignId: CAMPAIGN_ID, stepKey: `partner-approval:${r.id}`,
         template: "partner_approved", stream: "lifecycle", replyTo: REPLY_TO,
+      configSet: CONFIG_SET,
       });
       if (res.sent) {
         sent++;
