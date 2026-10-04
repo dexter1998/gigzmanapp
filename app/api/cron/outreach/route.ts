@@ -42,12 +42,6 @@ const TICK_INTERVAL_MINUTES = 15;
  *  triggers on burst PATTERN rather than daily volume. */
 const SEND_INTERVAL_MS = 85;
 
-/** First tranche of a tick, held back so a bad batch reveals itself on a small sample.
- *  The account-wide bounce rate is a trailing average — by the time it moves, a full batch has
- *  already gone. A canary is the only thing that catches a bad list inside a single tick. */
-const CANARY_SIZE = 50;
-const CANARY_BOUNCE_LIMIT = 0.02;
-
 type CampaignRow = {
   id: string;
   cooldown_days: number;
@@ -233,22 +227,22 @@ export async function GET(req: NextRequest) {
     for (let i = 0; i < plan.sends.length; i++) {
       const item = plan.sends[i];
 
-      // 4b — canary checkpoint. Before releasing the rest of the tick, confirm the first tranche
-      // did not immediately bounce.
-      if (i === CANARY_SIZE) {
-        const check = await sql`
-          SELECT count(*) FILTER (WHERE cr.bounce_kind IN ('hard_mta', 'mailbox_full', 'transient'))::int AS bad,
-                 count(*)::int AS total
-          FROM email_sends es
-          JOIN campaign_recipients cr ON cr.email = es.recipient AND cr.campaign_id = es.campaign_id
-          WHERE es.campaign_id = ${campaignId} AND es.sent_at >= ${startedAt.toISOString()}
-        `;
-        const c = check[0] as { bad: number; total: number };
-        if (c.total > 0 && c.bad / c.total > CANARY_BOUNCE_LIMIT) {
-          aborted = `canary_bounce_${((c.bad / c.total) * 100).toFixed(1)}pct`;
-          break;
-        }
-      }
+      // The canary checkpoint that used to sit here was removed on 2026-10-04. It could not do
+      // its job, for two reasons, and it cost 31,324 sends in one day proving it:
+      //
+      //   1. It ran ~5 seconds after the first 50 sends, but bounce feedback arrives through
+      //      SNS minutes later. Nothing it was looking for could have arrived yet.
+      //   2. So what it actually read was cr.bounce_kind — the recipient's state from some
+      //      EARLIER send — and counted 'transient' (out-of-office, greylisting) as a failure.
+      //      It was answering "how many of these 50 people have ever soft-bounced", not "did
+      //      this batch just bounce".
+      //
+      // Measured that day: real hard-bounce rate 0.25% over 42,220 sends, while the canary read
+      // 4-12% and aborted 15 of 58 ticks. The account-level gates in checkGates are the real
+      // protection and they work on adequate samples: Reputation.BounceRate halves capacity at
+      // 2% and stops at 4%, there is a daily bounce budget, and the campaign's own 3-day rate
+      // throttles separately. A guard that fires on noise is worse than no guard, because it
+      // trains you to ignore it.
 
       try {
         const result = await sendBulkEmail({
