@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { sql } from "@/lib/db";
 import {
   PageHeader, StatCard, MiniStatCard, CardRow, Section, Table, Pill, HealthItem,
@@ -27,7 +28,27 @@ function cronTone(row: CronRow | undefined, maxAgeH: number): { tone: "ok" | "wa
   return { tone: "ok", sub: `last ok run ${fmtAgo(row.started_at)}` };
 }
 
-export default async function OverviewPage() {
+/**
+ * The page re-renders on every request; only the expensive aggregates are cached (see below).
+ *
+ * The parent layout already sets this, but that does not stop Next from caching this segment's own
+ * render per URL — which it did: /admin/users kept serving a render from when the table held four
+ * rows, while /admin/users?page=2 came back correct because it had never been rendered before. An
+ * admin page showing a number from an unknown point in the past is worse than a slow one.
+ */
+export const dynamic = "force-dynamic";
+
+/**
+ * The whole overview, cached.
+ *
+ * Thirteen queries fired at once against a pool of ten, several of them whole-table counts over
+ * tables with hundreds of thousands of rows — recomputed on every single refresh. On a burstable
+ * instance that has spent its CPU credits, that burst is enough to make the connection handshakes
+ * themselves time out, which is how a slow page became a failing one. A dashboard nobody is
+ * reading to the second does not need live numbers; 60s makes a refresh free.
+ */
+const getOverview = unstable_cache(
+  async () => {
   const [
     [u], [rev], [act], signupDays, unlockDays, countries,
     cronRows, [alerts24], [errors24], [lastChat], [lastEmail], [down7], recentPayments,
@@ -43,7 +64,10 @@ export default async function OverviewPage() {
                count(*) FILTER (WHERE status = 'paid')::int AS paid_orders,
                count(*) FILTER (WHERE status = 'created' AND created_at > now() - interval '7 days')::int AS abandoned7
         FROM payments`,
-    sql`SELECT (SELECT count(*)::int FROM leads) AS leads,
+    // n_live_tup, not count(*): `leads` is ~300k rows / ~200MB and this is a headline tile, not an
+    // invoice. The planner's own estimate is maintained by autovacuum, is accurate to well within
+    // what anyone reads off a dashboard card, and costs a single catalog lookup instead of a scan.
+    sql`SELECT (SELECT coalesce(n_live_tup, 0)::int FROM pg_stat_user_tables WHERE relname = 'leads') AS leads,
                (SELECT count(*)::int FROM unlocks) AS unlocks,
                (SELECT count(*)::int FROM chat_messages WHERE created_at > now() - interval '7 days' AND role = 'user') AS chat7,
                (SELECT coalesce(sum(billed_places_calls), 0)::int FROM area_scans WHERE created_at > now() - interval '30 days') AS billed30`,
@@ -58,6 +82,18 @@ export default async function OverviewPage() {
     sql`SELECT count(*)::int AS n FROM chat_messages WHERE feedback = 'down' AND created_at > now() - interval '7 days'`,
     sql`SELECT user_email, amount_paise, status, created_at FROM payments ORDER BY created_at DESC LIMIT 8`,
   ]);
+    return { u, rev, act, signupDays, unlockDays, countries, cronRows,
+             alerts24, errors24, lastChat, lastEmail, down7, recentPayments };
+  },
+  ["admin:overview"],
+  { revalidate: 60 },
+);
+
+export default async function OverviewPage() {
+  const {
+    u, rev, act, signupDays, unlockDays, countries, cronRows,
+    alerts24, errors24, lastChat, lastEmail, down7, recentPayments,
+  } = await getOverview();
 
   const crons = new Map((cronRows as unknown as CronRow[]).map((r) => [r.job, r]));
   const enrich = cronTone(crons.get("enrich"), 26);
