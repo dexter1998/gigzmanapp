@@ -703,7 +703,7 @@ export const PARTNER_APPROVED_HTML = `<!doctype html>
  <div class="dmc-565b5d" style="font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.55;color:#565b5d;text-align:center;"><strong class="dmc-111315" style="color:#111315;">Optional: announce it.</strong> On the same page you can add your logo to the partner graphic and download it &mdash; takes a few seconds, no design tool needed. Post it and we&rsquo;ll repost from the official Mantis Ai account.</div>
 
  <table class="dmk-e4e6df" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;border-top:1px solid #e4e6df;"><tr>
-  <td width="66" valign="top" class="stack" style="width:66px;padding-top:20px;"><img src="https://mantisai.in/email/v1/05-mark.png" width="50" height="50" alt="" style="display:block;border:0;width:50px;height:50px;max-width:100%;"></td>
+  <td width="78" valign="top" class="stack" style="width:78px;padding-top:20px;"><img src="https://mantisai.in/email/v1/founder.jpg" width="60" height="60" alt="Tarun Kumar" style="display:block;border:0;width:60px;height:60px;border-radius:999px;max-width:100%;"></td>
   <td valign="top" class="stack dmc-111315" style="padding-top:20px;font-family:Inter,Manrope,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.55;color:#111315;">
     <strong style="font-size:14px;">Tarun Kumar</strong><br>
     Founder, Mantis Ai<br>Reverblunt Pvt. Ltd. &middot; Gurugram, India</td>
