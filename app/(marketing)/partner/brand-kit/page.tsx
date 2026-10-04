@@ -29,6 +29,16 @@ export const metadata: Metadata = {
 // it did before this split).
 const BASE = "/partners/badge";
 const ABSOLUTE_BASE = `${COMPANY.site}/partners/badge`;
+const SOCIAL = "/partners/social";
+
+/** Offered, not required -- a partner who has to invent the words usually posts nothing. */
+const CAPTION = `We're now an Official Lead Partner of Mantis Ai.
+
+Mantis finds local businesses that need a website — with contact details, intent signals and a heat score — so we spend our time pitching rather than prospecting.
+
+More at mantisai.in
+
+#MantisAi #LeadPartner #WebDesign #LocalBusiness`;
 
 const VARIANTS = [
   {
@@ -113,6 +123,47 @@ export default function PartnerBrandKitPage() {
             </div>
           </div>
         ))}
+
+        {/* ── Announcement graphic ──────────────────────────────────────────────────────────────
+            Separate from the badges above on purpose: the badge is a paste-and-done footer asset,
+            this one is a template the partner has to open and edit before it is usable. Saying so
+            plainly beats letting someone download it, see "Place your Logo", and give up. */}
+        <div style={{ marginTop: 56 }}>
+          <SectionHeading
+            align="left"
+            title="Announce it"
+            accent="(optional)"
+            sub="A graphic for LinkedIn, X or Instagram. Add your own logo in the marked space, post it, and we'll repost it from the official Mantis Ai account."
+          />
+
+          <div style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-white)", overflow: "hidden" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- fixed asset from our own public/ */}
+            <img
+              src={`${SOCIAL}/mantis-official-lead-partner-preview.webp`}
+              alt="Mantis Official Lead Partner announcement graphic, with a marked space for the partner's own logo"
+              width={1672}
+              height={941}
+              style={{ display: "block", width: "100%", height: "auto" }}
+            />
+            <div style={{ padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--g-ink)", margin: 0 }}>
+                  Official Lead Partner
+                </h3>
+                <a href={`${SOCIAL}/mantis-official-lead-partner-template.png`} download style={dl}>
+                  PNG template
+                </a>
+                <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>1672 × 941 · 16:9</span>
+              </div>
+              <p style={{ fontSize: 13.5, color: "var(--g-gray-500)", margin: "0 0 18px", lineHeight: 1.6 }}>
+                Drop your logo into the dashed box on the right, then export and post. The file is
+                lossless PNG so re-exporting it does not soften the artwork.
+              </p>
+
+              <CopyField label="Suggested caption" code={CAPTION} wrap />
+            </div>
+          </div>
+        </div>
 
         <div style={{ marginTop: 44, padding: 28, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-cream)" }}>
           <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--g-ink)", margin: "0 0 14px" }}>Usage</h3>

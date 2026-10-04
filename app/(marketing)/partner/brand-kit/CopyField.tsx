@@ -11,7 +11,16 @@ import { useState } from "react";
  * there would be worse than not offering the button -- so it falls back to selecting the code,
  * which at least leaves Ctrl+C working.
  */
-export function CopyField({ label, code, hint }: { label: string; code: string; hint?: string }) {
+export function CopyField({
+  label, code, hint, wrap,
+}: {
+  label: string;
+  code: string;
+  hint?: string;
+  /** Prose (a post caption) should wrap; markup should scroll, because a wrapped tag reads as
+   *  broken and invites someone to "fix" it on the way into their site. */
+  wrap?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -54,7 +63,10 @@ export function CopyField({ label, code, hint }: { label: string; code: string; 
       <pre
         id={`code-${label}`}
         style={{
-          margin: 0, padding: "14px 16px", overflowX: "auto",
+          margin: 0, padding: "14px 16px",
+          overflowX: wrap ? "visible" : "auto",
+          whiteSpace: wrap ? "pre-wrap" : "pre",
+          wordBreak: wrap ? "break-word" : "normal",
           background: "var(--g-cream)", border: "1px solid var(--g-border)",
           borderRadius: "var(--radius-sm)", fontSize: 12, lineHeight: 1.6,
           color: "var(--g-ink)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
