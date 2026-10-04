@@ -61,12 +61,12 @@ function Stage({
   indent?: boolean;
 }) {
   return (
-    <div className="d-flex align-items-center gap-3 jf-stage flex-wrap flex-sm-nowrap">
-      <div className="jf-stage-label d-flex align-items-center gap-2" style={indent ? { paddingLeft: "0.75rem" } : undefined}>
-        {indent && <span className="jf-tick text-secondary" aria-hidden>└</span>}
-        <div className="text-truncate">
+    <div className="flex items-center gap-3 jf-stage flex-wrap flex-sm-nowrap">
+      <div className="jf-stage-label flex items-center gap-2" style={indent ? { paddingLeft: "0.75rem" } : undefined}>
+        {indent && <span className="jf-tick text-[var(--ink-muted)]" aria-hidden>└</span>}
+        <div className="truncate">
           <div className={indent ? "" : "fw-bold"}>{label}</div>
-          {sub && <div className="text-secondary" style={{ fontSize: 11.5 }}>{sub}</div>}
+          {sub && <div className="text-[var(--ink-muted)]" style={{ fontSize: 11.5 }}>{sub}</div>}
         </div>
       </div>
       <div className="flex-fill">
@@ -75,9 +75,9 @@ function Stage({
                aria-valuenow={n} aria-valuemin={0} aria-valuemax={total} aria-label={label} />
         </div>
       </div>
-      <div className="text-end flex-shrink-0" style={{ minWidth: 96 }}>
-        <span className="fw-bold jf-num">{n.toLocaleString("en-IN")}</span>
-        <span className="text-secondary ms-2" style={{ fontSize: 12 }}>{pctLabel(n, total)}</span>
+      <div className="text-right flex-shrink-0" style={{ minWidth: 96 }}>
+        <span className="font-semibold jf-num">{n.toLocaleString("en-IN")}</span>
+        <span className="text-[var(--ink-muted)] ml-2" style={{ fontSize: 12 }}>{pctLabel(n, total)}</span>
       </div>
     </div>
   );
@@ -87,10 +87,10 @@ function Stage({
  *  them bars would imply a funnel position they do not have. */
 function Exit({ label, n, sub, tone }: { label: string; n: number; sub?: ReactNode; tone: string }) {
   return (
-    <div className="col-6 col-lg-3">
-      <div className="text-secondary text-uppercase" style={{ fontSize: 10.5, letterSpacing: "0.06em", fontWeight: 700 }}>{label}</div>
+    <div className="flex-1 min-w-[260px] min-w-[170px]">
+      <div className="text-[var(--ink-muted)] uppercase" style={{ fontSize: 10.5, letterSpacing: "0.06em", fontWeight: 700 }}>{label}</div>
       <div className={`h2 mb-0 mt-1 jf-num text-${tone}`}>{n.toLocaleString("en-IN")}</div>
-      {sub && <div className="text-secondary" style={{ fontSize: 11.5 }}>{sub}</div>}
+      {sub && <div className="text-[var(--ink-muted)]" style={{ fontSize: 11.5 }}>{sub}</div>}
     </div>
   );
 }
@@ -109,7 +109,7 @@ export function JourneyFlow({ c }: { c: JourneyCounts }) {
 
       <hr className="my-3" />
 
-      <div className="row g-3">
+      <div className="flex flex-wrap gap-3 g-3">
         <Exit label="Invalid" n={c.invalid} tone="danger"
               sub={<>{c.hardBounce.toLocaleString("en-IN")} hard · {c.validationSuppressed.toLocaleString("en-IN")} AV</>} />
         <Exit label="Complaint" n={c.complaint} tone="danger" sub="sabse mehnga" />
@@ -119,12 +119,12 @@ export function JourneyFlow({ c }: { c: JourneyCounts }) {
 
       <hr className="my-3" />
 
-      <div className="row g-3">
+      <div className="flex flex-wrap gap-3 g-3">
         <Exit label="Abhi chal rahe" n={inPlay} tone="body" sub={`${c.new.toLocaleString("en-IN")} naye, abhi tak nahi bheja`} />
         <Exit label="Aaj due" n={c.dueNow} tone="primary" sub="agla tick inhe uthayega" />
       </div>
 
-      <p className="text-secondary mt-3 mb-0" style={{ fontSize: 11.5, lineHeight: 1.55 }}>
+      <p className="text-[var(--ink-muted)] mt-3 m-0" style={{ fontSize: 11.5, lineHeight: 1.55 }}>
         <strong>Invalid</strong> mein AV-suppressed aur asli hard bounce alag ginay gaye hain. SES dono ko{" "}
         <code>Bounce/Permanent</code> bhejta hai aur farq sirf <code>bounceSubType</code> se pata chalta hai —
         AV-suppressed kabhi kisi mail server tak pahuncha hi nahi, isliye wo list ki kharabi nahi hai.

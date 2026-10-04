@@ -131,13 +131,13 @@ export default async function CampaignDetailPage({
         sub={<><code>{campaign.id}</code> · {campaign.stream} · {campaign.sender}</>}
         actions={
           <>
-            <Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">Lead journey</Link>
+            <Link href={`/admin-campaigns/${id}/lead`} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline">Lead journey</Link>
             <Pill tone={statusTone}>{campaign.status}</Pill>
           </>
         }
       />
-      <div className="page-body">
-        <div className="container-xl">
+      <div className="">
+        <div className="mx-auto w-full max-w-[1400px]">
           {/* The four numbers that decide whether anything below needs attention: how big the
               pool is, how much of it is reachable, how much is engaged, and how much has been
               lost. Everything else is detail that only matters once one of these looks wrong. */}
@@ -148,7 +148,7 @@ export default async function CampaignDetailPage({
             <StatCard label="Suppressed" value={fmtN(journey.suppressed)} detail={`${fmtN(journey.hardBounce)} hard · ${fmtN(journey.validationSuppressed)} AV`} tone="bad" icon={<IconAlertTriangle size={20} />} />
           </CardRow>
 
-      <div className="row row-cards">
+      <div className="flex flex-wrap gap-3">
       <Section title="Change status" note="'active' se pehle batch start nahi ho sakta. 'paused' agla cron tick se sends turant rok deta hai.">
         <StatusControl campaignId={campaign.id} current={campaign.status} />
       </Section>
@@ -217,18 +217,18 @@ export default async function CampaignDetailPage({
       </Section>
 
       <Section title="Batches" note="Har batch ek baar start/schedule hota hai (typed confirmation), uske baad cron khud steps chalata hai.">
-        <div className="row g-3">
-          {batches.length === 0 && <div className="col-12 text-secondary">abhi koi recipient import nahi hua</div>}
+        <div className="flex flex-wrap gap-3 g-3">
+          {batches.length === 0 && <div className="w-full text-[var(--ink-muted)]">abhi koi recipient import nahi hua</div>}
           {batches.map((b) => {
             const run = runsByBatch.get(b.batch);
             const scheduled = run && new Date(run.started_at) > new Date();
             return (
-              <div key={b.batch} className="col-12 col-md-6 col-xl-4">
-                <div className="card card-sm h-100"><div className="card-body">
-                <div className="subheader">Batch {b.batch}</div>
-                <div className="h3 mb-0 mt-1 jf-num">{fmtN(b.n)} recipients</div>
+              <div key={b.batch} className="w-full flex-1 min-w-[260px]">
+                <div className="flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]"><div className="p-4">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">Batch {b.batch}</div>
+                <div className="h3 m-0 mt-1 jf-num">{fmtN(b.n)} recipients</div>
                 {run ? (
-                  <div className="text-secondary mt-1" style={{ fontSize: 12 }}>{scheduled ? "scheduled for" : "started"} {fmtDT(run.started_at)} by {run.started_by}</div>
+                  <div className="text-[var(--ink-muted)] mt-1" style={{ fontSize: 12 }}>{scheduled ? "scheduled for" : "started"} {fmtDT(run.started_at)} by {run.started_by}</div>
                 ) : (
                   <div style={{ marginTop: 8 }}>
                     <StartBatchForm campaignId={campaign.id} batch={b.batch} recipientCount={Number(b.n)} />

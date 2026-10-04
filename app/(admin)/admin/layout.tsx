@@ -2,7 +2,6 @@ import { requireAdmin } from "@/lib/admin";
 import { AdminNav } from "./nav";
 import { Header } from "./Header";
 import { ThemeSetter } from "./ThemeSetter";
-import "@tabler/core/dist/css/tabler.min.css";
 import "./admin.css";
 
 /**

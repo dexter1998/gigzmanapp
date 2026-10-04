@@ -34,8 +34,8 @@ export default async function MailingPage() {
   const bounces = ev.get("Bounce") ?? 0, complaints = ev.get("Complaint") ?? 0;
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Systems" title="SES Mailing" sub={`as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -58,7 +58,7 @@ export default async function MailingPage() {
         </CardRow>
 
         {!hasEvents && (
-          <div className="row row-cards mb-3">
+          <div className="flex flex-wrap gap-3 mb-3">
             <Section col="col-12" title="Opens / clicks / spam kyu khali hai">
               <Pill tone="info">setup pending</Pill>{" "}
               Webhook <code>/api/webhooks/ses-events</code> ready hai — SES configuration set + SNS topic
@@ -67,7 +67,7 @@ export default async function MailingPage() {
           </div>
         )}
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Campaigns" note="Har campaign/step ka volume aur last send."
             head={["Campaign", "Step", "Stream", { label: "Sends", num: true }, "Last sent"]}
             rows={campaigns.map((c) => [c.campaign_id, c.step_key,
@@ -76,7 +76,7 @@ export default async function MailingPage() {
             empty="abhi koi send nahi" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Recent sends"
             head={["When", "Recipient", "Campaign", "Step", "SES id"]}
             rows={recent.map((r) => [fmtDT(r.sent_at), r.recipient, r.campaign_id, r.step_key,

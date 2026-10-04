@@ -119,8 +119,8 @@ export default async function UsersPage({
   }));
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Analysis" title="Users" sub={`page ${page} of ${fmtN(totalPages)} · ${fmtN(kpi.total)} users · as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -132,7 +132,7 @@ export default async function UsersPage({
           <StatCard label="Onboarding incomplete" value={fmtN(kpi.unonboarded)} tone={kpi.unonboarded > 0 ? "bad" : undefined} />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="Country split" note="Client IP se one-time capture — purane users 'Unknown' rahenge jab tak wo dobara login nahi karte."
             head={["Country", { label: "Users", num: true }]}
             rows={countries.map((c) => [c.country, fmtN(c.n)])}
@@ -147,14 +147,14 @@ export default async function UsersPage({
             empty="" />
         </div>
 
-        <div className="row row-cards">
-          <div className="col-12">
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">All users</h3>
+        <div className="flex flex-wrap gap-3">
+          <div className="w-full">
+            <div className="flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]">
+              <div className="rule-b flex items-center justify-between gap-3 px-4 py-3">
+                <h3 className="text-[13px] font-semibold text-[var(--ink)]">All users</h3>
               </div>
-              <div className="card-body">
-                <div className="text-secondary mb-3" style={{ fontSize: 12 }}>
+              <div className="p-4">
+                <div className="text-[var(--ink-muted)] mb-3" style={{ fontSize: 12 }}>
                   Mode aur plan se filter karo, ya kisi row pe click karke quick view kholo. Filters
                   is page ke {rows.length} users pe lagte hain — doosre page ke liye neeche se badlo.
                 </div>
@@ -176,15 +176,15 @@ function Pager({ page, totalPages }: { page: number; totalPages: number }) {
   const prev = page > 1 ? `/admin/users?page=${page - 1}` : null;
   const next = page < totalPages ? `/admin/users?page=${page + 1}` : null;
   return (
-    <div className="d-flex align-items-center justify-content-between mt-3">
-      <div className="text-secondary" style={{ fontSize: 12 }}>
+    <div className="flex items-center justify-between mt-3">
+      <div className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>
         Page {page} of {fmtN(totalPages)}
       </div>
-      <div className="btn-list">
-        {prev ? <Link className="btn btn-sm" href={prev}>← Previous</Link>
-              : <span className="btn btn-sm disabled">← Previous</span>}
-        {next ? <Link className="btn btn-sm" href={next}>Next →</Link>
-              : <span className="btn btn-sm disabled">Next →</span>}
+      <div className="flex flex-wrap items-center gap-2">
+        {prev ? <Link className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline" href={prev}>← Previous</Link>
+              : <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline disabled">← Previous</span>}
+        {next ? <Link className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline" href={next}>Next →</Link>
+              : <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline disabled">Next →</span>}
       </div>
     </div>
   );

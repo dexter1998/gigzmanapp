@@ -51,8 +51,8 @@ export default async function EconomicsPage() {
   const totCogs = rows.reduce((s, r) => s + r.cogs, 0);
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Analysis" title="Unit economics & Billing" sub={`as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -64,7 +64,7 @@ export default async function EconomicsPage() {
           <StatCard label="Credit floor" value={`₹${CREDIT_FLOOR_INR.toFixed(3)}`} detail="COGS per credit — kabhi isse neeche mat becho" />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Month-wise P&L" note="COGS estimate: billed Places calls exact hain; Bedrock ₹0.35/turn aur SES ₹0.0088/mail approximations."
             head={["Month", { label: "Collected", num: true }, { label: "Orders", num: true }, { label: "Credits sold", num: true }, { label: "Places calls", num: true }, { label: "Chat turns", num: true }, { label: "COGS est", num: true }, { label: "Margin", num: true }, { label: "GM%", num: true }]}
             rows={rows.map((r) => [
@@ -78,7 +78,7 @@ export default async function EconomicsPage() {
             empty="koi data nahi" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="Credit spend by reason" note="Kis feature par credits jal rahe hain — pricing tune karne ka input."
             head={["Reason", { label: "Events", num: true }, { label: "Credits", num: true }, { label: "Price/event", num: true }]}
             rows={spendByReason.map((r) => [r.reason, fmtN(r.n), fmtN(r.credits),
@@ -94,7 +94,7 @@ export default async function EconomicsPage() {
             empty="" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Abandoned checkouts (30d)" note="Order bana par payment nahi — inhe email/call se follow-up karna sabse sasta revenue hai."
             head={["When", "User", "Pack", { label: "Amount", num: true }]}
             rows={abandoned.map((a) => [fmtDT(a.created_at), a.user_email, a.pack_id, fmtINR(Number(a.amount_paise))])}

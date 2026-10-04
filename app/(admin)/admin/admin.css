@@ -1,9 +1,9 @@
-/* Admin panel — Tabler is the actual design system here (@tabler/core, imported above this file
-   in layout.tsx), not a look-alike rebuilt in hand-rolled CSS. This file holds only the handful of
-   real gaps: things Tabler's stock dark theme doesn't cover, or Mantis-specific brand touches.
-   Everything else — cards, tables, badges, navbar, page-header, grid — is stock Tabler classes.
-   See docs/MANTIS_ADMIN_TABLER_SYSTEM.md before adding anything here: if Tabler already has a
-   class for it, use that instead of adding a rule. */
+/* Admin panel — a handful of real gaps only.
+   The console was built on Tabler (@tabler/core, Bootstrap 5) and has been moved onto the product's
+   own token system; `.mantis-admin` in app/globals.css is where its look lives now, and Tabler's
+   stylesheet is no longer imported. What is left here is the small set of things that are genuinely
+   this file's job: the jsvectormap tooltip, and a wrap helper for long message cells.
+   See docs/MANTIS_ADMIN_TABLER_SYSTEM.md — which now documents a system that has been replaced. */
 
 /* Tailwind v4 ships its own `.collapse { visibility: collapse }` utility (for table rows), which
    collides with Bootstrap/Tabler's `.collapse` (the accordion/navbar-toggle mechanism) — both are

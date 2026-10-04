@@ -39,7 +39,7 @@ export function StatusControl({ campaignId, current }: { campaignId: string; cur
           <option key={o} value={o}>{o}</option>
         ))}
       </select>
-      {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      {msg && <div className={`camp-msg${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </div>
   );
 }

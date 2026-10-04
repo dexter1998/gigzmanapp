@@ -17,9 +17,9 @@ export default async function StepPreviewPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <div className="page-header d-print-none"><div className="container-xl">
+      <div className="page-header d-print-none"><div className="mx-auto w-full max-w-[1400px]">
         <h1>Preview: {stepKey}</h1>
-        <span className="text-secondary">{id}</span>
+        <span className="text-[var(--ink-muted)]">{id}</span>
       </div></div>
 
       {recipients.length === 0 && <div className="camp-banner">Abhi koi recipient import nahi hua — placeholders unfilled dikhenge.</div>}

@@ -35,8 +35,8 @@ export default async function PseoPage() {
   const summary = (lastRun?.summary ?? null) as { evaluated?: number; revalidated?: number; promoted?: number } | null;
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Systems" title="Programmatic SEO" sub={`as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -58,7 +58,7 @@ export default async function PseoPage() {
           <HealthItem col="col-lg-4" tone="mut" title="GSC impressions / keywords" sub="one-time OAuth pending — scripts/gsc-authorize.ts chalani hai" />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="By page type"
             head={["Type", { label: "Total", num: true }, { label: "Published", num: true }]}
             rows={byType.map((t) => [t.page_type, fmtN(t.total), fmtN(t.pub)])}
@@ -69,7 +69,7 @@ export default async function PseoPage() {
             empty="koi pending candidate nahi" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Gate par waiting (streak 1+)" note="Do consecutive pass chahiye promotion ke liye — ye pages ek pass kar chuke hain."
             head={["Page", { label: "Qualifying", num: true }, { label: "Total leads", num: true }, { label: "Streak", num: true }, "Stats computed"]}
             rows={waiting.map((w) => [w.page_key, fmtN(w.qualifying_leads), fmtN(w.total_leads),
@@ -77,7 +77,7 @@ export default async function PseoPage() {
             empty="koi page gate par nahi" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Top published pages (by qualifying leads)" note="Cannibalization check: same city ke multiple published pages yahan saath dikhte hain — overlap ho to lowest wale ko dekho."
             head={["Page", "Type", { label: "Qualifying", num: true }, { label: "Total", num: true }, "First published", "Last material change"]}
             rows={topPages.map((p) => [p.page_key, p.page_type, fmtN(p.qualifying_leads), fmtN(p.total_leads),

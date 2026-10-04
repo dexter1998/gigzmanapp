@@ -51,7 +51,7 @@ export function NewCampaignForm() {
       <input id="c-vars" value={variablesText} onChange={(e) => setVariablesText(e.target.value)} placeholder="business, rating, region, count" />
 
       <button type="submit" disabled={pending}>{pending ? "Creating…" : "Create campaign"}</button>
-      {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      {msg && <div className={`camp-msg${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </form>
   );
 }

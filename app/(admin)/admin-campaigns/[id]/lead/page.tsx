@@ -52,26 +52,26 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
           pretitle="Campaign"
           title="Lead journey"
           sub="Kisi ek lead ka poora safar — jo bheja aur jo SES ne wapas bataya."
-          actions={<Link href={`/admin-campaigns/${id}`} className="btn btn-sm">← Campaign</Link>}
+          actions={<Link href={`/admin-campaigns/${id}`} className="inline-flex items-center rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline">← Campaign</Link>}
         />
-        <div className="page-body">
-          <div className="container-xl">
-            <div className="row row-cards">
+        <div className="">
+          <div className="mx-auto w-full max-w-[1400px]">
+            <div className="mb-3 flex flex-wrap gap-3">
               <Section title="Kis lead ko dekhna hai?" note="Neeche sabse recent activity wale leads hain.">
-                <form method="get" className="row g-2">
-                  <div className="col-auto">
-                    <input type="email" name="email" className="form-control" placeholder="email@example.com" required style={{ minWidth: 280 }} />
+                <form method="get" className="flex flex-wrap items-end gap-2">
+                  <div className="">
+                    <input type="email" name="email" className="w-full rounded-[var(--radius-sm)] border border-[var(--rule)] bg-[var(--surface-sunk)] px-3 py-2 text-[12.5px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)]" placeholder="email@example.com" required style={{ minWidth: 280 }} />
                   </div>
-                  <div className="col-auto"><button type="submit" className="btn btn-primary">Dekho</button></div>
+                  <div className=""><button type="submit" className="inline-flex items-center rounded-full border-0 bg-[var(--accent)] px-4 py-2 text-[12.5px] font-semibold text-[var(--accent-ink)]">Dekho</button></div>
                 </form>
               </Section>
               <Table
                 title="Recent activity"
                 head={["Email", "State", "Verification", { label: "Touches", num: true }, { label: "Opened", num: true }, { label: "Clicked", num: true }, "Last event"]}
                 rows={recent.map((r) => [
-                  <Link key="e" href={`/admin-campaigns/${id}/lead?email=${encodeURIComponent(r.email)}`} className="text-reset fw-bold">{r.email}</Link>,
+                  <Link key="e" href={`/admin-campaigns/${id}/lead?email=${encodeURIComponent(r.email)}`} className="font-semibold text-[var(--ink)] no-underline">{r.email}</Link>,
                   <Pill key="s" tone={r.state === "converted" ? "ok" : r.state === "suppressed" ? "bad" : r.state === "hot" ? "ok" : r.state === "warm" ? "warn" : "info"}>{r.state}</Pill>,
-                  <span key="v" className="text-secondary">{r.verification_status}</span>,
+                  <span key="v" className="text-[var(--ink-muted)]">{r.verification_status}</span>,
                   fmtN(r.touch_count), fmtN(r.opened_distinct), fmtN(r.clicked_distinct),
                   fmtDT(r.last_event_at),
                 ])}
@@ -108,9 +108,9 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
   if (!lead) {
     return (
       <>
-        <PageHeader pretitle="Campaign" title="Lead journey" actions={<Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">← Search</Link>} />
-        <div className="page-body"><div className="container-xl"><div className="row row-cards">
-          <Section title="Nahi mila"><p className="text-secondary mb-0">{email} is campaign mein nahi hai.</p></Section>
+        <PageHeader pretitle="Campaign" title="Lead journey" actions={<Link href={`/admin-campaigns/${id}/lead`} className="inline-flex items-center rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline">← Search</Link>} />
+        <div className=""><div className="mx-auto w-full max-w-[1400px]"><div className="mb-3 flex flex-wrap gap-3">
+          <Section title="Nahi mila"><p className="m-0 text-[12px] text-[var(--ink-muted)]">{email} is campaign mein nahi hai.</p></Section>
         </div></div></div>
       </>
     );
@@ -127,13 +127,13 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
         sub={<>{lead.verification_status}{lead.bounce_kind ? ` · ${lead.bounce_kind}` : ""}</>}
         actions={
           <>
-            <Link href={`/admin-campaigns/${id}/lead`} className="btn btn-sm">← Search</Link>
+            <Link href={`/admin-campaigns/${id}/lead`} className="inline-flex items-center rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline">← Search</Link>
             <Pill tone={stateTone}>{lead.state}</Pill>
           </>
         }
       />
-      <div className="page-body">
-        <div className="container-xl">
+      <div className="">
+        <div className="mx-auto w-full max-w-[1400px]">
           <CardRow>
             <StatCard label="Touches" value={fmtN(lead.touch_count)} detail={`${fmtN(lead.delivered_count)} delivered`} icon={<IconRoute size={20} />} />
             <StatCard label="Opened" value={fmtN(lead.opened_distinct)} detail="distinct messages, events nahi" icon={<IconMailOpened size={20} />} />
@@ -153,14 +153,14 @@ export default async function LeadJourneyPage({ params, searchParams }: Params) 
             />
           </CardRow>
 
-          <div className="row row-cards">
+          <div className="mb-3 flex flex-wrap gap-3">
             <Section title="Agla kya hoga" note="Rule engine isi par faisla karega." col="col-12 col-xl-4">
-              <div className="datagrid">
-                <div className="datagrid-item"><div className="datagrid-title">Agla touch due</div><div className="datagrid-content">{fmtDT(lead.next_due_at)}</div></div>
-                <div className="datagrid-item"><div className="datagrid-title">Aakhri asli response</div><div className="datagrid-content">{fmtDT(lead.last_meaningful_response)}</div></div>
-                <div className="datagrid-item"><div className="datagrid-title">Stalled</div><div className="datagrid-content">{lead.stalled_at ? `${fmtDT(lead.stalled_at)} — ${lead.stalled_reason}` : "—"}</div></div>
-                <div className="datagrid-item"><div className="datagrid-title">Dobara eligible</div><div className="datagrid-content">{fmtDT(lead.recycle_eligible_at)}</div></div>
-                <div className="datagrid-item"><div className="datagrid-title">Transient bounces</div><div className="datagrid-content jf-num">{fmtN(lead.transient_bounces)}</div></div>
+              <div className="flex flex-wrap gap-3">
+                <div className="min-w-[140px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">Agla touch due</div><div className="mt-0.5 text-[13px] text-[var(--ink)]">{fmtDT(lead.next_due_at)}</div></div>
+                <div className="min-w-[140px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">Aakhri asli response</div><div className="mt-0.5 text-[13px] text-[var(--ink)]">{fmtDT(lead.last_meaningful_response)}</div></div>
+                <div className="min-w-[140px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">Stalled</div><div className="mt-0.5 text-[13px] text-[var(--ink)]">{lead.stalled_at ? `${fmtDT(lead.stalled_at)} — ${lead.stalled_reason}` : "—"}</div></div>
+                <div className="min-w-[140px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">Dobara eligible</div><div className="mt-0.5 text-[13px] text-[var(--ink)]">{fmtDT(lead.recycle_eligible_at)}</div></div>
+                <div className="min-w-[140px] flex-1 rounded-[var(--radius-sm)] border border-[var(--rule)] px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]">Transient bounces</div><div className="tnum mt-0.5 text-[15px] font-semibold text-[var(--ink)]">{fmtN(lead.transient_bounces)}</div></div>
               </div>
             </Section>
 

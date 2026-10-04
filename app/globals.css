@@ -220,69 +220,6 @@
    the inline script in the admin layout so there is no flash of Tabler navy on a hard refresh. */
 html[data-admin], html[data-admin] body { background: oklch(0.168 0.006 72); }
 
-/* Tabler leftovers, re-skinned in place.
-   -------------------------------------------------------------------------------------------
-   A tail of raw Bootstrap/Tabler classes is still scattered through the console — buttons, form
-   controls, cards, badges, the datagrid — across files whose own markup would each need rewriting
-   by hand. Rather than do that and get a dozen slightly different results, these take the same
-   route ui.tsx took: keep the class names, change what they mean. `.mantis-admin .btn` outranks
-   Tabler's own `.btn`, so every one of those call sites lands on the console's tokens without
-   being edited.
-
-   This is a bridge, not the destination. It is what lets the two systems coexist while the
-   remaining files move across; dropping Tabler's 82KB stylesheet needs those files to stop using
-   its classes entirely, at which point this block goes with it. */
-.mantis-admin .card {
-  background: var(--surface); border: 1px solid var(--rule);
-  border-radius: var(--radius-md); box-shadow: none;
-}
-.mantis-admin .card-header { border-bottom: 1px solid var(--rule); background: transparent; }
-.mantis-admin .card-footer { border-top: 1px solid var(--rule); background: transparent; }
-.mantis-admin .card-title { font-size: 13px; font-weight: 600; color: var(--ink); }
-.mantis-admin .subheader { color: var(--ink-faint); letter-spacing: .07em; }
-.mantis-admin .text-secondary { color: var(--ink-muted) !important; }
-.mantis-admin .text-muted { color: var(--ink-faint) !important; }
-
-.mantis-admin .btn {
-  border-radius: 999px; border: 1px solid var(--rule);
-  background: var(--surface); color: var(--ink);
-  font-size: 12.5px; font-weight: 600; box-shadow: none;
-}
-.mantis-admin .btn:hover { background: var(--surface-sunk); color: var(--ink); }
-.mantis-admin .btn-primary,
-.mantis-admin .btn-primary:hover {
-  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-}
-.mantis-admin .btn:disabled, .mantis-admin .btn.disabled { opacity: .45; }
-
-.mantis-admin .form-control,
-.mantis-admin .form-select {
-  background: var(--surface-sunk); border: 1px solid var(--rule); color: var(--ink);
-  border-radius: var(--radius-sm); font-size: 12.5px; box-shadow: none;
-}
-.mantis-admin .form-control:focus,
-.mantis-admin .form-select:focus {
-  border-color: var(--accent); box-shadow: none; background: var(--surface-sunk); color: var(--ink);
-}
-.mantis-admin .form-label { color: var(--ink-muted); font-size: 11.5px; }
-
-.mantis-admin .table { color: var(--ink); --tblr-table-bg: transparent; }
-.mantis-admin .table thead th {
-  background: var(--surface-sunk); color: var(--ink-faint);
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase; border-bottom-color: var(--rule);
-}
-.mantis-admin .table td, .mantis-admin .table th { border-color: var(--rule); }
-
-.mantis-admin .badge { border-radius: 999px; font-weight: 600; }
-.mantis-admin .datagrid-title { color: var(--ink-faint); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
-.mantis-admin .datagrid-content { color: var(--ink); font-variant-numeric: tabular-nums; }
-.mantis-admin .progress { background: var(--surface-sunk); }
-.mantis-admin .dropdown-menu {
-  background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow-pop);
-}
-.mantis-admin .dropdown-item { color: var(--ink); font-size: 12.5px; }
-.mantis-admin .dropdown-item:hover { background: var(--surface-sunk); color: var(--ink); }
-
 .mantis-admin .rule-t { border-top: 1px solid var(--rule); }
 .mantis-admin .rule-b { border-bottom: 1px solid var(--rule); }
 .mantis-admin .rule-r { border-right: 1px solid var(--rule); }

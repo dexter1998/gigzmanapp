@@ -14,7 +14,7 @@ export default async function EditStepPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <div className="page-header d-print-none"><div className="container-xl">
+      <div className="page-header d-print-none"><div className="mx-auto w-full max-w-[1400px]">
         <h2 className="page-title">Edit step: {step.step_key}</h2>
       </div></div>
       <StepForm

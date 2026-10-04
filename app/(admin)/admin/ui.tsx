@@ -15,13 +15,25 @@ import type { ReactNode } from "react";
  * Server components: no state, no handlers. Anything interactive would contradict the console's
  * analysis-only contract. */
 
-/** "col-sm-6 col-lg-3" -> 25%. Falls back to an equal share when there is no hint. */
-function colBasis(col?: string): string {
-  if (!col) return "0 0 auto";
+/**
+ * "col-sm-6 col-lg-3" -> a quarter-width cell.
+ *
+ * Returns basis AND a ceiling. Basis alone was not enough: on a row of six quarter-width tiles the
+ * last two wrap onto their own line and flex-grow hands them all the leftover space, so four tiles
+ * sit above two visibly wider ones. The max-width stops a tile claiming more than the share its
+ * `col` asked for, which is what the Bootstrap grid these strings came from always guaranteed.
+ */
+function colCell(col?: string): { flex: string; maxWidth?: string; minWidth: number } {
+  if (!col) return { flex: "0 0 auto", minWidth: 0 };
   const lg = col.match(/col-(?:lg|xl)-(\d{1,2})/);
   const any = col.match(/col-(?:sm-|md-)?(\d{1,2})/);
   const n = Number(lg?.[1] ?? any?.[1] ?? 12);
-  return `1 1 calc(${(n / 12) * 100}% - 12px)`;
+  const share = (n / 12) * 100;
+  return {
+    flex: `1 1 calc(${share}% - 12px)`,
+    maxWidth: n >= 12 ? undefined : `calc(${share}% - 12px)`,
+    minWidth: n <= 3 ? 170 : 260,
+  };
 }
 
 const IST = "Asia/Kolkata";
@@ -80,7 +92,7 @@ export function StatCard({
 }) {
   const toneColour = tone === "up" ? "var(--ok)" : tone === "bad" ? "var(--critical)" : "var(--ink-faint)";
   return (
-    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+    <div style={colCell(col)}>
       <div className="h-full rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.07em] text-[var(--ink-faint)]">{label}</p>
@@ -100,7 +112,7 @@ export function MiniStatCard({
   icon?: ReactNode; tone?: string; title: ReactNode; sub?: string; col?: string;
 }) {
   return (
-    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+    <div style={colCell(col)}>
       <div className="flex h-full items-center gap-3 rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
         {icon && (
           <span className="sunk grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--ink-muted)]" data-tone={tone}>
@@ -118,7 +130,7 @@ export function MiniStatCard({
 
 export function Section({ title, note, children, actions, col = "col-12" }: { title: string; note?: ReactNode; children: ReactNode; actions?: ReactNode; col?: string }) {
   return (
-    <div style={{ flex: colBasis(col), minWidth: 260 }}>
+    <div style={colCell(col)}>
       <div className="flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]">
         <div className="rule-b flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
@@ -147,7 +159,7 @@ export function Table({
         <thead>
           <tr className="sunk">
             {cols.map((c) => (
-              <th key={c.label} className={`whitespace-nowrap px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)] ${c.num ? "text-right" : "text-left"}`}>
+              <th key={c.label} className={`whitespace-nowrap px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]${c.num ? "text-right" : "text-left"}`}>
                 {c.label}
               </th>
             ))}
@@ -157,7 +169,7 @@ export function Table({
           {rows.map((r, ri) => (
             <tr key={ri} className="rule-t">
               {r.map((cell, ci) => (
-                <td key={ci} className={`px-4 py-2 align-top ${cols[ci]?.num ? "text-right text-[var(--ink-muted)]" : "text-left text-[var(--ink)]"}`}>{cell}</td>
+                <td key={ci} className={`px-4 py-2 align-top${cols[ci]?.num ? "text-right text-[var(--ink-muted)]" : "text-left text-[var(--ink)]"}`}>{cell}</td>
               ))}
             </tr>
           ))}
@@ -168,9 +180,9 @@ export function Table({
     <p className="m-0 px-4 py-8 text-center text-[12px] text-[var(--ink-faint)]">{empty}</p>
   );
 
-  if (!title) return <div style={{ flex: colBasis(col), minWidth: 260 }}>{table}</div>;
+  if (!title) return <div style={colCell(col)}>{table}</div>;
   return (
-    <div style={{ flex: colBasis(col), minWidth: 260 }}>
+    <div style={colCell(col)}>
       <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]">
         <div className="rule-b flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
@@ -204,7 +216,7 @@ export function Pill({ tone, children }: { tone: "ok" | "warn" | "bad" | "mut" |
 /** Status never rests on the dot alone — the title and sub beside it carry the meaning. */
 export function HealthItem({ tone, title, sub, col = "col-sm-6 col-lg-3" }: { tone: "ok" | "warn" | "bad" | "mut"; title: string; sub: string; col?: string }) {
   return (
-    <div style={{ flex: colBasis(col), minWidth: 170 }}>
+    <div style={colCell(col)}>
       <div className="flex h-full items-start gap-2.5 rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] px-4 py-3">
         <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ background: TONE[tone] }} aria-hidden="true" />
         <div className="min-w-0">

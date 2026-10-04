@@ -44,13 +44,13 @@ export default async function CampaignsListPage() {
         title="Campaigns"
         sub="Har send yahan se asli email jaata hai."
         actions={
-          <Link href="/admin-campaigns/new" className="btn btn-primary">
-            <IconPlus size={16} className="me-1" /> New campaign
+          <Link href="/admin-campaigns/new" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]">
+            <IconPlus size={16} className="mr-1" /> New campaign
           </Link>
         }
       />
-      <div className="page-body">
-        <div className="container-xl">
+      <div className="">
+        <div className="mx-auto w-full max-w-[1400px]">
           <CardRow>
             <StatCard label="Campaigns" value={fmtN(totals.campaigns)} detail={`${fmtN(totals.active)} active`} icon={<IconRocket size={20} />} />
             <StatCard
@@ -64,7 +64,7 @@ export default async function CampaignsListPage() {
             <StatCard label="Due now" value={fmtN(totals.due)} detail="agla tick inhe uthayega" icon={<IconClockHour4 size={20} />} />
           </CardRow>
 
-          <div className="row row-cards">
+          <div className="flex flex-wrap gap-3">
             <Table
               title="All campaigns"
               note="Har campaign ka status, step aur recipient count."
@@ -74,14 +74,14 @@ export default async function CampaignsListPage() {
                 { label: "Due now", num: true }, "Last sent",
               ]}
               rows={campaigns.map((c) => [
-                <Link key="l" href={`/admin-campaigns/${c.id}`} className="fw-bold text-reset">{c.name}</Link>,
+                <Link key="l" href={`/admin-campaigns/${c.id}`} className="font-semibold no-underline">{c.name}</Link>,
                 <Pill key="s" tone={statusTone(c.status)}>{c.status}</Pill>,
-                <span key="st" className="text-secondary">{c.stream}</span>,
+                <span key="st" className="text-[var(--ink-muted)]">{c.stream}</span>,
                 fmtN(c.step_count),
                 fmtN(c.recipient_count),
                 c.due_now > 0
-                  ? <span key="d" className="text-primary fw-bold">{fmtN(c.due_now)}</span>
-                  : <span key="d" className="text-secondary">0</span>,
+                  ? <span key="d" className="text-primary font-semibold">{fmtN(c.due_now)}</span>
+                  : <span key="d" className="text-[var(--ink-muted)]">0</span>,
                 fmtDT(c.last_sent),
               ])}
               empty="abhi koi campaign nahi hai"

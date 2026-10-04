@@ -40,7 +40,7 @@ export function ImportForm({ campaignId }: { campaignId: string }) {
       <label htmlFor="csv-file">Recipients CSV (needs an &quot;email&quot; column; other columns become {"{{placeholder}}"} values)</label>
       <input id="csv-file" ref={fileRef} type="file" accept=".csv,text/csv" required />
       <button type="submit" disabled={pending}>{pending ? "Importing…" : "Import recipients"}</button>
-      {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      {msg && <div className={`camp-msg${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </form>
   );
 }

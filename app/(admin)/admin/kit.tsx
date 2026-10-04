@@ -20,7 +20,7 @@ export const fmtINR = (paise: number) =>
 export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)] ${className}`}
+      className={`flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--rule)] bg-[var(--surface)]${className}`}
     >
       {children}
     </div>
@@ -160,7 +160,7 @@ export function MiniTable({ head, rows, empty }: { head: string[]; rows: ReactNo
       <thead>
         <tr className="sunk">
           {head.map((h, i) => (
-            <th key={h} className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)] ${i ? "text-right" : "text-left"}`}>
+            <th key={h} className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-faint)]${i ? "text-right" : "text-left"}`}>
               {h}
             </th>
           ))}
@@ -170,7 +170,7 @@ export function MiniTable({ head, rows, empty }: { head: string[]; rows: ReactNo
         {rows.map((r, ri) => (
           <tr key={ri} className="rule-t">
             {r.map((c, ci) => (
-              <td key={ci} className={`px-4 py-2 text-[var(--ink-muted)] ${ci ? "text-right" : "text-left text-[var(--ink)]"}`}>{c}</td>
+              <td key={ci} className={`px-4 py-2 text-[var(--ink-muted)]${ci ? "text-right" : "text-left text-[var(--ink)]"}`}>{c}</td>
             ))}
           </tr>
         ))}

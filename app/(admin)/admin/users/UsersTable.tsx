@@ -55,7 +55,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
 
   return (
     <>
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <SearchInput value={query} onChange={setQuery} placeholder="Search email or business type…" />
         <FilterDropdown
           label="Mode"
@@ -76,7 +76,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           options={[{ value: ALL, label: "All" }, ...countries.map((c) => ({ value: c, label: c }))]}
         />
         {(mode !== ALL || plan !== ALL || country !== ALL || q) && (
-          <span className="text-secondary" style={{ fontSize: 12 }}>
+          <span className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>
             {filtered.length} / {users.length}
           </span>
         )}
@@ -85,8 +85,8 @@ export function UsersTable({ users }: { users: UserRow[] }) {
       <Table
         head={["Email", "Mode", "Plan", { label: "Credits", num: true }, { label: "Unlocks", num: true }, { label: "Scans", num: true }, { label: "Apps", num: true }, "Paid", "Country", "Joined", "Last seen"]}
         rows={filtered.map((u) => [
-          <button key="e" type="button" className="btn btn-link p-0 text-truncate d-inline-block" style={{ maxWidth: 220, verticalAlign: "bottom" }} title={u.email} onClick={() => setActive(u)}>
-            {u.email}{u.pro && <span className="ms-1"><Pill tone="info">pro @</Pill></span>}
+          <button key="e" type="button" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline truncate" style={{ maxWidth: 220, verticalAlign: "bottom" }} title={u.email} onClick={() => setActive(u)}>
+            {u.email}{u.pro && <span className="ml-1"><Pill tone="info">pro @</Pill></span>}
           </button>,
           <Pill key="m" tone={modeTone(u.dashboardMode)}>{u.dashboardMode}</Pill>,
           u.paidPaise > 0 ? <Pill key="p" tone="ok">{u.plan} · paid</Pill> : u.plan,
@@ -118,10 +118,10 @@ export function UsersTable({ users }: { users: UserRow[] }) {
                 <StatCard col="col-4" label="Scans" value={fmtN(active.scans)} />
                 <StatCard col="col-4" label="Applications" value={fmtN(active.applications)} />
               </CardRow>
-              <div className="text-secondary mb-3" style={{ fontSize: 12.5 }}>
+              <div className="text-[var(--ink-muted)] mb-3" style={{ fontSize: 12.5 }}>
                 {active.businessType ?? "business type?"} · {active.country ?? "country?"}
               </div>
-              <Link href={`/admin/users/${encodeURIComponent(active.email)}`} className="text-decoration-none">
+              <Link href={`/admin/users/${encodeURIComponent(active.email)}`} className="no-underline">
                 Full profile — ledger, payments, scans, chats, errors →
               </Link>
             </DialogBody>

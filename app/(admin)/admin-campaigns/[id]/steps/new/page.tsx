@@ -9,7 +9,7 @@ export default async function NewStepPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <div className="page-header d-print-none"><div className="container-xl">
+      <div className="page-header d-print-none"><div className="mx-auto w-full max-w-[1400px]">
         <h1>New step: {campaign.name}</h1>
       </div></div>
       <StepForm campaignId={id} variables={(campaign.variables as string[]) ?? []} />

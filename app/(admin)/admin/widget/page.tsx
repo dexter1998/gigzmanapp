@@ -36,8 +36,8 @@ export default async function WidgetInboxPage() {
   ]);
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Outreach" title="Founder inbox" sub="Har site ka widget, ek jagah" />
 
         <CardRow>

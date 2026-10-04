@@ -27,8 +27,8 @@ export default async function InboundPage() {
   ]);
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Analysis" title="Inbound" sub={`latest 50 each · as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -36,12 +36,12 @@ export default async function InboundPage() {
           <StatCard label="Contact messages" value={fmtN(kpi.c_total)} detail={`${kpi.c_new} unread`} tone={kpi.c_new > 0 ? "up" : undefined} />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Partner with us" note="Ticket size × projects/month batata hai kiske saath partner karna chahiye — wahi yahan saamne hai."
             head={["When", "Who", "Agency", "Type", { label: "Projects/mo", num: true }, "Avg ticket", "Revenue range", "Team", "Where", "In their words", "Source", "Status"]}
             rows={partners.map((p) => [
               fmtDT(p.submitted_at),
-              <span key="w">{p.full_name}<br /><span className="text-secondary" style={{ fontSize: 11 }}>{p.email}{p.phone ? ` · ${p.phone}` : ""}</span></span>,
+              <span key="w">{p.full_name}<br /><span className="text-[var(--ink-muted)]" style={{ fontSize: 11 }}>{p.email}{p.phone ? ` · ${p.phone}` : ""}</span></span>,
               p.agency_name ?? "—",
               p.agency_type ?? "—",
               p.projects_closed_per_month ?? "—",
@@ -60,13 +60,13 @@ export default async function InboundPage() {
             empty="abhi koi application nahi" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Contact us" note="Public /contact form — user_email tabhi hota hai jab logged-in user ne bheja ho."
             head={["When", "Who", "Company", "Topic", "Message", "Status"]}
             rows={contacts.map((c) => [
               fmtDT(c.created_at),
               <span key="w">{[c.first_name, c.last_name].filter(Boolean).join(" ")}<br />
-                <span className="text-secondary" style={{ fontSize: 11 }}>
+                <span className="text-[var(--ink-muted)]" style={{ fontSize: 11 }}>
                   {c.user_email
                     ? <Link href={`/admin/users/${encodeURIComponent(c.user_email)}`}>{c.email}</Link>
                     : c.email}

@@ -2,7 +2,6 @@ import { requireAdmin } from "@/lib/admin";
 import { CampaignsNav } from "./CampaignsNav";
 import { CampaignsHeader } from "./CampaignsHeader";
 import { ThemeSetter } from "../admin/ThemeSetter";
-import "@tabler/core/dist/css/tabler.min.css";
 import "../admin/admin.css";
 import "./admin-campaigns.css";
 

@@ -70,7 +70,7 @@ export function StartBatchForm({ campaignId, batch, recipientCount }: { campaign
       <button type="submit" disabled={!canSubmit}>
         {pending ? "Submitting…" : scheduleMode === "later" ? `Schedule batch ${batch}` : `Start batch ${batch}`}
       </button>
-      {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      {msg && <div className={`camp-msg${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </form>
   );
 }

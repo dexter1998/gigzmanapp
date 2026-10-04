@@ -94,17 +94,17 @@ export default async function ProspectAnalyticsPage({ searchParams }: Params) {
         title="Prospect analytics"
         sub={`${fmtN(total)} prospects${all ? " — sab campaigns" : ` — ${campaign}`}`}
         actions={
-          <form method="get" className="d-flex gap-2">
-            <select name="campaign" className="form-select form-select-sm" defaultValue={campaign ?? "all"} style={{ minWidth: 220 }}>
+          <form method="get" className="flex gap-2">
+            <select name="campaign" className="w-full rounded-[var(--radius-sm)] border border-[var(--rule)] bg-[var(--surface-sunk)] px-3 py-2 text-[12.5px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)]" defaultValue={campaign ?? "all"} style={{ minWidth: 220 }}>
               <option value="all">Sab campaigns</option>
               {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <button type="submit" className="btn btn-sm btn-primary">Filter</button>
+            <button type="submit" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]">Filter</button>
           </form>
         }
       />
-      <div className="page-body">
-        <div className="container-xl">
+      <div className="">
+        <div className="mx-auto w-full max-w-[1400px]">
           <CardRow>
             <StatCard label="Hot" value={fmtN(get("hot"))} detail="click kiya, register nahi" tone="up" icon={<IconFlame size={20} />} />
             <StatCard label="Warm" value={fmtN(get("warm"))} detail="khola, click nahi" icon={<IconSun size={20} />} />
@@ -112,16 +112,16 @@ export default async function ProspectAnalyticsPage({ searchParams }: Params) {
             <StatCard label="Rejected" value={fmtN(get("suppressed"))} detail="bounce / complaint / unsub" tone="bad" icon={<IconBan size={20} />} />
           </CardRow>
 
-          <div className="row row-cards">
+          <div className="flex flex-wrap gap-3">
             <Table
               title="Har state — aur wo kyun"
               note="Reason inline hai, legend mein nahi: ye numbers decide karte hain kisko mail jayega."
               head={["State", { label: "Count", num: true }, { label: "Share", num: true }, "Kyun is state mein hain"]}
               rows={["hot", "warm", "active", "new", "stalled", "converted", "suppressed"].map((s) => [
                 <Pill key="p" tone={WHY[s].tone}>{WHY[s].label}</Pill>,
-                <span key="n" className="jf-num fw-bold">{fmtN(get(s))}</span>,
+                <span key="n" className="jf-num font-semibold">{fmtN(get(s))}</span>,
                 pct(get(s), total),
-                <span key="w" className="text-secondary" style={{ fontSize: 12 }}>{WHY[s].why}</span>,
+                <span key="w" className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>{WHY[s].why}</span>,
               ])}
               empty="koi prospect nahi"
             />
@@ -133,7 +133,7 @@ export default async function ProspectAnalyticsPage({ searchParams }: Params) {
               rows={bounces.map((b) => [
                 <code key="k">{b.kind}</code>,
                 <span key="n" className="jf-num">{fmtN(b.n)}</span>,
-                <span key="w" className="text-secondary" style={{ fontSize: 12 }}>{BOUNCE_WHY[b.kind as string] ?? "—"}</span>,
+                <span key="w" className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>{BOUNCE_WHY[b.kind as string] ?? "—"}</span>,
               ])}
               empty="abhi koi rejection nahi"
             />
@@ -149,21 +149,21 @@ export default async function ProspectAnalyticsPage({ searchParams }: Params) {
                 { label: "AV killed", num: true },
               ]}
               rows={sources.map((s) => [
-                <span key="s" className="fw-bold">{s.source}</span>,
+                <span key="s" className="font-semibold">{s.source}</span>,
                 fmtN(s.total), fmtN(s.actionable), fmtN(s.reached), fmtN(s.opened),
-                <span key="c" className="text-primary fw-bold">{fmtN(s.clicked)}</span>,
+                <span key="c" className="text-primary font-semibold">{fmtN(s.clicked)}</span>,
                 // A rate over a handful of sends is noise dressed as a number — freelancers show
                 // 3 clicks from 37 reached, which would read as "8.1%" and get planned against.
-                <span key="cr" className="jf-num">{s.reached < MIN_RATE_SAMPLE ? <span className="text-secondary">sample chhota</span> : pct(s.clicked, s.reached)}</span>,
+                <span key="cr" className="jf-num">{s.reached < MIN_RATE_SAMPLE ? <span className="text-[var(--ink-muted)]">sample chhota</span> : pct(s.clicked, s.reached)}</span>,
                 fmtN(s.registered),
                 <span key="hb" className={s.hard_bounced > 0 ? "text-danger" : "text-secondary"}>{fmtN(s.hard_bounced)}</span>,
-                <span key="av" className="text-secondary">{pct(s.av_suppressed, s.total)}</span>,
+                <span key="av" className="text-[var(--ink-muted)]">{pct(s.av_suppressed, s.total)}</span>,
               ])}
               empty="koi source nahi"
             />
 
             <Section title="Padhne ka tareeka" col="col-12">
-              <div className="d-flex gap-2 align-items-start text-secondary" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+              <div className="flex gap-2 items-start text-[var(--ink-muted)]" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
                 <IconInfoCircle size={18} className="flex-shrink-0 mt-1" />
                 <div>
                   <strong>Click rate</strong> <em>reached</em> ke against hai (verified + jinhone kabhi khola/click kiya),

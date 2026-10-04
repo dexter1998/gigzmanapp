@@ -36,7 +36,7 @@ export function VariablesEditor({ campaignId, initial }: { campaignId: string; i
       <label htmlFor="vars-edit">Comma-separated — feeds the step editor&apos;s insert-palette</label>
       <input id="vars-edit" value={text} onChange={(e) => setText(e.target.value)} placeholder="business, rating, region, count" />
       <button type="submit" disabled={pending}>{pending ? "Saving…" : "Save variables"}</button>
-      {msg && <div className={`camp-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      {msg && <div className={`camp-msg${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
     </form>
   );
 }

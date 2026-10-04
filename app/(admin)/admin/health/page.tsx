@@ -25,8 +25,8 @@ export default async function HealthPage() {
   ]);
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Systems" title="Health & Logs" sub={`as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -38,7 +38,7 @@ export default async function HealthPage() {
           <StatCard label="Unresolved phrases 30d" value={fmtN(kpi.phrases30)} detail="alias dictionary ka backlog" />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Open external-API alerts" note="Google Places / Bedrock / SES / Message Central failures — lib/api-alerts.ts se."
             head={["When", "Provider", "Message"]}
             rows={alerts.map((a) => [fmtDT(a.created_at),
@@ -47,7 +47,7 @@ export default async function HealthPage() {
             empty="koi open alert nahi 🎉" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="Error hotspots (7d)" note="Kaunsa route sabse zyada toot raha hai."
             head={["Route", { label: "Count", num: true }, "Last"]}
             rows={errRoutes.map((e) => [e.route, fmtN(e.n), fmtAgo(e.last_at)])}
@@ -60,7 +60,7 @@ export default async function HealthPage() {
             empty="abhi koi run record nahi (collector naya hai)" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Recent errors — user ke saath" note="Kis user ko kya error mila; email par click karke uski poori story dekho."
             head={["When", "User", "Route", "Message"]}
             rows={errors.map((e) => [fmtDT(e.created_at),
@@ -69,7 +69,7 @@ export default async function HealthPage() {
             empty="koi recorded error nahi 🎉" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-lg-6" title="Disliked chat replies" note="👎 wale assistant messages — prompt/alias tuning ka raw material."
             head={["When", "User", "Reply"]}
             rows={dislikes.map((d) => [fmtDT(d.created_at),

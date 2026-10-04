@@ -26,8 +26,8 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
   const paidTotal = payments.filter((p) => p.status === "paid").reduce((s, p) => s + Number(p.amount_paise), 0);
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Users" title={email} sub={`joined ${fmtDT(u.created_at)} · last seen ${fmtAgo(u.last_seen_at)}`} />
 
         <CardRow>
@@ -39,7 +39,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
           <StatCard label="Profile" value={u.business_type ?? "—"} detail={`${u.role ?? "role?"} · ${u.country ?? "country?"}`} />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="Credit ledger" note="Negative = spend, positive = purchase grant. Idempotency ref ke saath."
             head={["When", "Reason", { label: "Δ", num: true }, "Ref"]}
             rows={ledger.map((l) => [
@@ -49,7 +49,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
             ])}
             empty="koi ledger entry nahi" />
 
-          <div className="col-lg-6 d-flex flex-column gap-3">
+          <div className="flex-1 min-w-[260px] flex flex-col gap-3">
             <Table title="Payments"
               head={["When", "Pack", { label: "Amount", num: true }, "Status", "Provider"]}
               rows={payments.map((p) => [
@@ -65,7 +65,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
           </div>
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Area scans"
             head={["When", "Area", "Category", "Status", { label: "Billed calls", num: true }]}
             rows={scans.map((s) => [fmtDT(s.created_at), s.area_label, s.category ?? "—",
@@ -74,7 +74,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
             empty="koi scan nahi" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Errors hit by this user" note="app_errors collector se — naya hai, purani history nahi hogi."
             head={["When", "Route", "Message"]}
             rows={errors.map((e) => [fmtDT(e.created_at), e.route, <span key="m" className="wrap">{String(e.message).slice(0, 120)}</span>])}

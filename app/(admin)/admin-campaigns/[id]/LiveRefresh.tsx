@@ -35,10 +35,10 @@ export function LiveRefresh({ seconds = 15 }: { seconds?: number }) {
     <div className="live-ctl">
       <button
         type="button"
-        className={`btn btn-sm ${on ? "btn-outline-success" : "btn-outline-secondary"}`}
+        className={`inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline ${on ? "border-[color-mix(in_oklab,var(--ok)_45%,transparent)] text-[var(--ok)]" : ""}`}
         onClick={() => setOn((v) => !v)}
       >
-        <IconCircleFilled size={8} className="me-1" />
+        <IconCircleFilled size={8} className="mr-1" />
         {on ? `Live · ${seconds}s` : "Paused"}
       </button>
       {last && <span className="live-last">updated {last.toLocaleTimeString("en-IN")}</span>}

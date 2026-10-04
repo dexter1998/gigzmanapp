@@ -81,8 +81,8 @@ export default async function JobsPage() {
   const companyOkPct = companyKpi.total > 0 ? Math.round((companyKpi.ok / companyKpi.total) * 100) : 0;
 
   return (
-    <div className="page-body">
-      <div className="container-xl">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1400px]">
         <PageHeader pretitle="Jobs mode" title="Jobs mode" sub={`as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
@@ -94,7 +94,7 @@ export default async function JobsPage() {
           <StatCard label="Salary bands" value={fmtN(bandKpi.total)} detail={bandKpi.last_at ? `last scraped ${fmtAgo(bandKpi.last_at)}` : "kabhi scrape nahi hua"} tone={!bandKpi.last_at ? "bad" : undefined} />
         </CardRow>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-lg-6" title="Careers-page scrape health" note="Har company ek baar resolve hoti hai, phir next_refresh_at pe dobara — yahan dekho scraper kahin stuck toh nahi."
             head={["Status", { label: "Companies", num: true }]}
             rows={scrapeBreakdown.map((r) => [<Pill key="s" tone={scrapeTone(r.scrape_status)}>{r.scrape_status}</Pill>, fmtN(r.n)])}
@@ -105,20 +105,20 @@ export default async function JobsPage() {
             empty="koi application nahi" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Open listings by family" note="Top 8 — coverage kis role-type mein sabse zyada hai."
             head={["Job family", { label: "Open listings", num: true }]}
             rows={familyBreakdown.map((r) => [r.family, fmtN(r.n)])}
             empty="koi open listing nahi" />
         </div>
 
-        <div className="row row-cards mb-3">
+        <div className="flex flex-wrap gap-3 mb-3">
           <Table col="col-12" title="Recently scraped companies" note="Latest 20 — resolve fail ya no_careers_page yahan turant dikhega."
             head={["Domain", "Company", "Status", "ATS", "Scraped", "Next refresh"]}
             rows={companies.map((c) => [
               c.domain,
               c.company_name ?? "—",
-              <span key="s"><Pill tone={scrapeTone(c.scrape_status)}>{c.scrape_status}</Pill>{c.scrape_error && <span className="wrap text-danger d-block" style={{ fontSize: 11, marginTop: 3 }}>{String(c.scrape_error).slice(0, 90)}</span>}</span>,
+              <span key="s"><Pill tone={scrapeTone(c.scrape_status)}>{c.scrape_status}</Pill>{c.scrape_error && <span className="wrap text-danger block" style={{ fontSize: 11, marginTop: 3 }}>{String(c.scrape_error).slice(0, 90)}</span>}</span>,
               c.ats_platform ?? "—",
               c.scraped_at ? fmtAgo(c.scraped_at) : "kabhi nahi",
               c.next_refresh_at ? fmtDT(c.next_refresh_at) : "—",
@@ -126,7 +126,7 @@ export default async function JobsPage() {
             empty="koi company scrape nahi hui" />
         </div>
 
-        <div className="row row-cards">
+        <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Recent applications" note="Latest 20 — user profile ek click door hai."
             head={["When", "Applicant", "Role", "Company", { label: "Match", num: true }, "Status"]}
             rows={applications.map((a) => [
