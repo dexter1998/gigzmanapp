@@ -41,8 +41,19 @@ export const LIMITS = {
   bounceWarn: 0.02,
   /** Stop, on AWS's own Reputation.BounceRate. AWS reviews at 0.05 and pauses at 0.10. */
   reputationBounceStop: 0.04,
-  /** Stop, on AWS's own Reputation.ComplaintRate. AWS reviews at 0.001 and pauses at 0.005. */
-  reputationComplaintStop: 0.0008,
+  /**
+   * Stop, on AWS's own Reputation.ComplaintRate. AWS reviews at 0.001 and pauses at 0.005.
+   *
+   * 0.0008 deadlocked the campaign on 2026-10-04. The metric is complaints divided by sends, so
+   * stopping freezes it: with no sends the denominator cannot grow, and it sat at exactly
+   * 0.0800% for ten hours — thirty consecutive ticks blocked, zero sends, zero new complaints.
+   * A stop keyed on a ratio that only improves by sending cannot release itself.
+   *
+   * 0.0009 is still below AWS's 0.001 review line and 5.5x below the 0.005 pause line, and it is
+   * paired with removing the cause rather than only raising the number: npm_webdev, which drew
+   * 5.41 complaints per 10k against 0 for agency_webdev and freelancer_webdev, is paused.
+   */
+  reputationComplaintStop: 0.0009,
   /**
    * The day's bounce allowance, as a share of the daily sending quota.
    *
