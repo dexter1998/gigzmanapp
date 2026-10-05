@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import { grantCredits } from "@/lib/credits/server";
+import { sendPlanActivated } from "@/lib/email/plan-activated";
 
 /**
  * Comping a plan.
@@ -54,7 +55,7 @@ export async function grantPlan(opts: {
 
   // Refuse unknown accounts rather than creating one. A typo in an admin form should fail loudly,
   // not quietly mint a profile that nobody can sign in to.
-  const [existing] = await sql`SELECT email FROM user_profiles WHERE email = ${email}`;
+  const [existing] = await sql`SELECT email, name FROM user_profiles WHERE email = ${email}`;
   if (!existing) return { ok: false, error: `No account found for ${email}.` };
 
   const days = Number(opts.durationDays ?? 0);
@@ -82,6 +83,28 @@ export async function grantPlan(opts: {
 
   const creditsApplied =
     opts.credits > 0 ? await grantCredits(email, opts.credits, `grant:${grantId}`, "plan_grant") : false;
+
+  // Announced from here rather than from the admin page, so whatever calls grantPlan next — a
+  // script, a webhook, a second screen — cannot forget it. The grant id is the step key, so a
+  // retried request sends nothing a second time.
+  //
+  // A failure here must not fail the grant: the plan and the credits are already applied, and
+  // throwing now would report "grant failed" for an account that has been upgraded. The email is
+  // the one part of this that can be sent again by hand.
+  if (creditsApplied) {
+    try {
+      await sendPlanActivated({
+        email,
+        name: (existing as { name?: string | null }).name ?? null,
+        plan: opts.plan,
+        credits: opts.credits,
+        grantId,
+        expiresAt: (grant.expires_at as Date | null) ?? null,
+      });
+    } catch (err) {
+      console.error("plan activation email failed", email, grantId, err);
+    }
+  }
 
   return { ok: true, grantId, creditsApplied };
 }
