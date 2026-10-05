@@ -11,6 +11,9 @@ export const NAV: { group: string; storageKey: string; items: { href: string; la
   { group: "Jobs mode", storageKey: "adm-nav-jobs", items: [
     { href: "/admin/jobs", label: "Jobs ops", icon: "jobs" },
   ]},
+  { group: "Billing", storageKey: "adm-nav-billing", items: [
+    { href: "/admin/grants", label: "Plan grants", icon: "economics" },
+  ]},
   { group: "Systems", storageKey: "adm-nav-systems", items: [
     { href: "/admin/mailing", label: "Mailing", icon: "mailing" },
     { href: "/admin/pseo", label: "pSEO", icon: "pseo" },

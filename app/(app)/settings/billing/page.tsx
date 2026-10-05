@@ -25,7 +25,7 @@ export default async function BillingPage() {
   const session = await auth();
   const userEmail = session!.user!.email!;
 
-  const [profile] = await sql`SELECT plan, credits, credits_limit FROM user_profiles WHERE email = ${userEmail}`;
+  const [profile] = await sql`SELECT plan, credits, credits_limit, plan_source, plan_granted_at FROM user_profiles WHERE email = ${userEmail}`;
   const plan = profile?.plan ?? "free";
   const allowance = await allowanceFor(userEmail, plan);
 
@@ -48,12 +48,25 @@ export default async function BillingPage() {
         </p>
       )}
 
+      {/* A comped plan says so. Showing someone a plan they were given as though they bought it —
+          with an upgrade prompt beside it — is the kind of small wrongness that makes people
+          distrust a billing page. */}
+      {profile?.plan_source === "granted" && (
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--g-green-text)", background: "var(--g-green-mint)", padding: "11px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20, lineHeight: 1.5 }}>
+          Your <strong style={{ textTransform: "capitalize" }}>{plan}</strong> plan was granted by Mantis — free, nothing to pay.
+          {profile.plan_granted_at ? ` Active since ${new Date(profile.plan_granted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : ""}
+        </p>
+      )}
+
       {/* Balance + today's free allowance */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 1, background: "var(--g-border)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", overflow: "hidden", marginBottom: 34 }}>
         <Stat value={(profile?.credits ?? 0).toLocaleString("en-IN")} label="Credits available" />
         <Stat value={`${allowance.dayRemaining} / ${ALLOWANCE.billedCallsPerDay}`} label="Free searches left today" />
         <Stat value={`${allowance.monthRemaining}`} label="Free searches left this month" />
-        <Stat value={plan === "free" ? `${FREE_MONTHLY_CREDITS}/mo` : "Top-up"} label={plan === "free" ? "Free plan credits" : "Plan"} />
+        <Stat
+          value={plan === "free" ? `${FREE_MONTHLY_CREDITS}/mo` : plan}
+          label={plan === "free" ? "Free plan credits" : profile?.plan_source === "granted" ? "Plan — granted free" : "Plan"}
+        />
       </div>
 
       <h2 style={sectionTitle}>Buy credits</h2>

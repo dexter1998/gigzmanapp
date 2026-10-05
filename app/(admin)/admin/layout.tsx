@@ -6,8 +6,14 @@ import "./admin.css";
 
 /**
  * The admin console. Gated at the layout so every page under /admin inherits the check — a
- * non-admin (or anonymous) request 404s before any query runs. Read-only by design: no route
- * in this group mutates anything, so a leaked admin session can look but not touch.
+ * non-admin (or anonymous) request 404s before any query runs.
+ *
+ * This group was read-only by design, and that invariant is why admin-campaigns exists separately.
+ * /admin/grants is now a deliberate exception: it comps plans, so a leaked admin session here can
+ * do more than look. What stands in for the lost guarantee is narrower — the grant form makes you
+ * re-type the account email, every grant records the admin who made it, revoking is its own action,
+ * and credits are never clawed back. Said plainly here rather than left as a comment that is no
+ * longer true.
  *
  * Tabler's dark mode requires `data-bs-theme="dark"` on `:root` (`<html>`), which this layout
  * doesn't own (the public site shares it) — see ThemeSetter.tsx and the inline script below for

@@ -325,6 +325,37 @@ CREATE TABLE IF NOT EXISTS credit_ledger (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_ledger_dedup ON credit_ledger(user_email, lead_id, reason);
 CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_email, created_at DESC);
 
+-- The `ref` column and its unique index live in a migration rather than here, which is why
+-- grantCredits() writes a column this file never declares. Restated so the two stop disagreeing:
+-- (reason, ref) is what makes a grant idempotent, and the comped plans below depend on it.
+ALTER TABLE credit_ledger ADD COLUMN IF NOT EXISTS ref TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_ledger_ref ON credit_ledger(reason, ref) WHERE ref IS NOT NULL;
+
+-- Comped plans — a plan an admin granted rather than one somebody paid for.
+--
+-- Kept as its own table instead of a flag on user_profiles because the interesting question is
+-- never "is this comped" on its own, it is "who gave it, when, and why" — a partnership, a support
+-- make-good, a pilot. user_profiles carries only what a request needs to read on every call.
+CREATE TABLE IF NOT EXISTS plan_grants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  plan TEXT NOT NULL,              -- the plan set on the account
+  credits INTEGER NOT NULL DEFAULT 0,
+  reason TEXT NOT NULL,            -- partnership | support | pilot | other
+  note TEXT,                       -- free text, shown back in the admin list
+  granted_by TEXT NOT NULL,        -- the admin who did it; this is the audit trail
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_plan_grants_user ON plan_grants(user_email, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plan_grants_recent ON plan_grants(created_at DESC);
+
+-- What the product needs on every request: is this plan paid for, or given? The billing screen
+-- must not invite someone to "upgrade" to a plan they were handed, or show a comped account a
+-- renewal date that will never come.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS plan_source TEXT NOT NULL DEFAULT 'purchase';  -- purchase | granted
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS plan_granted_at TIMESTAMPTZ;
+
 -- External-API failure log — every real failure from a third-party call we depend on (Google
 -- Places/Geocoding, Bedrock, SES, Message Central, ...) gets a row here via lib/api-alerts.ts,
 -- for a future admin panel to surface as live alerts. resolved_at stays NULL until that panel
