@@ -26,7 +26,10 @@ export async function GET() {
     {
       key: STICKLY_PUBLIC_KEY,
       token: signSticklyToken(subject),
-      user: { email, name: session.user?.name ?? null },
+      // No `user: { email }`. The install guide's snippet passes one and Stickly's BootOpts
+      // declares it, but the widget never reads it -- so sending it would hand every customer's
+      // address to third-party code running in our page in exchange for nothing. The opaque
+      // subject above is the whole identity Stickly needs.
     },
     // The token is per-user and short-lived; a shared cache must never hand one person's identity
     // to the next request.

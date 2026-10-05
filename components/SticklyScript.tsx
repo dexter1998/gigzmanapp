@@ -24,7 +24,7 @@ type Sdk = {
 };
 type Stk = { cmd: ((s: Sdk) => void)[] | { push(f: (s: Sdk) => void): void } };
 
-type Config = { key: string; token: string; user: { email: string; name: string | null } };
+type Config = { key: string; token: string };
 
 export function SticklyScript() {
   const [cfg, setCfg] = useState<Config | null>(null);
@@ -49,7 +49,7 @@ export function SticklyScript() {
     const w = window as unknown as { stk?: Stk };
     w.stk = w.stk ?? { cmd: [] };
     w.stk.cmd.push((s: Sdk) =>
-      s.boot({ key: cfg.key, token: cfg.token, user: cfg.user }),
+      s.boot({ key: cfg.key, token: cfg.token }),
     );
 
     // Without this the next person on a shared machine inherits the previous user's widget — and
