@@ -49,6 +49,10 @@ export async function POST(req: NextRequest) {
   // The dashboard's "Send test webhook" button posts a synthetic claim with a made-up user.
   // Verifying the signature is the point of that button; granting credits is not.
   if (event.test) {
+    // Logged because this is the only signal that a test delivery actually reached us. Without it
+    // "I sent a test webhook" can only be checked on Stickly's dashboard, which is exactly how a
+    // wrong endpoint URL stayed invisible for hours on 2026-10-05 while a real grant was lost.
+    console.log("stickly: test delivery received and ignored", event.id);
     return NextResponse.json({ ok: true, ignored: "test_event" });
   }
 

@@ -49,7 +49,10 @@ export function SticklyScript() {
     const w = window as unknown as { stk?: Stk };
     w.stk = w.stk ?? { cmd: [] };
     w.stk.cmd.push((s: Sdk) =>
-      s.boot({ key: cfg.key, token: cfg.token }),
+      // hideLauncher: the sidebar's "Earn free credits" already opens this via openStickly().
+      // Our workspace is on Stickly's `floating` display mode, which draws its own corner button,
+      // so without this there are two ways in and one of them is a button we never designed.
+      s.boot({ key: cfg.key, token: cfg.token, hideLauncher: true }),
     );
 
     // Without this the next person on a shared machine inherits the previous user's widget — and
@@ -67,11 +70,10 @@ export function SticklyScript() {
 /**
  * Opens the widget from our own UI (the sidebar entry).
  *
- * `open()` is marked optional on purpose: the integration guide documents only boot(), shutdown()
- * and updateToken(), so this call is the one part of the integration that has not been verified
- * against the real SDK. If the method does not exist the queue entry is a no-op and the widget's
- * own launcher still works — it fails quiet rather than throwing, but it does fail, so this is
- * worth checking the first time the sidebar link is clicked against the live widget.
+ * `open()` stays optional-chained, but it is no longer unverified: Stickly documents it, and it
+ * was seen working against the live widget on 2026-10-05. The chaining now only guards against a
+ * future SDK that drops it — and since hideLauncher removes the widget's own button, a missing
+ * open() would leave no way in at all, so a failure here is loud in practice even if quiet in code.
  */
 export function openStickly() {
   const w = window as unknown as { stk?: Stk };
