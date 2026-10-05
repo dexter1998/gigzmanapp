@@ -350,11 +350,24 @@ CREATE TABLE IF NOT EXISTS plan_grants (
 CREATE INDEX IF NOT EXISTS idx_plan_grants_user ON plan_grants(user_email, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_plan_grants_recent ON plan_grants(created_at DESC);
 
+-- expires_at as its own ALTER, not a column inside the CREATE TABLE above.
+-- CREATE TABLE IF NOT EXISTS does nothing at all when the table already exists — it does not
+-- reconcile columns — so adding a field to that block only ever works on a database that has never
+-- seen the table. plan_grants already existed in both local and production by the time this column
+-- was wanted, and the insert failed with "column expires_at does not exist" while the schema file
+-- read as though it were there.
+ALTER TABLE plan_grants ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
 -- What the product needs on every request: is this plan paid for, or given? The billing screen
 -- must not invite someone to "upgrade" to a plan they were handed, or show a comped account a
 -- renewal date that will never come.
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS plan_source TEXT NOT NULL DEFAULT 'purchase';  -- purchase | granted
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS plan_granted_at TIMESTAMPTZ;
+-- When a comped plan runs out. Read on every entitlement check rather than relying on a sweep to
+-- have run: a plan that is supposed to have ended must stop the moment it ends, not whenever a cron
+-- next fires. A sweep still exists to make the stored row agree with reality, but nothing depends
+-- on it having happened.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMPTZ;
 
 -- External-API failure log — every real failure from a third-party call we depend on (Google
 -- Places/Geocoding, Bedrock, SES, Message Central, ...) gets a row here via lib/api-alerts.ts,

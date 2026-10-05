@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Table, Pill, StatCard, CardRow, fmtAgo, fmtDT, fmtN } from "../ui";
-import { Dialog, DialogHeader, DialogBody, FilterDropdown, SearchInput } from "../primitives";
+import { Dialog, DialogHeader, DialogBody, FilterDropdown } from "../primitives";
 
 export type UserRow = {
   email: string;
@@ -27,7 +27,7 @@ function modeTone(mode: string): "info" | "mut" {
   return mode === "jobs" ? "info" : "mut";
 }
 
-/** Filters run client-side over the same 200 rows the page already fetched — no extra query, no
+/** Dropdown filters run client-side over the rows this page already fetched — no extra query, no
  * mutation, just narrowing what's on screen. The row modal is a quick-glance summary of data
  * already in hand; the full per-user history (ledger, payments, chats, errors) stays a real page,
  * per modal-vs-page convention: fine for "at a glance", wrong place for a multi-section drill-down. */
@@ -35,7 +35,6 @@ export function UsersTable({ users }: { users: UserRow[] }) {
   const [mode, setMode] = useState(ALL);
   const [plan, setPlan] = useState(ALL);
   const [country, setCountry] = useState(ALL);
-  const [query, setQuery] = useState("");
   const [active, setActive] = useState<UserRow | null>(null);
 
   const plans = useMemo(() => Array.from(new Set(users.map((u) => u.plan))).sort(), [users]);
@@ -44,19 +43,19 @@ export function UsersTable({ users }: { users: UserRow[] }) {
     [users]
   );
 
-  const q = query.trim().toLowerCase();
   const filtered = users.filter((u) => {
     if (mode !== ALL && u.dashboardMode !== mode) return false;
     if (plan !== ALL && u.plan !== plan) return false;
     if (country !== ALL && (u.country ?? "Unknown") !== country) return false;
-    if (q && !u.email.toLowerCase().includes(q) && !(u.businessType ?? "").toLowerCase().includes(q)) return false;
     return true;
   });
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <SearchInput value={query} onChange={setQuery} placeholder="Search email or business type…" />
+        {/* Search moved to the server (see page.tsx): it has to reach every account, not just the
+            twenty on this page. The dropdowns stay client-side — they narrow what is in front of
+            you, which is a different job. */}
         <FilterDropdown
           label="Mode"
           active={mode}
@@ -75,7 +74,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           onSelect={setCountry}
           options={[{ value: ALL, label: "All" }, ...countries.map((c) => ({ value: c, label: c }))]}
         />
-        {(mode !== ALL || plan !== ALL || country !== ALL || q) && (
+        {(mode !== ALL || plan !== ALL || country !== ALL) && (
           <span className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>
             {filtered.length} / {users.length}
           </span>

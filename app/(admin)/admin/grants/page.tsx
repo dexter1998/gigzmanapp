@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
 import { PageHeader, Section, Table, Pill, fmtDT, fmtN } from "../ui";
-import { GRANT_REASONS, GRANTABLE_PLANS, grantPlan, revokeGrant, type GrantReason, type GrantablePlan } from "@/lib/credits/grants";
+import { GRANT_REASONS, GRANTABLE_PLANS, GRANT_DURATIONS, grantPlan, revokeGrant, type GrantReason, type GrantablePlan } from "@/lib/credits/grants";
 import { GrantForm } from "./GrantForm";
 
 /**
@@ -24,7 +24,7 @@ export default async function GrantsPage() {
 
   const grants = await sql`
     SELECT g.id, g.user_email, g.plan, g.credits, g.reason, g.note, g.granted_by,
-           g.revoked_at, g.created_at, p.credits AS balance, p.plan AS current_plan
+           g.revoked_at, g.expires_at, g.created_at, p.credits AS balance, p.plan AS current_plan
       FROM plan_grants g
       LEFT JOIN user_profiles p ON p.email = g.user_email
      ORDER BY g.created_at DESC
@@ -46,7 +46,8 @@ export default async function GrantsPage() {
     const credits = Number(formData.get("credits") ?? 0);
     const note = String(formData.get("note") ?? "");
 
-    await grantPlan({ userEmail: email, plan, credits, reason, note, grantedBy: by });
+    const durationDays = Number(formData.get("durationDays") ?? 0);
+    await grantPlan({ userEmail: email, plan, credits, reason, note, grantedBy: by, durationDays });
     revalidatePath("/admin/grants");
   }
 
@@ -69,7 +70,7 @@ export default async function GrantsPage() {
         <div className="mb-3 flex flex-wrap gap-3">
           <div className="min-w-[280px] flex-1">
             <Section title="Grant a plan" note="Sets the plan, adds credits, and marks the account as comped. The user sees it as granted, not purchased.">
-              <GrantForm action={submitGrant} plans={[...GRANTABLE_PLANS]} reasons={[...GRANT_REASONS]} />
+              <GrantForm action={submitGrant} plans={[...GRANTABLE_PLANS]} reasons={[...GRANT_REASONS]} durations={GRANT_DURATIONS} />
             </Section>
           </div>
         </div>
@@ -77,7 +78,7 @@ export default async function GrantsPage() {
         <Table
           title="Recent grants"
           note="Credits already spent are never clawed back — revoking stops the plan, the ledger keeps the history."
-          head={["Account", "Plan", { label: "Credits", num: true }, "Reason", "By", "When", ""]}
+          head={["Account", "Plan", { label: "Credits", num: true }, "Runs until", "Reason", "By", "When", ""]}
           rows={grants.map((g) => [
             <span key="e" className="text-[var(--ink)]">{g.user_email}</span>,
             <span key="p" className="flex items-center gap-2">
@@ -85,6 +86,11 @@ export default async function GrantsPage() {
               {g.revoked_at && <span className="text-[10.5px] text-[var(--ink-faint)]">revoked</span>}
             </span>,
             fmtN(g.credits),
+            g.expires_at
+              ? <span key="x" style={{ color: new Date(g.expires_at) <= new Date() ? "var(--critical)" : "var(--ink-muted)" }}>
+                  {fmtDT(g.expires_at)}{new Date(g.expires_at) <= new Date() ? " · expired" : ""}
+                </span>
+              : <span key="x" className="text-[var(--ink-faint)]">no end date</span>,
             <span key="r" className="text-[var(--ink-muted)]">{g.reason}{g.note ? ` · ${g.note}` : ""}</span>,
             <span key="b" className="text-[var(--ink-faint)]">{g.granted_by}</span>,
             <span key="w" className="text-[var(--ink-faint)]">{fmtDT(g.created_at)}</span>,

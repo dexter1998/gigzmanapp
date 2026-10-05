@@ -220,6 +220,24 @@
    the inline script in the admin layout so there is no flash of Tabler navy on a hard refresh. */
 html[data-admin], html[data-admin] body { background: oklch(0.168 0.006 72); }
 
+/* Clamp — one line in the cell, the whole thing on hover. See Clamp.tsx for why.
+   The panel is positioned relative to the cell and raised above the table's own stacking so it is
+   not clipped by the row below it. */
+.mantis-admin .adm-clamp { position: relative; display: inline-block; vertical-align: top; }
+.mantis-admin .adm-clamp-line {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mantis-admin .adm-clamp-full {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 30;
+  display: none; width: max-content; max-width: 420px;
+  padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: 12px; line-height: 1.55; white-space: normal;
+  box-shadow: var(--shadow-pop);
+}
+.mantis-admin .adm-clamp:hover .adm-clamp-full,
+.mantis-admin .adm-clamp:focus-within .adm-clamp-full { display: block; }
+
 .mantis-admin .rule-t { border-top: 1px solid var(--rule); }
 .mantis-admin .rule-b { border-bottom: 1px solid var(--rule); }
 .mantis-admin .rule-r { border-right: 1px solid var(--rule); }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasJobsAccess } from "@/lib/jobs/access";
 import { sql } from "@/lib/db";
+import { effectivePlan } from "@/lib/credits/grants";
 import { chargeCredits, allowanceFor } from "@/lib/credits/server";
 import { CREDIT_COST } from "@/lib/credits/pricing";
 import { chunkTypes } from "@/lib/categories";
@@ -141,8 +142,10 @@ export async function POST(req: Request) {
     } else if (counts.billed >= SESSION_REQUEST_BUDGET) {
       fallbackThrottled = "session_budget";
     } else {
-      const [profile] = await sql`SELECT plan, credits FROM user_profiles WHERE email = ${userEmail}`;
-      const plan = profile?.plan ?? "free";
+      const [profile] = await sql`SELECT plan, plan_expires_at, credits FROM user_profiles WHERE email = ${userEmail}`;
+      // Same rule as the leads route: an expired comp stops granting headroom at the moment it
+      // expires, not whenever the sweep next runs.
+      const plan = effectivePlan(profile ?? {});
       const creditsBefore = profile?.credits ?? 0;
       const allowance = await allowanceFor(userEmail, plan);
       const coveredForAll = allowance.covered && allowance.dayRemaining >= batches.length && allowance.monthRemaining >= batches.length;

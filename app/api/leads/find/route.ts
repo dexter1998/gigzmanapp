@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
+import { effectivePlan } from "@/lib/credits/grants";
 import { looksLikeCompetitor } from "@/lib/competitors";
 import { TYPE_TO_SECTION } from "@/lib/categories";
 import { ALL_CATALOG_TYPES, typeBatches } from "@/lib/discovery-catalog";
@@ -263,8 +264,10 @@ export async function POST(req: NextRequest) {
   // credit logic at all, so map panning went free forever once the throttles above were the only
   // gate. This pre-check only covers the *first* call of this request; the actual spend is settled
   // below against however many calls the request ends up making.
-  const [profile] = await sql`SELECT plan, credits FROM user_profiles WHERE email = ${userEmail}`;
-  const plan = profile?.plan ?? "free";
+  const [profile] = await sql`SELECT plan, plan_expires_at, credits FROM user_profiles WHERE email = ${userEmail}`;
+  // effectivePlan, not profile.plan: an expired comp must stop granting headroom the moment it
+  // expires, not whenever the sweep next runs.
+  const plan = effectivePlan(profile ?? {});
   const creditsBefore = profile?.credits ?? 0;
   const allowance = await allowanceFor(userEmail, plan);
   if (!allowance.covered && creditsBefore < CREDIT_COST.billed_places_call) {

@@ -25,7 +25,7 @@ export default async function BillingPage() {
   const session = await auth();
   const userEmail = session!.user!.email!;
 
-  const [profile] = await sql`SELECT plan, credits, credits_limit, plan_source, plan_granted_at FROM user_profiles WHERE email = ${userEmail}`;
+  const [profile] = await sql`SELECT plan, credits, credits_limit, plan_source, plan_granted_at, plan_expires_at FROM user_profiles WHERE email = ${userEmail}`;
   const plan = profile?.plan ?? "free";
   const allowance = await allowanceFor(userEmail, plan);
 
@@ -55,6 +55,9 @@ export default async function BillingPage() {
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--g-green-text)", background: "var(--g-green-mint)", padding: "11px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20, lineHeight: 1.5 }}>
           Your <strong style={{ textTransform: "capitalize" }}>{plan}</strong> plan was granted by Mantis — free, nothing to pay.
           {profile.plan_granted_at ? ` Active since ${new Date(profile.plan_granted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : ""}
+          {/* A comp with an end date has to say so here. Someone planning around a plan that quietly
+              stops is the worst version of this feature. */}
+          {profile.plan_expires_at ? ` Runs until ${new Date(profile.plan_expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : ""}
         </p>
       )}
 

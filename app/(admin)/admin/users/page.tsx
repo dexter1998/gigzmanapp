@@ -25,7 +25,14 @@ const FREE_MAIL = ["gmail.com", "yahoo.com", "yahoo.in", "outlook.com", "hotmail
  */
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 50;
+/**
+ * Twenty, not fifty.
+ *
+ * The page is read, not scrolled — twenty rows is roughly what fits without one, and a table you
+ * scroll is one you stop scanning. The server page still bounds the aggregate work; UsersTable's
+ * own search runs over whatever is on screen.
+ */
+const PAGE_SIZE = 20;
 
 /**
  * Whole-table counts, cached.
@@ -58,10 +65,15 @@ const getUserKpis = unstable_cache(
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
-  const page = Math.max(1, Number((await searchParams).page) || 1);
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
   const offset = (page - 1) * PAGE_SIZE;
+  // Server-side because it has to reach every account. The table's own dropdowns stay client-side —
+  // they narrow what is already on screen, which is a different job from finding someone.
+  const q = (sp.q ?? "").trim();
+  const like = `%${q.toLowerCase()}%`;
 
   const { kpi, countries } = await getUserKpis();
 
@@ -71,12 +83,19 @@ export default async function UsersPage({
   // job_applications and payments, joined all four results to user_profiles, and only then applied
   // LIMIT 200. Every refresh aggregated every row of four tables to label a couple of screens'
   // worth of people. Scoping each subquery to this page's emails is the entire fix.
-  const pageUsers = await sql`
-    SELECT email, plan, dashboard_mode, credits, country, business_type, created_at, last_seen_at
-      FROM user_profiles
-     ORDER BY created_at DESC
-     LIMIT ${PAGE_SIZE} OFFSET ${offset}
-  `;
+  const [pageUsers, [matchCount]] = await Promise.all([
+    sql`
+      SELECT email, plan, dashboard_mode, credits, country, business_type, created_at, last_seen_at
+        FROM user_profiles
+       ${q ? sql`WHERE lower(email) LIKE ${like} OR lower(coalesce(business_type, '')) LIKE ${like}` : sql``}
+       ORDER BY created_at DESC
+       LIMIT ${PAGE_SIZE} OFFSET ${offset}
+    `,
+    q
+      ? sql`SELECT count(*)::int AS n FROM user_profiles
+             WHERE lower(email) LIKE ${like} OR lower(coalesce(business_type, '')) LIKE ${like}`
+      : sql`SELECT 0::int AS n`,
+  ]);
   const emails = pageUsers.map((r) => r.email as string);
 
   const users = emails.length
@@ -100,7 +119,8 @@ export default async function UsersPage({
       `
     : [];
 
-  const totalPages = Math.max(1, Math.ceil(kpi.total / PAGE_SIZE));
+  const resultCount = q ? matchCount.n : kpi.total;
+  const totalPages = Math.max(1, Math.ceil(resultCount / PAGE_SIZE));
 
   const rows: UserRow[] = users.map((r) => ({
     email: r.email,
@@ -121,7 +141,7 @@ export default async function UsersPage({
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1400px]">
-        <PageHeader pretitle="Analysis" title="Users" sub={`page ${page} of ${fmtN(totalPages)} · ${fmtN(kpi.total)} users · as of ${fmtDT(new Date())} IST`} />
+        <PageHeader pretitle="Analysis" title="Users" sub={q ? `${fmtN(resultCount)} matching “${q}” · page ${page} of ${fmtN(totalPages)}` : `page ${page} of ${fmtN(totalPages)} · ${fmtN(kpi.total)} users · as of ${fmtDT(new Date())} IST`} />
 
         <CardRow>
           <StatCard label="Registrations" value={fmtN(kpi.total)} detail={`+${kpi.new7} in 7d`} tone={kpi.new7 > 0 ? "up" : undefined} />
@@ -158,8 +178,20 @@ export default async function UsersPage({
                   Mode aur plan se filter karo, ya kisi row pe click karke quick view kholo. Filters
                   is page ke {rows.length} users pe lagte hain — doosre page ke liye neeche se badlo.
                 </div>
+                <form method="GET" className="mb-3 flex flex-wrap items-center gap-2">
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={q}
+                    placeholder="Search every account by email or business type…"
+                    aria-label="Search users"
+                    className="w-full max-w-[340px] rounded-[var(--radius-sm)] border border-[var(--rule)] bg-[var(--surface-sunk)] px-3 py-1.5 text-[12.5px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)]"
+                  />
+                  <button type="submit" className="rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)]">Search</button>
+                  {q && <Link href="/admin/users" className="text-[11.5px] text-[var(--ink-faint)] no-underline">Clear</Link>}
+                </form>
                 <UsersTable users={rows} />
-                <Pager page={page} totalPages={totalPages} />
+                <Pager page={page} totalPages={totalPages} q={q} />
               </div>
             </div>
           </div>
@@ -171,10 +203,11 @@ export default async function UsersPage({
 
 /** Prev/next only. Numbered pages would need a count per link and this list is browsed, not
  *  navigated to a specific offset. */
-function Pager({ page, totalPages }: { page: number; totalPages: number }) {
+function Pager({ page, totalPages, q }: { page: number; totalPages: number; q: string }) {
   if (totalPages <= 1) return null;
-  const prev = page > 1 ? `/admin/users?page=${page - 1}` : null;
-  const next = page < totalPages ? `/admin/users?page=${page + 1}` : null;
+  const qs = (n: number) => `/admin/users?page=${n}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+  const prev = page > 1 ? qs(page - 1) : null;
+  const next = page < totalPages ? qs(page + 1) : null;
   return (
     <div className="flex items-center justify-between mt-3">
       <div className="text-[var(--ink-muted)]" style={{ fontSize: 12 }}>

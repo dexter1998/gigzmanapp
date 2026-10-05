@@ -25,6 +25,15 @@ export type GrantResult =
   | { ok: true; grantId: string; creditsApplied: boolean }
   | { ok: false; error: string };
 
+/** How long a comped plan runs for. 0 = no end date. */
+export const GRANT_DURATIONS = [
+  { days: 0, label: "No end date" },
+  { days: 30, label: "30 days" },
+  { days: 90, label: "90 days" },
+  { days: 180, label: "6 months" },
+  { days: 365, label: "1 year" },
+] as const;
+
 export async function grantPlan(opts: {
   userEmail: string;
   plan: GrantablePlan;
@@ -32,6 +41,8 @@ export async function grantPlan(opts: {
   reason: GrantReason;
   note?: string | null;
   grantedBy: string;
+  /** 0 or undefined = runs until revoked. */
+  durationDays?: number;
 }): Promise<GrantResult> {
   const email = opts.userEmail.trim().toLowerCase();
   if (!email) return { ok: false, error: "Email is required." };
@@ -46,10 +57,16 @@ export async function grantPlan(opts: {
   const [existing] = await sql`SELECT email FROM user_profiles WHERE email = ${email}`;
   if (!existing) return { ok: false, error: `No account found for ${email}.` };
 
+  const days = Number(opts.durationDays ?? 0);
+  if (!Number.isInteger(days) || days < 0 || days > 3650) {
+    return { ok: false, error: "Duration must be a whole number of days between 0 and 3650." };
+  }
+
   const [grant] = await sql`
-    INSERT INTO plan_grants (user_email, plan, credits, reason, note, granted_by)
-    VALUES (${email}, ${opts.plan}, ${opts.credits}, ${opts.reason}, ${opts.note?.trim() || null}, ${opts.grantedBy})
-    RETURNING id
+    INSERT INTO plan_grants (user_email, plan, credits, reason, note, granted_by, expires_at)
+    VALUES (${email}, ${opts.plan}, ${opts.credits}, ${opts.reason}, ${opts.note?.trim() || null},
+            ${opts.grantedBy}, ${days > 0 ? sql`now() + make_interval(days => ${days})` : null})
+    RETURNING id, expires_at
   `;
   const grantId = grant.id as string;
 
@@ -58,6 +75,7 @@ export async function grantPlan(opts: {
        SET plan = ${opts.plan},
            plan_source = 'granted',
            plan_granted_at = now(),
+           plan_expires_at = ${grant.expires_at ?? null},
            updated_at = now()
      WHERE email = ${email}
   `;
@@ -85,9 +103,38 @@ export async function revokeGrant(grantId: string, revokedBy: string): Promise<G
 
   await sql`
     UPDATE user_profiles
-       SET plan = 'free', plan_source = 'purchase', plan_granted_at = NULL, updated_at = now()
+       SET plan = 'free', plan_source = 'purchase', plan_granted_at = NULL, plan_expires_at = NULL,
+           updated_at = now()
      WHERE email = ${grant.user_email}
   `;
   void revokedBy;
   return { ok: true, grantId: grant.id as string, creditsApplied: false };
+}
+
+/**
+ * The plan this account is actually entitled to right now.
+ *
+ * Expiry is applied here, at read time, rather than trusted to a sweep having run: a plan that was
+ * supposed to end last night must be over this morning whether or not any cron fired. The sweep
+ * below exists only to make the stored row agree with what this function already returns, so that
+ * admin lists and exports do not show a plan the product is no longer honouring.
+ */
+export function effectivePlan(profile: { plan?: string | null; plan_expires_at?: Date | string | null }): string {
+  const expires = profile.plan_expires_at ? new Date(profile.plan_expires_at) : null;
+  if (expires && expires.getTime() <= Date.now()) return "free";
+  return profile.plan ?? "free";
+}
+
+/** Brings expired comps back to free. Safe to run as often as you like. */
+export async function sweepExpiredGrants(): Promise<number> {
+  const rows = await sql`
+    UPDATE user_profiles
+       SET plan = 'free', plan_source = 'purchase', plan_granted_at = NULL, plan_expires_at = NULL,
+           updated_at = now()
+     WHERE plan_source = 'granted'
+       AND plan_expires_at IS NOT NULL
+       AND plan_expires_at <= now()
+    RETURNING email
+  `;
+  return rows.length;
 }

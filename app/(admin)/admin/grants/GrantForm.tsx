@@ -15,16 +15,18 @@ const DEFAULT_CREDITS: Record<string, number> = { free: 0, starter: 2000, pro: 4
  * two fields disagree is indistinguishable from one that failed.
  */
 export function GrantForm({
-  action, plans, reasons,
+  action, plans, reasons, durations,
 }: {
   action: (fd: FormData) => Promise<void>;
   plans: string[];
   reasons: string[];
+  durations: readonly { days: number; label: string }[];
 }) {
   const [email, setEmail] = useState("");
   const [confirm, setConfirm] = useState("");
   const [plan, setPlan] = useState("starter");
   const [credits, setCredits] = useState(String(DEFAULT_CREDITS.starter));
+  const [duration, setDuration] = useState(0);
 
   const match = email.trim().length > 0 && email.trim().toLowerCase() === confirm.trim().toLowerCase();
 
@@ -57,6 +59,13 @@ export function GrantForm({
                  onChange={(e) => setCredits(e.target.value)} className={INPUT} />
         </div>
         <div className="min-w-[140px] flex-1">
+          <label className={LABEL} htmlFor="g-duration">Runs for</label>
+          <select id="g-duration" name="durationDays" className={INPUT} defaultValue="0"
+                  onChange={(e) => setDuration(Number(e.target.value))}>
+            {durations.map((d) => <option key={d.days} value={d.days}>{d.label}</option>)}
+          </select>
+        </div>
+        <div className="min-w-[140px] flex-1">
           <label className={LABEL} htmlFor="g-reason">Reason</label>
           <select id="g-reason" name="reason" className={INPUT} defaultValue="partnership">
             {reasons.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -82,7 +91,7 @@ export function GrantForm({
           {email.trim().length === 0
             ? "This writes to a real account."
             : match
-              ? `Will set ${plan} and add ${Number(credits || 0).toLocaleString("en-IN")} credits.`
+              ? `Will set ${plan}, add ${Number(credits || 0).toLocaleString("en-IN")} credits${duration > 0 ? `, ending in ${duration} days` : ", with no end date"}.`
               : "Both email fields must match."}
         </span>
       </div>
