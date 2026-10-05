@@ -2,43 +2,38 @@ import crypto from "node:crypto";
 import { sql } from "@/lib/db";
 
 /**
- * Stickly.live — the in-app rewards widget. Users complete link tasks (star the
- * repo, join Discord, leave a G2 review) and earn Mantis credits for it.
+ * Stickly — users complete growth tasks (follow, star, join, review, refer) and we grant the
+ * credits. Stickly never holds a balance; it tells us a task was claimed and this app does the
+ * granting, in our own ledger.
  *
- * Same thin-wrapper philosophy as lib/razorpay.ts: one JWT and one HMAC check do
- * not justify a dependency, so both are hand-rolled on node:crypto. There is no
- * JWT library in this project and adding one for fifteen lines would be the
- * wrong trade.
- *
- * Two secrets, and they are not interchangeable:
- *   STICKLY_SIGNING_SECRET  signs the token that tells Stickly who the user is
- *   STICKLY_WEBHOOK_SECRET  verifies the callback that tells us to grant credits
+ * Three secrets, all from Stickly → Settings → API keys → "Download .env":
+ *   STICKLY_PUBLIC_KEY      safe in the browser
+ *   STICKLY_SIGNING_SECRET  signs the token that says which of our users is claiming
+ *   STICKLY_WEBHOOK_SECRET  verifies an incoming reward webhook really came from Stickly
  */
 
-export function sticklyConfigured(): boolean {
-  return Boolean(
-    process.env.STICKLY_PUBLIC_KEY &&
-      process.env.STICKLY_SIGNING_SECRET &&
-      process.env.STICKLY_WEBHOOK_SECRET,
-  );
-}
+export const STICKLY_CDN = "https://cdn.stickly.live/w.js";
+export const STICKLY_PUBLIC_KEY = process.env.STICKLY_PUBLIC_KEY ?? "";
 
-const b64url = (b: Buffer | string) =>
-  Buffer.from(b).toString("base64url");
+/** Ledger constants, in one place so the webhook and any backfill agree. `reason` is deliberately
+ *  not in CREDIT_COST — that table is spend-only and creditCost() throws on anything it does not
+ *  know. */
+export const STICKLY_LEDGER_REASON = "stickly_reward";
+export const sticklyLedgerRef = (eventId: string) => `stickly:${eventId}`;
 
-/* ── identity ─────────────────────────────────────────────────────────── */
+/* ------------------------------------------------------------------ identity */
 
 /**
- * Stickly never sees a Mantis email.
+ * An opaque id per user, rather than our own.
  *
- * Email is our only stable user id, which makes it tempting to pass straight
- * through — but handing a third party the full address of every signed-in user
- * is exporting the customer list for no gain. Worse, phone-only signups carry a
- * synthetic `@phone.gigzmanapp.internal` address that would leak the convention.
+ * The integration guide signs `{ sub: user.id }`. In this app a user *is* their email —
+ * user_profiles is keyed by it — so following that literally would hand every customer's email
+ * address to a third party as their identifier, and put it in a JWT that reaches the browser.
  *
- * So each user gets an opaque id the first time they load the widget, and the
- * mapping lives here. Stickly only ever learns that id, and the webhook maps it
- * back. Deleting the row unlinks the user and nothing else breaks.
+ * So each user gets an opaque id the first time they load the widget and the mapping lives here.
+ * Stickly only ever learns that id; the webhook maps it back. It satisfies the same requirement —
+ * a stable id of ours that Stickly can quote back — without the leak. Deleting the row unlinks the
+ * user and nothing else breaks.
  */
 export async function sticklyIdFor(userEmail: string): Promise<string> {
   const [existing] = await sql<{ stickly_id: string }[]>`
@@ -46,10 +41,9 @@ export async function sticklyIdFor(userEmail: string): Promise<string> {
   `;
   if (existing) return existing.stickly_id;
 
-  const id = "mu_" + crypto.randomBytes(12).toString("hex");
+  const id = `u_${crypto.randomBytes(12).toString("hex")}`;
   const [row] = await sql<{ stickly_id: string }[]>`
-    INSERT INTO stickly_users (stickly_id, user_email)
-    VALUES (${id}, ${userEmail})
+    INSERT INTO stickly_users (stickly_id, user_email) VALUES (${id}, ${userEmail})
     ON CONFLICT (user_email) DO UPDATE SET user_email = EXCLUDED.user_email
     RETURNING stickly_id
   `;
@@ -63,18 +57,20 @@ export async function emailForSticklyId(sticklyId: string): Promise<string | nul
   return row?.user_email ?? null;
 }
 
+/* ------------------------------------------------------------------ the token */
+
+const b64url = (s: string) => Buffer.from(s).toString("base64url");
+
 /**
- * HS256 JWT with `sub` and nothing else.
+ * HS256, hand-rolled rather than pulling in jsonwebtoken for one three-field payload.
  *
- * Stickly reads the claiming user from this token's `sub` and never from the
- * request body — with no task verification on their side, the signature is the
- * only thing between anyone with a browser console and an unbounded credit mint.
- * Which is also why this runs on the server and the secret never reaches the
- * client bundle.
+ * The widget cannot be trusted to say who is claiming — Stickly does not verify that a task was
+ * really done, so identity is the only thing between a reward and a console loop that mints
+ * credits. That is why this is signed on the server and why nothing from the browser is used.
  */
-export function mintWidgetToken(subject: string, ttlSeconds = 60 * 60 * 12): string {
+export function signSticklyToken(subject: string, ttlSeconds = 24 * 60 * 60): string {
   const secret = process.env.STICKLY_SIGNING_SECRET;
-  if (!secret) throw new Error("STICKLY_SIGNING_SECRET must be set");
+  if (!secret) throw new Error("STICKLY_SIGNING_SECRET is not set");
 
   const now = Math.floor(Date.now() / 1000);
   const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -83,30 +79,30 @@ export function mintWidgetToken(subject: string, ttlSeconds = 60 * 60 * 12): str
     .createHmac("sha256", secret)
     .update(`${header}.${payload}`)
     .digest("base64url");
-
   return `${header}.${payload}.${signature}`;
 }
 
-/* ── webhook ──────────────────────────────────────────────────────────── */
+/* ------------------------------------------------------------------ the webhook */
 
 function timingSafeEq(a: string, b: string): boolean {
-  const x = Buffer.from(a), y = Buffer.from(b);
-  return x.length === y.length && crypto.timingSafeEqual(x, y);
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  // timingSafeEqual throws on a length mismatch, which would itself leak length — compare the
+  // lengths separately and only then the bytes.
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
 }
 
 /**
- * Verifies `x-stickly-signature: t=<unix>,v1=<hex>` over `"<t>.<rawBody>"`.
+ * Verifies "X-Stickly-Signature: t=<unix>,v1=<hex>" over the RAW body.
  *
- * The timestamp is inside the signed string and checked against the clock, so a
- * captured delivery cannot be replayed tomorrow. Five minutes matches Stickly's
- * own tolerance; wider and the replay window reopens, narrower and ordinary
- * clock skew starts rejecting real deliveries.
+ * The caller must pass the bytes exactly as they arrived. Parsing and re-serialising first changes
+ * the whitespace and every signature then fails.
+ *
+ * The timestamp window is what stops a captured delivery being replayed later; the constant-time
+ * compare is what stops the signature being guessed a byte at a time.
  */
-export function verifyWebhookSignature(
-  rawBody: string,
-  header: string | null,
-  toleranceSec = 300,
-): boolean {
+export function verifyWebhookSignature(rawBody: string, header: string | null, toleranceSec = 300): boolean {
   const secret = process.env.STICKLY_WEBHOOK_SECRET;
   if (!secret || !header) return false;
 
@@ -128,9 +124,3 @@ export type SticklyRewardClaimed = {
   mode: "test" | "live";
   test?: boolean;
 };
-
-/** Ledger constants, in one place so the webhook and any backfill agree.
- *  `reason` is deliberately not in CREDIT_COST — that table is spend-only and
- *  `creditCost()` throws on anything it does not know. */
-export const STICKLY_LEDGER_REASON = "stickly_reward";
-export const sticklyLedgerRef = (claimId: string) => `stickly:${claimId}`;

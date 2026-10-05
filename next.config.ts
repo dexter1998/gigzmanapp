@@ -47,13 +47,22 @@ const nextConfig: NextConfig = {
               // in payments with no checkout ever opening. Wildcarded rather than pinned to the two
               // loader hosts: Razorpay's loader pulls its own risk-detection bundle from
               // cdn.razorpay.com, so checkout.razorpay.com alone still throws mid-checkout.
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com https://*.cashfree.com https://*.razorpay.com",
+              // cdn.stickly.live serves the rewards widget. Without it here the script is blocked
+              // outright, window.stk never exists, the boot call sits in a queue nothing drains,
+              // and the widget simply never appears -- no error anywhere except a CSP line in the
+              // browser console. Exactly how this CSP broke checkout in September; caught this time
+              // by watching the console while the widget loaded rather than after someone reported
+              // it missing.
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com https://*.cashfree.com https://*.razorpay.com https://cdn.stickly.live",
               // Both gateways call their own APIs from the browser mid-checkout (Razorpay also
               // posts telemetry to lumberjack), so script-src alone is not enough.
-              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.cashfree.com https://*.razorpay.com",
+              // The widget talks to its own API from the browser to list tasks and post a claim, so
+              // script-src alone would load it and then leave it unable to do anything.
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.cashfree.com https://*.razorpay.com https://*.stickly.live",
               // The checkout itself renders in a gateway-hosted iframe, and the bank/UPI step
               // submits a form to it -- default-src 'self' would reject both.
-              "frame-src 'self' https://*.cashfree.com https://*.razorpay.com",
+              // The widget renders its panel in its own iframe.
+              "frame-src 'self' https://*.cashfree.com https://*.razorpay.com https://*.stickly.live",
               "form-action 'self' https://*.cashfree.com https://*.razorpay.com",
               "img-src 'self' data: https: blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

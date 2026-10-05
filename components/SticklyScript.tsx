@@ -1,71 +1,80 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import Script from "next/script";
+import { useEffect, useState } from "react";
 
 /**
- * Loads the Stickly rewards widget for signed-in users.
+ * Boots the Stickly rewards widget for the signed-in user.
  *
- * Not next/script: the widget needs a per-user token that only our server can
- * mint, so the script and the boot call have to be ordered around a fetch. The
- * widget's own command queue makes that race safe — `window.stk.cmd` is a plain
- * array until the bundle lands and a shim that runs callbacks immediately after,
- * so pushing before or after the script loads behaves the same.
+ * The identity has to come from a token we sign on the server, so the script tag and the boot call
+ * are ordered around a fetch. The widget's own command queue makes that race safe: `window.stk.cmd`
+ * is a plain array until the script loads, and the SDK drains it on arrival — so pushing before the
+ * CDN responds is fine, and so is pushing after.
+ *
+ * Mounted inside the signed-in shell rather than the root layout. The integration guide says "every
+ * page is fine", but the widget has nothing to offer a logged-out visitor on a marketing page and
+ * boots with no identity there anyway — all it would add is a CDN request to every public pageview.
  */
-const SRC = process.env.NEXT_PUBLIC_STICKLY_CDN
-  ? `${process.env.NEXT_PUBLIC_STICKLY_CDN}/w.js`
-  : "https://cdn.stickly.live/w.js";
 
-type Sdk = { boot: (o: Record<string, unknown>) => void; shutdown: () => void };
+type Sdk = {
+  boot: (o: Record<string, unknown>) => void;
+  shutdown: () => void;
+  open?: () => void;
+  updateToken?: (t: string) => void;
+};
 type Stk = { cmd: ((s: Sdk) => void)[] | { push(f: (s: Sdk) => void): void } };
 
+type Config = { key: string; token: string; user: { email: string; name: string | null } };
+
 export function SticklyScript() {
-  const pathname = usePathname();
-  // Same exclusions as FounderWidgetScript: the embeddable widget page must not
-  // carry another widget, and admin screens get recorded.
-  const skip = pathname?.startsWith("/widget") || pathname?.startsWith("/admin");
+  const [cfg, setCfg] = useState<Config | null>(null);
 
   useEffect(() => {
-    if (skip) return;
     let cancelled = false;
+    fetch("/api/stickly/token")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: Config | null) => {
+        // 401 (signed out) and 503 (not configured) both mean "no widget", not an error worth
+        // surfacing — the person did not ask for it and cannot act on it.
+        if (!cancelled && d?.token) setCfg(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-    (async () => {
-      const res = await fetch("/api/stickly/token", { cache: "no-store" }).catch(() => null);
-      if (!res?.ok || cancelled) return;
-      const cfg = await res.json().catch(() => null);
-      if (!cfg?.enabled || cancelled) return;
+  useEffect(() => {
+    if (!cfg) return;
+    const w = window as unknown as { stk?: Stk };
+    w.stk = w.stk ?? { cmd: [] };
+    w.stk.cmd.push((s: Sdk) =>
+      s.boot({ key: cfg.key, token: cfg.token, user: cfg.user }),
+    );
 
-      const w = window as unknown as { stk?: Stk };
-      w.stk = w.stk ?? { cmd: [] };
-      w.stk.cmd.push((s: Sdk) =>
-        s.boot({
-          key: cfg.key,
-          token: cfg.token,
-          api: process.env.NEXT_PUBLIC_STICKLY_CDN || undefined,
-          // Re-mint rather than leaving the user with a dead widget: the token is
-          // twelve hours and a dashboard tab routinely outlives that.
-          onTokenExpired: () => { void refresh(); },
-        }),
-      );
+    // Without this the next person on a shared machine inherits the previous user's widget — and
+    // with it, their reward history.
+    return () => {
+      const q = (window as unknown as { stk?: Stk }).stk;
+      q?.cmd.push((s: Sdk) => s.shutdown());
+    };
+  }, [cfg]);
 
-      if (!document.querySelector('script[data-stickly-loader]')) {
-        const tag = document.createElement("script");
-        tag.src = SRC;
-        tag.async = true;
-        tag.dataset.sticklyLoader = "1";
-        document.head.appendChild(tag);
-      }
-    })();
+  if (!cfg) return null;
+  return <Script src="https://cdn.stickly.live/w.js" data-key={cfg.key} strategy="afterInteractive" />;
+}
 
-    async function refresh() {
-      const res = await fetch("/api/stickly/token", { cache: "no-store" }).catch(() => null);
-      const cfg = res?.ok ? await res.json().catch(() => null) : null;
-      const w = window as unknown as { stk?: { updateToken?: (t: string) => void } };
-      if (cfg?.token) w.stk?.updateToken?.(cfg.token);
-    }
-
-    return () => { cancelled = true; };
-  }, [skip]);
-
-  return null;
+/**
+ * Opens the widget from our own UI (the sidebar entry).
+ *
+ * `open()` is marked optional on purpose: the integration guide documents only boot(), shutdown()
+ * and updateToken(), so this call is the one part of the integration that has not been verified
+ * against the real SDK. If the method does not exist the queue entry is a no-op and the widget's
+ * own launcher still works — it fails quiet rather than throwing, but it does fail, so this is
+ * worth checking the first time the sidebar link is clicked against the live widget.
+ */
+export function openStickly() {
+  const w = window as unknown as { stk?: Stk };
+  w.stk = w.stk ?? { cmd: [] };
+  w.stk.cmd.push((s: Sdk) => s.open?.());
 }

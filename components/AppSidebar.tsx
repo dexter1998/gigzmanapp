@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
-import { HomeIcon, ChatBubbleIcon, TableIcon, WhatsAppIcon, PartnerIcon, SettingsIcon, UserIcon } from "./icons";
+import { openStickly } from "./SticklyScript";
+import { HomeIcon, ChatBubbleIcon, TableIcon, WhatsAppIcon, PartnerIcon, SettingsIcon, UserIcon, GiftIcon } from "./icons";
 
 type ChatSummary = { id: string; title: string };
 
@@ -150,6 +151,26 @@ export function AppSidebar({ name, email }: { name: string | null; email: string
           >
             <WhatsAppIcon color="var(--ink-muted)" /> WhatsApp
           </a>
+          {/* Above "Partner with us" on purpose: both are ways to get something from us, and this
+              one costs the person nothing but a few minutes. */}
+          <button
+            type="button"
+            onClick={openStickly}
+            className="nav-row"
+            style={{ ...sidebarUtilityLink, border: "none", background: "none", cursor: "pointer", width: "100%", textAlign: "left" }}
+          >
+            <GiftIcon color="var(--ink-muted)" />
+            <span style={{ flex: 1, minWidth: 0 }}>Earn free credits</span>
+            <span
+              style={{
+                flexShrink: 0, fontSize: 9.5, fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.05em", padding: "2px 6px", borderRadius: "var(--radius-pill)",
+                background: "var(--g-green-mint)", color: "var(--g-green-text)",
+              }}
+            >
+              New
+            </span>
+          </button>
           <button type="button" onClick={() => setPartnerOpen(true)} className="nav-row" style={{ ...sidebarUtilityLink, border: "none", background: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>
             <PartnerIcon color="var(--ink-muted)" /> Partner with us
           </button>

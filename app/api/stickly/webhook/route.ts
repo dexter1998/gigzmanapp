@@ -10,16 +10,16 @@ import {
 } from "@/lib/stickly";
 
 /**
- * Stickly calls this when one of our users claims a reward. We add the credits
- * to our own ledger — Stickly never holds them.
+ * Stickly calls this when one of our users claims a reward. We add the credits to our own ledger —
+ * Stickly never holds them.
  *
- * Same discipline as the Razorpay and Cashfree webhooks: read the raw bytes,
- * verify over those exact bytes, and only then parse. Re-serialising before the
- * check would change the whitespace and break every signature.
+ * Same discipline as the Razorpay and Cashfree webhooks: read the raw bytes, verify over those
+ * exact bytes, and only then parse. Re-serialising before the check changes the whitespace and
+ * breaks every signature.
  *
- * Anything we cannot act on returns 200 with `ignored`, not an error. Stickly
- * retries non-2xx on a 1m/5m/30m/2h/6h backoff, and a delivery for a user who no
- * longer exists would retry for six hours and still never succeed.
+ * Anything we cannot act on returns 200 with `ignored`, not an error. Stickly retries non-2xx on a
+ * 1m/5m/30m/2h/6h backoff, so a delivery for a user who no longer exists would retry for six hours
+ * and still never succeed — all it would achieve is noise.
  */
 export const dynamic = "force-dynamic";
 
@@ -46,18 +46,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ignored: "unhandled_event" });
   }
 
-  // Their "Send test webhook" button posts a synthetic claim with a made-up user.
+  // The dashboard's "Send test webhook" button posts a synthetic claim with a made-up user.
   // Verifying the signature is the point of that button; granting credits is not.
   if (event.test) {
     return NextResponse.json({ ok: true, ignored: "test_event" });
   }
 
-  // Test-mode keys skip token verification on their side, so `userId` is whatever
-  // the browser said it was. Those claims must never move real credits.
+  // Test-mode keys skip token verification on Stickly's side, so `userId` there is whatever the
+  // browser said it was. Those claims must never move real credits.
   if (event.mode !== "live") {
     return NextResponse.json({ ok: true, ignored: "test_mode" });
   }
 
+  // Not in the spec, and the reason it is here: `credits` arrives from outside and is written
+  // straight to a balance. A signature proves the sender, not that the number is sane.
   const credits = Number(event.credits);
   if (!Number.isInteger(credits) || credits <= 0 || credits > 1000) {
     console.error("stickly: refusing implausible credit amount", event.credits, event.id);
@@ -70,21 +72,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ignored: "unknown_user" });
   }
 
-  // grantCredits inserts the ledger row first and lets its unique index stop the
-  // balance update, but it does not check the profile exists — without this, a
-  // deleted account would burn the idempotency key and grant nothing.
+  // grantCredits inserts the ledger row first and lets its unique index stop the balance update,
+  // but it does not check the profile exists — without this a deleted account would burn the
+  // idempotency key and grant nothing.
   const [profile] = await sql`SELECT 1 FROM user_profiles WHERE email = ${userEmail}`;
   if (!profile) {
     console.error("stickly: no profile for", userEmail);
     return NextResponse.json({ ok: true, ignored: "no_profile" });
   }
 
-  const granted = await grantCredits(
-    userEmail,
-    credits,
-    sticklyLedgerRef(event.id),
-    STICKLY_LEDGER_REASON,
-  );
+  // Keyed on the event id: retries WILL happen, and the unique index on (reason, ref) is what makes
+  // a second delivery a no-op rather than a second grant.
+  const granted = await grantCredits(userEmail, credits, sticklyLedgerRef(event.id), STICKLY_LEDGER_REASON);
 
   return NextResponse.json({ ok: true, granted });
 }

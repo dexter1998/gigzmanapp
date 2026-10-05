@@ -1,33 +1,35 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { mintWidgetToken, sticklyConfigured, sticklyIdFor } from "@/lib/stickly";
+import { STICKLY_PUBLIC_KEY, signSticklyToken, sticklyIdFor } from "@/lib/stickly";
 
 /**
- * What the browser needs to boot the Stickly widget: the public key and a short
- * JWT naming this user. The signing secret stays here.
+ * The signed identity the widget boots with.
  *
- * Deliberately returns 200 with `{ enabled: false }` rather than an error when
- * Stickly is not configured — this is called on every authenticated page load,
- * and a missing optional integration is not a failure worth logging or retrying.
+ * Only a signed-in request gets one, and the subject comes from the session — never from anything
+ * the caller sent. Stickly does not verify that a task was actually done, so this token is the only
+ * thing standing between a reward and someone minting credits from a console loop.
  */
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!sticklyConfigured()) return NextResponse.json({ enabled: false });
-
   const session = await auth();
-  if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const email = session?.user?.email;
+  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const subject = await sticklyIdFor(session.user.email);
+  if (!STICKLY_PUBLIC_KEY || !process.env.STICKLY_SIGNING_SECRET) {
+    // Not configured is not an error the browser should retry; the widget simply stays off.
+    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  }
 
+  const subject = await sticklyIdFor(email);
   return NextResponse.json(
     {
-      enabled: true,
-      key: process.env.STICKLY_PUBLIC_KEY,
-      token: mintWidgetToken(subject),
+      key: STICKLY_PUBLIC_KEY,
+      token: signSticklyToken(subject),
+      user: { email, name: session.user?.name ?? null },
     },
-    // The token is per-user and short-lived; nothing between here and the browser
-    // should keep a copy.
-    { headers: { "cache-control": "private, no-store" } },
+    // The token is per-user and short-lived; a shared cache must never hand one person's identity
+    // to the next request.
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
