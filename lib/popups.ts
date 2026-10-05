@@ -81,11 +81,13 @@ export type PopupCta = {
  * How often one person sees a popup.
  *
  *   once    — dismissed is dismissed, forever (default). Announcements, credit grants.
- *   session — once per browser tab session. "Welcome back" belongs here: it should greet a
- *             returning visit, not interrupt every route change within one.
+ *   session — once per browser tab session.
+ *   daily   — once per calendar day, across tabs and reloads. Where the greetings live now: a
+ *             "session" greeting reappears every time someone opens a new tab, which on a dashboard
+ *             people keep several of reads as the app nagging rather than greeting.
  *   always  — every mount. Really only useful while building one.
  */
-export type PopupFrequency = "once" | "session" | "always";
+export type PopupFrequency = "once" | "session" | "daily" | "always";
 
 export type PopupRules = {
   frequency?: PopupFrequency;
@@ -116,8 +118,12 @@ export type PopupRules = {
  *                       genuinely landed. Never inferred from a date: the grant script is the only
  *                       thing that can create that row, so the popup cannot claim a gift that
  *                       didn't happen.
+ *   granted-plan      — plan_source = 'granted', i.e. an admin actually comped this account's plan
+ *                       (see lib/credits/grants.ts). Same principle as above: read from the row the
+ *                       grant wrote, never guessed, so the popup cannot congratulate someone on a
+ *                       plan nobody gave them.
  */
-export type AudienceTag = "new-account" | "returning-account" | "granted-free-500";
+export type AudienceTag = "new-account" | "returning-account" | "granted-free-500" | "granted-plan";
 
 /** An account younger than this is greeted as new. A day is generous on purpose — a signup that
  *  bounces off and comes back the same evening should still get the welcome, not "welcome back". */
@@ -181,6 +187,34 @@ const SHOCK_MEMES: PopupMediaPool = [
 
 export const POPUPS: PopupContent[] = [
   {
+    id: "plan-granted",
+    // The gift icon and green tint are right; the default chip text ("Free Credits") is not — this
+    // is a plan, and the credits are a consequence of it rather than the news.
+    category: "free-credits",
+    badgeLabel: "Plan Activated",
+    media: [{ src: "/popups/gift/phoebe-present.webp", alt: "Phoebe from Friends presenting a huge wrapped gift, delighted" }],
+    headerAccent: "{plan},",
+    header: "on the house.",
+    subheader: "Mantis has activated your {plan} plan — free, nothing to pay. Your credits are already in the account.",
+    cta: { label: "Start finding leads", href: "/home" },
+    ps: "🎁 Granted by the Mantis team. No card, no renewal, no catch.",
+    // Gated on plan_source, not on a date — the grant row is the only thing that can produce this
+    // tag, so the popup cannot congratulate anyone on a plan nobody gave them.
+    rules: { frequency: "once", requires: "granted-plan" },
+  },
+  {
+    id: "free-credits-500-2026-09",
+    category: "free-credits",
+    media: SHOCK_MEMES,
+    headerAccent: "500 credits,",
+    header: "on us.",
+    subheader: "Someone at Mantis HQ pressed the wrong button. You now have 500 free credits. They're yours.",
+    cta: { label: "Use 500 Credits", href: "/home" },
+    ps: "😎 Don't waste them. Or do. We're not your manager.",
+    // Gated on the grant actually existing, not on a date — see AudienceTag.
+    rules: { frequency: "once", requires: "granted-free-500" },
+  },
+  {
     id: "welcome-first-login",
     category: "welcome",
     badgeLabel: "Welcome to Mantis",
@@ -190,7 +224,7 @@ export const POPUPS: PopupContent[] = [
     subheader: "You're now part of a community that helps businesses get discovered and grow. Let's do big things together.",
     cta: { label: "Let's Get Started", href: "/home" },
     ps: "🎉 Great things start here. You're in the right place. 🚀",
-    rules: { frequency: "once", requires: "new-account" },
+    rules: { frequency: "daily", requires: "new-account" },
   },
   {
     id: "welcome-back",
@@ -204,19 +238,7 @@ export const POPUPS: PopupContent[] = [
     ps: "😎 Missed you. Let's find some amazing leads today.",
     // A brand-new account gets the first-login welcome instead, never both, and this greeting
     // returns once per session rather than on every navigation.
-    rules: { frequency: "session", requires: "returning-account" },
-  },
-  {
-    id: "free-credits-500-2026-09",
-    category: "free-credits",
-    media: SHOCK_MEMES,
-    headerAccent: "500 credits,",
-    header: "on us.",
-    subheader: "Someone at Mantis HQ pressed the wrong button. You now have 500 free credits. They're yours.",
-    cta: { label: "Use 500 Credits", href: "/home" },
-    ps: "😎 Don't waste them. Or do. We're not your manager.",
-    // Gated on the grant actually existing, not on a date — see AudienceTag.
-    rules: { frequency: "once", requires: "granted-free-500" },
+    rules: { frequency: "daily", requires: "returning-account" },
   },
 ];
 

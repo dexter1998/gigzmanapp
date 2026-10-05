@@ -27,7 +27,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               WHERE l.user_email = p.email
                 AND l.reason = ${FREE_500_GRANT_REASON}
                 AND l.ref = ${FREE_500_GRANT_REF_PREFIX} || p.email
-           ) AS granted_free_500
+           ) AS granted_free_500,
+           -- Read off the row the grant wrote, never inferred: the popup congratulates someone on a
+           -- comped plan only if an admin actually comped it.
+           p.plan_source = 'granted' AS plan_granted,
+           p.plan
       FROM user_profiles p
      WHERE p.email = ${session.user.email}
   `;
@@ -36,7 +40,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const audience: AudienceTag[] = [
     profile.is_new_account ? "new-account" : "returning-account",
     ...(profile.granted_free_500 ? (["granted-free-500"] as const) : []),
+    ...(profile.plan_granted ? (["granted-plan"] as const) : []),
   ];
+
+  // Copy refers to the plan by name, so the popup reads "Starter, on the house" rather than a
+  // generic line — one POPUPS entry covering every plan instead of one entry per plan.
+  const PLAN_LABEL: Record<string, string> = { starter: "Starter", pro: "Pro", business: "Business", free: "Free" };
+  const planName = PLAN_LABEL[String(profile.plan ?? "")] ?? "Your plan";
 
   return (
     // `mantis-app` is what scopes the dashboard token layer in app/globals.css. The marketing
@@ -45,7 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} />
       <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
       <GeoBeacon />
-      <PopupHost audience={audience} />
+      <PopupHost audience={audience} vars={{ plan: planName }} />
       <SticklyScript />
     </div>
   );

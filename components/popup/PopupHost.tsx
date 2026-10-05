@@ -20,6 +20,7 @@ import { useMounted } from "./useMounted";
  * No queue state of its own; the eligibility filter already is the queue.
  */
 const SEEN_PREFIX = "mantis.popup.seen.";
+const DAY_PREFIX = "mantis.popup.day.";
 
 /** Seen-ever, across sessions. Also what `rules.after` reads, which is why it is recorded for
  *  every frequency — a "session" popup still has to leave a permanent trace that it happened. */
@@ -46,8 +47,24 @@ function markSeen(id: string) {
   try {
     window.localStorage.setItem(SEEN_PREFIX + id, "1");
     window.sessionStorage.setItem(SEEN_PREFIX + id, "1");
+    window.localStorage.setItem(DAY_PREFIX + id, today());
   } catch {
     /* an unwritable store is not worth breaking the close button over */
+  }
+}
+
+/** Local calendar day, not 24h since last seen — "once a day" should mean what a person means by
+ *  it, so a greeting at 11pm does not block the next morning's. */
+function today(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function hasSeenToday(id: string): boolean {
+  try {
+    return window.localStorage.getItem(DAY_PREFIX + id) === today();
+  } catch {
+    return false;
   }
 }
 
@@ -55,10 +72,23 @@ function markSeen(id: string) {
 function isSatisfied(id: string, frequency: PopupFrequency): boolean {
   if (frequency === "always") return false;
   if (frequency === "session") return hasSeenThisSession(id);
+  if (frequency === "daily") return hasSeenToday(id);
   return hasSeen(id);
 }
 
-export function PopupHost({ audience }: { audience: AudienceTag[] }) {
+/**
+ * Server-computed values a popup's copy can refer to, as {name}.
+ *
+ * POPUPS stays the single place a campaign is defined — the alternative was one entry per plan
+ * ("granted-starter", "granted-pro", ...), which is four copies of the same popup drifting apart
+ * the first time someone edits one of them.
+ */
+function fill(text: string | undefined, vars: Record<string, string>): string | undefined {
+  if (!text) return text;
+  return text.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m);
+}
+
+export function PopupHost({ audience, vars = {} }: { audience: AudienceTag[]; vars?: Record<string, string> }) {
   const pathname = usePathname();
   const mounted = useMounted();
   // Closed this session: covers the private-mode case where nothing can be persisted, and stops a
@@ -83,5 +113,14 @@ export function PopupHost({ audience }: { audience: AudienceTag[] }) {
   }, [active]);
 
   if (!active) return null;
-  return <PopupModal popup={active} onClose={close} />;
+  // Interpolated at the last moment so POPUPS itself stays a plain, readable list of copy.
+  const filled = {
+    ...active,
+    headerAccent: fill(active.headerAccent, vars),
+    header: fill(active.header, vars) ?? active.header,
+    subheader: fill(active.subheader, vars) ?? active.subheader,
+    ps: fill(active.ps, vars),
+    cta: { ...active.cta, label: fill(active.cta.label, vars) ?? active.cta.label },
+  };
+  return <PopupModal popup={filled} onClose={close} />;
 }
