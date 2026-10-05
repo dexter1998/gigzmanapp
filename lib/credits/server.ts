@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
-import { ALLOWANCE, CREDIT_COST, type CreditOperation } from "@/lib/credits/pricing";
+import { ALLOWANCE, CREDIT_COST, packById, type CreditOperation } from "@/lib/credits/pricing";
+import { sendPlanActivated } from "@/lib/email/plan-activated";
 
 /**
  * The half of the credit system that touches the database.
@@ -115,6 +116,41 @@ export async function grantCredits(userEmail: string, credits: number, ref: stri
     SET credits = credits + ${credits}, credits_limit = GREATEST(credits_limit, credits + ${credits}), updated_at = now()
     WHERE email = ${userEmail}
   `;
+
+  // Announced here rather than in the five routes that take a payment (razorpay verify and
+  // webhook, cashfree webhook and status, stickly), because this is the one line all of them
+  // pass through and the only one that knows the grant actually applied — the early return above
+  // on a replayed webhook is what stops a second email.
+  //
+  // Only for a purchase: a plan_grant is announced by grantPlan(), which knows the plan and the
+  // duration. Sending from both would send twice.
+  if (reason === "purchase") {
+    try {
+      const [payment] = await sql`SELECT pack_id FROM payments WHERE order_id = ${ref}`;
+      const label = payment ? packById(payment.pack_id as string)?.label : undefined;
+      const [profile] = await sql`SELECT name FROM user_profiles WHERE email = ${userEmail}`;
+      // No recognised pack means no honest name for the plan, and "your Credits plan is active"
+      // is worse than silence. The credits are granted either way.
+      if (label) {
+        await sendPlanActivated({
+          email: userEmail,
+          name: (profile?.name as string | null) ?? null,
+          plan: label,
+          credits,
+          grantId: ref,
+          // A pack is not a subscription: the credits do not reset next month, so the mail must
+          // not say they do.
+          expiresAt: null,
+        });
+      } else {
+        console.warn("no pack for purchase ref, skipping activation email", ref);
+      }
+    } catch (err) {
+      // The money is taken and the credits are in. Failing here would turn a successful payment
+      // into an error response and invite the buyer to pay again.
+      console.error("plan activation email failed", userEmail, ref, err);
+    }
+  }
 
   return true;
 }
