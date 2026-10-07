@@ -31,7 +31,16 @@ const CONCURRENCY = 10;
 const INTERVAL_MS = 250;
 const CHECK_EVERY = 1000;
 const STOP_COMPLAINT_RATE = 0.0025;
-const STOP_BOUNCE_RATE = 0.04;
+/**
+ * Set above AWS's 5% review line on purpose.
+ *
+ * The purchased lists sent on 2026-10-07 are 44% rediffmail / yahoo.co.in and similar, so heavy
+ * validation suppression is expected and has been accepted; suppressions count toward this number
+ * exactly like hard bounces. What the stop still protects is the account: AWS pauses sending at
+ * 10%, and a pause takes sign-in codes and password resets down along with the campaign. This
+ * account has been suspended once already, on 2026-09-20, at 45.7%.
+ */
+const STOP_BOUNCE_RATE = 0.07;
 
 /** The buckets this run covers, and nothing else: the three groups that were counted and agreed. */
 const PERSONAL = ["personal_domain", "personal_freemail", "person_own_domain", "founder_named", "person_named_offdomain"];
@@ -64,6 +73,10 @@ async function main() {
   // Auto Validation at send time) and generic_t2 8%, against 74.9% for the person buckets. There
   // is no point offering those two again.
   const personalOnly = process.argv.includes("--personal-only");
+  // Selects by campaign_recipients.source instead of the registry bucket, for lists that were
+  // loaded from a file and so have no row in scrape_emails.
+  const si = process.argv.indexOf("--source");
+  const sourcePrefix = si > -1 ? process.argv[si + 1] : null;
 
   const [campaign] = await sql`
     SELECT sender, stream, config_set_unverified, default_tz FROM campaigns WHERE id = ${CAMPAIGN_ID}`;
@@ -72,19 +85,31 @@ async function main() {
      WHERE campaign_id = ${CAMPAIGN_ID} ORDER BY step_order LIMIT 1`;
 
   // Ordered personal -> tier 1 -> tier 2, which is the order these were counted in and agreed.
-  const rows = (await sql`
-    SELECT r.id, r.email, r.values, r.send_tz,
-           CASE WHEN se.bucket LIKE 'generic_t1%' THEN 2
-                WHEN se.bucket LIKE 'generic_t2%' THEN 3 ELSE 1 END grp
-      FROM campaign_recipients r
-      JOIN scrape_emails se ON se.email = r.email
-     WHERE r.campaign_id = ${CAMPAIGN_ID}
-       AND r.touch_count = 0 AND r.do_not_send = false
-       AND ',' || se.campaigns || ',' LIKE '%,mantis-agency,%'
-       AND (se.bucket = ANY(${PERSONAL})
-            OR (NOT ${personalOnly} AND (se.bucket LIKE 'generic_t1%' OR se.bucket LIKE 'generic_t2%')))
-     ORDER BY grp ASC, r.imported_at ASC
-     LIMIT ${limit}`) as unknown as
+  // Two selections, because the two pools are identified differently. Registry contacts are
+  // graded in scrape_emails and chosen by bucket; purchased-list contacts are not in the registry
+  // at all, so their only identity is campaign_recipients.source.
+  const rows = (sourcePrefix
+    ? await sql`
+        SELECT r.id, r.email, r.values, r.send_tz, 1 AS grp
+          FROM campaign_recipients r
+         WHERE r.campaign_id = ${CAMPAIGN_ID}
+           AND r.touch_count = 0 AND r.do_not_send = false
+           AND r.source LIKE ${sourcePrefix + "%"}
+         ORDER BY r.imported_at ASC
+         LIMIT ${limit}`
+    : await sql`
+        SELECT r.id, r.email, r.values, r.send_tz,
+               CASE WHEN se.bucket LIKE 'generic_t1%' THEN 2
+                    WHEN se.bucket LIKE 'generic_t2%' THEN 3 ELSE 1 END grp
+          FROM campaign_recipients r
+          JOIN scrape_emails se ON se.email = r.email
+         WHERE r.campaign_id = ${CAMPAIGN_ID}
+           AND r.touch_count = 0 AND r.do_not_send = false
+           AND ',' || se.campaigns || ',' LIKE '%,mantis-agency,%'
+           AND (se.bucket = ANY(${PERSONAL})
+                OR (NOT ${personalOnly} AND (se.bucket LIKE 'generic_t1%' OR se.bucket LIKE 'generic_t2%')))
+         ORDER BY grp ASC, r.imported_at ASC
+         LIMIT ${limit}`) as unknown as
     { id: string; email: string; values: Record<string, string>; send_tz: string | null; grp: number }[];
 
   const byGrp = rows.reduce<Record<number, number>>((a, r) => ({ ...a, [r.grp]: (a[r.grp] ?? 0) + 1 }), {});
