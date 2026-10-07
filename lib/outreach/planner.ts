@@ -340,6 +340,50 @@ export async function planCampaign(campaignId: string, capacity: number): Promis
   };
 }
 
+/**
+ * How far behind the follow-up schedule this campaign is, right now.
+ *
+ * Deliberately independent of whether the tick goes on to send anything, because the case worth
+ * catching is the tick that sends nothing: the planner already orders due follow-ups by
+ * next_due_at ASC, so a missed touch is picked up first the moment the dispatcher runs again, and
+ * the failure mode is not bad ordering but a dispatcher that never runs. From the evening of
+ * 2026-10-06 the complaint gate blocked 48 consecutive ticks and 19,008 recipients aged 17-19
+ * hours past their touch-4 window; every one of those ticks recorded itself as fine.
+ *
+ * Cheap enough to run on every tick, including blocked ones — it is two aggregates over the
+ * partial index added in db/migrations/2026-10-07-outreach-backlog.sql.
+ */
+export async function measureBacklog(campaignId: string, maxTouches: number): Promise<{
+  overdueCount: number;
+  oldestDueAt: Date | null;
+  lagHours: number | null;
+}> {
+  const rows = await sql`
+    SELECT count(*)::int AS overdue_count, min(next_due_at) AS oldest_due_at
+    FROM campaign_recipients
+    WHERE campaign_id = ${campaignId}
+      AND do_not_send = false
+      AND state NOT IN ('suppressed', 'converted', 'stalled')
+      AND touch_count > 0
+      AND touch_count < ${maxTouches}
+      AND next_due_at IS NOT NULL
+      AND next_due_at <= now()
+  `;
+  const r = rows[0] as { overdue_count: number; oldest_due_at: Date | null };
+  const lagHours = r.oldest_due_at
+    ? (Date.now() - new Date(r.oldest_due_at).getTime()) / 3_600_000
+    : null;
+  return { overdueCount: r.overdue_count, oldestDueAt: r.oldest_due_at, lagHours };
+}
+
+/**
+ * The lag at which a blocked dispatcher has stopped being a pause and started losing the
+ * sequence. A touch is scheduled for a working-hours window in the recipient's own timezone, so
+ * once it is a day late it has missed that window entirely and lands at a different local time
+ * than the sequence intends.
+ */
+export const BACKLOG_ALERT_HOURS = 12;
+
 /** Marks a recipient as finished with this sequence, and when it may re-enter with a new angle. */
 export async function stallRecipients(ids: string[], reason: string, cooldownDays: number): Promise<void> {
   if (ids.length === 0) return;

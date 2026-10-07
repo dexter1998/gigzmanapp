@@ -1071,6 +1071,17 @@ CREATE TABLE IF NOT EXISTS outreach_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_outreach_runs_time ON outreach_runs(started_at DESC);
 
+-- How far behind the follow-up schedule each tick found itself. Recorded even when a gate blocks
+-- the tick, because that is the case worth catching: the complaint gate blocked 48 consecutive
+-- ticks from 2026-10-06 evening, each writing sent=0, while 19,008 recipients aged 17-19 hours
+-- past their touch-4 window. A blocked tick and an idle tick were indistinguishable.
+ALTER TABLE outreach_runs ADD COLUMN IF NOT EXISTS overdue_count INT;
+ALTER TABLE outreach_runs ADD COLUMN IF NOT EXISTS oldest_due_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_campaign_recipients_due
+  ON campaign_recipients (campaign_id, next_due_at)
+  WHERE do_not_send = false AND next_due_at IS NOT NULL;
+
 -- Per-send step record, so the journey view can show which touch a message was without
 -- re-deriving it from step_key string matching.
 ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS touch_no INT;
@@ -1095,4 +1106,95 @@ CREATE TABLE IF NOT EXISTS stickly_users (
   stickly_id TEXT PRIMARY KEY,
   user_email TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- Scraping registry (2026-10-06)
+--
+-- One place where every scraping run registers what it found, so the same domain is never paid
+-- for twice. The need was measured: the Stickly SaaS campaign crawled 452,463 domains and the
+-- Mantis agency campaign 164,437 with no shared memory between them, and 21,150 domains ended up
+-- crawled by both. Worse, a domain found dead in one campaign was crawled again by the next --
+-- about 8 page fetches plus a timeout wait, every time.
+--
+-- Written to the same database the admin already reads so the Scraping page needs no new
+-- connection, and the scraper box can write here directly.
+-- ---------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS scrape_domains (
+  domain        text PRIMARY KEY,
+  first_seen    timestamptz NOT NULL DEFAULT now(),
+  last_seen     timestamptz NOT NULL DEFAULT now(),
+  first_source  text,                 -- gosom / directory / apollo / producthunt / yc / vc / ig
+  campaigns     text,                 -- comma list: a domain can belong to several campaigns
+  company       text,
+  category      text,
+  country       text,
+  city          text,
+  website       text,
+  status        text,                 -- unknown | alive | unreachable | no_mx | parked
+  mx_ok         boolean,
+  enriched_at   timestamptz,
+  pages_fetched int,
+  email_count   int NOT NULL DEFAULT 0,
+  -- set once a crawl proves the domain is not worth another visit, with the reason kept so the
+  -- decision stays auditable rather than becoming folklore
+  do_not_crawl  boolean NOT NULL DEFAULT false,
+  dnc_reason    text
+);
+CREATE INDEX IF NOT EXISTS idx_scrape_domains_status   ON scrape_domains(status);
+CREATE INDEX IF NOT EXISTS idx_scrape_domains_enriched ON scrape_domains(enriched_at);
+CREATE INDEX IF NOT EXISTS idx_scrape_domains_dnc      ON scrape_domains(do_not_crawl);
+CREATE INDEX IF NOT EXISTS idx_scrape_domains_seen     ON scrape_domains(first_seen);
+
+CREATE TABLE IF NOT EXISTS scrape_emails (
+  email       text PRIMARY KEY,
+  domain      text NOT NULL,
+  bucket      text,                   -- founder_named / person_own_domain / generic_t1 ...
+  tier        int,                    -- 1/2/3 for the shared-inbox priority tiers
+  campaigns   text,
+  source      text,
+  first_seen  timestamptz NOT NULL DEFAULT now(),
+  last_seen   timestamptz NOT NULL DEFAULT now(),
+  mx_ok       boolean,
+  leader      text,
+  leader_role text,
+  -- send state lives here so a second campaign cannot mail someone the first one already bounced
+  sent_at     timestamptz,
+  bounced     boolean NOT NULL DEFAULT false,
+  suppressed  boolean NOT NULL DEFAULT false,
+  supp_reason text
+);
+CREATE INDEX IF NOT EXISTS idx_scrape_emails_domain ON scrape_emails(domain);
+CREATE INDEX IF NOT EXISTS idx_scrape_emails_bucket ON scrape_emails(bucket);
+CREATE INDEX IF NOT EXISTS idx_scrape_emails_seen   ON scrape_emails(first_seen);
+
+-- Every run of every scraper, so throughput and yield are answerable by query afterwards instead
+-- of being reconstructed from log tails.
+CREATE TABLE IF NOT EXISTS scrape_runs (
+  id           bigserial PRIMARY KEY,
+  tool         text NOT NULL,         -- gosom / dir-harvest / enrich2 / apollo-extract / ig-profiles
+  campaign     text,
+  started_at   timestamptz NOT NULL DEFAULT now(),
+  finished_at  timestamptz,
+  input_rows   int,
+  new_domains  int,
+  new_emails   int,
+  skipped      int,                   -- how much the registry saved: domains it told us to skip
+  workers      int,
+  note         text
+);
+CREATE INDEX IF NOT EXISTS idx_scrape_runs_started ON scrape_runs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scrape_runs_tool    ON scrape_runs(tool);
+
+-- gosom has no query-level resume: restart a keyword and it re-runs all its places from the top.
+-- Nine keywords were restarted on 2026-10-06 and each re-crawled ground it had already covered.
+CREATE TABLE IF NOT EXISTS scrape_queries (
+  tool      text NOT NULL,
+  keyword   text NOT NULL,
+  place     text NOT NULL,
+  done_at   timestamptz NOT NULL DEFAULT now(),
+  rows_got  int,
+  domains   int,
+  PRIMARY KEY (tool, keyword, place)
 );

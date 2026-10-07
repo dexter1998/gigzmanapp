@@ -4,7 +4,7 @@ import { sendBulkEmail, fillTemplate } from "@/lib/email/send-bulk";
 import { recordCronRun } from "@/lib/cron-runs";
 import { reduceOutreachEvents, syncConversions } from "@/lib/outreach/events";
 import { checkGates } from "@/lib/outreach/gates";
-import { planCampaign, recordTouch, stallRecipients, recordSendFailure, isPermanentSendFailure, retireRecipient } from "@/lib/outreach/planner";
+import { planCampaign, recordTouch, stallRecipients, recordSendFailure, isPermanentSendFailure, retireRecipient, measureBacklog, BACKLOG_ALERT_HOURS } from "@/lib/outreach/planner";
 import { computeCapacity } from "@/lib/outreach/pacing";
 
 /**
@@ -48,6 +48,7 @@ type CampaignRow = {
   daily_target: number | null;
   send_window_start_hour: number;
   send_window_end_hour: number;
+  max_touches: number;
 };
 
 function sleep(ms: number) {
@@ -125,7 +126,8 @@ export async function GET(req: NextRequest) {
   const converted = await syncConversions();
 
   const campaignRows = await sql`
-    SELECT id, cooldown_days, daily_target, send_window_start_hour, send_window_end_hour FROM campaigns
+    SELECT id, cooldown_days, daily_target, send_window_start_hour, send_window_end_hour,
+           max_touches FROM campaigns
     WHERE status = 'active' AND config_set_unverified IS NOT NULL
       ${onlyCampaign ? sql`AND id = ${onlyCampaign}` : sql``}
     ORDER BY created_at ASC
@@ -159,17 +161,31 @@ export async function GET(req: NextRequest) {
     // 3 — gates. Checked per campaign, because a campaign's own list quality can be bad while the
     // account is still healthy, and that is precisely the case worth catching early.
     const gate = await checkGates(campaignId);
+    // Measured before the gate is applied and recorded whichever way the gate goes, because the
+    // tick that needs this number is the blocked one. A block is only a pause while the backlog
+    // stays small; past that it is lost sequence, and nothing used to say which had happened.
+    const backlog = await measureBacklog(campaignId, row.max_touches);
     const runRows = await sql`
-      INSERT INTO outreach_runs (campaign_id, blocked_by, bounce_rate, complaint_rate, quota_headroom, notes)
+      INSERT INTO outreach_runs (campaign_id, blocked_by, bounce_rate, complaint_rate, quota_headroom,
+                                 overdue_count, oldest_due_at, notes)
       VALUES (${campaignId}, ${gate.blockedBy}, ${gate.metrics.bounceRate}, ${gate.metrics.complaintRate},
-              ${gate.metrics.quotaHeadroom}, ${sql.json({ reason: gate.reason, events, converted, dryRun })}::jsonb)
+              ${gate.metrics.quotaHeadroom}, ${backlog.overdueCount}, ${backlog.oldestDueAt},
+              ${sql.json({ reason: gate.reason, events, converted, dryRun })}::jsonb)
       RETURNING id
     `;
     const runId = (runRows[0] as { id: string }).id;
 
+    const backlogAlert = backlog.lagHours !== null && backlog.lagHours >= BACKLOG_ALERT_HOURS
+      ? `backlog ${backlog.overdueCount} recipients, oldest ${backlog.lagHours.toFixed(1)}h late`
+      : null;
+    if (backlogAlert) console.error(`[outreach] ${campaignId}: ${backlogAlert}`);
+
     if (!gate.ok) {
       await sql`UPDATE outreach_runs SET finished_at = now() WHERE id = ${runId}`;
-      perCampaign.push({ campaignId, blocked: gate.blockedBy, reason: gate.reason });
+      perCampaign.push({
+        campaignId, blocked: gate.blockedBy, reason: gate.reason,
+        overdue: backlog.overdueCount, lagHours: backlog.lagHours, backlogAlert,
+      });
       continue;
     }
 
