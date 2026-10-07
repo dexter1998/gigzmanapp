@@ -17,6 +17,11 @@
 import { useProdDb } from "../lib/db-prod";
 import { resolveTz } from "../lib/outreach/send-time";
 
+// Regex backslashes written inside a sql`` template literal must be doubled. JavaScript drops
+// the backslash from an unrecognised escape, so '[^@\s]' reaches Postgres as '[^@s]' -- "not @
+// and not the letter s". That silently rejected every address containing an s: 61,925 of 111,755
+// valid candidates on 2026-10-07.
+
 type Sql = (typeof import("../lib/db"))["sql"];
 let sql: Sql;
 
@@ -80,7 +85,7 @@ async function main() {
          AND se.bucket = ANY(${PERSONAL})
          AND NOT se.suppressed AND NOT se.bounced AND se.mx_ok IS NOT FALSE
          AND s.e IS NULL AND t.d IS NULL AND i.e IS NULL AND u.e IS NULL
-         AND lower(se.email) ~ '^[^@\s]+@[^@\s.]+\.[^@\s]+$'),
+         AND lower(se.email) ~ '^[^@\\s]+@[^@\\s.]+\\.[^@\\s]+$'),
     f AS (
       SELECT e.*, (rdom = ANY(${FREEMAIL})) is_freemail
         FROM e
@@ -88,12 +93,12 @@ async function main() {
          -- DACH is excluded by default (UWG §7) on the RECIPIENT's domain, not just the
          -- registry domain: a .eu business with a .de mailbox is still a German send.
          -- pec/legalmail are Italian certified legal mail.
-         AND rdom !~ '\.(de|at|ch)$'
+         AND rdom !~ '\\.(de|at|ch)$'
          AND rdom NOT IN ('pec.it','legalmail.it','postacert.it','pec.aruba.it','legalmail.eu')
-         AND rdom !~ '\.(pdf|png|jpg|jpeg|webp|doc|docx|zip|svg|gif)$'
-         AND rdom !~ '(gmail\.(con|co|coms|cm|om)|gamil\.com|gmial\.com|gmai\.com)$'
+         AND rdom !~ '\\.(pdf|png|jpg|jpeg|webp|doc|docx|zip|svg|gif)$'
+         AND rdom !~ '(gmail\\.(con|co|coms|cm|om)|gamil\\.com|gmial\\.com|gmai\\.com)$'
          AND rdom !~ '^(dmarc|rua|ruf|reports?|inbox)[.-]' AND rdom !~ '(dmarc|report-uri)'
-         AND rdom !~ '\.(local|localhost|invalid|example|test)$'),
+         AND rdom !~ '\\.(local|localhost|invalid|example|test)$'),
     -- One registry domain contributing many personal mailboxes is a scraped listing, not a
     -- contact list: opseazy.com alone yielded 13,277 jobseeker gmails from a resume dump.
     clusters AS (SELECT domain FROM f WHERE is_freemail GROUP BY domain HAVING count(*) >= 20)
