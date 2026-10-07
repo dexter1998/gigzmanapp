@@ -44,16 +44,24 @@ export const LIMITS = {
   /**
    * Stop, on AWS's own Reputation.ComplaintRate. AWS reviews at 0.001 and pauses at 0.005.
    *
-   * 0.0008 deadlocked the campaign on 2026-10-04. The metric is complaints divided by sends, so
-   * stopping freezes it: with no sends the denominator cannot grow, and it sat at exactly
-   * 0.0800% for ten hours — thirty consecutive ticks blocked, zero sends, zero new complaints.
-   * A stop keyed on a ratio that only improves by sending cannot release itself.
+   * The same deadlock has now happened three times, at 0.0008 (2026-10-04), 0.0009 (2026-10-06)
+   * and again on 2026-10-07. The metric is complaints divided by sends over a window far longer
+   * than a day, so stopping freezes it: on 2026-10-07 it held 0.0010845986984815619 — identical
+   * to sixteen decimal places — across fourteen hours and 48 blocked ticks, while 19,008
+   * recipients aged past their scheduled touch. A stop keyed on a ratio that only improves by
+   * sending cannot release itself, and each time it has been "fixed" by nudging the number up a
+   * notch, which buys a day.
    *
-   * 0.0009 is still below AWS's 0.001 review line and 5.5x below the 0.005 pause line, and it is
-   * paired with removing the cause rather than only raising the number: npm_webdev, which drew
-   * 5.41 complaints per 10k against 0 for agency_webdev and freelancer_webdev, is paused.
+   * 0.0025 is set deliberately above AWS's 0.001 review line and still 2x below the 0.005 pause
+   * line. That is a real trade: above the review line AWS may look at the account. The case for
+   * it is that what AWS would find is good — 7 complaints against 60,860 sends in the 24h to
+   * 2026-10-07, 0.0115% — because this metric is a long trailing average dominated by older
+   * volume, not a description of what is being sent now.
+   *
+   * The structural half of the fix is below: warn states and campaign-local bounce now throttle
+   * NEW contacts only, never follow-ups.
    */
-  reputationComplaintStop: 0.0009,
+  reputationComplaintStop: 0.0025,
   /**
    * The day's bounce allowance, as a share of the daily sending quota.
    *
@@ -120,8 +128,18 @@ export type GateVerdict = {
   ok: boolean;
   blockedBy: string | null;
   reason: string | null;
-  /** Multiplier applied to planned capacity: 1 normally, 0.5 in a warn state, 0 when blocked. */
+  /** Multiplier applied to planned capacity: 1 normally, 0 when blocked. */
   capacityFactor: number;
+  /**
+   * Extra multiplier applied to NEW contacts only, on top of capacityFactor.
+   *
+   * Every rate this module watches is driven by first contacts. A follow-up goes to an address
+   * that has already accepted mail from us, so it cannot produce the hard bounce the warn is
+   * reacting to; throttling follow-ups to fix a bounce rate only ages the sequence while doing
+   * nothing to the number. So a warn now halves (or zeroes) new contacts and lets the follow-up
+   * backlog drain at full speed.
+   */
+  newCapacityFactor: number;
   metrics: {
     sendingEnabled: boolean;
     max24Hour: number;
@@ -148,7 +166,26 @@ export type GateVerdict = {
  * failure, and the caller refuses to raise capacity on a metric it could not read rather than
  * assuming the best.
  */
+/**
+ * How long a reputation reading is reused.
+ *
+ * AWS publishes these as a long trailing average and they move in hourly steps at best — on
+ * 2026-10-07 the complaint figure was byte-identical for fourteen consecutive hours. Reading it
+ * every 15-minute tick spends four CloudWatch calls an hour to watch a number that cannot have
+ * changed, and makes every tick's decision depend on a network call that can fail.
+ */
+const REPUTATION_TTL_MS = 60 * 60 * 1000;
+let reputationCache: { at: number; bounce: number | null; complaint: number | null } | null = null;
+
+/** Clears the hourly reputation cache. For tests, and for a manual run that must not reuse it. */
+export function clearReputationCache(): void {
+  reputationCache = null;
+}
+
 async function reputationRates(): Promise<{ bounce: number | null; complaint: number | null }> {
+  if (reputationCache && Date.now() - reputationCache.at < REPUTATION_TTL_MS) {
+    return { bounce: reputationCache.bounce, complaint: reputationCache.complaint };
+  }
   const now = new Date();
   const read = async (metric: string): Promise<number | null> => {
     try {
@@ -172,6 +209,11 @@ async function reputationRates(): Promise<{ bounce: number | null; complaint: nu
     read("Reputation.BounceRate"),
     read("Reputation.ComplaintRate"),
   ]);
+  // A failed read is not cached: an hour of assuming the best on a metric we could not fetch is
+  // exactly the hour in which something goes wrong unnoticed.
+  if (bounce !== null || complaint !== null) {
+    reputationCache = { at: Date.now(), bounce, complaint };
+  }
   return { bounce, complaint };
 }
 
@@ -254,7 +296,7 @@ async function selfBounceRate(campaignId: string): Promise<{ rate: number | null
 
 export async function checkGates(campaignId: string): Promise<GateVerdict> {
   const blocked = (blockedBy: string, reason: string, m: GateVerdict["metrics"]): GateVerdict => ({
-    ok: false, blockedBy, reason, capacityFactor: 0, metrics: m,
+    ok: false, blockedBy, reason, capacityFactor: 0, newCapacityFactor: 0, metrics: m,
   });
 
   const [quota, sendingEnabledRes, rates, self, rep, todaysBounces] = await Promise.all([
@@ -307,49 +349,53 @@ export async function checkGates(campaignId: string): Promise<GateVerdict> {
       `AWS Reputation.BounceRate ${(rep.bounce * 100).toFixed(3)}% >= ${(LIMITS.reputationBounceStop * 100).toFixed(3)}%`, metrics);
   }
 
-  // Gate 3b — the day's bounce allowance, in whole bounces rather than a ratio. Meaningful from
-  // the first send of the day, where a percentage is not.
-  if (metrics.bounceBudget > 0 && todaysBounces >= metrics.bounceBudget) {
-    return blocked("bounce_budget",
-      `${todaysBounces} hard bounces today, budget is ${metrics.bounceBudget} (${(LIMITS.dailyBouncePct * 100).toFixed(0)}% of a ${max24Hour.toLocaleString("en-IN")} quota)`, metrics);
-  }
-
-  // Gate 4 — this campaign's own record, as a hard stop only when it is unambiguously bad.
-  // Catches a bad list long before it moves the account-wide number, which is a trailing average
-  // over everything the account sends and so the last thing to react. The warn band below throttles
-  // well before this point.
-  if (self.rate !== null && self.rate >= LIMITS.selfBounceStop) {
-    return blocked("self_bounce_rate", `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d`, metrics);
-  }
+  // Gates 1-3 and 5 are the only ones that can stop a tick, and all four read AWS's own figures:
+  // sending-enabled, Reputation.ComplaintRate, Reputation.BounceRate and the send quota. Those
+  // are the numbers AWS reviews and suspends on.
+  //
+  // The two gates that used to stop here -- the day's bounce budget and this campaign's own
+  // 3-day bounce rate -- are computed by us from our own event stream, and both stopped
+  // everything including follow-ups. They now throttle new contacts instead, below. The risk
+  // they exist to catch is entirely in first contacts: a follow-up goes to an address that has
+  // already accepted mail, so it cannot contribute the hard bounce either number is made of.
 
   // Gate 5 — quota.
   if (quotaHeadroom <= 0) {
     return blocked("quota", `no headroom: ${sentLast24Hours}/${max24Hour} used, ${LIMITS.transactionalReserve} reserved for transactional`, metrics);
   }
 
-  // Warn states halve capacity rather than stopping. Sending less is itself a corrective action:
-  // the rates are ratios, so a smaller denominator with the same list makes things worse, but a
-  // smaller batch limits how much new damage one tick can do while the cause is investigated.
-  let capacityFactor = 1;
+  // Warn states throttle NEW contacts and leave follow-ups alone.
+  //
+  // Sending fewer first contacts is a real corrective action: it is where every one of these
+  // numbers comes from. Sending fewer follow-ups is not — it cannot change a bounce rate, because
+  // the addresses have already accepted mail, and it quietly costs the sequence. On 2026-10-06
+  // throttling both halved the whole tick over a bounce rate that first contacts had caused, and
+  // the follow-up backlog grew to 19,008.
+  let newCapacityFactor = 1;
   let reason: string | null = null;
-  if (self.rate !== null && self.rate >= LIMITS.selfBounceWarn) {
-    // Send less rather than stop. The list is worse than it should be, but AWS is not objecting,
-    // and a smaller batch limits how much new damage one tick can do while that remains true.
-    capacityFactor = 0.5;
-    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d — capacity halved`;
+  if (self.rate !== null && self.rate >= LIMITS.selfBounceStop) {
+    // Was a full stop. Unambiguously bad list quality, so stop feeding it new addresses — but the
+    // conversations already started are not the problem and keep running.
+    newCapacityFactor = 0;
+    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d — new contacts paused, follow-ups continue`;
+  } else if (metrics.bounceBudget > 0 && todaysBounces >= metrics.bounceBudget) {
+    newCapacityFactor = 0;
+    reason = `${todaysBounces} hard bounces today against a budget of ${metrics.bounceBudget} — new contacts paused, follow-ups continue`;
+  } else if (self.rate !== null && self.rate >= LIMITS.selfBounceWarn) {
+    newCapacityFactor = 0.5;
+    reason = `campaign bounce rate ${(self.rate * 100).toFixed(1)}% over ${self.sample} sends in ${LIMITS.selfBounceWindowDays}d — new contacts halved`;
   } else if (rates.complaintRate !== null && rates.complaintRate >= LIMITS.complaintWarn) {
-    capacityFactor = 0.5;
-    reason = `complaint rate ${(rates.complaintRate * 100).toFixed(3)}% in warn band — capacity halved`;
+    newCapacityFactor = 0.5;
+    reason = `complaint rate ${(rates.complaintRate * 100).toFixed(3)}% in warn band — new contacts halved`;
   } else if (rates.bounceRate !== null && rates.bounceRate >= LIMITS.bounceWarn) {
-    capacityFactor = 0.5;
-    reason = `bounce rate ${(rates.bounceRate * 100).toFixed(2)}% in warn band — capacity halved`;
+    newCapacityFactor = 0.5;
+    reason = `bounce rate ${(rates.bounceRate * 100).toFixed(2)}% in warn band — new contacts halved`;
   } else if (rates.bounceRate === null) {
-    // Unknown is not good news. Run, but do not run at full size on a metric we could not read.
-    // This is also the normal state when resuming after a quiet period: the window has too few
-    // attempts to mean anything, so the next tick builds the sample at half size.
-    capacityFactor = 0.5;
-    reason = `bounce rate unknown (${rates.attempts} attempts in 24h, need ${LIMITS.rateMinSample}) — capacity halved`;
+    // Unknown is not good news for a fresh list. Follow-ups are unaffected: they do not depend on
+    // a rate we could not read.
+    newCapacityFactor = 0.5;
+    reason = `bounce rate unknown (${rates.attempts} attempts in 24h, need ${LIMITS.rateMinSample}) — new contacts halved`;
   }
 
-  return { ok: true, blockedBy: null, reason, capacityFactor, metrics };
+  return { ok: true, blockedBy: null, reason, capacityFactor: 1, newCapacityFactor, metrics };
 }

@@ -187,7 +187,7 @@ export function allocate(
 }
 
 /** Everything the dispatcher needs for one campaign's tick. */
-export async function planCampaign(campaignId: string, capacity: number): Promise<{
+export async function planCampaign(campaignId: string, capacity: number, newCapacityFactor = 1): Promise<{
   sends: PlannedSend[];
   stalls: { id: string; reason: string }[];
   counts: { dueFollowups: number; availableNew: number; plannedFollowups: number; plannedNew: number };
@@ -266,6 +266,17 @@ export async function planCampaign(campaignId: string, capacity: number): Promis
     Number(campaign.new_ratio),
     Number(campaign.new_floor_ratio)
   );
+
+  // A warn state throttles new contacts only, so whatever they give up goes to the follow-up
+  // backlog rather than being left unused. Follow-ups cannot make a bounce or complaint rate
+  // worse -- the addresses have already accepted mail from us -- and they are the ones with a
+  // scheduled time to keep.
+  const newCap = Math.floor(effectiveCapacity * Math.max(0, Math.min(1, newCapacityFactor)));
+  if (split.newOnes > newCap) {
+    const freed = split.newOnes - newCap;
+    split.newOnes = newCap;
+    split.followups = Math.min(dueFollowupsRows.length, split.followups + freed);
+  }
 
   const chosen = [
     ...dueFollowupsRows.slice(0, split.followups).map((r) => ({ r, isNew: false })),
@@ -374,6 +385,51 @@ export async function measureBacklog(campaignId: string, maxTouches: number): Pr
     ? (Date.now() - new Date(r.oldest_due_at).getTime()) / 3_600_000
     : null;
   return { overdueCount: r.overdue_count, oldestDueAt: r.oldest_due_at, lagHours };
+}
+
+/**
+ * Puts stranded recipients back on the schedule, and returns how many it moved.
+ *
+ * The pipeline's contract is that every recipient is either in a terminal state -- converted,
+ * suppressed, stalled after its last touch, or retired -- or has a next_due_at that will bring it
+ * back. A row that is mid-journey, live, and has no next_due_at satisfies neither, and no query
+ * in this module can see it: the follow-up pool requires `next_due_at IS NOT NULL` and the
+ * new-contact pool requires `touch_count = 0`. It sits in the funnel as active forever.
+ *
+ * 1,126 rows were in that state on 2026-10-07. They are reachable only by a query written to
+ * look for them, which is why this runs on every tick rather than waiting to be noticed. An
+ * untouched lead with a NULL next_due_at is NOT stranded -- that is the normal case for the
+ * new-contact pool, which matches `next_due_at IS NULL OR next_due_at <= now()`.
+ *
+ * Rescheduling rather than stalling, because nothing about these rows says the recipient is
+ * finished; the row lost its schedule, usually to a send path that wrote a touch without one.
+ */
+export async function reconcileSchedules(
+  campaignId: string, maxTouches: number, defaultTz: string, limit = 5000
+): Promise<number> {
+  const rows = (await sql`
+    SELECT id, email, send_tz
+    FROM campaign_recipients
+    WHERE campaign_id = ${campaignId}
+      AND do_not_send = false
+      AND state NOT IN ('suppressed', 'converted', 'stalled')
+      AND touch_count > 0
+      AND touch_count < ${maxTouches}
+      AND next_due_at IS NULL
+    LIMIT ${limit}
+  `) as unknown as { id: string; email: string; send_tz: string | null }[];
+  if (rows.length === 0) return 0;
+
+  // Through nextLocalSlot, not now(): a recipient recovered at 09:00 IST would otherwise be due
+  // immediately, which for someone in California is the middle of the night. The campaign's send
+  // window is one range checked once per tick, so it cannot do this per recipient.
+  for (const r of rows) {
+    const due = nextLocalSlot({
+      tz: r.send_tz ?? defaultTz, minGapMinutes: 0, seed: r.email,
+    });
+    await sql`UPDATE campaign_recipients SET next_due_at = ${due} WHERE id = ${r.id}`;
+  }
+  return rows.length;
 }
 
 /**

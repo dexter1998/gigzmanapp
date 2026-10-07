@@ -62,11 +62,15 @@ async function main() {
     // The funnel's terminal states. The pipeline's job is to move everyone to one of them, so a
     // large 'active' population that is not due anything is the shape of a leak.
     console.log("states:");
+    // A NULL next_due_at is only a defect mid-journey. For an untouched lead it is the normal
+    // state -- the new-contact pool matches on `next_due_at IS NULL OR next_due_at <= now()` --
+    // so counting those as unscheduled reported 7,790 false positives on the first run.
     console.table(await sql`
       SELECT state, count(*)::int n,
              count(*) FILTER (WHERE do_not_send)::int retired,
              count(*) FILTER (WHERE next_due_at IS NULL AND NOT do_not_send
-                               AND state NOT IN ('suppressed','converted','stalled'))::int live_but_unscheduled
+                               AND touch_count > 0 AND touch_count < ${c.max_touches}
+                               AND state NOT IN ('suppressed','converted','stalled'))::int stranded
         FROM campaign_recipients WHERE campaign_id = ${c.id}
        GROUP BY 1 ORDER BY 2 DESC`);
 

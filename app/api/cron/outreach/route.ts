@@ -4,7 +4,7 @@ import { sendBulkEmail, fillTemplate } from "@/lib/email/send-bulk";
 import { recordCronRun } from "@/lib/cron-runs";
 import { reduceOutreachEvents, syncConversions } from "@/lib/outreach/events";
 import { checkGates } from "@/lib/outreach/gates";
-import { planCampaign, recordTouch, stallRecipients, recordSendFailure, isPermanentSendFailure, retireRecipient, measureBacklog, BACKLOG_ALERT_HOURS } from "@/lib/outreach/planner";
+import { planCampaign, recordTouch, stallRecipients, recordSendFailure, isPermanentSendFailure, retireRecipient, measureBacklog, reconcileSchedules, BACKLOG_ALERT_HOURS } from "@/lib/outreach/planner";
 import { computeCapacity } from "@/lib/outreach/pacing";
 
 /**
@@ -49,6 +49,7 @@ type CampaignRow = {
   send_window_start_hour: number;
   send_window_end_hour: number;
   max_touches: number;
+  default_tz: string;
 };
 
 function sleep(ms: number) {
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest) {
 
   const campaignRows = await sql`
     SELECT id, cooldown_days, daily_target, send_window_start_hour, send_window_end_hour,
-           max_touches FROM campaigns
+           max_touches, default_tz FROM campaigns
     WHERE status = 'active' AND config_set_unverified IS NOT NULL
       ${onlyCampaign ? sql`AND id = ${onlyCampaign}` : sql``}
     ORDER BY created_at ASC
@@ -160,6 +161,12 @@ export async function GET(req: NextRequest) {
 
     // 3 — gates. Checked per campaign, because a campaign's own list quality can be bad while the
     // account is still healthy, and that is precisely the case worth catching early.
+    // Before anything else: put stranded rows back on the schedule. A live, mid-journey
+    // recipient with no next_due_at is invisible to both planner pools and stays active forever,
+    // so this is the one repair that has to run even on a tick that will then be blocked.
+    const rescheduled = await reconcileSchedules(campaignId, row.max_touches, row.default_tz);
+    if (rescheduled > 0) console.error(`[outreach] ${campaignId}: rescheduled ${rescheduled} stranded recipients`);
+
     const gate = await checkGates(campaignId);
     // Measured before the gate is applied and recorded whichever way the gate goes, because the
     // tick that needs this number is the blocked one. A block is only a pause while the backlog
@@ -184,7 +191,7 @@ export async function GET(req: NextRequest) {
       await sql`UPDATE outreach_runs SET finished_at = now() WHERE id = ${runId}`;
       perCampaign.push({
         campaignId, blocked: gate.blockedBy, reason: gate.reason,
-        overdue: backlog.overdueCount, lagHours: backlog.lagHours, backlogAlert,
+        overdue: backlog.overdueCount, lagHours: backlog.lagHours, backlogAlert, rescheduled,
       });
       continue;
     }
@@ -213,12 +220,12 @@ export async function GET(req: NextRequest) {
       chunkLimit: CHUNK_LIMIT,
     });
     const { dailyBudget, perTick, capacity } = pace;
-    const plan = await planCampaign(campaignId, capacity);
+    const plan = await planCampaign(campaignId, capacity, gate.newCapacityFactor);
 
     await sql`
       UPDATE outreach_runs
       SET capacity = ${capacity}, planned_new = ${plan.counts.plannedNew}, planned_followup = ${plan.counts.plannedFollowups},
-          notes = notes || ${sql.json({ istHour, istMinute, minutesLeft, ticksLeft: pace.ticksLeft, sentToday, dailyBudget, perTick, capacityFactor: gate.capacityFactor })}::jsonb
+          notes = notes || ${sql.json({ istHour, istMinute, minutesLeft, ticksLeft: pace.ticksLeft, sentToday, dailyBudget, perTick, capacityFactor: gate.capacityFactor, newCapacityFactor: gate.newCapacityFactor })}::jsonb
       WHERE id = ${runId}
     `;
 
