@@ -30,17 +30,27 @@ import { computeCapacity } from "@/lib/outreach/pacing";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** ~204s of sending at the interval below, inside maxDuration with room for the gate queries. */
-const CHUNK_LIMIT = 2400;
-/** EventBridge rule `mantis-outreach-daily` fires every 15 minutes (confirmed from the run log:
- *  ticks land on :01, :16, :31, :46). The pacing maths divides the day's remaining budget by the
- *  ticks left, so this must match the rule's schedule — change one and the day either
- *  front-loads or underspends. */
-const TICK_INTERVAL_MINUTES = 15;
-/** ~11.8/sec, under the account's confirmed 14/sec cap with headroom for transactional mail
- *  sharing the same rate limit. Pacing is not politeness: Microsoft's 554 5.7.7 policy block
- *  triggers on burst PATTERN rather than daily volume. */
-const SEND_INTERVAL_MS = 85;
+/**
+ * Per campaign, not per tick: the loop below runs campaigns one after another inside a single
+ * request, so what has to fit in maxDuration is this times the number of active campaigns. At
+ * 2400 and the old 85ms that was 408s for two campaigns against a 300s limit, which is why the
+ * second campaign kept being cut off mid-tick and the two appeared to take turns -- on
+ * 2026-10-08 Dhando and Mantis alternated minute by minute for exactly this reason.
+ *
+ * 2000 x 2 campaigns x 60ms is ~240s, inside maxDuration with room for the gate queries.
+ */
+const CHUNK_LIMIT = 2000;
+/** EventBridge rule `mantis-outreach-daily` fires every 5 minutes (changed from 15 on
+ *  2026-10-08). The pacing maths divides the day's remaining budget by the ticks left, so this
+ *  must match the rule's schedule — change one and the day either front-loads or underspends. */
+const TICK_INTERVAL_MINUTES = 5;
+/**
+ * ~16.7/sec. The account's cap is now 22/sec, but this deliberately stops short of it: sign-in
+ * codes and password resets draw on the same per-second limit, and a campaign that saturates it
+ * delays them. Pacing is not politeness either way -- Microsoft's 554 5.7.7 policy block triggers
+ * on burst PATTERN rather than daily volume.
+ */
+const SEND_INTERVAL_MS = 60;
 
 type CampaignRow = {
   id: string;
