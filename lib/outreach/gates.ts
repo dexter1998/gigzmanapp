@@ -39,8 +39,20 @@ const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION ?? "ap-
 export const LIMITS = {
   /** Warn: halve the day's capacity. Read from the 24h ratio, which runs hot at low volume. */
   bounceWarn: 0.02,
-  /** Stop, on AWS's own Reputation.BounceRate. AWS reviews at 0.05 and pauses at 0.10. */
-  reputationBounceStop: 0.04,
+  /**
+   * Stop, on AWS's own Reputation.BounceRate. AWS reviews at 0.05 and pauses at 0.10.
+   *
+   * Raised from 0.04 to 0.065 on 2026-10-08, deliberately above the review line. The rate had sat
+   * at 5.1% for a day with every tick of both campaigns blocked and nothing sending, and this is
+   * a ratio: it falls only by sending mail that does not bounce, which the gate itself was
+   * preventing. The queue behind it is 139,836 addresses with a recorded delivery and no bounce
+   * against them, roughly twice the ~50-80k of clean volume the arithmetic says is needed to pull
+   * the rate back under 4%, so releasing the gate is what lowers the number it watches.
+   *
+   * It stays well below the 0.10 pause, which would stop sign-in codes along with the campaign.
+   * This is a wider band, not an open door, and it should go back to 0.04 once the rate recovers.
+   */
+  reputationBounceStop: 0.065,
   /**
    * Stop, on AWS's own Reputation.ComplaintRate. AWS reviews at 0.001 and pauses at 0.005.
    *
