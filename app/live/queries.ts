@@ -33,7 +33,7 @@ export type LiveData = {
   unlocksDaily: Bucket[];
   byType: Slice[];
   byCountry: Slice[];
-  byRole: Slice[];
+  depth: Slice[];
   cohorts: CohortRow[];
   recent: PublicUser[];
   quotes: Quote[];
@@ -56,7 +56,7 @@ export const getLiveData = unstable_cache(
   async (): Promise<LiveData> => {
     const [
       users, usage, money, emails, partners,
-      signups, unlocksDaily, byType, byCountry, byRole, cohortRows, recent, quotes,
+      signups, unlocksDaily, byType, byCountry, depth, cohortRows, recent, quotes,
     ] = await Promise.all([
       sql`SELECT count(*)::int AS total,
                  count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS new7,
@@ -89,8 +89,21 @@ export const getLiveData = unstable_cache(
             FROM user_profiles GROUP BY 1 ORDER BY n DESC`,
       sql`SELECT coalesce(country, 'Unknown') AS label, count(*)::int AS n
             FROM user_profiles GROUP BY 1 ORDER BY n DESC LIMIT 8`,
-      sql`SELECT coalesce(role, 'Not set') AS label, count(*)::int AS n
-            FROM user_profiles GROUP BY 1 ORDER BY n DESC LIMIT 7`,
+      // How deep usage goes, not just whether it happened. `role` used to sit here, but
+      // onboarding never writes that column -- the card rendered "Not set: everyone".
+      sql`WITH per AS (
+            SELECT p.email, (SELECT count(*) FROM unlocks u WHERE u.unlocked_by = p.email) AS n
+              FROM user_profiles p
+          )
+          SELECT CASE WHEN n = 0 THEN 'No unlocks yet'
+                      WHEN n BETWEEN 1 AND 5 THEN '1-5 leads'
+                      WHEN n BETWEEN 6 AND 20 THEN '6-20 leads'
+                      WHEN n BETWEEN 21 AND 50 THEN '21-50 leads'
+                      ELSE '50+ leads' END AS label,
+                 count(*)::int AS n
+            FROM per GROUP BY 1
+           ORDER BY min(CASE WHEN n = 0 THEN 0 WHEN n <= 5 THEN 1 WHEN n <= 20 THEN 2
+                             WHEN n <= 50 THEN 3 ELSE 4 END)`,
 
       // Weekly signup cohorts, retained = unlocked at least one lead in that later week.
       // `unlocks` is the only activity table with a user key on it; chat lives behind `chats`,
@@ -146,7 +159,7 @@ export const getLiveData = unstable_cache(
       unlocksDaily: unlocksDaily as unknown as Bucket[],
       byType: byType as unknown as Slice[],
       byCountry: byCountry as unknown as Slice[],
-      byRole: byRole as unknown as Slice[],
+      depth: depth as unknown as Slice[],
       cohorts,
       recent: (recent as unknown as { email: string; country: string | null; business_type: string | null;
                           plan: string; joined: string; unlocks: number }[])

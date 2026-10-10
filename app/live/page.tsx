@@ -126,8 +126,8 @@ export default async function LivePage() {
           <RankedBars rows={d.byCountry} color={C.green} />
         </Card>
 
-        <Card title="Who they are" sub="Self-reported role at signup">
-          <RankedBars rows={d.byRole} color={C.blue} />
+        <Card title="How deep usage goes" sub="Users by leads unlocked">
+          <RankedBars rows={d.depth} color={C.blue} />
         </Card>
 
         <Card title="Funnel" sub="Of everyone who registered">
