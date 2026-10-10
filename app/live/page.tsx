@@ -23,10 +23,39 @@ export const metadata: Metadata = {
             googleBot: { index: false, follow: false } },
 };
 
-export const revalidate = 600;
+/**
+ * Rendered per request, not prerendered.
+ *
+ * `revalidate` made this a static page, so the build tried to prerender it -- and the build
+ * container has no database, which failed the whole image build on ECONNREFUSED. The ten-minute
+ * window lives in unstable_cache instead, which is where it actually belongs: the page re-renders
+ * on every request but the DB is still only touched once per window.
+ */
+export const dynamic = "force-dynamic";
 
 export default async function LivePage() {
-  const d = await getLiveData();
+  // An investor opening a link from a PDF should never meet a stack trace. If the database is
+  // unreachable the page still renders, says so plainly, and says when it last had numbers.
+  let d: Awaited<ReturnType<typeof getLiveData>>;
+  try {
+    d = await getLiveData();
+  } catch {
+    return (
+      <main className="lv">
+        <header className="lv-top">
+          <Link href="/" className="lv-brand"><span className="lv-brand-dot" aria-hidden />mantis</Link>
+        </header>
+        <section className="lv-hero">
+          <h1>Numbers are briefly unavailable.</h1>
+          <p className="lv-sub">
+            This page reads straight from the production database and could not reach it just now.
+            Nothing is wrong with the product — try again in a minute, or see{" "}
+            <Link href="/">mantisai.in</Link>.
+          </p>
+        </section>
+      </main>
+    );
+  }
   const updated = new Date(d.computedAt);
   const stamp = updated.toLocaleString("en-IN", {
     day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
