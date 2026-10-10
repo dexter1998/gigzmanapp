@@ -1,0 +1,273 @@
+/*
+ * Scoped to .lv so none of it can reach the marketing site or the dashboard. It borrows the
+ * landing page's --g-* tokens rather than redefining colour, so this page ages with the brand
+ * instead of drifting away from it.
+ *
+ * Mobile first throughout: the link lives in a PDF, and a PDF on a phone is the likeliest way
+ * anyone opens it. The grid is one column until 700px and the wide/full cards only start
+ * spanning once there is room for them to.
+ */
+
+.lv {
+  --lv-bg: var(--g-cream, #fcfcfa);
+  --lv-card: var(--g-white, #fff);
+  --lv-line: var(--g-border, #e5e8e2);
+  --lv-ink: var(--g-ink, #101214);
+  --lv-soft: var(--g-gray-500, #667085);
+  --lv-green: #3f6420;
+  --lv-blue: #2563eb;
+  --lv-mint: var(--g-green-mint, #f4f8e9);
+
+  min-height: 100dvh;
+  background: var(--lv-bg);
+  color: var(--lv-ink);
+  padding: 0 16px 56px;
+  font-feature-settings: "tnum";
+}
+.lv * { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------- top bar */
+
+.lv-top {
+  max-width: 1120px; margin: 0 auto; padding: 18px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.lv-brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 650; font-size: 18px; letter-spacing: -0.02em;
+  color: var(--lv-ink); text-decoration: none;
+}
+.lv-brand-dot {
+  width: 10px; height: 10px; border-radius: 3px;
+  background: var(--g-green, #a8d51e);
+}
+.lv-stamp {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--lv-soft);
+  background: var(--lv-card); border: 1px solid var(--lv-line);
+  border-radius: 999px; padding: 6px 12px; white-space: nowrap;
+}
+.lv-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--g-green, #a8d51e);
+  box-shadow: 0 0 0 0 rgba(168, 213, 30, 0.6);
+  animation: lv-pulse 2.4s ease-out infinite;
+}
+@keyframes lv-pulse {
+  70% { box-shadow: 0 0 0 7px rgba(168, 213, 30, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(168, 213, 30, 0); }
+}
+
+/* ---------------------------------------------------------------- hero */
+
+.lv-hero { max-width: 1120px; margin: 0 auto; padding: 20px 0 28px; }
+.lv-eyebrow {
+  margin: 0 0 14px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--g-green-text, #4c6b16); font-weight: 600;
+}
+.lv-hero h1 {
+  margin: 0; font-size: clamp(30px, 7.5vw, 54px); line-height: 1.07;
+  letter-spacing: -0.035em; font-weight: 680; max-width: 18ch;
+}
+.lv-mark {
+  background: linear-gradient(transparent 58%, var(--g-green, #a8d51e) 58%);
+  padding: 0 2px;
+}
+.lv-sub {
+  margin: 16px 0 0; max-width: 60ch; font-size: 15.5px; line-height: 1.6;
+  color: var(--lv-soft);
+}
+
+.lv-headline {
+  margin-top: 28px; display: grid; gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.lv-head {
+  background: var(--lv-card); border: 1px solid var(--lv-line);
+  border-radius: 16px; padding: 16px 14px;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.lv-head strong {
+  font-size: clamp(26px, 6vw, 36px); font-weight: 650; letter-spacing: -0.03em; line-height: 1.1;
+}
+.lv-head span { font-size: 13px; font-weight: 550; }
+.lv-head em { font-style: normal; font-size: 12px; color: var(--lv-soft); }
+
+/* ---------------------------------------------------------------- grid */
+
+.lv-grid {
+  max-width: 1120px; margin: 0 auto; display: grid; gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.lv-card {
+  background: var(--lv-card); border: 1px solid var(--lv-line);
+  border-radius: 18px; padding: 18px 16px; min-width: 0;
+}
+.lv-card > header { margin-bottom: 14px; }
+.lv-card h2 {
+  margin: 0; font-size: 15px; font-weight: 620; letter-spacing: -0.01em;
+}
+.lv-card > header p { margin: 3px 0 0; font-size: 12.5px; color: var(--lv-soft); }
+
+/* ---------------------------------------------------------------- charts */
+
+.lv-chart svg { width: 100%; height: 150px; display: block; overflow: visible; }
+.lv-chart figcaption {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; font-size: 11.5px; color: var(--lv-soft);
+}
+.lv-peak { font-weight: 600; color: var(--lv-ink); }
+
+.lv-donut { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.lv-donut svg { width: 132px; height: 132px; flex: 0 0 auto; }
+.lv-donut-n { font-size: 24px; font-weight: 650; fill: var(--lv-ink); letter-spacing: -0.02em; }
+.lv-donut-l { font-size: 11px; fill: #667085; }
+.lv-legend { list-style: none; margin: 0; padding: 0; flex: 1 1 150px; min-width: 0; }
+.lv-legend li {
+  display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center;
+  gap: 8px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--lv-line);
+}
+.lv-legend li:last-child { border-bottom: 0; }
+.lv-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.lv-legend-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-legend em { font-style: normal; color: var(--lv-soft); font-size: 12px; min-width: 34px; text-align: right; }
+
+.lv-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.lv-bars li {
+  display: grid; grid-template-columns: minmax(64px, 88px) 1fr auto;
+  align-items: center; gap: 10px; font-size: 13px;
+}
+.lv-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-bar-track { height: 9px; border-radius: 999px; background: var(--g-gray-100, #f0f1f3); overflow: hidden; }
+.lv-bar-fill { display: block; height: 100%; border-radius: 999px; }
+
+/* ---------------------------------------------------------------- funnel / mini */
+
+.lv-funnel, .lv-mini { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.lv-funnel li { display: grid; gap: 5px; }
+.lv-step-top { display: flex; justify-content: space-between; font-size: 13px; }
+.lv-step-track { height: 9px; border-radius: 999px; background: var(--g-gray-100, #f0f1f3); overflow: hidden; }
+.lv-step-fill { display: block; height: 100%; border-radius: 999px; background: var(--lv-green); }
+.lv-funnel em { font-style: normal; font-size: 11.5px; color: var(--lv-soft); }
+
+.lv-mini li {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font-size: 13.5px; padding-bottom: 10px; border-bottom: 1px solid var(--lv-line);
+}
+.lv-mini li:last-child { border-bottom: 0; padding-bottom: 0; }
+.lv-mini span { color: var(--lv-soft); }
+.lv-mini b { font-size: 15px; font-weight: 620; }
+
+/* ---------------------------------------------------------------- money */
+
+.lv-money strong {
+  display: block; font-size: clamp(30px, 8vw, 40px); font-weight: 650; letter-spacing: -0.03em;
+}
+.lv-money > span { display: block; margin-top: 4px; font-size: 13px; color: var(--lv-soft); }
+.lv-note {
+  margin: 14px 0 0; padding: 10px 12px; border-radius: 12px;
+  background: var(--g-amber-tint-2, #fdf6e3); border: 1px solid #f3e4bd;
+  font-size: 12.5px; line-height: 1.5; color: #7a5a12;
+}
+
+/* ---------------------------------------------------------------- cohorts */
+
+.lv-cohort-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.lv-cohort { border-collapse: separate; border-spacing: 3px; font-size: 12px; min-width: 520px; }
+.lv-cohort th { font-weight: 600; color: var(--lv-soft); text-align: left; padding: 4px 6px; white-space: nowrap; }
+.lv-cohort thead th { font-size: 11px; }
+.lv-cohort tbody th { color: var(--lv-ink); }
+.lv-cohort-size { color: var(--lv-soft); padding: 0 6px; }
+.lv-cell {
+  width: 46px; height: 30px; text-align: center; border-radius: 7px;
+  background: var(--g-gray-100, #f0f1f3); color: #98a2b3; font-variant-numeric: tabular-nums;
+}
+.lv-cohort-key {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  margin: 12px 0 0; font-size: 11.5px; color: var(--lv-soft);
+}
+.lv-cohort-key i { width: 16px; height: 10px; border-radius: 3px; }
+.lv-cohort-key em { font-style: normal; flex-basis: 100%; margin-top: 4px; }
+
+/* ---------------------------------------------------------------- quotes */
+
+.lv-quote-track {
+  list-style: none; margin: 0; padding: 0 0 4px; display: flex; gap: 16px;
+  overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.lv-quote-track::-webkit-scrollbar { display: none; }
+.lv-quote {
+  flex: 0 0 min(100%, 380px); scroll-snap-align: start;
+  background: var(--lv-mint); border: 1px solid #e3eccb; border-radius: 16px;
+  padding: 18px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.lv-quote-mark { color: var(--g-green, #a8d51e); flex: 0 0 auto; }
+.lv-quote p {
+  margin: 0; font-size: 14px; line-height: 1.6; flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden;
+}
+.lv-quote footer { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+.lv-quote-name { font-weight: 620; }
+.lv-quote-place { color: var(--g-green-text, #4c6b16); }
+.lv-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
+.lv-dots button {
+  width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--g-gray-300, #d1d5db); transition: width .18s ease, background .18s ease;
+}
+.lv-dots button.is-on { width: 20px; border-radius: 999px; background: var(--lv-green); }
+
+.lv-consent { margin: 14px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--lv-soft); }
+
+/* ---------------------------------------------------------------- table */
+
+.lv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.lv-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 540px; }
+.lv-table th {
+  text-align: left; font-weight: 600; font-size: 11.5px; color: var(--lv-soft);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0 10px 8px 0; border-bottom: 1px solid var(--lv-line); white-space: nowrap;
+}
+.lv-table td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--lv-line); white-space: nowrap; }
+.lv-table tr:last-child td { border-bottom: 0; }
+/* Right-aligned numbers drop their right padding, so the following cell has to supply the gap
+   itself -- without this "5" and "30 Aug" render as "530 Aug". */
+.lv-num { text-align: right; padding-right: 0 !important; }
+.lv-num + td, .lv-table th.lv-num + th { padding-left: 18px; }
+.lv-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.lv-plan {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px;
+  background: var(--g-gray-100, #f0f1f3); color: var(--lv-soft);
+}
+
+.lv-empty { margin: 0; font-size: 13px; color: var(--lv-soft); }
+
+/* ---------------------------------------------------------------- footer */
+
+.lv-foot {
+  max-width: 1120px; margin: 28px auto 0; padding-top: 18px;
+  border-top: 1px solid var(--lv-line); font-size: 12.5px; color: var(--lv-soft);
+}
+.lv-foot a { color: var(--g-green-text, #4c6b16); }
+
+/* ---------------------------------------------------------------- wider */
+
+@media (min-width: 700px) {
+  .lv { padding: 0 24px 72px; }
+  .lv-headline { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lv-full { grid-column: 1 / -1; }
+  .lv-card { padding: 20px; }
+}
+@media (min-width: 1000px) {
+  .lv-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .lv-wide { grid-column: span 3; }
+  .lv-card { grid-column: span 2; }
+  .lv-full { grid-column: 1 / -1; }
+  .lv-quote { flex-basis: 340px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv-pulse { animation: none; }
+  .lv-dots button { transition: none; }
+}
