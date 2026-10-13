@@ -48,12 +48,10 @@ export function SticklyScript() {
     if (!cfg) return;
     const w = window as unknown as { stk?: Stk };
     w.stk = w.stk ?? { cmd: [] };
-    w.stk.cmd.push((s: Sdk) =>
-      // hideLauncher: the sidebar's "Earn free credits" already opens this via openStickly().
-      // Our workspace is on Stickly's `floating` display mode, which draws its own corner button,
-      // so without this there are two ways in and one of them is a button we never designed.
-      s.boot({ key: cfg.key, token: cfg.token, hideLauncher: true }),
-    );
+    // No hideLauncher: the workspace is on Stickly's `popup` display mode, which already draws no
+    // button of its own. Passing it here too would split one decision across two places -- the
+    // dashboard and this file -- and the dashboard is where it belongs.
+    w.stk.cmd.push((s: Sdk) => s.boot({ key: cfg.key, token: cfg.token }));
 
     // Without this the next person on a shared machine inherits the previous user's widget — and
     // with it, their reward history.
@@ -71,9 +69,10 @@ export function SticklyScript() {
  * Opens the widget from our own UI (the sidebar entry).
  *
  * `open()` stays optional-chained, but it is no longer unverified: Stickly documents it, and it
- * was seen working against the live widget on 2026-10-05. The chaining now only guards against a
- * future SDK that drops it — and since hideLauncher removes the widget's own button, a missing
- * open() would leave no way in at all, so a failure here is loud in practice even if quiet in code.
+ * was seen working against the live widget on 2026-10-14. The chaining only guards against a
+ * future SDK that drops it — and because the workspace is on `popup` mode and so draws no launcher
+ * of its own, a missing open() would leave no way into the widget at all. A failure here is loud
+ * in practice even though it is silent in code.
  */
 export function openStickly() {
   const w = window as unknown as { stk?: Stk };
