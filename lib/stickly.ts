@@ -1,60 +1,58 @@
+import "server-only";
 import crypto from "node:crypto";
 import { sql } from "@/lib/db";
 
 /**
- * Stickly — users complete growth tasks (follow, star, join, review, refer) and we grant the
- * credits. Stickly never holds a balance; it tells us a task was claimed and this app does the
- * granting, in our own ledger.
+ * Stickly rewards: identity signing, webhook verification, and the opaque id map.
  *
- * Three secrets, all from Stickly → Settings → API keys → "Download .env":
- *   STICKLY_PUBLIC_KEY      safe in the browser
+ *   STICKLY_PUBLIC_KEY      safe in the browser; the only one that ships to the client
  *   STICKLY_SIGNING_SECRET  signs the token that says which of our users is claiming
  *   STICKLY_WEBHOOK_SECRET  verifies an incoming reward webhook really came from Stickly
+ *
+ * The two secrets are easy to confuse. Ours is `whsec_` + 64 hex, which is NOT the 48 hex the
+ * install guide describes: 64 hex is sha256, the shape Stickly's own migration backfill produced
+ * for workspaces created before they moved to `stksign_` + randomBytes(24). It is the right value
+ * and it is verified working — 800 credits have been granted through it — so do not "fix" it to
+ * match the documentation.
  */
 
 export const STICKLY_CDN = "https://cdn.stickly.live/w.js";
 export const STICKLY_PUBLIC_KEY = process.env.STICKLY_PUBLIC_KEY ?? "";
 
-/** Ledger constants, in one place so the webhook and any backfill agree. `reason` is deliberately
- *  not in CREDIT_COST — that table is spend-only and creditCost() throws on anything it does not
- *  know. */
 export const STICKLY_LEDGER_REASON = "stickly_reward";
 export const sticklyLedgerRef = (eventId: string) => `stickly:${eventId}`;
 
-/* ------------------------------------------------------------------ identity */
+/* ------------------------------------------------------------------ opaque identity */
 
 /**
- * An opaque id per user, rather than our own.
+ * Mantis keys users by email, and `sub` travels to a third party, sits in a JWT the browser can
+ * read, and comes back in every webhook. Sending the email would export the customer list, so each
+ * user gets an opaque `u_…` id instead and `stickly_users` maps it both ways.
  *
- * The integration guide signs `{ sub: user.id }`. In this app a user *is* their email —
- * user_profiles is keyed by it — so following that literally would hand every customer's email
- * address to a third party as their identifier, and put it in a JWT that reaches the browser.
- *
- * So each user gets an opaque id the first time they load the widget and the mapping lives here.
- * Stickly only ever learns that id; the webhook maps it back. It satisfies the same requirement —
- * a stable id of ours that Stickly can quote back — without the leak. Deleting the row unlinks the
- * user and nothing else breaks.
+ * The mapping is permanent on purpose: regenerating it would orphan the claim history of everyone
+ * who has already earned credits, because Stickly would keep sending the old id.
  */
 export async function sticklyIdFor(userEmail: string): Promise<string> {
-  const [existing] = await sql<{ stickly_id: string }[]>`
+  const [existing] = await sql`
     SELECT stickly_id FROM stickly_users WHERE user_email = ${userEmail}
   `;
-  if (existing) return existing.stickly_id;
+  if (existing) return existing.stickly_id as string;
 
   const id = `u_${crypto.randomBytes(12).toString("hex")}`;
-  const [row] = await sql<{ stickly_id: string }[]>`
+  // ON CONFLICT: two tabs opening at once would otherwise race to insert the same user.
+  const [row] = await sql`
     INSERT INTO stickly_users (stickly_id, user_email) VALUES (${id}, ${userEmail})
     ON CONFLICT (user_email) DO UPDATE SET user_email = EXCLUDED.user_email
     RETURNING stickly_id
   `;
-  return row.stickly_id;
+  return row.stickly_id as string;
 }
 
 export async function emailForSticklyId(sticklyId: string): Promise<string | null> {
-  const [row] = await sql<{ user_email: string }[]>`
+  const [row] = await sql`
     SELECT user_email FROM stickly_users WHERE stickly_id = ${sticklyId}
   `;
-  return row?.user_email ?? null;
+  return (row?.user_email as string) ?? null;
 }
 
 /* ------------------------------------------------------------------ the token */
@@ -62,11 +60,12 @@ export async function emailForSticklyId(sticklyId: string): Promise<string | nul
 const b64url = (s: string) => Buffer.from(s).toString("base64url");
 
 /**
- * HS256, hand-rolled rather than pulling in jsonwebtoken for one three-field payload.
+ * HS256 by hand rather than pulling in jsonwebtoken for one three-field payload, matching how
+ * lib/razorpay.ts already signs.
  *
- * The widget cannot be trusted to say who is claiming — Stickly does not verify that a task was
- * really done, so identity is the only thing between a reward and a console loop that mints
- * credits. That is why this is signed on the server and why nothing from the browser is used.
+ * No `name` or `email` claim. The guide offers them, and they only change what shows in Stickly's
+ * own Activity feed — the trade is that Stickly then stores a real address for every user. The
+ * opaque id is enough for the feed to be useful to us.
  */
 export function signSticklyToken(subject: string, ttlSeconds = 24 * 60 * 60): string {
   const secret = process.env.STICKLY_SIGNING_SECRET;
@@ -87,8 +86,7 @@ export function signSticklyToken(subject: string, ttlSeconds = 24 * 60 * 60): st
 function timingSafeEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
-  // timingSafeEqual throws on a length mismatch, which would itself leak length — compare the
-  // lengths separately and only then the bytes.
+  // timingSafeEqual throws on a length mismatch, and the throw would itself leak the length.
   if (ab.length !== bb.length) return false;
   return crypto.timingSafeEqual(ab, bb);
 }
@@ -96,13 +94,16 @@ function timingSafeEq(a: string, b: string): boolean {
 /**
  * Verifies "X-Stickly-Signature: t=<unix>,v1=<hex>" over the RAW body.
  *
- * The caller must pass the bytes exactly as they arrived. Parsing and re-serialising first changes
- * the whitespace and every signature then fails.
- *
- * The timestamp window is what stops a captured delivery being replayed later; the constant-time
- * compare is what stops the signature being guessed a byte at a time.
+ * The caller must pass the bytes exactly as they arrived: parsing and re-serialising changes the
+ * whitespace and every signature then fails. The timestamp window is what stops a captured
+ * delivery being replayed later; the constant-time compare is what stops the signature being
+ * guessed a byte at a time.
  */
-export function verifyWebhookSignature(rawBody: string, header: string | null, toleranceSec = 300): boolean {
+export function verifyWebhookSignature(
+  rawBody: string,
+  header: string | null,
+  toleranceSec = 300,
+): boolean {
   const secret = process.env.STICKLY_WEBHOOK_SECRET;
   if (!secret || !header) return false;
 

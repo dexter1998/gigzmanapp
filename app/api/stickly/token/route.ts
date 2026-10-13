@@ -6,8 +6,8 @@ import { STICKLY_PUBLIC_KEY, signSticklyToken, sticklyIdFor } from "@/lib/stickl
  * The signed identity the widget boots with.
  *
  * Only a signed-in request gets one, and the subject comes from the session — never from anything
- * the caller sent. Stickly does not verify that a task was actually done, so this token is the only
- * thing standing between a reward and someone minting credits from a console loop.
+ * the caller sent. Stickly does not verify that a task was actually done, so this token is the
+ * only thing standing between a reward and someone minting credits from a console loop.
  */
 export const dynamic = "force-dynamic";
 
@@ -23,16 +23,9 @@ export async function GET() {
 
   const subject = await sticklyIdFor(email);
   return NextResponse.json(
-    {
-      key: STICKLY_PUBLIC_KEY,
-      token: signSticklyToken(subject),
-      // No `user: { email }`. The install guide's snippet passes one and Stickly's BootOpts
-      // declares it, but the widget never reads it -- so sending it would hand every customer's
-      // address to third-party code running in our page in exchange for nothing. The opaque
-      // subject above is the whole identity Stickly needs.
-    },
-    // The token is per-user and short-lived; a shared cache must never hand one person's identity
-    // to the next request.
+    { key: STICKLY_PUBLIC_KEY, token: signSticklyToken(subject) },
+    // The token is per-user and short-lived; a shared cache must never hand one person's
+    // identity to the next request.
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
