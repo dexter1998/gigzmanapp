@@ -1102,6 +1102,24 @@ ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS daily_target INT;
 -- gain -- and phone-only signups carry a synthetic @phone.gigzmanapp.internal
 -- address that would leak the convention too. The widget sees an opaque id and
 -- the webhook maps it back. Deleting a row unlinks the user and nothing else.
+-- Which popups a person has already seen, per ACCOUNT rather than per browser.
+--
+-- This used to live only in localStorage, which quietly broke the one promise "once" makes: a new
+-- browser or profile had an empty store, so a one-time popup -- including the 500-credit grant --
+-- came back as if it had never been shown. The same keying failed the other way too: the flag was
+-- keyed by popup id alone, so a second person signing in on a shared browser was blocked from a
+-- popup they had never seen.
+--
+-- `seen_at` is kept (not just a boolean) because the "daily" frequency needs the date, and because
+-- "was any non-greeting popup shown today" is what suppresses the welcome popups.
+CREATE TABLE IF NOT EXISTS popup_seen (
+  user_email TEXT NOT NULL,
+  popup_id   TEXT NOT NULL,
+  seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_email, popup_id)
+);
+CREATE INDEX IF NOT EXISTS idx_popup_seen_user ON popup_seen(user_email, seen_at DESC);
+
 CREATE TABLE IF NOT EXISTS stickly_users (
   stickly_id TEXT PRIMARY KEY,
   user_email TEXT NOT NULL UNIQUE,

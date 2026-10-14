@@ -127,6 +127,21 @@ export type AudienceTag = "new-account" | "returning-account" | "granted-free-50
 
 /** An account younger than this is greeted as new. A day is generous on purpose — a signup that
  *  bounces off and comes back the same evening should still get the welcome, not "welcome back". */
+/**
+ * The greetings. They are suppressed for the rest of the day once any OTHER popup has been shown,
+ * because a credit grant followed by "Welcome back!" is two modals over one dashboard — which the
+ * host's one-at-a-time rule does not prevent, it only staggers: closing the first immediately
+ * reveals the second.
+ *
+ * Kept as a list rather than a `category === "welcome"` test so that a future welcome-category
+ * popup that genuinely should interrupt can simply stay off it.
+ */
+export const GREETING_POPUP_IDS = ["welcome-first-login", "welcome-back"] as const;
+
+export function isGreeting(id: string): boolean {
+  return (GREETING_POPUP_IDS as readonly string[]).includes(id);
+}
+
 export const NEW_ACCOUNT_WINDOW_HOURS = 24;
 
 /** The ledger `ref` the backfill writes, one row per account. Shared by the grant SQL and the

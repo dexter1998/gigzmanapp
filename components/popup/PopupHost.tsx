@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
-import { POPUPS, isEligible, type AudienceTag, type PopupFrequency } from "@/lib/popups";
+import { POPUPS, isEligible, isGreeting, type AudienceTag, type PopupFrequency } from "@/lib/popups";
 import { PopupModal } from "./PopupModal";
 import { useMounted } from "./useMounted";
 
@@ -68,12 +68,27 @@ function hasSeenToday(id: string): boolean {
   }
 }
 
-/** Has this person already had their fill of this popup? */
-function isSatisfied(id: string, frequency: PopupFrequency): boolean {
+/**
+ * Has this person already had their fill of this popup?
+ *
+ * `server` is the account's own record, and it is the authority for the two frequencies that are
+ * about a PERSON: "once" and "daily". localStorage stays in the check as well, but only as a
+ * same-device shortcut — on its own it made "once" mean "once per browser profile", which is how
+ * the 500-credit popup came back on a new profile and how a second user on a shared browser was
+ * blocked from one they had never seen.
+ *
+ * "session" and "always" stay purely local: a tab is not an account, and the server has no opinion
+ * about it.
+ */
+function isSatisfied(
+  id: string,
+  frequency: PopupFrequency,
+  server: { seenIds: string[]; seenTodayIds: string[] },
+): boolean {
   if (frequency === "always") return false;
   if (frequency === "session") return hasSeenThisSession(id);
-  if (frequency === "daily") return hasSeenToday(id);
-  return hasSeen(id);
+  if (frequency === "daily") return server.seenTodayIds.includes(id) || hasSeenToday(id);
+  return server.seenIds.includes(id) || hasSeen(id);
 }
 
 /**
@@ -88,20 +103,42 @@ function fill(text: string | undefined, vars: Record<string, string>): string | 
   return text.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m);
 }
 
-export function PopupHost({ audience, vars = {} }: { audience: AudienceTag[]; vars?: Record<string, string> }) {
+export function PopupHost({
+  audience,
+  vars = {},
+  seenIds = [],
+  seenTodayIds = [],
+  otherSeenToday = false,
+}: {
+  audience: AudienceTag[];
+  vars?: Record<string, string>;
+  /** Popup ids this ACCOUNT has ever seen, and the subset seen today. Both come from the server. */
+  seenIds?: string[];
+  seenTodayIds?: string[];
+  /** True when a non-greeting popup has already been shown to this account today. */
+  otherSeenToday?: boolean;
+}) {
   const pathname = usePathname();
   const mounted = useMounted();
+  // Closing a non-greeting popup has to suppress the greeting straight away. The server flag was
+  // computed before that close happened, so the decision is held here for the rest of the session
+  // too -- otherwise dismissing the credit popup would reveal "Welcome back!" on the next render,
+  // which is the exact pair this is meant to prevent.
+  const [otherClosedNow, setOtherClosedNow] = useState(false);
   // Closed this session: covers the private-mode case where nothing can be persisted, and stops a
   // popup reappearing when its CTA navigates to another route inside the same shell.
   const [closedThisSession, setClosedThisSession] = useState<string[]>([]);
 
   // First match only: two modals over a dashboard is never what was intended, so the array's order
   // is the priority order.
+  const suppressGreetings = otherSeenToday || otherClosedNow;
+
   const active = mounted
     ? POPUPS.find((p) => {
         const frequency = p.rules?.frequency ?? "once";
         if (closedThisSession.includes(p.id)) return false;
-        if (isSatisfied(p.id, frequency)) return false;
+        if (suppressGreetings && isGreeting(p.id)) return false;
+        if (isSatisfied(p.id, frequency, { seenIds, seenTodayIds })) return false;
         return isEligible(p, pathname, new Date(), audience);
       }) ?? null
     : null;
@@ -110,6 +147,15 @@ export function PopupHost({ audience, vars = {} }: { audience: AudienceTag[]; va
     if (!active) return;
     markSeen(active.id);
     setClosedThisSession((ids) => [...ids, active.id]);
+    if (!isGreeting(active.id)) setOtherClosedNow(true);
+    // Fire and forget: the local mark above has already hidden it, and a failed write means the
+    // popup reappears on another device later -- annoying, never wrong.
+    void fetch("/api/popups/seen", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: active.id }),
+      keepalive: true,
+    }).catch(() => {});
   }, [active]);
 
   if (!active) return null;

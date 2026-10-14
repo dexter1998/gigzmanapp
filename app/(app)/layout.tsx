@@ -6,7 +6,7 @@ import { GeoBeacon } from "@/components/GeoBeacon";
 import { PopupHost } from "@/components/popup/PopupHost";
 import { SticklyScript } from "@/components/SticklyScript";
 import {
-  FREE_500_GRANT_REASON, FREE_500_GRANT_REF_PREFIX, NEW_ACCOUNT_WINDOW_HOURS,
+  FREE_500_GRANT_REASON, FREE_500_GRANT_REF_PREFIX, NEW_ACCOUNT_WINDOW_HOURS, isGreeting,
   type AudienceTag,
 } from "@/lib/popups";
 
@@ -43,6 +43,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(profile.plan_granted ? (["granted-plan"] as const) : []),
   ];
 
+  // Which popups this ACCOUNT has already seen. localStorage used to be the only record, so a new
+  // browser profile saw one-time popups again and a second user on a shared browser never saw them
+  // at all. `seen_today` also answers "has anything else interrupted them today", which is what
+  // keeps a credit grant and "Welcome back!" from arriving back to back.
+  const seenRows = await sql`
+    SELECT popup_id, seen_at >= date_trunc('day', now()) AS seen_today
+      FROM popup_seen WHERE user_email = ${session.user.email}
+  `;
+  const seenIds = seenRows.map((r) => r.popup_id as string);
+  const seenTodayIds = seenRows.filter((r) => r.seen_today).map((r) => r.popup_id as string);
+  const otherSeenToday = seenTodayIds.some((id) => !isGreeting(id));
+
   // Copy refers to the plan by name, so the popup reads "Starter, on the house" rather than a
   // generic line — one POPUPS entry covering every plan instead of one entry per plan.
   const PLAN_LABEL: Record<string, string> = { starter: "Starter", pro: "Pro", business: "Business", free: "Free" };
@@ -55,7 +67,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} />
       <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
       <GeoBeacon />
-      <PopupHost audience={audience} vars={{ plan: planName }} />
+      <PopupHost
+        audience={audience}
+        vars={{ plan: planName }}
+        seenIds={seenIds}
+        seenTodayIds={seenTodayIds}
+        otherSeenToday={otherSeenToday}
+      />
       <SticklyScript />
     </div>
   );
