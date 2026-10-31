@@ -1,7 +1,7 @@
 "use client";
 
 import { CreditPackCards, CreditPackFootnote, EnterpriseBand } from "@/components/billing/CreditPackCards";
-import { CREDIT_COST, FREE_MONTHLY_CREDITS } from "@/lib/credits/pricing";
+import { ALLOWANCE, CREDIT_COST, FREE_SIGNUP_CREDITS } from "@/lib/credits/pricing";
 import { CheckIcon } from "@/components/icons";
 
 /**
@@ -14,7 +14,7 @@ import { CheckIcon } from "@/components/icons";
 
 const RATE_CARD: Array<{ label: string; credits: number; note?: string }> = [
   { label: "Search an area someone has already scanned", credits: CREDIT_COST.cached_search, note: "Always free, unlimited" },
-  { label: "Search new ground (per live lookup, returns up to 20 businesses)", credits: CREDIT_COST.billed_places_call, note: "First 5 a day are free" },
+  { label: "Search new ground (per live lookup, returns up to 20 businesses)", credits: CREDIT_COST.billed_places_call, note: `First ${ALLOWANCE.billedCallsPerDay} a day are free` },
   { label: "Ask Mantis in chat", credits: CREDIT_COST.chat_turn, note: "First 5 a day are free" },
   { label: "Add a lead — name, address, phone", credits: CREDIT_COST.lead_unlock },
   { label: "Website health check", credits: CREDIT_COST.website_check },
@@ -78,7 +78,7 @@ export function PricingPlans() {
           lookup you pay for makes that area free for your next visit, and for everyone else&apos;s.
         </Note>
         <Note title="The free plan renews">
-          {FREE_MONTHLY_CREDITS} credits every month, not a one-off trial, plus unlimited searching
+          {FREE_SIGNUP_CREDITS} free credits when you sign up, plus unlimited searching
           across everything already scanned.
         </Note>
         <Note title="Run out? Just top up">

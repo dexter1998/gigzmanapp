@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 /**
@@ -16,6 +17,14 @@ import { usePathname } from "next/navigation";
  */
 export function FounderWidgetScript() {
   const pathname = usePathname();
+  // Chat is a working surface: the launcher sat on top of the results panel's "Add to leads" bar.
+  // Hidden by a root flag rather than unmounted, because a widget loaded on another page stays in
+  // the DOM through client-side navigation into /chat.
+  const onChat = !!pathname?.startsWith("/chat");
+  useEffect(() => {
+    if (onChat) document.documentElement.setAttribute("data-no-founder-widget", "");
+    else document.documentElement.removeAttribute("data-no-founder-widget");
+  }, [onChat]);
   if (pathname?.startsWith("/widget") || pathname?.startsWith("/admin")) return null;
 
   return (

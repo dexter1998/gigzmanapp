@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { logAppError } from "@/lib/app-errors";
+import { publicMessage } from "@/lib/v2/public";
 import { runChatIntent, BedrockUnavailableError, type ChatIntent } from "@/lib/planner";
 import { geocodeText, reverseGeocode } from "@/lib/geocode";
 import { CLARIFICATIONS, USE_LAST_MAP_AREA } from "@/lib/chat-clarifications";
@@ -12,6 +14,9 @@ import { chargeCredits } from "@/lib/credits/server";
 import { ALLOWANCE, CREDIT_COST } from "@/lib/credits/pricing";
 import { resolveCategoryPhrase, suggestCategories } from "@/lib/category-resolve";
 import { POST as findLeadsPost } from "@/app/api/leads/find/route";
+import { isV2Email } from "@/lib/v2";
+import { runV2Turn } from "@/lib/v2/turn";
+import { parseAction } from "@/lib/v2/state";
 
 const DEFAULT_SEARCH_RADIUS_METERS = 1500;
 const HISTORY_LIMIT = 10;
@@ -51,7 +56,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   const [chat] = await sql`SELECT id FROM chats WHERE id = ${chatId} AND user_email = ${userEmail}`;
   if (!chat) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const body = (await req.json()) as { message?: string };
+  const body = (await req.json()) as { message?: string; action?: unknown; here?: { lat?: unknown; lng?: unknown } };
+  // The device's own location, sent only for "near me / my location" asks (browser permission).
+  const hereLat = Number(body.here?.lat), hereLng = Number(body.here?.lng);
+  const here = Number.isFinite(hereLat) && Number.isFinite(hereLng) && Math.abs(hereLat) <= 90 && Math.abs(hereLng) <= 180 ? { lat: hereLat, lng: hereLng } : null;
   let message = (body.message ?? "").trim();
   if (!message) return NextResponse.json({ error: "message is required" }, { status: 400 });
 
@@ -86,7 +94,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
       AND m.created_at > date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
       AND m.id != ${userMsg.id}
   `;
-  if (turns_today >= ALLOWANCE.chatTurnsPerDay) {
+  // V2 chip taps are typed actions run without a model — not a chat turn, so not metered. The
+  // production read found the meter counting the bot's own follow-up buttons against the user.
+  const v2Action = isV2Email(userEmail) ? parseAction(body.action) : null;
+  if (turns_today >= ALLOWANCE.chatTurnsPerDay && !v2Action) {
     const charge = await chargeCredits(userEmail, "chat_turn", { ref: `chat_msg:${userMsg.id}` });
     if (!charge.ok) {
       const reply =
@@ -103,8 +114,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
         VALUES (${chatId}, 'assistant', ${reply}, ${sql.json(intent as unknown as Parameters<typeof sql.json>[0])})
         RETURNING id, role, content, intent
       `;
-      return NextResponse.json({ message: saved });
+      return NextResponse.json({ message: publicMessage(saved) });
     }
+  }
+
+  // V2 (docs/v2-agents.md): its own turn — typed chip actions, slot state, reply after result.
+  if (isV2Email(userEmail)) {
+    const v2 = await runV2Turn({ chatId, userEmail, message, action: v2Action, here, savedOnly: req.headers.get("x-v2-saved-only") === "1" });
+    // Product events (docs/analytics-events.md): the turn itself, and the milestones inside it.
+    const scope = v2.blocks?.find((b) => b.type === "scope");
+    trackEvent(userEmail, EV.chatMessage, { turn_type: v2.turnType, action: v2.action, via_action: v2Action?.type ?? null, took_ms: v2.tookMs, chat_id: chatId });
+    if (v2Action?.type === "confirm_context") trackEvent(userEmail, EV.chatContextConfirm, { profile_id: v2Action.profileId, offering: v2Action.offering, chat_id: chatId });
+    if (scope && scope.type === "scope") trackEvent(userEmail, EV.chatPlan, { run_id: scope.runId, target: scope.target, est_credits: scope.usage.credits, reused: scope.reusedPipeline, chat_id: chatId });
+    if (v2Action?.type === "run_plan" && v2.action === "search_leads") trackEvent(userEmail, EV.chatRunStart, { run_id: v2Action.runId, chat_id: chatId });
+    if (v2Action?.type === "more_run" && v2Action.count) trackEvent(userEmail, EV.chatRunStart, { run_id: v2Action.runId, more: v2Action.count, chat_id: chatId });
+    const [saved] = await sql`
+      INSERT INTO chat_messages (chat_id, role, content, intent)
+      VALUES (${chatId}, 'assistant', ${v2.reply}, ${sql.json(v2 as unknown as Parameters<typeof sql.json>[0])})
+      RETURNING id, role, content, intent, created_at
+    `;
+    await sql`UPDATE chats SET updated_at = now() WHERE id = ${chatId}`;
+    return NextResponse.json({ message: publicMessage(saved) });
   }
 
   const historyRows = await sql`
@@ -401,5 +431,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
   `;
   await sql`UPDATE chats SET updated_at = now() WHERE id = ${chatId}`;
 
-  return NextResponse.json({ message: assistantMessage });
+  return NextResponse.json({ message: publicMessage(assistantMessage) });
 }

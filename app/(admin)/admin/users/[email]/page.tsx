@@ -19,6 +19,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
     sql`SELECT route, message, created_at FROM app_errors WHERE user_email = ${email} ORDER BY created_at DESC LIMIT 20`,
     sql`SELECT campaign_id, step_key, stream, sent_at FROM email_sends WHERE recipient = ${email} ORDER BY sent_at DESC LIMIT 20`,
   ]);
+  // Everything this user did, newest first (product_events: clicks + completed actions since 2026-10-26).
+  const activity = await sql`SELECT event, section, source, path, props, created_at FROM product_events WHERE user_email = ${email} ORDER BY created_at DESC LIMIT 80`;
+  const activityTotals = await sql`SELECT section, count(*)::int AS n, count(*) FILTER (WHERE source = 'server')::int AS actions FROM product_events WHERE user_email = ${email} GROUP BY 1 ORDER BY 2 DESC`;
 
   if (!u) notFound();
 
@@ -66,6 +69,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ ema
         </div>
 
         <div className="flex flex-wrap gap-3 mb-3">
+          <Table col="col-12" title="Activity timeline" note={activityTotals.length ? `By section: ${activityTotals.map((t) => `${t.section} ${t.n} (${t.actions} actions)`).join(" · ")}` : "No events captured yet (capture started 2026-10-26)."}
+            head={["When", "Section", "Event", "Src", "Path", "Props"]} empty="Nothing captured for this user yet."
+            rows={activity.map((a) => [fmtAgo(a.created_at as Date), String(a.section), <code key="e" className="text-[11.5px]">{String(a.event)}</code>, a.source === "server" ? "action" : "click", String(a.path ?? ""), <code key="p" className="text-[11px]">{JSON.stringify(a.props).slice(0, 80)}</code>])} />
           <Table col="col-12" title="Area scans"
             head={["When", "Area", "Category", "Status", { label: "Billed calls", num: true }]}
             rows={scans.map((s) => [fmtDT(s.created_at), s.area_label, s.category ?? "—",

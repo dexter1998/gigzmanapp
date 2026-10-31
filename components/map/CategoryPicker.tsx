@@ -67,9 +67,12 @@ function Box({ state, onClick }: { state: TriState; onClick: () => void }) {
 export function CategoryPicker({
   selected,
   onChange,
+  height = 44,
 }: {
   selected: Set<string>;
   onChange: (next: Set<string>) => void;
+  /** Trigger height — the map toolbar passes its shared control height so the row lines up. */
+  height?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
@@ -113,12 +116,12 @@ export function CategoryPicker({
         type="button"
         onClick={() => setOpen((v) => !v)}
         style={{
-          display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 14px 0 16px",
-          border: "1px solid var(--g-green)", borderRadius: "var(--radius-pill)",
+          display: "flex", alignItems: "center", gap: 8, height, padding: "0 12px 0 16px",
+          border: "1px solid var(--g-border)", borderRadius: "var(--radius-pill)",
           background: "var(--g-white)", boxShadow: "var(--shadow-pop)", cursor: "pointer",
-          fontFamily: "inherit", fontSize: 12.5, fontWeight: 600,
-          color: isEverything ? "var(--g-green-text)" : "var(--g-ink)",
-          maxWidth: 260, whiteSpace: "nowrap",
+          fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+          color: "var(--g-ink)",
+          maxWidth: "min(260px, 50vw)", whiteSpace: "nowrap",
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{summary}</span>
@@ -128,7 +131,7 @@ export function CategoryPicker({
       {open && (
         <div
           style={{
-            position: "absolute", top: 50, left: 0, zIndex: 40,
+            position: "absolute", top: height + 8, left: 0, zIndex: 40,
             width: 360, maxWidth: "calc(100vw - 32px)",
             background: "var(--g-white)", border: "1px solid var(--g-border)",
             borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-pop)",
@@ -252,7 +255,7 @@ function SubRow({
       <Row indent={1} onClick={onToggleExpand}>
         <Caret open={expanded} />
         <Box state={state} onClick={() => onToggleTypes(sub.types)} />
-        <span style={{ fontSize: 12.5, color: "var(--g-ink-soft)", flex: 1 }}>{sub.label}</span>
+        <span style={{ fontSize: 12, color: "var(--g-ink-soft)", flex: 1 }}>{sub.label}</span>
         <Count on={count} total={sub.types.length} />
       </Row>
 

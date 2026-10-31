@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PaperclipIcon, LinkIcon, MicIcon, ChevronDownIcon, ArrowRightIcon } from "@/components/icons";
 
 /** Shared composer for both the chat landing page and an active thread. The attach, link,
@@ -11,15 +11,31 @@ import { PaperclipIcon, LinkIcon, MicIcon, ChevronDownIcon, ArrowRightIcon } fro
 export function ChatComposer({
   onSubmit,
   placeholder = "Ask Mantis to find leads for you…",
+  initialValue = "",
   autoFocus = false,
   disabled = false,
 }: {
   onSubmit: (message: string) => void;
   placeholder?: string;
+  /** Pre-filled text, e.g. a starter from the New chat menu. */
+  initialValue?: string;
   autoFocus?: boolean;
   disabled?: boolean;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  // A card in the thread can hand the composer a starter ("Change: ") — the Client context card's
+  // Edit button. Plain DOM event so the card needs no prop wiring through the thread.
+  useEffect(() => {
+    const on = (e: Event) => {
+      const text = (e as CustomEvent<string>).detail ?? "";
+      setValue(text);
+      requestAnimationFrame(() => { ref.current?.focus(); ref.current?.setSelectionRange(text.length, text.length); });
+    };
+    window.addEventListener("mantis:compose", on);
+    return () => window.removeEventListener("mantis:compose", on);
+  }, []);
 
   function submit() {
     const message = value.trim();
@@ -39,6 +55,7 @@ export function ChatComposer({
       }}
     >
       <textarea
+        ref={ref}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
@@ -57,7 +74,7 @@ export function ChatComposer({
           resize: "none",
           background: "transparent",
           fontFamily: "inherit",
-          fontSize: 15,
+          fontSize: 14,
           color: "var(--g-ink)",
           marginBottom: 10,
         }}
@@ -72,7 +89,7 @@ export function ChatComposer({
 
         <div style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-border)", fontSize: 12.5, fontWeight: 600, color: "var(--g-ink-soft)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--g-border)", fontSize: 12, fontWeight: 600, color: "var(--g-ink-soft)", whiteSpace: "nowrap" }}>
           ⚡ Mantis Lite 1.2 <ChevronDownIcon size={12} color="var(--g-gray-500)" />
         </div>
         <button type="button" disabled title="Voice input (coming soon)" style={composerIconButton}>

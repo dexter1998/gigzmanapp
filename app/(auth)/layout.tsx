@@ -13,12 +13,12 @@ import { ogImageMeta } from "@/lib/og";
 export const metadata: Metadata = {
   title: { absolute: `Sign In or Create Your Free Account — ${COMPANY.brandLong}` },
   description:
-    `Sign in to ${COMPANY.brandLong} or create a free account. Get 100 credits a month to find local ` +
+    `Sign in to ${COMPANY.brandLong} or create a free account. Get 500 free credits to find local ` +
     "businesses with no website near you. No card required to start.",
   alternates: { canonical: `${COMPANY.site}/login` },
   openGraph: {
     title: `Start Finding Local Clients — Free`,
-    description: "100 free credits a month. Search the map, unlock the leads you want. No card required.",
+    description: "500 free credits when you sign up. Search the map, unlock the leads you want. No card required.",
     url: `${COMPANY.site}/login`,
     siteName: COMPANY.brand,
     type: "website",

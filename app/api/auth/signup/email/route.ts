@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { recordSignupSource } from "@/lib/attribution";
 import { sql } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { sendVerificationEmail } from "@/lib/ses";
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     VALUES (${email}, ${passwordHash}, false)
     ON CONFLICT (email) DO UPDATE SET password_hash = ${passwordHash}, updated_at = now()
   `;
+  recordSignupSource(email, req.headers.get("cookie"));
 
   const code = generateCode();
   await sql`

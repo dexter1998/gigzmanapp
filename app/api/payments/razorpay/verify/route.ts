@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { grantCredits } from "@/lib/credits/server";
@@ -14,7 +15,10 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const b = (await req.json()) as { orderId?: string; razorpayOrderId?: string; paymentId?: string; signature?: string };
+  const raw = (await req.json()) as { orderId?: string; gatewayOrderId?: string; razorpayOrderId?: string; paymentId?: string; signature?: string };
+  // `gatewayOrderId` is what the browser sends now; the old field name is still accepted so a tab
+  // opened before a deploy can finish its checkout.
+  const b = { ...raw, razorpayOrderId: raw.gatewayOrderId ?? raw.razorpayOrderId };
   if (!b.orderId || !b.razorpayOrderId || !b.paymentId || !b.signature) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
@@ -37,5 +41,6 @@ export async function POST(req: NextRequest) {
     UPDATE payments SET status = 'paid', cf_payment_id = ${b.paymentId}, paid_at = COALESCE(paid_at, now())
     WHERE order_id = ${b.orderId}
   `;
+  trackEvent(session?.user?.email, EV.paid, {});
   return NextResponse.json({ ok: true, granted, credits: payment.credits });
 }

@@ -3,22 +3,23 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { BuyCredits } from "@/components/billing/BuyCredits";
 import { cashfreeIsLive } from "@/lib/cashfree";
-import { CREDIT_COST, FREE_MONTHLY_CREDITS, ALLOWANCE, formatINR } from "@/lib/credits/pricing";
+import { CREDIT_COST, FREE_SIGNUP_CREDITS, ALLOWANCE, TOPUP_PACK_ID, formatINR, packById, planLabel } from "@/lib/credits/pricing";
 import { allowanceFor } from "@/lib/credits/server";
+import { planStatusOf } from "@/lib/credits/plan";
 
 export const metadata = { title: "Billing" };
 
 const RATE_CARD: Array<{ label: string; credits: number; note: string }> = [
-  { label: "Search an area you've already scanned", credits: CREDIT_COST.cached_search, note: "Always free" },
-  { label: "Search new ground (per live lookup)", credits: CREDIT_COST.billed_places_call, note: "After your daily free allowance" },
-  { label: "Ask Mantis in chat (per message)", credits: CREDIT_COST.chat_turn, note: "After your daily free allowance" },
-  { label: "Add a lead — name, address, phone", credits: CREDIT_COST.lead_unlock, note: "" },
-  { label: "Website health check", credits: CREDIT_COST.website_check, note: "" },
-  { label: "Deep enrichment — hours, busy times", credits: CREDIT_COST.deep_enrich, note: "" },
+  { label: "Rescan a scanned area", credits: CREDIT_COST.cached_search, note: "Always free" },
+  { label: "Live lookup · new area (finds up to 20 businesses)", credits: CREDIT_COST.billed_places_call, note: `First ${ALLOWANCE.billedCallsPerDay} a day free` },
+  { label: "Chat message", credits: CREDIT_COST.chat_turn, note: "After daily free allowance" },
+  { label: "Add lead · name, address, phone", credits: CREDIT_COST.lead_unlock, note: "" },
+  { label: "Website check", credits: CREDIT_COST.website_check, note: "" },
+  { label: "Deep enrichment · hours, busy times", credits: CREDIT_COST.deep_enrich, note: "" },
   { label: "Verified email", credits: CREDIT_COST.verified_email, note: "" },
   { label: "Verified phone", credits: CREDIT_COST.verified_phone, note: "" },
-  { label: "Find the founder or decision-maker", credits: CREDIT_COST.find_founder, note: "" },
-  { label: "Generate a pitch script", credits: CREDIT_COST.pitch_script, note: "" },
+  { label: "Find founder / decision-maker", credits: CREDIT_COST.find_founder, note: "" },
+  { label: "Pitch script", credits: CREDIT_COST.pitch_script, note: "" },
 ];
 
 export default async function BillingPage() {
@@ -26,54 +27,71 @@ export default async function BillingPage() {
   const userEmail = session!.user!.email!;
 
   const [profile] = await sql`SELECT plan, credits, credits_limit, plan_source, plan_granted_at, plan_expires_at FROM user_profiles WHERE email = ${userEmail}`;
-  const plan = profile?.plan ?? "free";
+  // Expiry applied at read time: an ended plan shows as Free here the moment it ends.
+  const status = planStatusOf(profile);
+  const plan = status.plan;
   const allowance = await allowanceFor(userEmail, plan);
+  const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const lapsed = !status.active && (profile?.plan ?? "free") !== "free";
 
   const payments = await sql`
-    SELECT order_id, credits, amount_paise, status, created_at, paid_at
+    SELECT order_id, pack_id, credits, amount_paise, status, created_at, paid_at
     FROM payments WHERE user_email = ${userEmail}
     ORDER BY created_at DESC LIMIT 20
   `;
 
   return (
-    <div style={{ padding: "28px 20px 120px", maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: "0 0 6px" }}>Billing</h1>
+    <div style={{ padding: "64px 32px 120px", maxWidth: 900, margin: "0 auto" }}>
+      <h1 className="set-title" style={{ marginBottom: 6 }}>Billing</h1>
       <p style={{ fontSize: 14, color: "var(--g-gray-500)", margin: "0 0 28px" }}>
-        Credits are spent only when Mantis does real work for you. Searching ground you&apos;ve already covered is always free.
+        <span title="Credits are spent only when Mantis does real work for you. Searching ground you've already covered is always free.">Pay per real work · rescans free</span>
       </p>
 
       {!cashfreeIsLive() && (
-        <p style={{ fontSize: 12.5, fontWeight: 600, color: "#b45309", background: "var(--g-amber-tint)", padding: "9px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20 }}>
-          Test mode — payments here are sandbox transactions, no real money moves.
+        <p style={{ fontSize: 12, fontWeight: 600, color: "#b45309", background: "var(--g-amber-tint)", padding: "9px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20 }}>
+          Test mode · sandbox, no real money
         </p>
       )}
 
       {/* A comped plan says so. Showing someone a plan they were given as though they bought it —
           with an upgrade prompt beside it — is the kind of small wrongness that makes people
           distrust a billing page. */}
-      {profile?.plan_source === "granted" && (
+      {status.active && status.source === "purchase" && (
+        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--g-ink)", background: "var(--g-gray-100)", border: "1px solid var(--g-border)", padding: "11px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20, lineHeight: 1.5 }}>
+          <strong style={{ fontWeight: 600 }}>{planLabel(plan)}</strong> plan · active
+          {status.expiresAt ? ` · until ${fmtDate(status.expiresAt)}` : ""} · buying again adds 30 days
+        </p>
+      )}
+      {!status.active && (
+        <p style={{ fontSize: 13, color: "var(--g-ink)", background: "var(--g-gray-100)", border: "1px solid var(--g-border)", padding: "11px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20, lineHeight: 1.5 }}
+          title="On the Free plan you can build and test campaigns. Launching them to your leads needs a paid plan.">
+          {lapsed ? "Your plan has ended" : "Free plan"} · campaigns can be tested · launching needs a plan
+        </p>
+      )}
+
+      {status.active && status.source === "granted" && (
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--g-green-text)", background: "var(--g-green-mint)", padding: "11px 14px", borderRadius: "var(--radius-sm)", marginBottom: 20, lineHeight: 1.5 }}>
-          Your <strong style={{ textTransform: "capitalize" }}>{plan}</strong> plan was granted by Mantis — free, nothing to pay.
-          {profile.plan_granted_at ? ` Active since ${new Date(profile.plan_granted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : ""}
+          <strong>{planLabel(plan)}</strong> plan · granted by Mantis · free
+          {profile.plan_granted_at ? ` · since ${new Date(profile.plan_granted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""}
           {/* A comp with an end date has to say so here. Someone planning around a plan that quietly
               stops is the worst version of this feature. */}
-          {profile.plan_expires_at ? ` Runs until ${new Date(profile.plan_expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : ""}
+          {status.expiresAt ? ` · until ${fmtDate(status.expiresAt)}` : ""}
         </p>
       )}
 
       {/* Balance + today's free allowance */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 1, background: "var(--g-border)", border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", overflow: "hidden", marginBottom: 34 }}>
         <Stat value={(profile?.credits ?? 0).toLocaleString("en-IN")} label="Credits available" />
-        <Stat value={`${allowance.dayRemaining} / ${ALLOWANCE.billedCallsPerDay}`} label="Free searches left today" />
-        <Stat value={`${allowance.monthRemaining}`} label="Free searches left this month" />
+        <Stat value={`${allowance.dayRemaining} / ${ALLOWANCE.billedCallsPerDay}`} label="Free searches · today" />
+        <Stat value={`${allowance.monthRemaining}`} label="Free searches · month" />
         <Stat
-          value={plan === "free" ? `${FREE_MONTHLY_CREDITS}/mo` : plan}
-          label={plan === "free" ? "Free plan credits" : profile?.plan_source === "granted" ? "Plan — granted free" : "Plan"}
+          value={plan === "free" ? `${FREE_SIGNUP_CREDITS} at signup` : planLabel(plan)}
+          label={plan === "free" ? "Free plan credits" : status.source === "granted" ? "Plan — granted free" : status.expiresAt ? `Plan · until ${fmtDate(status.expiresAt)}` : "Plan"}
         />
       </div>
 
-      <h2 style={sectionTitle}>Buy credits</h2>
-      <BuyCredits mode={cashfreeIsLive() ? "production" : "sandbox"} />
+      <h2 style={sectionTitle}>Monthly plans</h2>
+      <BuyCredits mode={cashfreeIsLive() ? "production" : "sandbox"} sectionTitleStyle={sectionTitle} />
 
       <h2 style={{ ...sectionTitle, marginTop: 44 }}>What credits buy</h2>
       <div style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", background: "var(--g-white)", overflow: "hidden" }}>
@@ -90,8 +108,8 @@ export default async function BillingPage() {
             }}
           >
             <div>
-              <div style={{ fontSize: 13.5, color: "var(--g-ink)" }}>{row.label}</div>
-              {row.note && <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>{row.note}</div>}
+              <div style={{ fontSize: 13, color: "var(--g-ink)" }}>{row.label}</div>
+              {row.note && <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>{row.note}</div>}
             </div>
             <div
               style={{
@@ -107,9 +125,8 @@ export default async function BillingPage() {
           </div>
         ))}
       </div>
-      <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 12, lineHeight: 1.6 }}>
-        A live lookup returns up to 20 businesses, so a typical neighbourhood search costs far less than
-        the per-lookup price suggests. Every lookup you make also makes that area free for your next visit.
+      <p style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 12, lineHeight: 1.6 }} title="A live lookup returns up to 20 businesses, so a typical neighbourhood search costs far less than the per-lookup price suggests. Every lookup you make also makes that area free for your next visit.">
+        1 lookup = up to 20 businesses · area free after
       </p>
 
       {payments.length > 0 && (
@@ -129,15 +146,18 @@ export default async function BillingPage() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>
                     {p.credits.toLocaleString("en-IN")} credits
+                    <span style={{ fontWeight: 400, color: "var(--g-gray-500)" }}>
+                      {" · "}{p.pack_id === TOPUP_PACK_ID ? "Add funds" : `${packById(p.pack_id as string)?.label ?? "Plan"} plan`}
+                    </span>
                   </div>
-                  <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
                     {new Date(p.paid_at ?? p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
                     {formatINR(p.amount_paise)}
                   </span>
                   <StatusPill status={p.status} />
@@ -146,7 +166,7 @@ export default async function BillingPage() {
                   {p.status === "paid" && (
                     <Link
                       href={`/settings/billing/invoice/${p.order_id}`}
-                      style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none", whiteSpace: "nowrap" }}
+                      style={{ fontSize: 12, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none", whiteSpace: "nowrap" }}
                     >
                       Invoice ↓
                     </Link>
@@ -165,7 +185,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: "var(--g-white)", padding: "20px 18px" }}>
       <div style={{ fontSize: 22, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
-      <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 3 }}>{label}</div>
     </div>
   );
 }
@@ -180,7 +200,7 @@ function StatusPill({ status }: { status: string }) {
   };
   const s = map[status] ?? map.created;
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
       {s.label}
     </span>
   );

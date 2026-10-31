@@ -1216,3 +1216,629 @@ CREATE TABLE IF NOT EXISTS scrape_queries (
   domains   int,
   PRIMARY KEY (tool, keyword, place)
 );
+
+-- V2 demo (lib/v2.ts). One jsonb bag rather than a column per signal or a table of its own: the
+-- V2 surface is a demonstration on a single allowlisted account, so its signals have no shared
+-- shape yet and nothing else joins against them. When a signal earns its place in V2 proper, it
+-- graduates to real columns — this bag is deliberately not an API.
+-- Renamed from v2_signals before it reached production (it never did): it holds the SELLER's
+-- profile — what they sell, to whom, where — written by Mantis Scout. Lead signals live per result.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS v2_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- V2 chat (docs/v2-agents.md). Per-chat slot state, written by code only — no LLM in this layer.
+-- v1 re-derived every slot from the previous assistant message's intent, which is how a chip
+-- like "Try a nearby area" ended up re-running the same area: nothing held a radius to widen.
+CREATE TABLE IF NOT EXISTS v2_chat_state (
+  chat_id    UUID PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
+  state      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per V2 turn: what kind of request it was, which steps ran and how long they took, and
+-- whether no capability fitted (gap). The gap rows are what the next capability gets built from.
+CREATE TABLE IF NOT EXISTS v2_turn_log (
+  id          BIGSERIAL PRIMARY KEY,
+  chat_id     UUID NOT NULL,
+  user_email  TEXT NOT NULL,
+  turn_type   TEXT NOT NULL,
+  audience    TEXT,
+  via_action  BOOLEAN NOT NULL DEFAULT false,
+  gap         BOOLEAN NOT NULL DEFAULT false,
+  gap_note    TEXT,
+  steps       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  took_ms     INT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_turn_log_gap ON v2_turn_log(created_at DESC) WHERE gap;
+
+-- V2 runs (docs/v2-plan.md §3, docs/v2-agents.md §4). A run is a plan the user approved, executed
+-- one step at a time by client-driven ticks (App Runner gives CPU only inside a request). The
+-- lock is a ROW (locked_until), not pg_advisory_lock — the pool makes advisory locks unsafe.
+CREATE TABLE IF NOT EXISTS v2_runs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chat_id       UUID REFERENCES chats(id) ON DELETE CASCADE,
+  user_email    TEXT NOT NULL,
+  kind          TEXT NOT NULL,                 -- search | contacts
+  plan          JSONB NOT NULL,                -- what the Planner produced, compiled
+  status        TEXT NOT NULL DEFAULT 'planned', -- planned | running | done | failed | cancelled
+  target        INT NOT NULL DEFAULT 20,
+  delivered     INT NOT NULL DEFAULT 0,
+  est_credits   INT NOT NULL DEFAULT 0,
+  locked_until  TIMESTAMPTZ NOT NULL DEFAULT 'epoch',
+  summary_msg   UUID,                          -- the chat message written when the run finished
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at    TIMESTAMPTZ,
+  finished_at   TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_v2_runs_chat ON v2_runs(chat_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS v2_run_steps (
+  id          BIGSERIAL PRIMARY KEY,
+  run_id      UUID NOT NULL REFERENCES v2_runs(id) ON DELETE CASCADE,
+  seq         INT NOT NULL,
+  playbook_id TEXT,
+  op          TEXT NOT NULL,
+  label       TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'planned', -- planned | running | done | failed | skipped
+  input       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  cursor      INT NOT NULL DEFAULT 0,          -- progress inside a multi-tick step
+  raw_count   INT,
+  kept_count  INT,
+  detail      TEXT,
+  error       TEXT,
+  started_at  TIMESTAMPTZ,
+  ended_at    TIMESTAMPTZ,
+  UNIQUE (run_id, seq)
+);
+
+-- Own rows rather than leads: future sources (registry, directories) have no place_id. A Places
+-- lead links lead_id instead of being copied.
+CREATE TABLE IF NOT EXISTS v2_results (
+  id          BIGSERIAL PRIMARY KEY,
+  run_id      UUID NOT NULL REFERENCES v2_runs(id) ON DELETE CASCADE,
+  lead_id     UUID,
+  name        TEXT NOT NULL,
+  category    TEXT,
+  area        TEXT,
+  website     TEXT,
+  domain      TEXT,
+  phone       TEXT,
+  rating      REAL,
+  review_count INT,
+  emails      JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [{email, source: site|registry, tier}]
+  signals     JSONB NOT NULL DEFAULT '{}'::jsonb,  -- {signal_id: true|false|value}
+  site_checked BOOLEAN NOT NULL DEFAULT false,
+  contacts_checked BOOLEAN NOT NULL DEFAULT false,
+  deep_queued BOOLEAN NOT NULL DEFAULT false,
+  score       REAL,
+  rank        INT,
+  UNIQUE (run_id, lead_id)
+);
+CREATE INDEX IF NOT EXISTS idx_v2_results_run ON v2_results(run_id, rank);
+
+-- What the business's homepage says about its site (https, mobile viewport, copyright year,
+-- analytics, ad pixels, booking, whatsapp, parked, cms, phones, socials, title, final_url,
+-- checked_at, source box|app). Written by the AWS box after a full crawl and by Mantis V2's
+-- Qualifier after a fast read; one jsonb because it is read whole, never queried by key yet.
+ALTER TABLE scrape_domains ADD COLUMN IF NOT EXISTS site_signals JSONB;
+
+-- Company socials read off the business's own site (LinkedIn first) — default pipeline step 4.
+ALTER TABLE v2_results ADD COLUMN IF NOT EXISTS socials JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Every plan Mantis builds is a pipeline; identical shapes share a row and pile up their outcomes,
+-- which is what "which pipeline works for whom" is learned from. The id is a hash of the shape.
+CREATE TABLE IF NOT EXISTS v2_pipelines (
+  id             TEXT PRIMARY KEY,
+  shape          JSONB NOT NULL,          -- {ops, playbookIds, mustHave, placeTypes, keywordMode}
+  label          TEXT NOT NULL,
+  runs           INT NOT NULL DEFAULT 0,
+  target_sum     INT NOT NULL DEFAULT 0,
+  delivered_sum  INT NOT NULL DEFAULT 0,
+  site_sum       INT NOT NULL DEFAULT 0,  -- delivered rows with a readable website
+  email_sum      INT NOT NULL DEFAULT 0,
+  linkedin_sum   INT NOT NULL DEFAULT 0,
+  unlock_sum     INT NOT NULL DEFAULT 0,  -- outcomes: rows the user paid to unlock
+  first_run_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_run_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS pipeline_id TEXT;
+
+-- What the user did with a result. Kept from day one so learning has something to read later.
+CREATE TABLE IF NOT EXISTS v2_outcomes (
+  id          BIGSERIAL PRIMARY KEY,
+  user_email  TEXT NOT NULL,
+  run_id      UUID,
+  result_id   BIGINT,
+  lead_id     UUID,
+  event       TEXT NOT NULL,             -- unlock | add_to_leads | open_site | open_linkedin
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_outcomes_run ON v2_outcomes(run_id);
+
+-- Which component produced each part of a result: discovered_by (places_live | places_saved |
+-- name_match | registry), url_by (places_listing | place_details | registry), email_by (site |
+-- registry), linkedin_by (site), strategy (primary | wide | adjacent | names | registry). The test
+-- suite sums this to show which scraper / API / enricher the final leads actually depend on.
+ALTER TABLE v2_results ADD COLUMN IF NOT EXISTS provenance JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- The person behind the business, as written on its own site (enricher: founder/leader name + role,
+-- the best address and its tier). Only what was found written; nothing is guessed.
+ALTER TABLE v2_results ADD COLUMN IF NOT EXISTS contact JSONB;
+
+-- Extra lead-table columns (docs/lead-contact-contract.md): {column_key: short value} for the run
+-- plan's extraColumns, from measured facts + one cheap read of the page text the run already
+-- fetched; `_at` marks a row as filled. Values are never guessed — empty when unknown.
+ALTER TABLE v2_results ADD COLUMN IF NOT EXISTS extras JSONB;
+
+-- V2 source registry, learned (docs/v2-agents.md). Every call a source makes for a capability is a
+-- row: did it work, for which kind of business, at what cost. Sources are tried in the order these
+-- rows rank them, per capability and business type.
+CREATE TABLE IF NOT EXISTS v2_source_attempts (
+  id          BIGSERIAL PRIMARY KEY,
+  source      TEXT NOT NULL,           -- places_listing | place_details | exa | site | registry | ...
+  capability  TEXT NOT NULL,           -- website | person | person_linkedin | email | discover
+  place_type  TEXT,
+  city        TEXT,
+  entity_key  TEXT,                    -- place:<place_id> | domain:<domain>
+  ok          BOOLEAN NOT NULL,
+  value       TEXT,
+  cost_usd    NUMERIC(10,5) NOT NULL DEFAULT 0,
+  ms          INT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_source_attempts_rank ON v2_source_attempts(capability, place_type, source);
+
+-- Facts about a business, shared by every pipeline: found once by any source, reused by all —
+-- a second playbook that meets the same company reads this instead of repeating the lookups.
+CREATE TABLE IF NOT EXISTS v2_facts (
+  entity_key  TEXT NOT NULL,
+  field       TEXT NOT NULL,           -- website | company_linkedin | person_name | person_role | person_linkedin | email
+  value       TEXT NOT NULL,
+  source      TEXT NOT NULL,
+  confidence  REAL NOT NULL DEFAULT 0.5,
+  checked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (entity_key, field, source)
+);
+
+-- Paid search answers are kept: the same query from any pipeline (or a re-run test) reads this
+-- instead of paying again. 30-day freshness is enforced by the reader.
+CREATE TABLE IF NOT EXISTS v2_search_cache (
+  provider   TEXT NOT NULL,
+  query      TEXT NOT NULL,
+  results    JSONB NOT NULL,
+  cost_usd   NUMERIC(10,5) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (provider, query)
+);
+
+-- Measured quality of a component (source / API / fetch method / extractor) from a benchmark run:
+-- precision = share of its answers that were right; recall = share of cases it answered at all.
+-- The confidence module combines these with live attempt counts (v2_source_attempts).
+CREATE TABLE IF NOT EXISTS v2_benchmarks (
+  component   TEXT NOT NULL,
+  capability  TEXT NOT NULL,
+  precision   REAL,
+  recall      REAL,
+  cost_usd    NUMERIC(10,5),             -- per attempt
+  n           INT NOT NULL,
+  notes       TEXT,
+  measured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (component, capability)
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- V2 outreach (docs/v2-campaigns.md). User campaigns — separate from the admin `campaigns` above,
+-- which are admin-authored broadcasts. Nothing here sends until the user taps Approve AND a sender
+-- (their mailbox / our pre-warmed inbox / their WhatsApp) is connected.
+-- ---------------------------------------------------------------------------------------------
+
+-- A connected channel account. Secrets are AES-GCM encrypted (lib/v2/outreach/secret.ts).
+CREATE TABLE IF NOT EXISTS v2_senders (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email    TEXT NOT NULL,
+  channel       TEXT NOT NULL,           -- email | whatsapp | voice | crm
+  provider      TEXT NOT NULL,           -- google | microsoft | imap | mantis_pool | meta | hubspot | ...
+  address       TEXT NOT NULL,           -- the mailbox, the WhatsApp number, the CRM account
+  display_name  TEXT,
+  status        TEXT NOT NULL DEFAULT 'connected',  -- connected | needs_attention | paused | disconnected
+  status_note   TEXT,
+  daily_limit   INT NOT NULL DEFAULT 40,
+  config        JSONB NOT NULL DEFAULT '{}',        -- non-secret settings (hosts, ports, ids)
+  secret        TEXT,                               -- encrypted token / password
+  last_checked  TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_email, channel, address)
+);
+
+-- Pre-warmed inboxes / numbers Mantis offers (stocked by us; empty until we add them).
+CREATE TABLE IF NOT EXISTS v2_sender_pool (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel       TEXT NOT NULL,           -- email | whatsapp
+  domain        TEXT,                    -- email: the warmed domain
+  address       TEXT NOT NULL,
+  health        INT,                     -- 0-100
+  warming_days  INT,
+  domain_age_days INT,
+  warmup_sent   INT, warmup_replies INT,
+  price_inr     INT,
+  claimed_by    TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Reusable mail / WhatsApp messages and saved campaign graphs.
+CREATE TABLE IF NOT EXISTS v2_templates (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email    TEXT NOT NULL,
+  kind          TEXT NOT NULL,           -- email | whatsapp | campaign
+  name          TEXT NOT NULL,
+  subject       TEXT,                    -- email
+  body          TEXT NOT NULL DEFAULT '',-- email: text or html; whatsapp: text
+  is_html       BOOLEAN NOT NULL DEFAULT false,
+  graph         JSONB,                   -- campaign: {nodes, edges}
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_templates_user ON v2_templates(user_email, kind, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS v2_campaigns (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email    TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  list_chat_id  UUID,                    -- the Leads list (= the chat it came from)
+  kind          TEXT NOT NULL DEFAULT 'sequence',   -- sequence | quick_email | quick_whatsapp | quick_call
+  status        TEXT NOT NULL DEFAULT 'draft',      -- draft | testing | approved | scheduled | running | paused | done
+  graph         JSONB NOT NULL DEFAULT '{"nodes":[],"edges":[]}',
+  schedule      JSONB NOT NULL DEFAULT '{}',        -- {startAt, window:{from,to}, days:[1..7], tz, dailyCap}
+  sender_ids    UUID[] NOT NULL DEFAULT '{}',
+  test_sent_at  TIMESTAMPTZ,
+  approved_at   TIMESTAMPTZ,
+  origin        TEXT NOT NULL DEFAULT 'manual',     -- manual | chat
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_campaigns_user ON v2_campaigns(user_email, updated_at DESC);
+
+-- The planner's conversation for a campaign (the builder's left panel).
+CREATE TABLE IF NOT EXISTS v2_campaign_messages (
+  id            BIGSERIAL PRIMARY KEY,
+  campaign_id   UUID NOT NULL REFERENCES v2_campaigns(id) ON DELETE CASCADE,
+  role          TEXT NOT NULL,           -- user | assistant
+  content       TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per (recipient, touch) once approved: the queue the sender worker drains.
+CREATE TABLE IF NOT EXISTS v2_sends (
+  id            BIGSERIAL PRIMARY KEY,
+  campaign_id   UUID NOT NULL REFERENCES v2_campaigns(id) ON DELETE CASCADE,
+  result_id     BIGINT,                  -- v2_results row (the lead)
+  node_id       TEXT NOT NULL,
+  channel       TEXT NOT NULL,
+  to_address    TEXT,
+  due_at        TIMESTAMPTZ,
+  status        TEXT NOT NULL DEFAULT 'queued',     -- queued | scheduled | sent | skipped | failed | cancelled
+  status_note   TEXT,
+  sent_at       TIMESTAMPTZ, opened_at TIMESTAMPTZ, replied_at TIMESTAMPTZ, bounced_at TIMESTAMPTZ,
+  is_test       BOOLEAN NOT NULL DEFAULT false,
+  UNIQUE (campaign_id, result_id, node_id, is_test)
+);
+CREATE INDEX IF NOT EXISTS idx_v2_sends_due ON v2_sends(status, due_at);
+-- Call loop (2026-10-31): an AI call that isn't answered, or ends "call me later", is dialled again —
+-- same row, requeued — until the lead says yes/no or the touch's retry cap is reached.
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS call_attempt INT NOT NULL DEFAULT 0;   -- dials made after the first
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS outcome TEXT;                          -- booked | interested | not_interested | wrong_person | callback | no_answer | busy | no_conversation
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS callback_at TIMESTAMPTZ;
+
+-- Replies and responses (Inbox).
+CREATE TABLE IF NOT EXISTS v2_inbox (
+  id            BIGSERIAL PRIMARY KEY,
+  user_email    TEXT NOT NULL,
+  campaign_id   UUID,
+  result_id     BIGINT,
+  channel       TEXT NOT NULL,
+  from_address  TEXT NOT NULL,
+  from_name     TEXT,
+  subject       TEXT,
+  body          TEXT NOT NULL,
+  received_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at       TIMESTAMPTZ,
+  sentiment     TEXT                    -- interested | not_now | not_interested | unsubscribe | other
+);
+CREATE INDEX IF NOT EXISTS idx_v2_inbox_user ON v2_inbox(user_email, received_at DESC);
+
+-- Where test sends go (asked once in the test popup, kept for next time).
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS v2_test_contacts JSONB;
+
+-- 2026-10-21: the send worker and inbox sync (docs/v2-campaigns.md).
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS sender_id UUID;
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS external_id TEXT;      -- provider message id (Gmail id / Message-ID / wamid)
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS thread_id TEXT;        -- Gmail thread, so follow-ups stay in one thread
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS redirected_to TEXT;    -- set when V2_OUTREACH_REDIRECT sent it elsewhere
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS external_id TEXT;
+-- A reply to the user's own "Send test" (2026-10-22): shown in Inbox, marked Test, and never applied
+-- to the real lead's sequence or outcome stats.
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS is_test BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS sender_id UUID;
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS thread_id TEXT;
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'reply';   -- reply | auto_reply | bounce
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS ai_summary JSONB;          -- {summary, next}: Inbox's "AI summary" card, made once per reply
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS ai_summary_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_v2_inbox_external ON v2_inbox(user_email, external_id);
+ALTER TABLE v2_senders ADD COLUMN IF NOT EXISTS last_synced TIMESTAMPTZ;
+
+-- 2026-10-21: templates ↔ campaign sync, call scripts, media.
+ALTER TABLE v2_templates ADD COLUMN IF NOT EXISTS campaign_id UUID;   -- set when the planner wrote it for a campaign
+ALTER TABLE v2_templates ADD COLUMN IF NOT EXISTS touch INT;          -- …and which touch
+ALTER TABLE v2_templates ADD COLUMN IF NOT EXISTS media_url TEXT;     -- WhatsApp image header / email hero image
+-- kind now also 'call' (a call talk track).
+
+-- Uploaded images for templates. Served publicly by unguessable id so mail clients and Meta can
+-- fetch them (hosted images, not CID attachments — same rule as the rest of Mantis's mail).
+CREATE TABLE IF NOT EXISTS v2_media (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email  TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  mime        TEXT NOT NULL,
+  bytes       BYTEA NOT NULL,
+  size        INT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------- Signal graph (2026-10-22)
+-- What was OBSERVED about a company (a careers page's roles, Instagram followers, a funding round),
+-- with where it was read and until when it is trusted. Every run reads here first and fetches
+-- only what is missing or expired, so a company read for one user is free for the next.
+CREATE TABLE IF NOT EXISTS company_facts (
+  entity       TEXT NOT NULL,            -- domain (preferred) or place:<place_id>
+  key          TEXT NOT NULL,            -- hiring | social | funding | offerings | forms | security | ...
+  value        JSONB NOT NULL,
+  source       TEXT NOT NULL,            -- careers_page | greenhouse | instagram | news | site | places | registry:<name>
+  evidence_url TEXT,
+  observed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (entity, key)
+);
+CREATE INDEX IF NOT EXISTS idx_company_facts_key ON company_facts(key, observed_at DESC);
+
+-- What was DERIVED from those facts by a rule (lib/v2/signals/rules.ts): "hiring 3 sales roles"
+-- → needs_crm, needs_lead_data. derived_from names the fact keys, so every claim can show why.
+CREATE TABLE IF NOT EXISTS company_signals (
+  entity       TEXT NOT NULL,
+  signal       TEXT NOT NULL,
+  confidence   REAL NOT NULL,
+  rule_id      TEXT NOT NULL,
+  derived_from TEXT[] NOT NULL,
+  reason       TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (entity, signal)
+);
+CREATE INDEX IF NOT EXISTS idx_company_signals_signal ON company_signals(signal, confidence DESC);
+
+-- What happened after outreach to a lead that carried a signal: the learning loop re-weights
+-- rules from this (a rule whose leads never reply loses weight).
+CREATE TABLE IF NOT EXISTS signal_outcomes (
+  id           BIGSERIAL PRIMARY KEY,
+  entity       TEXT NOT NULL,
+  signal       TEXT NOT NULL,
+  rule_id      TEXT,
+  outcome      TEXT NOT NULL,            -- sent | opened | replied | interested | meeting | bounced | unsubscribed
+  campaign_id  UUID,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_signal_outcomes_rule ON signal_outcomes(rule_id, outcome);
+
+-- Public registers (RERA, FSSAI, MCA, GeM …) are called at most once a day per query and kept:
+-- every later read in the day — any user, any run — comes from here.
+CREATE TABLE IF NOT EXISTS registry_cache (
+  source      TEXT NOT NULL,
+  query       TEXT NOT NULL,
+  day         DATE NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Kolkata')::date,
+  rows        JSONB NOT NULL,
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (source, query, day)
+);
+
+-- Who a campaign speaks for (2026-10-22): company, offer and caller name, confirmed in the Campaign
+-- Planner before Approve. The AI voice agent and the planner's copy use it; null = not confirmed.
+ALTER TABLE v2_campaigns ADD COLUMN IF NOT EXISTS sender_profile JSONB;
+
+-- 2026-10-23: the standalone AI test call (Integrations → AI voice calls). A self-test has no
+-- campaign, so it has no v2_sends row; settled from the voice agent's analytics like any call.
+CREATE TABLE IF NOT EXISTS v2_voice_tests (
+  id                BIGSERIAL PRIMARY KEY,
+  user_email        TEXT NOT NULL,
+  phone             TEXT NOT NULL,
+  name              TEXT,
+  attempt_id        TEXT,                              -- the voice platform's call id
+  status            TEXT NOT NULL DEFAULT 'calling',   -- calling | done | failed
+  status_note       TEXT,
+  connected_seconds INT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at       TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_v2_voice_tests_user ON v2_voice_tests(user_email, created_at DESC);
+
+-- 2026-10-23: Business profiles — a user can sell for more than one business (their own agency,
+-- a client, a side business). Each website read (Mantis Scout) or Settings → Business profiles
+-- entry is one row; a chat picks one (v2_chat_state.state.businessProfileId) and the Planner,
+-- "Sending as" and pitch prefill read that one. user_profiles.v2_profile stays as a MIRROR of the
+-- default profile, so code that reads it without a chat keeps working (lib/v2/business-profiles.ts).
+CREATE TABLE IF NOT EXISTS v2_business_profiles (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email       TEXT NOT NULL,
+  name             TEXT NOT NULL,
+  website          TEXT,
+  summary          TEXT NOT NULL DEFAULT '',
+  services         JSONB NOT NULL DEFAULT '[]'::jsonb,
+  primary_service  TEXT,
+  target_trades    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  target_areas     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  playbook_ids     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  source           TEXT NOT NULL DEFAULT 'chat',     -- website | chat | manual
+  is_default       BOOLEAN NOT NULL DEFAULT false,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_v2_business_profiles_user ON v2_business_profiles(user_email, last_used_at DESC NULLS LAST);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_v2_business_profiles_default ON v2_business_profiles(user_email) WHERE is_default;
+
+-- Backfill (idempotent): each user's single v2_profile becomes their first, default profile.
+INSERT INTO v2_business_profiles (user_email, name, website, summary, services, primary_service, target_trades,
+                                  target_areas, playbook_ids, source, is_default, created_at, updated_at)
+SELECT up.email,
+       coalesce(nullif(trim(up.v2_profile->>'company'), ''),
+                nullif(regexp_replace(coalesce(up.v2_profile->>'website', ''), '^(https?://)?(www\.)?([^/]+).*$', '\3'), ''),
+                'My business'),
+       nullif(up.v2_profile->>'website', ''),
+       coalesce(up.v2_profile->>'summary', ''),
+       CASE WHEN jsonb_typeof(up.v2_profile->'services') = 'array' THEN up.v2_profile->'services' ELSE '[]'::jsonb END,
+       nullif(up.v2_profile->>'primaryService', ''),
+       CASE WHEN jsonb_typeof(up.v2_profile->'targetTrades') = 'array' THEN up.v2_profile->'targetTrades' ELSE '[]'::jsonb END,
+       CASE WHEN jsonb_typeof(up.v2_profile->'targetAreas') = 'array' THEN up.v2_profile->'targetAreas' ELSE '[]'::jsonb END,
+       CASE WHEN jsonb_typeof(up.v2_profile->'playbookIds') = 'array' THEN up.v2_profile->'playbookIds' ELSE '[]'::jsonb END,
+       CASE WHEN up.v2_profile->>'source' = 'website' THEN 'website' ELSE 'chat' END,
+       true,
+       CASE WHEN up.v2_profile->>'updatedAt' ~ '^\d{4}-\d{2}-\d{2}T' THEN (up.v2_profile->>'updatedAt')::timestamptz ELSE now() END,
+       CASE WHEN up.v2_profile->>'updatedAt' ~ '^\d{4}-\d{2}-\d{2}T' THEN (up.v2_profile->>'updatedAt')::timestamptz ELSE now() END
+FROM user_profiles up
+WHERE jsonb_typeof(up.v2_profile->'summary') = 'string'
+  AND NOT EXISTS (SELECT 1 FROM v2_business_profiles b WHERE b.user_email = up.email);
+
+-- Sidebar pin (ChatGPT-style "Pinned" section above Recent). NULL = not pinned; newest pin first.
+-- Rename reuses chats.title.
+ALTER TABLE chats ADD COLUMN IF NOT EXISTS pinned_at TIMESTAMPTZ;
+
+-- Account deletion is a request, not a button: the user files it from /profile, the account keeps
+-- working while it is pending, and staff approve or reject it in /admin/deletions. Approval runs
+-- lib/account-deletion.ts (one transaction). The row itself is kept after approval as the record
+-- that the deletion happened, and auth.ts reads it to kill any session issued before decided_at.
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email    TEXT NOT NULL,
+  reason        TEXT,
+  status        TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+  requested_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  decided_at    TIMESTAMPTZ,
+  decided_by    TEXT,
+  note          TEXT
+);
+-- One open request per account; history (cancelled/rejected/approved) is unlimited.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_account_deletion_pending
+  ON account_deletion_requests(user_email) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_account_deletion_email_status
+  ON account_deletion_requests(user_email, status, decided_at DESC);
+
+-- 2026-10-23: sidebar notification counts (lib/nav-badges.ts). The server is the source of truth for
+-- "what is new": one row per (user, section) holding when the user last looked at it. Sections are
+-- 'inbox' | 'leads' | 'campaigns' | 'chat' (the chat baseline) and 'chat:<chatId>' (one chat seen).
+-- A missing row is created at the first poll with seen_at = now(), so a first visit shows no flood
+-- of old items.
+CREATE TABLE IF NOT EXISTS nav_seen (
+  user_email TEXT NOT NULL,
+  section    TEXT NOT NULL,
+  seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_email, section)
+);
+-- received_at is the MESSAGE's own date (mail Date header / WhatsApp timestamp), so a reply synced
+-- late carries an old time and would slip under seen_at. created_at is when Mantis stored it — that
+-- is what "new since you last looked" means. Existing rows take the migration time (fast default).
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+CREATE INDEX IF NOT EXISTS idx_v2_inbox_user_created ON v2_inbox(user_email, created_at DESC);
+-- Leads + chat counters: a user's runs that finished after a time.
+CREATE INDEX IF NOT EXISTS idx_v2_runs_user_finished ON v2_runs(user_email, finished_at DESC) WHERE finished_at IS NOT NULL;
+-- Campaigns counter: campaigns that reached 'done', and AI test calls that settled.
+CREATE INDEX IF NOT EXISTS idx_v2_voice_tests_user_finished ON v2_voice_tests(user_email, finished_at DESC) WHERE finished_at IS NOT NULL;
+
+-- 2026-10-23: one place to count leads a user found — V1 map unlocks AND V2 chat runs (delivered,
+-- ranked results). Admin and /live counted only `unlocks`, so every V2 user showed 0 leads.
+CREATE OR REPLACE VIEW lead_finds AS
+  SELECT unlocked_by AS user_email, unlocked_at AS found_at, 'v1'::text AS via FROM unlocks
+  UNION ALL
+  SELECT u.user_email, COALESCE(u.finished_at, u.created_at) AS found_at, 'v2'::text AS via
+  FROM v2_results r JOIN v2_runs u ON u.id = r.run_id
+  WHERE r.rank IS NOT NULL AND u.status IN ('done', 'stopped');
+
+-- 2026-10-23: who a business sells to. Mantis finds businesses, not consumers: a consumer-facing
+-- business (clinic, school, salon) gets a "B2C isn't supported" note and vendor/partner searches
+-- instead of customer leads. partner_trades = businesses it could collaborate with.
+ALTER TABLE v2_business_profiles ADD COLUMN IF NOT EXISTS sells_to TEXT;
+ALTER TABLE v2_business_profiles ADD COLUMN IF NOT EXISTS partner_trades JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE v2_business_profiles ADD COLUMN IF NOT EXISTS business_model TEXT;
+
+-- 2026-10-23: learning keys the audit found missing. A pipeline's confidence (summed lead scores),
+-- and per run who it was for (seller service), where, at what size band, and how good it was.
+ALTER TABLE v2_pipelines ADD COLUMN IF NOT EXISTS score_sum DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS confidence DOUBLE PRECISION;
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS seller_service TEXT;
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS area_text TEXT;
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS business_profile_id UUID;
+ALTER TABLE v2_outcomes ADD COLUMN IF NOT EXISTS pipeline_id TEXT;
+ALTER TABLE v2_outcomes ADD COLUMN IF NOT EXISTS strategy TEXT;
+ALTER TABLE v2_outcomes ADD COLUMN IF NOT EXISTS campaign_id UUID;
+ALTER TABLE v2_outcomes ADD COLUMN IF NOT EXISTS channel TEXT;
+ALTER TABLE v2_outcomes ADD COLUMN IF NOT EXISTS detail JSONB;
+CREATE INDEX IF NOT EXISTS idx_v2_outcomes_pipeline ON v2_outcomes(pipeline_id, event);
+
+-- 2026-10-23: one request at a time per grid cell. Two requests for the same tile half a second
+-- apart both read the same pending cell and both paid Google for it (prod ledger, sangitaverma).
+ALTER TABLE area_type_scans ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+
+-- Public funded-startups pages (2026-10-24): rounds extracted from funding news once a week
+-- (lib/funded/refresh.ts). One row per company; a newer round replaces the older one.
+CREATE TABLE IF NOT EXISTS funded_startups (
+  company_key  text PRIMARY KEY,
+  company      text NOT NULL,
+  website      text,
+  about        text,
+  city         text,
+  city_slug    text,
+  round        text,
+  amount       text,
+  announced    date,
+  investors    jsonb NOT NULL DEFAULT '[]',
+  source_url   text NOT NULL,
+  first_seen   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_funded_startups_announced ON funded_startups(announced DESC);
+CREATE INDEX IF NOT EXISTS idx_funded_startups_city ON funded_startups(city_slug);
+
+-- Orchestrator (2026-10-26): the model's own reasoning for each run — which pipeline it reused, the
+-- source order it chose and why; and every mid-run decision (continue with which source, or stop).
+ALTER TABLE v2_runs ADD COLUMN IF NOT EXISTS reasoning JSONB;
+CREATE TABLE IF NOT EXISTS v2_decisions (
+  id           BIGSERIAL PRIMARY KEY,
+  run_id       UUID NOT NULL,
+  at           TEXT NOT NULL,              -- plan | rank
+  decision     JSONB NOT NULL,             -- { action, strategy, reusePipelineId, strategies, reasoning, confidence }
+  context_chars INT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v2_decisions_run ON v2_decisions(run_id);
+
+-- Product analytics (2026-10-26, Tarun: "har ek button ki tracking, admin mein har section ke actions,
+-- upsell ke liye"). One row per user action. Two writers: the client beacon (every click / page view
+-- in the app, components/ActivityBeacon.tsx) and server routes (completed actions — the truth for
+-- funnels, lib/events.ts). Event names are section.object.action (docs/analytics-events.md).
+CREATE TABLE IF NOT EXISTS product_events (
+  id          BIGSERIAL PRIMARY KEY,
+  user_email  TEXT NOT NULL,
+  session_id  TEXT,                        -- per browser tab, from the beacon
+  event       TEXT NOT NULL,               -- e.g. chat.plan.run, integrations.email.connected
+  section     TEXT NOT NULL,               -- chat | leads | campaigns | inbox | templates | integrations | billing | settings | nav | account
+  source      TEXT NOT NULL DEFAULT 'client', -- client | server
+  path        TEXT,
+  props       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  device      TEXT,                        -- mobile | desktop
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_product_events_user_time ON product_events(user_email, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_product_events_event_time ON product_events(event, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_product_events_section_time ON product_events(section, created_at DESC);
+
+-- First-touch acquisition (2026-10-26): utm / referrer / landing page from the m_src cookie
+-- (components/AttributionCapture.tsx), written once at signup or onboarding (lib/attribution.ts).
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS signup_source JSONB;

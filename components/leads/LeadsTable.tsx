@@ -53,7 +53,7 @@ export function LeadsTable({
       <div style={{ overflowX: "auto" }}>
         <table className="tnum" style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
           <thead>
-            <tr className="sunk" style={{ fontSize: 10.5, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <tr className="sunk" style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               <th style={{ padding: "10px 14px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
                 <input type="checkbox" checked={allSelected} onChange={onToggleAll} aria-label="Select all" style={{ cursor: "pointer" }} />
               </th>
@@ -85,24 +85,24 @@ export function LeadsTable({
                       half (the original bug) or starving the business name down to one word a
                       line (what pinning the pill without wrap did instead). */}
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap", rowGap: 4 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", minWidth: 0 }}>{lead.business_name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", minWidth: 0 }}>{lead.business_name}</span>
                     <StatusPill hasWebsite={lead.has_website} />
                   </div>
-                  <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", marginTop: 2 }}>{lead.address ?? "No address found"}</div>
+                  <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>{lead.address ?? "No address found"}</div>
                 </td>
-                <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>{formatCategory(lead.category)}</td>
-                <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--g-ink-soft)" }}>
+                <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--g-ink-soft)" }}>{formatCategory(lead.category)}</td>
+                <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--g-ink-soft)" }}>
                   {lead.phone ?? "No phone found"}
                   {lead.email ? <div>{lead.email}</div> : null}
                 </td>
                 <td style={{ padding: "12px 14px" }}>
                   {lead.rating !== null ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "var(--g-ink-soft)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--g-ink-soft)" }}>
                       <StarIcon size={11} />
                       {lead.rating.toFixed(1)} ({lead.review_count ?? 0})
                     </div>
                   ) : (
-                    <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>—</span>
+                    <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>—</span>
                   )}
                 </td>
                 <td style={{ padding: "12px 14px" }}>{lead.heat_score !== null && <HeatGauge score={lead.heat_score} size={44} />}</td>
@@ -129,7 +129,7 @@ export function LeadsTable({
  */
 function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) => void }) {
   if (!lead.is_unlocked) {
-    return <span style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>Unlock first</span>;
+    return <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>Unlock first</span>;
   }
 
   const status = lead.enrichment_status ?? null;
@@ -140,18 +140,18 @@ function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) =
         href={lead.enrichment_website_url}
         target="_blank"
         rel="noreferrer"
-        style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-green-text)" }}
+        style={{ fontSize: 12, fontWeight: 600, color: "var(--g-green-text)" }}
       >
         Website found
       </a>
     ) : (
-      <span style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>No extra details</span>
+      <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>No extra details</span>
     );
   }
 
   if (status === "pending" || status === "starting_instance" || status === "scraping") {
     return (
-      <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: "var(--g-gray-100)", color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>
+      <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: "var(--g-gray-100)", color: "var(--g-gray-500)", whiteSpace: "nowrap" }}>
         In queue
       </span>
     );
@@ -162,7 +162,7 @@ function DetailsCell({ lead, onEnrich }: { lead: Lead; onEnrich?: (lead: Lead) =
       type="button"
       onClick={() => onEnrich?.(lead)}
       style={{
-        fontSize: 11.5,
+        fontSize: 12,
         fontWeight: 600,
         padding: "6px 12px",
         borderRadius: "var(--radius-pill)",
@@ -183,7 +183,7 @@ function StatusPill({ hasWebsite }: { hasWebsite: boolean | null }) {
   const bg = hasWebsite === null ? "var(--g-gray-100)" : hasWebsite ? "var(--g-green-mint)" : "var(--g-amber-tint)";
   const color = hasWebsite === null ? "var(--g-gray-500)" : hasWebsite ? "var(--g-green-text)" : "#b45309";
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: bg, color, whiteSpace: "nowrap", flexShrink: 0 }}>
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: bg, color, whiteSpace: "nowrap", flexShrink: 0 }}>
       {label}
     </span>
   );

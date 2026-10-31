@@ -133,6 +133,10 @@
 
   btn.addEventListener("click", function () { toggle(); });
 
+  // The host page can open the panel itself ("Need help with setup?" links in the app), so help
+  // lands in the same conversation as the launcher instead of a mailto that needs a mail client.
+  window.addEventListener("founder-widget:open", function () { toggle(true); });
+
   // The iframe asks to be closed from its own header/back button — it cannot reach the parent DOM
   // itself, and the origin check is what stops any other frame on the page from doing it.
   window.addEventListener("message", function (e) {

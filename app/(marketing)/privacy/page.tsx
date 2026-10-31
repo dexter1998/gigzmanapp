@@ -58,8 +58,8 @@ export default function PrivacyPage() {
         <p>
           <strong>Business information we gather about companies, not people.</strong> Mantis
           collects publicly listed information about businesses — name, address, category, phone
-          number, rating, review count and whether they have a website — from Google&apos;s Places
-          data. This is information about organisations, published by those organisations for the
+          number, rating, review count and whether they have a website — from public maps and
+          business-listing data. This is information about organisations, published by those organisations for the
           purpose of being contacted.
         </p>
 
@@ -88,9 +88,9 @@ export default function PrivacyPage() {
           needs.
         </p>
         <ul>
-          <li><strong>Google</strong> — Maps and Places data, and Google Sign-In if you use it.</li>
-          <li><strong>Amazon Web Services</strong> — hosting for the assistant&apos;s AI model, and email delivery.</li>
-          <li><strong>Vercel</strong> — website and application hosting.</li>
+          <li><strong>Our maps and business-listing providers</strong> — the public business data described above.</li>
+          <li><strong>Google</strong> — Google Sign-In, if you use it.</li>
+          <li><strong>Our cloud and AI providers</strong> — website and application hosting, the assistant&apos;s AI, and email delivery.</li>
           <li><strong>Our database provider</strong> — stores the data described above.</li>
           <li><strong>An SMS provider</strong> — delivers one-time codes if you sign in by phone.</li>
         </ul>

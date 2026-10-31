@@ -51,6 +51,7 @@ export const BLOG_CATEGORIES = [
   "Outreach",
   "Enrichment",
   "Comparisons",
+  "Client Acquisition",
 ] as const;
 export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
 
@@ -64,5 +65,7 @@ export const BLOG_CLUSTERS = {
   data: { label: "The website gap, measured", hub: "/resources/india-website-gap-report-2026" },
   playbooks: { label: "Agency playbooks", hub: "/resources/how-to-start-a-web-design-agency-india" },
   operations: { label: "Prospecting & sales", hub: "/resources/how-to-find-businesses-that-need-a-website" },
+  /** Added 2026-10-24: getting clients/customers by service and by industry — the seller's own growth question. */
+  growth: { label: "Finding clients & customers", hub: "/resources/how-to-find-clients" },
 } as const;
 export type BlogCluster = keyof typeof BLOG_CLUSTERS;

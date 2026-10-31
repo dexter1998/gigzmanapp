@@ -176,7 +176,7 @@ export async function runChatIntent(input: {
     );
   } catch (err) {
     await recordApiFailure("bedrock", (err as Error).message, { model: CHAT_MODEL_ID });
-    throw new BedrockUnavailableError("Bedrock request failed");
+    throw new BedrockUnavailableError("AI service request failed");
   }
 
   const toolUse = response.output?.message?.content?.find((c) => "toolUse" in c)?.toolUse;

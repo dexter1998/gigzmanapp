@@ -11,12 +11,15 @@ const COLUMNS = [
   // The no-website pages, and where "Free Leads" lives now that it is out of the nav. A footer link
   // is still site-wide, so these keep a link from every page on the site — which was the only
   // reason the nav slot mattered.
-  { title: "Free Leads", links: [["Businesses Near Me", "/businesses-near-me-without-websites"], ["Businesses With No Website", "/find-businesses-without-websites"], ["Small Businesses", "/small-businesses-without-websites"], ["Web Design Leads", "/web-design-leads"], ["Industries Ranked", "/industries-without-websites"]] },
+  { title: "Free Leads", links: [["Businesses Without Websites", "/businesses-without-websites"], ["Business Lists", "/lists"], ["Leads by Service", "/leads-for"], ["Funded Startups India", "/funded-startups-india"], ["Businesses Near Me", "/businesses-near-me-without-websites"], ["Businesses With No Website", "/find-businesses-without-websites"], ["Small Businesses", "/small-businesses-without-websites"], ["Web Design Leads", "/web-design-leads"], ["Industries Ranked", "/industries-without-websites"]] },
+  // The tool and comparison pages. Same reasoning as "Free Leads": a footer link is site-wide, so
+  // each of these keeps an inbound link from every page without crowding the nav.
+  { title: "Tools & Compare", links: [["Google Maps Scraper", "/google-maps-scraper"], ["Lead Generation Tool", "/lead-generation-tool"], ["Lead Finder", "/lead-finder"], ["AI Cold Calling", "/ai-cold-calling"], ["Clay Alternative", "/clay-alternative"], ["ZoomInfo Alternative", "/zoominfo-alternative"], ["Apollo Alternative", "/apollo-alternative"]] },
   { title: "Use Cases", links: [["Agencies", "/#testimonials"], ["Freelancers", "/#testimonials"], ["Consultants", "/#testimonials"]] },
   // This column was titled "Resources" and linked to everything except /resources — two fragments
   // and /preferences, which robots.txt disallows. The articles it should have been pointing at have
   // had no inbound link from anywhere on the site since they were published.
-  { title: "Resources", links: [["All Guides", "/resources"], ["How These Figures Are Made", "/leads/methodology"], ["Help Center", "/#faq"], ["Email Preferences", "/preferences"]] },
+  { title: "Resources", links: [["All Guides", "/resources"], ["How to Find Clients", "/resources/how-to-find-clients"], ["How These Figures Are Made", "/leads/methodology"], ["Help Center", "/#faq"], ["Email Preferences", "/preferences"]] },
   { title: "Company", links: [["About Us", "/company"], ["Partner Access", "/partner"], ["Contact", "/contact"]] },
   { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]] },
 ] as const;

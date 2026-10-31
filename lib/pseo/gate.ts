@@ -51,6 +51,8 @@ export const MIN_PUBLISH_LEADS_BY_COUNTRY: Record<string, number> = {
   pt: 10, se: 10, dk: 10, ch: 10, cz: 10, hu: 10, gr: 10, ae: 10,
 };
 export const MIN_PUBLISH_LEADS = 25;
+/** The single publish rule: this many qualifying leads on ANY page, in any country. */
+export const PUBLISH_LEADS = 25;
 
 /** Demotion sits below promotion on purpose: a page that hovers at the line would otherwise enter
  *  and leave the sitemap on alternate days, which is a worse signal than never appearing. Held at
@@ -109,41 +111,16 @@ export type GateResult = {
 };
 
 export function evaluateGate(input: GateInput): GateResult {
-  const { stats, pageType } = input;
+  // ONE rule (Tarun, 2026-10-24: "gate sirf ek hai ki atleast 25 leads hongi ek kisi bhi page
+  // keliye"): a page goes live the moment it holds 25 qualifying leads — pages grow on their own as
+  // people use Mantis and leads accumulate. The old extra rules (5 categories, 3 areas, an
+  // "exhausted scan cell", two consecutive passes) kept 2,799 pages unindexed, 61 cities among them
+  // with 300-1,269 qualifying leads each, because bulk-swept cities never write scan cells.
   const failures: string[] = [];
-
-  const minPublish = minPublishFor(input.countryCode);
-  if (stats.qualifying < minPublish) {
-    failures.push(`only ${stats.qualifying} qualifying leads (need ${minPublish})`);
-  }
-
-  // Rating coverage is deliberately NOT a rule here. It was, and it turned out to gate on when we
-  // happened to scan rather than on what the page can say: ratings only entered the Places field
-  // mask on 25 Aug, so a 1,505-lead area with 165 categories, a real gap rate and a real rank sat
-  // unindexed at 0% rated. Review counts are present regardless, so the demand-evidence comparison
-  // still holds; only the score distribution genuinely needs ratings, and that panel now suppresses
-  // itself. What a page may claim and whether a page may exist are separate questions.
-
-  // Category pages are a single category by definition; the rule exists to stop a city or area page
-  // being thirty of the same shop.
-  if (pageType !== "category" && stats.distinctCategories < MIN_CATEGORIES) {
-    failures.push(`only ${stats.distinctCategories} categories (need ${MIN_CATEGORIES})`);
-  }
-
-  const minAreas = minAreasFor(input.countryCode);
-  if (pageType === "city" && (input.distinctAreas ?? 0) < minAreas) {
-    failures.push(`only ${input.distinctAreas ?? 0} areas (need ${minAreas})`);
-  }
-
-  // Proves the count reflects the ground rather than how far a scan happened to get. Without it a
-  // page could report "37 businesses" for an area we barely touched.
-  const covered = stats.coverage.exhausted > 0 || (input.coverageResultCount ?? 0) >= 200;
-  if (!covered) failures.push("no exhausted scan cell covering this area");
-
+  if (input.stats.qualifying < PUBLISH_LEADS) failures.push(`only ${input.stats.qualifying} qualifying leads (need ${PUBLISH_LEADS})`);
   const passesAllRules = failures.length === 0;
-
-  if (passesAllRules && input.passStreak + 1 >= REQUIRED_PASS_STREAK) return { status: "published", failures, passesAllRules };
-  if (stats.qualifying >= minRenderFor(input.countryCode)) return { status: "noindex", failures, passesAllRules };
+  if (passesAllRules) return { status: "published", failures, passesAllRules };
+  if (input.stats.qualifying >= minRenderFor(input.countryCode)) return { status: "noindex", failures, passesAllRules };
   return { status: "withheld", failures, passesAllRules };
 }
 

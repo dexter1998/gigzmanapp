@@ -59,6 +59,14 @@ function OnboardingFlow() {
   const [phoneError, setPhoneError] = useState("");
   const [phoneBusy, setPhoneBusy] = useState(false);
 
+  /**
+   * The website from step 3, read before the dashboard opens (Mantis Scout, the same read the chat
+   * does) so the first chat already knows what this business sells. Skippable at any point: the
+   * read keeps going in the background (a client-side navigation does not abort the request) and
+   * lands in Settings → Business profiles either way.
+   */
+  const [scan, setScan] = useState<null | { status: "reading" | "done" | "failed"; host: string; profile?: ScannedProfile }>(null);
+
   const totalSteps = 3 + (hasPhone === false ? 1 : 0);
 
   useEffect(() => {
@@ -138,14 +146,47 @@ function OnboardingFlow() {
           /* defaults to leads — recoverable from the settings dropdown */
         });
       }
-      if (hasPhone === false) {
-        setStep(4);
+      if (!isJobs && website.trim()) {
+        void scanWebsite(website.trim(), workMode === "company" ? companyName : personName);
       } else {
-        router.push("/start");
+        afterScan();
       }
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function afterScan() {
+    if (hasPhone === false) {
+      setScan(null);
+      setStep(4);
+    } else {
+      router.push("/start");
+    }
+  }
+
+  async function scanWebsite(site: string, business: string) {
+    const host = site.replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "");
+    setScan({ status: "reading", host });
+    try {
+      const res = await fetch("/api/v2/business-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ website: site, business }),
+      });
+      const d = (await res.json().catch(() => null)) as { profile?: ScannedProfile | null; siteFailed?: boolean } | null;
+      const p = d?.profile;
+      const usable = !!p && !d?.siteFailed && (p.services.length > 0 || p.targetTrades.length > 0 || (p.partnerTrades?.length ?? 0) > 0);
+      // Skipped while reading: the result is saved server-side, nothing more to show here.
+      setScan((cur) => (cur ? { status: usable ? "done" : "failed", host, profile: p ?? undefined } : cur));
+    } catch {
+      setScan((cur) => (cur ? { status: "failed", host } : cur));
+    }
+  }
+
+  function skipScan() {
+    setScan(null);
+    afterScan();
   }
 
   async function saveMobileAndFinish() {
@@ -186,7 +227,9 @@ function OnboardingFlow() {
         </div>
 
         <div style={{ background: "var(--g-white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: 32 }}>
-          {step === 1 && (
+          {scan && <ScanPanel scan={scan} onContinue={skipScan} />}
+
+          {!scan && step === 1 && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>What are you here to find?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
@@ -222,7 +265,7 @@ function OnboardingFlow() {
             </>
           )}
 
-          {step === 2 && !isJobs && (
+          {!scan && step === 2 && !isJobs && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>How will you use Mantis?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
@@ -249,7 +292,7 @@ function OnboardingFlow() {
             </>
           )}
 
-          {step === 2 && isJobs && (
+          {!scan && step === 2 && isJobs && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Where are you at?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px" }}>
@@ -276,7 +319,7 @@ function OnboardingFlow() {
             </>
           )}
 
-          {step === 3 && workMode === "company" && (
+          {!scan && step === 3 && workMode === "company" && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Let&apos;s set up your workspace</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -298,7 +341,7 @@ function OnboardingFlow() {
             </>
           )}
 
-          {step === 3 && workMode === "independent" && (
+          {!scan && step === 3 && workMode === "independent" && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Almost there</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -321,7 +364,7 @@ function OnboardingFlow() {
             </>
           )}
 
-          {step === 4 && (
+          {!scan && step === 4 && (
             <>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>Add a mobile number?</h1>
               <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px" }}>
@@ -347,6 +390,71 @@ function OnboardingFlow() {
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+type ScannedProfile = { name: string; summary: string; services: string[]; targetTrades: string[]; targetAreas: string[]; sellsTo?: string | null; partnerTrades?: string[] };
+
+function ScanPanel({ scan, onContinue }: { scan: { status: "reading" | "done" | "failed"; host: string; profile?: ScannedProfile }; onContinue: () => void }) {
+  const p = scan.profile;
+  return (
+    <>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>
+        {scan.status === "reading" ? `Reading ${scan.host}` : scan.status === "done" ? `Here's what we learned` : `We couldn't open ${scan.host}`}
+      </h1>
+      <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px", lineHeight: 1.5 }}>
+        {scan.status === "reading"
+          ? "Mantis is reading your website to learn what you sell and who buys it, so your first search is planned around it. Takes about 20 seconds."
+          : scan.status === "done"
+            ? "Saved as your business profile. Mantis uses it to plan every search — you can edit it in Settings → Business profiles."
+            : "It may be down or blocking automated visits. No problem — tell Mantis in one line what you sell in the chat, and it will set up your profile."}
+      </p>
+
+      {scan.status === "reading" && (
+        <div aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {["Opening the homepage", "Reading service and about pages", "Working out who buys from you"].map((t, i) => (
+            <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--g-ink)" }}>
+              <span className="ob-scan-dot" style={{ animationDelay: `${i * 0.35}s` }} />
+              {t}
+            </div>
+          ))}
+          <style>{`.ob-scan-dot{width:8px;height:8px;border-radius:50%;background:var(--g-green);opacity:.25;animation:obScan 1.2s ease-in-out infinite}@keyframes obScan{50%{opacity:1}}@media (prefers-reduced-motion:reduce){.ob-scan-dot{animation:none;opacity:.6}}`}</style>
+        </div>
+      )}
+
+      {scan.status === "done" && p && (
+        <div style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 16, marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "var(--g-ink)" }}>{p.name}</div>
+          <div style={{ fontSize: 13, color: "var(--g-ink)", lineHeight: 1.5 }}>{p.summary}</div>
+          {p.services.length > 0 && <ScanRow label="Sells" items={p.services.slice(0, 5)} />}
+          {p.targetTrades.length > 0 && <ScanRow label="Likely buyers" items={p.targetTrades.slice(0, 5)} />}
+          {p.sellsTo === "consumers" && (p.partnerTrades?.length ?? 0) > 0 && <ScanRow label="Partners to reach your customers" items={p.partnerTrades!.slice(0, 4)} />}
+          {p.sellsTo === "consumers" && (
+            <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.5 }}>
+              You sell to consumers. Mantis finds businesses, not individual customers — it will find partners and vendors for you instead.
+            </div>
+          )}
+          {p.targetAreas.length > 0 && <ScanRow label="Serves" items={p.targetAreas.slice(0, 4)} />}
+        </div>
+      )}
+
+      <button type="button" onClick={onContinue} style={scan.status === "reading" ? { ...secondaryBtn, width: "100%" } : { ...primaryBtn(true), width: "100%" }}>
+        {scan.status === "reading" ? "Skip — finish in the background" : "Continue →"}
+      </button>
+    </>
+  );
+}
+
+function ScanRow({ label, items }: { label: string; items: string[] }) {
+  return (
+    <div>
+      <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {items.map((x) => (
+          <span key={x} style={{ fontSize: 12, padding: "3px 9px", borderRadius: "var(--radius-pill)", background: "var(--g-gray-100)", color: "var(--g-ink)" }}>{x}</span>
+        ))}
       </div>
     </div>
   );

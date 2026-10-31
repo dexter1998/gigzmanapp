@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   // needing the full node_modules tree. Vercel ignores this setting, so it is safe to keep on
   // while both deploy targets exist during the migration.
   output: "standalone",
+  // No `X-Powered-By: Next.js`: response headers say nothing about the stack.
+  poweredByHeader: false,
   // The OG renderer reads its background art and fonts from disk. public/ is served from the CDN and
   // is not otherwise present in a serverless function, so these have to be traced in explicitly.
   outputFileTracingIncludes: {
@@ -109,6 +111,15 @@ const nextConfig: NextConfig = {
       // /partnership-program; the site's own nav and footer call the same thing /partner. Rather
       // than have two pages saying the same thing and splitting their ranking, /partner is
       // canonical and the emailed URL redirects into it. Permanent so the link equity follows.
+      // One host. go.mantisai.in (the outreach sender domain) and www both served full copies of the
+      // site; Search Console listed them as duplicates on 2026-10-24. /api is left alone so anything
+      // that calls back to those hosts keeps working.
+      ...["go.mantisai.in", "www.mantisai.in"].map((host) => ({
+        source: "/:path((?!api/).*)",
+        has: [{ type: "host" as const, value: host }],
+        destination: "https://mantisai.in/:path",
+        permanent: true,
+      })),
       { source: "/partnership-program", destination: "/partner", permanent: true },
       // "Manage alerts" in lead emails: what a recipient actually wants there is control over which
       // emails reach them, which is the preferences page.

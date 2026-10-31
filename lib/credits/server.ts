@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
-import { ALLOWANCE, CREDIT_COST, packById, type CreditOperation } from "@/lib/credits/pricing";
+import { ALLOWANCE, CREDIT_COST, TOPUP_PACK_ID, packById, type CreditOperation } from "@/lib/credits/pricing";
+import { activatePurchasedPlan } from "@/lib/credits/plan";
 import { sendPlanActivated } from "@/lib/email/plan-activated";
 
 /**
@@ -101,6 +102,17 @@ export async function chargeCredits(
  * attempted first precisely so its conflict can stop the balance update.
  */
 export async function grantCredits(userEmail: string, credits: number, ref: string, reason = "purchase"): Promise<boolean> {
+  // A paid order is either a plan pack or an "Add funds" top-up; every payment route passes
+  // "purchase", and the order row decides which. Top-ups land under their own ledger reason so
+  // they never read as a plan purchase. Resolved before the insert, so the (reason, ref) key a
+  // replayed webhook hits is always the same one.
+  let pack: ReturnType<typeof packById>;
+  if (reason === "purchase") {
+    const [payment] = await sql`SELECT pack_id FROM payments WHERE order_id = ${ref}`;
+    if (payment?.pack_id === TOPUP_PACK_ID) reason = "topup";
+    else pack = payment ? packById(payment.pack_id as string) : undefined;
+  }
+
   const [inserted] = await sql`
     INSERT INTO credit_ledger (user_email, reason, amount, ref)
     VALUES (${userEmail}, ${reason}, ${credits}, ${ref})
@@ -124,10 +136,20 @@ export async function grantCredits(userEmail: string, credits: number, ref: stri
   //
   // Only for a purchase: a plan_grant is announced by grantPlan(), which knows the plan and the
   // duration. Sending from both would send twice.
+  // A plan pack switches its plan on for a month. Only after the ledger insert above succeeded, so
+  // a replayed webhook cannot extend the plan a second time. A failure here must not turn a paid
+  // order into an error (the credits are in); it is logged loudly so support can set the plan.
+  if (pack) {
+    try {
+      await activatePurchasedPlan(userEmail, pack);
+    } catch (err) {
+      console.error("plan activation failed after payment", userEmail, ref, pack.id, err);
+    }
+  }
+
   if (reason === "purchase") {
     try {
-      const [payment] = await sql`SELECT pack_id FROM payments WHERE order_id = ${ref}`;
-      const label = payment ? packById(payment.pack_id as string)?.label : undefined;
+      const label = pack?.label;
       const [profile] = await sql`SELECT name FROM user_profiles WHERE email = ${userEmail}`;
       // No recognised pack means no honest name for the plan, and "your Credits plan is active"
       // is worse than silence. The credits are granted either way.

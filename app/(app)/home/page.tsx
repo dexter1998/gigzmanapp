@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadGoogleMaps } from "@/lib/google-maps";
@@ -8,9 +9,8 @@ import { createPinOverlayClass, MAP_STYLES, type PinOverlayInstance } from "@/li
 import { formatCategory } from "@/lib/categories";
 import { ALL_CATALOG_TYPES } from "@/lib/discovery-catalog";
 import { CategoryPicker } from "@/components/map/CategoryPicker";
-import { CrosshairIcon, HelpIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
+import { CrosshairIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIcon, XIcon, StarIcon, GlobeIcon, BuildingIcon } from "@/components/icons";
 import { CreditsIndicator } from "@/components/CreditsIndicator";
-import { DashboardModeBadge } from "@/components/DashboardModeBadge";
 import { HeatGauge } from "@/components/HeatGauge";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 
@@ -29,7 +29,18 @@ type Lead = {
   heat_score: number | null;
   rating: number | null;
   review_count: number | null;
+  /** The V2 catalog's `data` signals, computed by /api/leads (lib/v2/playbooks.ts dataSignals). */
+  signals?: Partial<Record<DataSignal, boolean>>;
 };
+
+type DataSignal = "no_website" | "social_as_website" | "few_reviews" | "low_rating" | "established" | "multi_location";
+type WebsiteFilter = "any" | "no_website" | "social_as_website" | "has_website";
+type ReviewsFilter = "any" | "few_reviews" | "established";
+type RatingFilter = "any" | "low_rating" | 3.5 | 4 | 4.5;
+
+// Every control in the map's top bar is this tall — the height of the credits pill
+// (CreditsIndicator: 6px padding around its 27px "Add credits" chip), which is the one that reads right.
+const TOOLBAR_H = 39;
 
 // Every catalog type is on by default. 147 types is three Google calls per tile; the picker lets
 // a user narrow below that, and narrowing is the only thing that makes a search cheaper.
@@ -61,7 +72,7 @@ const IDLE_SETTLE_MS = 600;
 // Gap between a lead pin and its card, and the height of the toolbar strip the card should stay
 // clear of. Below that line there isn't room to sit above the pin, so the card flips underneath it.
 const CARD_PIN_GAP = 16;
-const TOOLBAR_SAFE_TOP = 72;
+const TOOLBAR_SAFE_TOP = 72; // one toolbar row; a wrapped (phone) toolbar is measured instead
 // Cost cap for a single search pass: at most the 4 tiles nearest to wherever the map is
 // centered. A wide-zoomed, never-searched region only pays for its nearest ground on this pass —
 // farther tiles fill in as the user pans/zooms closer, rather than one search silently paying
@@ -236,10 +247,33 @@ export default function HomePage() {
   const [startingChat, setStartingChat] = useState(false);
   const [locating, setLocating] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [mapKeyOpen, setMapKeyOpen] = useState(false);
-  const [websiteFilter, setWebsiteFilter] = useState<"any" | "no_website" | "has_website">("any");
-  const [minRating, setMinRating] = useState<number | null>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [websiteFilter, setWebsiteFilter] = useState<WebsiteFilter>("any");
+  const [reviewsFilter, setReviewsFilter] = useState<ReviewsFilter>("any");
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("any");
+  const [branchesOnly, setBranchesOnly] = useState(false);
   const [minHeatScore, setMinHeatScore] = useState<number | null>(null);
+  const activeFilterCount =
+    (websiteFilter !== "any" ? 1 : 0) + (reviewsFilter !== "any" ? 1 : 0) + (ratingFilter !== "any" ? 1 : 0) +
+    (branchesOnly ? 1 : 0) + (minHeatScore !== null ? 1 : 0);
+  function resetFilters() {
+    setWebsiteFilter("any");
+    setReviewsFilter("any");
+    setRatingFilter("any");
+    setBranchesOnly(false);
+    setMinHeatScore(null);
+  }
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFilterOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [filterOpen]);
   // Derived (see below), not its own state — a separately-held Lead snapshot would go stale the
   // moment refreshLeads() updates the underlying data (has_website resolving, is_unlocked
   // flipping after "Add to leads"), so the open card always reads through to current `leads`.
@@ -252,6 +286,17 @@ export default function HomePage() {
   // Measured so the card can decide whether it actually fits above its pin. Falls back to a
   // typical height on the very first render, before there is anything to measure.
   const cardRef = useRef<HTMLDivElement | null>(null);
+  // On a phone the toolbar wraps onto a second row, so the line the card must stay below is
+  // measured rather than assumed.
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const [toolbarSafeTop, setToolbarSafeTop] = useState(TOOLBAR_SAFE_TOP);
+  useEffect(() => {
+    const el = toolbarRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setToolbarSafeTop(Math.max(TOOLBAR_SAFE_TOP, el.offsetTop + el.offsetHeight + 16)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [cardHeight, setCardHeight] = useState(340);
   // The hovered/clicked pin's own screen pixel position (from PinOverlay.getScreenPosition()),
   // so the popup card renders directly above THAT pin instead of a fixed spot on screen.
@@ -721,7 +766,7 @@ export default function HomePage() {
     : null;
 
   // Keep the card clear of the toolbar strip along the top of the map as well as the pin itself.
-  const flipCardBelow = cardPosition ? cardPosition.y - cardHeight - CARD_PIN_GAP < TOOLBAR_SAFE_TOP : false;
+  const flipCardBelow = cardPosition ? cardPosition.y - cardHeight - CARD_PIN_GAP < toolbarSafeTop : false;
 
   useEffect(() => {
     if (!cardRef.current) return;
@@ -802,7 +847,11 @@ export default function HomePage() {
     const filtered = leads.filter((l) => {
       if (websiteFilter === "no_website" && l.has_website !== false) return false;
       if (websiteFilter === "has_website" && l.has_website !== true) return false;
-      if (minRating !== null && (l.rating === null || l.rating < minRating)) return false;
+      if (websiteFilter === "social_as_website" && l.signals?.social_as_website !== true) return false;
+      if (reviewsFilter !== "any" && l.signals?.[reviewsFilter] !== true) return false;
+      if (ratingFilter === "low_rating" && l.signals?.low_rating !== true) return false;
+      if (typeof ratingFilter === "number" && (l.rating === null || l.rating < ratingFilter)) return false;
+      if (branchesOnly && l.signals?.multi_location !== true) return false;
       if (minHeatScore !== null && (l.heat_score === null || l.heat_score < minHeatScore)) return false;
       // Only filter when the user has actually narrowed: with everything ticked, leads stored
       // before a type left the catalog would otherwise vanish from a map they are legitimately on.
@@ -935,7 +984,7 @@ export default function HomePage() {
         }
       });
     }, 250);
-  }, [leads, websiteFilter, minRating, minHeatScore, selectedTypes, mapReady, mapZoom]);
+  }, [leads, websiteFilter, reviewsFilter, ratingFilter, branchesOnly, minHeatScore, selectedTypes, mapReady, mapZoom]);
 
   return (
     <div style={{ position: "relative", height: "100vh" }}>
@@ -979,7 +1028,7 @@ export default function HomePage() {
             >
               <CrosshairIcon />
             </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" }}>
               Find businesses in your area
             </h2>
             <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 20px", lineHeight: 1.4 }}>
@@ -1007,7 +1056,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => resolveInitialLocation(false)}
-              style={{ border: "none", background: "none", color: "var(--g-gray-500)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
+              style={{ border: "none", background: "none", color: "var(--g-gray-500)", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
             >
               Not now, I&apos;ll find it on the map
             </button>
@@ -1015,93 +1064,115 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Top bar — a single right-aligned row (locate, map key, search category, filter, bell,
-          credits). The address search bar that used to live center-left is gone — the floating
-          chat panel at the bottom is meant to take over "search this area" once it's wired to a
-          real backend, so a second, redundant search control up here had no benefit. */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "flex-end", alignItems: "flex-start", gap: 10 }}>
-        <ToolbarButton onClick={handleLocateMe} active={locating}>
-          <CrosshairIcon />
+      {/* Top bar — one right-aligned row: locate, category, filter, bell, credits. Every control is
+          TOOLBAR_H tall and pill-shaped so the row reads as one strip; on a phone it wraps rather
+          than running off the left edge. */}
+      <style>{`
+        .home-toolbar .credits-slot > button { height: ${TOOLBAR_H}px; box-shadow: var(--shadow-pop); white-space: nowrap; }
+        @media (max-width: 640px) { .home-toolbar .credits-slot > button > span:last-child { display: none; } .home-toolbar .credits-slot > button { padding-right: 12px; } }
+      `}</style>
+      <div
+        ref={toolbarRef}
+        className="home-toolbar"
+        style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: 8 }}
+      >
+        <ToolbarButton onClick={handleLocateMe} active={locating} label="Show my location">
+          <CrosshairIcon size={16} />
         </ToolbarButton>
 
-        <div style={{ position: "relative" }}>
-          <ToolbarButton onClick={() => setMapKeyOpen((v) => !v)} active={mapKeyOpen}>
-            <HelpIcon />
-          </ToolbarButton>
-          {mapKeyOpen && (
-            <div
-              style={{
-                position: "absolute",
-                top: 52,
-                right: 0,
-                width: 240,
-                background: "var(--g-white)",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-pop)",
-                padding: 16,
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--g-gray-500)", letterSpacing: "0.04em", marginBottom: 12 }}>
-                MAP KEY
-              </div>
-              <MapKeyRow color="#fdba3f" title="No website" description="A business with no site yet. Tap it to build one." />
-              <MapKeyRow color="var(--g-green)" title="Website" description="This business already has a site." />
-              <MapKeyRow color="#2563eb" title="You" description="Your current location." />
-            </div>
-          )}
-        </div>
+        <CategoryPicker selected={selectedTypes} onChange={setSelectedTypes} height={TOOLBAR_H} />
 
-        <CategoryPicker selected={selectedTypes} onChange={setSelectedTypes} />
-
-        <div style={{ position: "relative" }}>
-          <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen}>
-            <FilterIcon />
+        <div ref={filterRef} style={{ position: "relative" }}>
+          <ToolbarButton onClick={() => setFilterOpen((v) => !v)} active={filterOpen || activeFilterCount > 0} label="Filter">
+            <FilterIcon size={16} />
+            {activeFilterCount > 0 && (
+              <span
+                className="tnum"
+                style={{
+                  position: "absolute", top: -4, right: -4, minWidth: 16, height: 16, padding: "0 4px",
+                  borderRadius: "var(--radius-pill)", background: "var(--g-ink)", color: "var(--g-white)",
+                  fontSize: 11, fontWeight: 600, lineHeight: "16px", textAlign: "center",
+                }}
+              >
+                {activeFilterCount}
+              </span>
+            )}
           </ToolbarButton>
 
           {filterOpen && (
             <div
               style={{
                 position: "absolute",
-                top: 52,
+                top: TOOLBAR_H + 8,
                 right: 0,
-                width: 240,
+                zIndex: 40,
+                width: 248,
+                maxWidth: "calc(100vw - 32px)",
                 background: "var(--g-white)",
+                border: "1px solid var(--g-border)",
                 borderRadius: "var(--radius-md)",
                 boxShadow: "var(--shadow-pop)",
-                padding: "8px 0",
-                maxHeight: 420,
+                padding: "4px 0 8px",
+                maxHeight: "min(480px, calc(100vh - 120px))",
                 overflowY: "auto",
               }}
             >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px 4px" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>Filter pins</span>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  disabled={activeFilterCount === 0}
+                  style={{
+                    border: "none", background: "none", padding: 0, fontFamily: "inherit", fontSize: 12, fontWeight: 500,
+                    color: activeFilterCount === 0 ? "var(--g-gray-300)" : "var(--g-gray-500)",
+                    cursor: activeFilterCount === 0 ? "default" : "pointer", textDecoration: activeFilterCount === 0 ? "none" : "underline",
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+
               <FilterSectionLabel>Website</FilterSectionLabel>
               <FilterRow label="Any" checked={websiteFilter === "any"} onClick={() => setWebsiteFilter("any")} />
-              <FilterRow label="No website" checked={websiteFilter === "no_website"} onClick={() => setWebsiteFilter("no_website")} />
+              <FilterRow label="No website listed" checked={websiteFilter === "no_website"} onClick={() => setWebsiteFilter("no_website")} />
+              <FilterRow label="Social page as website" checked={websiteFilter === "social_as_website"} onClick={() => setWebsiteFilter("social_as_website")} />
               <FilterRow label="Has website" checked={websiteFilter === "has_website"} onClick={() => setWebsiteFilter("has_website")} />
 
-              <FilterSectionLabel>Min rating</FilterSectionLabel>
-              <FilterRow label="Any" checked={minRating === null} onClick={() => setMinRating(null)} />
-              {[3.5, 4, 4.5].map((r) => (
-                <FilterRow key={r} label={`${r}+ stars`} checked={minRating === r} onClick={() => setMinRating(r)} />
+              <FilterSectionLabel>Reviews</FilterSectionLabel>
+              <FilterRow label="Any" checked={reviewsFilter === "any"} onClick={() => setReviewsFilter("any")} />
+              <FilterRow label="Few reviews" hint="under 30" checked={reviewsFilter === "few_reviews"} onClick={() => setReviewsFilter("few_reviews")} />
+              <FilterRow label="Established" hint="100+" checked={reviewsFilter === "established"} onClick={() => setReviewsFilter("established")} />
+
+              <FilterSectionLabel>Rating</FilterSectionLabel>
+              <FilterRow label="Any" checked={ratingFilter === "any"} onClick={() => setRatingFilter("any")} />
+              <FilterRow label="Low rating" hint="below 4.0" checked={ratingFilter === "low_rating"} onClick={() => setRatingFilter("low_rating")} />
+              {([3.5, 4, 4.5] as const).map((r) => (
+                <FilterRow key={r} label={`${r}+ stars`} checked={ratingFilter === r} onClick={() => setRatingFilter(r)} />
               ))}
+
+              <FilterSectionLabel>Business</FilterSectionLabel>
+              <FilterRow label="Several branches" hint="2+ listings" checked={branchesOnly} onClick={() => setBranchesOnly((v) => !v)} />
 
               <FilterSectionLabel>Min heat score</FilterSectionLabel>
               <FilterRow label="Any" checked={minHeatScore === null} onClick={() => setMinHeatScore(null)} />
               {[50, 70, 85].map((h) => (
                 <FilterRow key={h} label={`${h}+`} checked={minHeatScore === h} onClick={() => setMinHeatScore(h)} />
               ))}
-              {/* Category is controlled by the category dropdown itself now, not a second,
-                  separately-settable list in here — one control for what gets searched AND
-                  shown instead of two that could disagree with each other. */}
+              {/* Category is controlled by the category dropdown itself, not a second list in here —
+                  one control for what gets searched AND shown. */}
             </div>
           )}
         </div>
 
         {/* Non-functional placeholder — no notification system exists yet */}
-        <ToolbarButton>
-          <BellIcon />
+        <ToolbarButton label="Notifications">
+          <BellIcon size={16} />
         </ToolbarButton>
-        <DashboardModeBadge />
-        <CreditsIndicator />
+        {/* The page-wide TopCredits pill is hidden on /home on purpose; this one sits in the row. */}
+        <span className="credits-slot" style={{ display: "flex" }}>
+          <CreditsIndicator />
+        </span>
       </div>
 
       {/* Pin popup card — positioned directly above the hovered/clicked pin's own screen
@@ -1189,8 +1260,8 @@ export default function HomePage() {
               />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 600, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
-              <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--g-ink)", lineHeight: 1.25 }}>{selectedLead.business_name}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.02em", marginTop: 3 }}>
                 {formatCategory(selectedLead.category) ?? "Business"}
               </div>
               <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 3 }}>
@@ -1200,7 +1271,7 @@ export default function HomePage() {
           </div>
 
           {selectedLead.is_competitor && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 12.5, fontWeight: 600, color: "#dc2626" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 12, fontWeight: 600, color: "#dc2626" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
               Competitor — not a lead
             </div>
@@ -1212,7 +1283,7 @@ export default function HomePage() {
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16 }}>
                 <HeatGauge score={selectedLead.heat_score ?? 0} size={104} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)" }}>
                     <GlobeIcon color={selectedLead.has_website === false ? "#b45309" : "var(--g-green-text)"} size={14} />
                     {selectedLead.has_website === false
                       ? "No website found"
@@ -1221,7 +1292,7 @@ export default function HomePage() {
                         : "Checking…"}
                   </div>
                   {selectedLead.rating !== null && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginTop: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "var(--g-ink)", marginTop: 8 }}>
                       <StarIcon />
                       {selectedLead.rating.toFixed(1)}
                       <span style={{ fontWeight: 500, color: "var(--g-gray-500)" }}>
@@ -1236,7 +1307,7 @@ export default function HomePage() {
                   review_count), no invented activity data. */}
               {topSignals(selectedLead).length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
                     Top Signals
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1263,10 +1334,11 @@ export default function HomePage() {
 
           {!selectedLead.is_competitor && selectedLead.is_unlocked && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--g-green-text)" }}>
                 <CheckIcon /> Added to your leads
+                <Link href="/my-leads?list=map" style={{ marginLeft: "auto", fontWeight: 500, color: "var(--g-ink-soft)", textDecoration: "underline" }}>View in Leads</Link>
               </div>
-              <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--g-ink-soft)", lineHeight: 1.5 }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--g-ink-soft)", lineHeight: 1.5 }}>
                 {selectedLead.phone ?? "No phone found"}
                 {selectedLead.email ? <><br />{selectedLead.email}</> : null}
               </div>
@@ -1291,7 +1363,7 @@ export default function HomePage() {
                 border: selectedLead.has_website === false ? "none" : "1px solid var(--g-border)",
                 borderRadius: "var(--radius-pill)",
                 padding: "11px 0",
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: addingLead ? "default" : "pointer",
                 opacity: addingLead ? 0.7 : 1,
@@ -1322,7 +1394,7 @@ export default function HomePage() {
             color: "var(--g-green-text)",
             padding: "9px 18px",
             borderRadius: "var(--radius-pill)",
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 600,
             display: "flex",
             alignItems: "center",
@@ -1353,7 +1425,7 @@ export default function HomePage() {
             color: "#fff",
             padding: "8px 16px",
             borderRadius: "var(--radius-pill)",
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 600,
             zIndex: 25,
           }}
@@ -1373,7 +1445,7 @@ export default function HomePage() {
             color: "#b45309",
             padding: "9px 18px",
             borderRadius: "var(--radius-pill)",
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 600,
             boxShadow: "var(--shadow-pop)",
             zIndex: 25,
@@ -1425,7 +1497,7 @@ export default function HomePage() {
                   background: "var(--g-white)",
                   borderRadius: "var(--radius-pill)",
                   padding: "9px 16px",
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: "var(--g-ink)",
                   cursor: startingChat ? "default" : "pointer",
@@ -1453,7 +1525,7 @@ type Enrichment = { status: EnrichmentStatus; website_url?: string | null; open_
 const ENRICHMENT_STATUS_LABEL: Record<EnrichmentStatus, string> = {
   not_started: "",
   pending: "Starting…",
-  starting_instance: "Starting the scraper…",
+  starting_instance: "Starting the search…",
   scraping: "Fetching more details…",
   done: "",
   failed: "",
@@ -1540,7 +1612,7 @@ function EnrichmentPanel({ leadId }: { leadId: string }) {
       return <div style={{ marginTop: 10, fontSize: 12, color: "var(--g-gray-500)" }}>No additional details found.</div>;
     }
     return (
-      <div style={{ marginTop: 10, fontSize: 12.5 }}>
+      <div style={{ marginTop: 10, fontSize: 12 }}>
         <a href={enrichment.website_url} target="_blank" rel="noreferrer" style={{ color: "var(--g-green-text)", fontWeight: 600 }}>
           {enrichment.website_url}
         </a>
@@ -1585,43 +1657,39 @@ function BlurSwapText({ text, color }: { text: string; color?: string }) {
   );
 }
 
-function MapKeyRow({ color, title, description }: { color: string; title: string; description: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
-      <div style={{ width: 12, height: 12, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>{title}</div>
-        <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", lineHeight: 1.4, marginTop: 1 }}>{description}</div>
-      </div>
-    </div>
-  );
-}
-
 function ToolbarButton({
   children,
   onClick,
   active,
+  label,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   active?: boolean;
+  label: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-pressed={onClick ? !!active : undefined}
       style={{
-        width: 44,
-        height: 44,
-        borderRadius: "var(--radius-sm)",
-        border: "none",
-        background: active ? "var(--g-green)" : "var(--g-white)",
+        position: "relative",
+        width: TOOLBAR_H,
+        height: TOOLBAR_H,
+        borderRadius: "var(--radius-pill)",
+        border: "1px solid var(--g-border)",
+        background: active ? "var(--g-gray-100)" : "var(--g-white)",
+        color: "var(--g-ink)",
         boxShadow: "var(--shadow-pop)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
         flexShrink: 0,
+        padding: 0,
       }}
     >
       {children}
@@ -1631,7 +1699,7 @@ function ToolbarButton({
 
 function FilterSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px 4px" }}>
+    <div style={{ fontSize: 11, fontWeight: 500, color: "var(--g-gray-500)", textTransform: "uppercase", letterSpacing: "0.06em", padding: "12px 16px 4px" }}>
       {children}
     </div>
   );
@@ -1639,36 +1707,42 @@ function FilterSectionLabel({ children }: { children: React.ReactNode }) {
 
 function FilterRow({
   label,
+  hint,
   checked,
   onClick,
-  bold,
 }: {
   label: string;
+  hint?: string;
   checked: boolean;
   onClick: () => void;
-  bold?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={checked}
       style={{
         width: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "9px 16px",
+        gap: 8,
+        padding: "8px 16px",
         background: "none",
         border: "none",
         cursor: "pointer",
-        fontSize: 13.5,
-        fontWeight: bold || checked ? 700 : 500,
-        color: checked ? "var(--g-green)" : "var(--g-ink)",
+        fontFamily: "inherit",
+        fontSize: 13,
+        fontWeight: checked ? 500 : 400,
+        color: "var(--g-ink)",
         textAlign: "left",
       }}
     >
-      {label}
-      {checked && <CheckIcon />}
+      <span>
+        {label}
+        {hint && <span style={{ color: "var(--g-gray-500)", fontWeight: 400 }}> · {hint}</span>}
+      </span>
+      {checked && <CheckIcon color="var(--g-ink)" />}
     </button>
   );
 }

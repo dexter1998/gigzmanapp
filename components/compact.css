@@ -1,0 +1,39 @@
+/* Compact UI copy primitives: stat badges, fact rows, short hints, collapsible "Why".
+ * Imported by the components that use them. All classes are prefixed `cp-`. */
+.cp-stats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.cp-stat { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #f1f2ee; color: var(--g-gray-500); white-space: nowrap; }
+.cp-stat b { color: var(--g-ink); font-weight: 600; }
+.cp-stat.ok { background: #eaf5e6; color: #2b7a35; }
+.cp-stat.warn { background: #fdf6e3; color: #8a5a00; }
+.cp-sub { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.cp-hint { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--g-gray-500); }
+.cp-hint a { color: var(--g-ink); font-weight: 600; }
+
+.cp-facts { display: flex; flex-direction: column; border: 1px solid var(--g-border); border-radius: var(--radius-md, 8px); overflow: hidden; background: var(--g-white, #fff); }
+.cp-fact { display: grid; grid-template-columns: 18px minmax(120px, 160px) minmax(0, 1fr); align-items: center; gap: 10px; padding: 9px 12px; font-size: 13px; color: var(--g-ink); }
+.cp-fact + .cp-fact { border-top: 1px solid var(--g-border); }
+.cp-fact > svg { color: var(--g-gray-500); }
+.cp-fact > b { font-weight: 600; }
+.cp-fact > span { color: var(--g-gray-500); min-width: 0; }
+.cp-fact.warn > svg, .cp-fact.warn > b { color: #8a5a00; }
+@media (max-width: 560px) { .cp-fact { grid-template-columns: 18px 1fr; } .cp-fact > span { grid-column: 2 / -1; } }
+
+.cp-why { font-size: 12px; color: var(--g-gray-500); }
+.cp-why > summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--g-gray-500); }
+.cp-why > summary::-webkit-details-marker { display: none; }
+.cp-why > summary::before { content: "›"; display: inline-block; transition: transform .15s; }
+.cp-why[open] > summary::before { transform: rotate(90deg); }
+.cp-why > :not(summary) { margin: 6px 0 0; line-height: 1.5; }
+.cp-why ul { padding-left: 18px; }
+
+.cp-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.cp-empty > svg { color: var(--g-gray-500); }
+.cp-empty > b { color: var(--g-ink); font-size: 14px; }
+
+/* Call touch: what happens after the call (the call loop). */
+.cp-retry { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; padding: 10px; border: 1px solid var(--g-border); border-radius: 10px; font-size: 12px; }
+.cp-retry > span { color: var(--g-gray-500); }
+.cp-retry label { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+.cp-retry select { font: inherit; padding: 2px 6px; border: 1px solid var(--g-border); border-radius: 6px; background: var(--g-white); }
+.cp-retry .cp-check input { margin: 0; }

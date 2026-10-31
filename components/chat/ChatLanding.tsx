@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChatComposer } from "./ChatComposer";
+import { FeatureCards } from "./FeatureCards";
 import { SparkleIcon } from "@/components/icons";
 
-export function ChatLanding({ name, suggestions }: { name: string | null; suggestions: string[] }) {
+type Unfinished = { chatId: string; title: string; delivered: number; target: number };
+
+export function ChatLanding({ name, suggestions, v2 = false, prefill = "", unfinished = [] }: { name: string | null; suggestions: string[]; v2?: boolean; prefill?: string; unfinished?: Unfinished[] }) {
   const router = useRouter();
   const [sending, setSending] = useState(false);
   const firstName = name?.split(" ")[0] ?? null;
@@ -20,6 +24,12 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
       });
       const { chat } = (await createRes.json()) as { chat: { id: string } };
 
+      // V2: open the chat now and let it send the message, so the work is visible there.
+      if (v2) {
+        router.push(`/chat/${chat.id}?q=${encodeURIComponent(message)}`);
+        return;
+      }
+
       await fetch(`/api/chats/${chat.id}/messages`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -33,7 +43,8 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "88px 24px", textAlign: "center" }}>
+    <>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "88px 24px 48px", textAlign: "center" }}>
       <h1
         style={{
           fontFamily: "var(--font-display)",
@@ -46,7 +57,18 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
         {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
       </h1>
 
-      <ChatComposer onSubmit={startChat} disabled={sending} autoFocus />
+      <ChatComposer key={prefill} onSubmit={startChat} disabled={sending} autoFocus initialValue={prefill} />
+
+      {unfinished.length > 0 && (
+        <div className="chat-unfinished" data-track="chat.unfinished">
+          <span>Unfinished — pick up where it stopped:</span>
+          {unfinished.map((u) => (
+            <Link key={u.chatId} href={`/chat/${u.chatId}`} className="chat-unfinished-item">
+              {u.title.split(" · ")[0].slice(0, 48)} <b>{u.delivered}/{u.target}</b> · Continue →
+            </Link>
+          ))}
+        </div>
+      )}
 
       {suggestions.length > 0 && (
         <div
@@ -68,7 +90,7 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
                   borderRadius: "var(--radius-pill)",
                   border: "none",
                   background: "var(--g-gray-100)",
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: "var(--g-ink-soft)",
                   cursor: sending ? "default" : "pointer",
@@ -84,5 +106,7 @@ export function ChatLanding({ name, suggestions }: { name: string | null; sugges
         </div>
       )}
     </div>
+    <FeatureCards />
+    </>
   );
 }

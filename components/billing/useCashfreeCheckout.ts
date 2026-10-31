@@ -11,6 +11,9 @@ declare global {
   }
 }
 
+/** busyPackId while an Add-funds order is opening. */
+export const TOPUP_BUSY_ID = "topup";
+
 const CASHFREE_SDK = "https://sdk.cashfree.com/js/v3/cashfree.js";
 const RAZORPAY_SDK = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -69,39 +72,45 @@ export function useCashfreeCheckout(mode: "production" | "sandbox") {
     });
   }, []);
 
-  async function buy(packId: string) {
-    setBusyPackId(packId);
+  /** A plan pack. */
+  const buy = (packId: string) => start(packId, { packId }, "Mantis plan");
+  /** "Add funds": a whole-rupee amount; the server works out the credits. */
+  const topup = (rupees: number) => start(TOPUP_BUSY_ID, { topupRupees: rupees }, "Mantis credits top-up");
+
+  async function start(busyId: string, payload: Record<string, unknown>, description: string) {
+    setBusyPackId(busyId);
     setError(null);
     try {
       const res = await fetch("/api/payments/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        setError("Couldn't start the payment. Please try again in a moment.");
+        const e = (await res.json().catch(() => ({}))) as { message?: string };
+        setError(e.message ?? "Couldn't start the payment. Please try again in a moment.");
         return;
       }
       const data = (await res.json()) as
-        | { provider: "razorpay"; orderId: string; razorpayOrderId: string; keyId: string; amountPaise: number; name?: string; email: string }
-        | { provider: "cashfree"; paymentSessionId: string };
+        | { checkout: "popup"; orderId: string; gatewayOrderId: string; keyId: string; amountPaise: number; name?: string; email: string }
+        | { checkout: "redirect"; paymentSessionId: string };
 
-      if (data.provider === "razorpay") {
+      if (data.checkout === "popup") {
         if (!window.Razorpay) { setError("Payment window couldn't load. Refresh and try again."); return; }
         const rzp = new window.Razorpay({
           key: data.keyId,
-          order_id: data.razorpayOrderId,
+          order_id: data.gatewayOrderId,
           name: "Mantis Ai",
-          description: "Lead credits",
+          description,
           prefill: { name: data.name ?? "", email: data.email },
           theme: { color: "#5a8a2e" },
           handler: async (resp: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-            const v = await fetch("/api/payments/razorpay/verify", {
+            const v = await fetch("/api/payments/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 orderId: data.orderId,
-                razorpayOrderId: resp.razorpay_order_id,
+                gatewayOrderId: resp.razorpay_order_id,
                 paymentId: resp.razorpay_payment_id,
                 signature: resp.razorpay_signature,
               }),
@@ -121,11 +130,11 @@ export function useCashfreeCheckout(mode: "production" | "sandbox") {
       if (!window.Cashfree) { setError("Payment window couldn't load. Refresh and try again."); return; }
       await window.Cashfree({ mode }).checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: "_self" });
     } catch {
-      setError("Couldn't reach the payment gateway. Please try again.");
+      setError("Couldn't reach the payment service. Please try again.");
     } finally {
       setBusyPackId(null);
     }
   }
 
-  return { buy, sdkReady, busyPackId, error };
+  return { buy, topup, sdkReady, busyPackId, error };
 }

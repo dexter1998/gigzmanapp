@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { effectivePlan } from "@/lib/credits/grants";
@@ -47,6 +48,8 @@ const MAX_TYPES_PER_REQUEST = 150;
 // resolve naturally scales with how many cells the current zoom/area produced (denser or
 // wider-zoomed areas subdivide into more cells, so they take more, smaller round-trips).
 const CELLS_PER_REQUEST_BUDGET = 1;
+/** A tile already holding this many saved businesses of the asked types is served from the database. */
+const DB_ENOUGH_PER_TILE = 20;
 
 // Not a real Google Place Type (there's no "software company" type) — checked opportunistically
 // against whatever the normal section search already returned, not via a separate dedicated
@@ -154,6 +157,17 @@ async function discoverBatch(
     return { places: unchanged ? [] : probe, hasMore: !unchanged, failed: probeFailed, apiCalls: 1 };
   }
 
+  // One request per cell at a time: claim it, or step aside. Two requests for the same tile (a pan
+  // and the map's own idle, half a second apart) used to read the same pending cell and BOTH pay
+  // Google for it — the duplicate pairs in the 2026-10-23 prod ledger.
+  const [claim] = await sql`
+    INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count, locked_until)
+    VALUES (${cacheKey}, ${batchKey}, ${batchIndex}, ${lat}, ${lng}, false, ${sql.json([])}, 0, now() + interval '45 seconds')
+    ON CONFLICT (cache_key) DO UPDATE SET locked_until = now() + interval '45 seconds'
+      WHERE area_type_scans.locked_until IS NULL OR area_type_scans.locked_until < now()
+    RETURNING cache_key`;
+  if (!claim) return { places: [] as NonNullable<PlacesResult["places"]>, hasMore: false, failed: false, apiCalls: 0 };
+
   const cellsToQuery: Cell[] =
     existing?.pending_cells?.length ? existing.pending_cells : [{ lat, lng, radius }];
 
@@ -181,15 +195,16 @@ async function discoverBatch(
 
   const isExhausted = nextPending.length === 0;
   await sql`
-    INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count, top_level_count, last_verified_at)
-    VALUES (${cacheKey}, ${batchKey}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length}, ${topLevelCount}, now())
+    INSERT INTO area_type_scans (cache_key, section, batch_index, center_lat, center_lng, is_exhausted, pending_cells, result_count, top_level_count, last_verified_at, locked_until)
+    VALUES (${cacheKey}, ${batchKey}, ${batchIndex}, ${lat}, ${lng}, ${isExhausted}, ${sql.json(nextPending)}, ${places.length}, ${topLevelCount}, now(), NULL)
     ON CONFLICT (cache_key) DO UPDATE SET
       is_exhausted = EXCLUDED.is_exhausted,
       pending_cells = EXCLUDED.pending_cells,
       result_count = area_type_scans.result_count + EXCLUDED.result_count,
       top_level_count = COALESCE(EXCLUDED.top_level_count, area_type_scans.top_level_count),
       last_verified_at = now(),
-      updated_at = now()
+      updated_at = now(),
+      locked_until = NULL
   `;
 
   return { places, hasMore: !isExhausted, failed: anyFailed, apiCalls };
@@ -239,6 +254,7 @@ export async function POST(req: NextRequest) {
     LIMIT 1
   `;
   if (recentSameArea) {
+    trackEvent(session?.user?.email, EV.mapSearch, {});
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "area_cooldown" });
   }
 
@@ -250,20 +266,21 @@ export async function POST(req: NextRequest) {
       AND created_at > now() - (${SESSION_WINDOW_MINUTES} || ' minutes')::interval
   `) as [{ billed: number; total: number }];
   if (counts.billed >= SESSION_REQUEST_BUDGET) {
+    trackEvent(session?.user?.email, EV.mapSearch, {});
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
   }
   // Backstop so dropping cache hits from the budget above doesn't leave the request rate itself
   // uncapped. This one costs no Google money, only our own DB, so it sits far higher and should
   // only ever be reached by something automated rather than by a person using the map.
   if (counts.total >= SESSION_RAW_REQUEST_CEILING) {
+    trackEvent(session?.user?.email, EV.mapSearch, {});
     return NextResponse.json({ found: 0, leads: [], hasMore: false, throttled: "session_budget" });
   }
 
-  // Past the free daily/monthly allowance (see ALLOWANCE in lib/credits/pricing.ts), a billed scan
-  // must be paid for in credits rather than silently withheld -- previously this route had no
-  // credit logic at all, so map panning went free forever once the throttles above were the only
-  // gate. This pre-check only covers the *first* call of this request; the actual spend is settled
-  // below against however many calls the request ends up making.
+  // Past the free daily/monthly allowance (ALLOWANCE in lib/credits/pricing.ts) a live lookup costs
+  // CREDIT_COST.billed_places_call — 2 credits since 2026-10-23, deliberately below Google's cost:
+  // finding is cheap, adding a lead to the list is where the user pays (Tarun). The pre-check only
+  // covers the first call; the spend is settled below against the calls actually made.
   const [profile] = await sql`SELECT plan, plan_expires_at, credits FROM user_profiles WHERE email = ${userEmail}`;
   // effectivePlan, not profile.plan: an expired comp must stop granting headroom the moment it
   // expires, not whenever the sweep next runs.
@@ -271,6 +288,7 @@ export async function POST(req: NextRequest) {
   const creditsBefore = profile?.credits ?? 0;
   const allowance = await allowanceFor(userEmail, plan);
   if (!allowance.covered && creditsBefore < CREDIT_COST.billed_places_call) {
+    trackEvent(session?.user?.email, EV.mapSearch, {});
     return NextResponse.json(
       { found: 0, leads: [], hasMore: false, throttled: "credits_required", credits: creditsBefore, required: CREDIT_COST.billed_places_call },
       { status: 402 }
@@ -303,6 +321,24 @@ export async function POST(req: NextRequest) {
     // Same shape the fully-cached path already returns. The map draws its pins from the stored
     // leads inside the viewport (GET /api/leads), not from this response, so an empty `leads` here
     // means "nothing new to add", not "nothing here".
+    trackEvent(session?.user?.email, EV.mapSearch, {});
+    return NextResponse.json({ found: 0, leads: [], hasMore: false, apiDown: false, cached: true });
+  }
+
+  // Database first (Tarun, 2026-10-23: "phle cache se db se call krna wo hona chahiye tha"): when
+  // Mantis already holds enough of these businesses inside this tile — from any earlier search, any
+  // user, a sweep or a chat run — the map shows those and Google is not called at all. A live
+  // lookup is only for ground we genuinely know little about.
+  const dLat = radius / 111_320;
+  const dLng = radius / (111_320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+  const [held] = await sql`
+    SELECT count(*)::int AS n FROM leads
+    WHERE lat BETWEEN ${lat - dLat} AND ${lat + dLat} AND lng BETWEEN ${lng - dLng} AND ${lng + dLng}
+      AND category = ANY(${selectedTypes}) AND NOT is_competitor`;
+  if ((held?.n ?? 0) >= DB_ENOUGH_PER_TILE) {
+    await sql`UPDATE area_scans SET status = 'done', completed_at = now(), billed_places_calls = 0,
+              area_label = ${`${lat.toFixed(4)},${lng.toFixed(4)} (from saved: ${held.n})`} WHERE id = ${scan.id}`;
+    trackEvent(session?.user?.email, EV.mapSearch, {});
     return NextResponse.json({ found: 0, leads: [], hasMore: false, apiDown: false, cached: true });
   }
 
@@ -344,7 +380,10 @@ export async function POST(req: NextRequest) {
         -- website_url backfills on a re-scanned row only when we didn't already have one --
         -- never overwrites a URL enrichment may since have refined.
         ON CONFLICT (place_id) DO UPDATE SET
-          website_url = CASE WHEN leads.website_url IS NULL THEN EXCLUDED.website_url ELSE leads.website_url END
+          website_url = CASE WHEN leads.website_url IS NULL THEN EXCLUDED.website_url ELSE leads.website_url END,
+          -- A re-scan that now sees a website flips the flag too; it used to stay false forever and the
+          -- row kept appearing under "without a website" (prod complaint, Jaipur).
+          has_website = leads.has_website OR EXCLUDED.has_website
         RETURNING id, lat, lng, is_competitor
       `;
       rows.push(row as { id: string; lat: number | null; lng: number | null; is_competitor: boolean });
@@ -357,11 +396,9 @@ export async function POST(req: NextRequest) {
     WHERE id = ${scan.id}
   `;
 
-  // Settled against the calls this request actually made, not the pre-check estimate -- a request
-  // can span several batches (multiple category types), each good for its own billed call. A charge
-  // that fails here (balance drained by a concurrent request between the pre-check above and this
-  // settlement) does not undo the Places calls already made -- Google has already been paid, so the
-  // scan is returned regardless; the shortfall surfaces as insufficient_credits on the next request.
+  // Settled against the calls this request actually made. Google is already paid for them, so a
+  // charge that fails (balance drained by a concurrent request) still returns the scan; the
+  // shortfall surfaces as credits_required on the next request.
   let creditsAfter = creditsBefore;
   if (!allowance.covered && placesCalls > 0) {
     const charge = await chargeCredits(userEmail, "billed_places_call", { units: placesCalls, ref: scan.id });
@@ -370,5 +407,6 @@ export async function POST(req: NextRequest) {
 
   // cached: this request cost nothing at Google. The client uses it to tell "still discovering"
   // apart from "this area is already fully scanned", so it can stop draining and stop refetching.
+  trackEvent(session?.user?.email, EV.mapSearch, {});
   return NextResponse.json({ found: rows.length, leads: rows, hasMore, apiDown, cached: placesCalls === 0, credits: creditsAfter });
 }

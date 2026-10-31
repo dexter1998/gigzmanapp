@@ -31,7 +31,10 @@ COPY --from=build /app/public ./public
 # next/image writes optimized copies under .next/cache at runtime. The COPYs above land owned by
 # root while the server runs as node, and the failed mkdir surfaces as an unhandledRejection —
 # which on modern Node is a process crash, not a warning.
-RUN mkdir -p .next/cache && chown -R node:node .next/cache
+# ...and the ISR/fetch cache writes under .next/server/app too. With only .next/cache owned by node,
+# every revalidation logged "EACCES: permission denied, mkdir /app/.next/server/app/…" (thousands a
+# day) and every ISR page re-rendered on each request. The whole .next tree is node's.
+RUN mkdir -p .next/cache && chown -R node:node .next
 USER node
 EXPOSE 3000
 # Forced at exec time, not via ENV: App Runner injects its own HOSTNAME (the instance hostname)

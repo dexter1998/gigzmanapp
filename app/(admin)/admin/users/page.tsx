@@ -106,8 +106,8 @@ export default async function UsersPage({
                coalesce(ap.n, 0)::int AS applications,
                coalesce(pay.paise, 0)::bigint AS paid_paise
           FROM user_profiles up
-          LEFT JOIN (SELECT unlocked_by, count(*) AS n FROM unlocks
-                      WHERE unlocked_by = ANY(${emails}) GROUP BY 1) un ON un.unlocked_by = up.email
+          LEFT JOIN (SELECT user_email, count(*) AS n FROM lead_finds
+                      WHERE user_email = ANY(${emails}) GROUP BY 1) un ON un.user_email = up.email
           LEFT JOIN (SELECT requested_by, count(*) AS n FROM area_scans
                       WHERE requested_by = ANY(${emails}) GROUP BY 1) sc ON sc.requested_by = up.email
           LEFT JOIN (SELECT user_email, count(*) AS n FROM job_applications

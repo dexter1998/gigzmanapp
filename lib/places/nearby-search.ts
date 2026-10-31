@@ -1,4 +1,5 @@
 import { recordApiFailure } from "@/lib/api-alerts";
+import { googleFetch } from "@/lib/google-key";
 
 /**
  * The one place that calls Google's Nearby Search (New). Originally lived only in
@@ -25,11 +26,10 @@ export type PlacesResult = {
 export type Cell = { lat: number; lng: number; radius: number };
 
 export async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ places: NonNullable<PlacesResult["places"]>; failed: boolean }> {
-  const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
+  const res = await googleFetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Goog-Api-Key": process.env.GOOGLE_PLACES_API_KEY!,
       // See app/api/leads/find/route.ts's original comment: Nearby Search (New) has no pagination,
       // and websiteUri rides free in the same Enterprise-tier field mask as rating/userRatingCount/
       // nationalPhoneNumber (all billed under one $35/1000 SKU), so there is no separate per-lead

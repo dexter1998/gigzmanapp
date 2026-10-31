@@ -90,7 +90,7 @@ export function CookieConsent() {
         boxShadow: "var(--shadow-toolbar)",
       }}
     >
-      <span style={{ fontSize: 12.5, lineHeight: 1.4, flex: "1 1 240px" }}>
+      <span style={{ fontSize: 12, lineHeight: 1.4, flex: "1 1 240px" }}>
         We use cookies for analytics to understand how Mantis is used.{" "}
         <a href="/privacy" style={{ color: "inherit", textDecoration: "underline" }}>
           Privacy policy
@@ -101,7 +101,7 @@ export function CookieConsent() {
           type="button"
           onClick={() => choose("denied")}
           style={{
-            fontSize: 12.5,
+            fontSize: 12,
             padding: "8px 14px",
             borderRadius: "var(--radius-sm, 8px)",
             border: "1px solid rgba(255,255,255,0.24)",
@@ -116,7 +116,7 @@ export function CookieConsent() {
           type="button"
           onClick={() => choose("granted")}
           style={{
-            fontSize: 12.5,
+            fontSize: 12,
             padding: "8px 14px",
             borderRadius: "var(--radius-sm, 8px)",
             border: "none",

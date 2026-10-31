@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Coins } from "lucide-react";
 import { PlansModal } from "./PlansModal";
 
 type Profile = { plan: string; credits: number; credits_limit: number };
@@ -52,7 +53,8 @@ export function CreditsIndicator() {
           cursor: "pointer",
         }}
       >
-        <span className="tnum" style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)" }}>
+        <span className="tnum" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--g-ink)" }}>
+          <Coins size={14} aria-hidden style={{ color: low ? "var(--g-danger, #c2410c)" : "var(--g-green-dark)" }} />
           {profile.credits.toLocaleString("en-IN")} credits
         </span>
         <span

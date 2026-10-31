@@ -32,7 +32,7 @@ export function MaintenanceBanner({
         boxShadow: "var(--shadow-toolbar)",
       }}
     >
-      <span style={{ fontSize: 12.5, lineHeight: 1.4 }}>{message}</span>
+      <span style={{ fontSize: 12, lineHeight: 1.4 }}>{message}</span>
       <button
         type="button"
         onClick={onClose}

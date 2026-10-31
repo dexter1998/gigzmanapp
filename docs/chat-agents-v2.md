@@ -1,6 +1,6 @@
 # Chat v2 — named agents with permissioned tools
 
-Status: **agreed design, not built.** Written 2026-08-30 from the session that fixed the v1 chat
+Status: **superseded for V2 by `v2-agents.md` (the ICP agent is now Mantis Scout).** Written 2026-08-30 from the session that fixed the v1 chat
 loop. Nothing here is speculative about the codebase — every constraint below was measured against
 this repo or production data on that date.
 
@@ -42,7 +42,7 @@ LLM chooses which tool to use and when; it does not choose *which tools exist fo
 
 Start with **one** agent. Five names were only an example.
 
-### The one agent: Rachit (ICP)
+### The one agent: Mantis Scout (ICP)
 
 | | |
 |---|---|
@@ -52,7 +52,7 @@ Start with **one** agent. Five names were only an example.
 | Writes | `chat_sessions.icp` = `{ services[], targetCategories[], targetAreas[], reasoning }` |
 | Billed calls | **zero** |
 
-Once Rachit exists, the question v1 could not answer —
+Once Mantis Scout exists, the question v1 could not answer —
 *"meri development agency hai, konse client pe focus karun?"* — is answerable from the ICP plus our
 own gap aggregates, with no Places spend at all. Gurgaon's 60% website gap and the per-category gap
 rates are already in the database.
@@ -71,7 +71,7 @@ chat_sessions(chat_id, icp jsonb, category_type, area_text,
 Persisted after every turn; agents read and write it. **No LLM in this layer** — a table and a merge
 function. With five agents and no shared state, one amnesia bug becomes five.
 
-Schema goes to production via `./db/apply-schema.sh production` **before** the code that reads it —
+Schema goes to production via `./scripts/deploy/apply-schema-prod.sh` **before** the code that reads it —
 see the note at the top of that script.
 
 ---
@@ -90,9 +90,9 @@ type Tool = {
 };
 
 type Agent = {
-  id: "rachit";
-  displayName: "Rachit";
-  label: "Rachit is finding your ICP…";
+  id: "scout";
+  displayName: "Mantis Scout";
+  label: "Mantis Scout is finding your ICP…";
   tools: string[];                  // allowlist
   budget: { billedCallsPerTurn: number };
 };
@@ -112,7 +112,7 @@ type Agent = {
    `toolConfig`, and re-check the tool id in the dispatcher before executing. Model output is
    untrusted input — the same rule that governs `resolveCategoryPhrase`, the pSEO gate and the OG
    renderer. Writing "do not use X" in a system prompt is not enforcement.
-2. **Billed tools carry a per-turn budget.** Rachit's is `0`. An agent that can silently spend money
+2. **Billed tools carry a per-turn budget.** Mantis Scout's is `0`. An agent that can silently spend money
    in a loop is one bad prompt away from a bill.
 3. **`scrape` is never a default tool.** It is slow, it carries ToS risk, and it has a measured
    failure mode that takes the scraper box offline.
@@ -127,13 +127,13 @@ type Agent = {
 is two ordinary JSON calls, no SSE and no queue:
 
 ```
-POST /route  → cheap router → { agent: "rachit", label: "Rachit is finding your ICP…" }   ~300ms
+POST /route  → cheap router → { agent: "scout", label: "Mantis Scout is finding your ICP…" }   ~300ms
      ↓ client shows the shimmer with that label
 POST /run    → the agent works → returns the message
 ```
 
 **The label must come from the server.** Guessing it client-side from keywords will eventually show
-"Rachit is finding ICP" on a turn where Rachit never ran, which is a small dishonesty that is easy
+"Mantis Scout is finding ICP" on a turn where Mantis Scout never ran, which is a small dishonesty that is easy
 to avoid now and awkward to remove later.
 
 ---
@@ -142,11 +142,11 @@ to avoid now and awkward to remove later.
 
 1. `chat_sessions` table + merge helper — no LLM. Apply schema to production first.
 2. `lib/agents/tools.ts` — registry with the three free tools.
-3. `lib/agents/registry.ts` — Rachit only: allowlist, budget, call log.
+3. `lib/agents/registry.ts` — Mantis Scout only: allowlist, budget, call log.
 4. `fetch_own_site` — homepage, `/about`, `/services` of the user's **own** domain. No ToS issue,
    and it carries more signal about what they sell than anything they type.
 5. `POST /route` + the shimmer label in `ChatThread`.
-6. Rachit's run path.
+6. Mantis Scout's run path.
 
 Steps 1–4 are enough for the focus question to work, shimmer or not.
 
@@ -155,5 +155,5 @@ Steps 1–4 are enough for the focus question to work, shimmer or not.
 ## Open item, unrelated but adjacent
 
 The chat UI shows **"Mantis Lite 1.2"** while the backend runs `amazon.nova-pro-v1:0`
-(`lib/bedrock.ts`). If agents are going to run on different tiers — Rachit on a cheap model,
+(`lib/bedrock.ts`). If agents are going to run on different tiers — Mantis Scout on a cheap model,
 research on an expensive one — that label has to become true before it is ever sold as a tier.

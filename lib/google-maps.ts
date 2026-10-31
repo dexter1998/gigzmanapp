@@ -8,7 +8,8 @@ export function loadGoogleMaps(): Promise<void> {
 
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Mantis project browser key (referrer-locked to mantisai.in + localhost:3000) first, the older key otherwise.
+    const key = process.env.NEXT_PUBLIC_MANTIS_GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places,marker,geometry&v=weekly`;
     script.async = true;
     script.onload = () => resolve();

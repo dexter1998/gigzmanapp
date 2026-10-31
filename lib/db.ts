@@ -7,7 +7,7 @@ declare global {
 
 export const sql =
   global.__gigzmanSql ??
-  postgres(process.env.DATABASE_URL!, { max: 10 });
+  postgres(process.env.DATABASE_URL!, { max: 20 });
 
 if (process.env.NODE_ENV !== "production") {
   global.__gigzmanSql = sql;

@@ -53,7 +53,7 @@ async function CountryTable({ note }: { note?: string }) {
           </tbody>
         </table>
       </div>
-      {note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{note}</p>}
+      {note && <p style={{ fontSize: 12, color: "var(--g-gray-500)" }}>{note}</p>}
     </div>
   );
 }
@@ -80,7 +80,7 @@ async function CityTable({ country, min, limit, order, note }:
           </tbody>
         </table>
       </div>
-      {note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{note}</p>}
+      {note && <p style={{ fontSize: 12, color: "var(--g-gray-500)" }}>{note}</p>}
     </div>
   );
 }
@@ -185,7 +185,7 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
                 </tbody>
               </table>
             </div>
-            {b.note && <p style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{t(b.note)}</p>}
+            {b.note && <p style={{ fontSize: 12, color: "var(--g-gray-500)" }}>{t(b.note)}</p>}
           </div>
         );
         break;

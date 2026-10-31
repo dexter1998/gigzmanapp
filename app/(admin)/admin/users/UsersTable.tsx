@@ -82,7 +82,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
       </div>
 
       <Table
-        head={["Email", "Mode", "Plan", { label: "Credits", num: true }, { label: "Unlocks", num: true }, { label: "Scans", num: true }, { label: "Apps", num: true }, "Paid", "Country", "Joined", "Last seen"]}
+        head={["Email", "Mode", "Plan", { label: "Credits", num: true }, { label: "Leads", num: true }, { label: "Scans", num: true }, { label: "Apps", num: true }, "Paid", "Country", "Joined", "Last seen"]}
         rows={filtered.map((u) => [
           <button key="e" type="button" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] no-underline truncate" style={{ maxWidth: 220, verticalAlign: "bottom" }} title={u.email} onClick={() => setActive(u)}>
             {u.email}{u.pro && <span className="ml-1"><Pill tone="info">pro @</Pill></span>}
@@ -113,7 +113,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
                 <StatCard col="col-4" label="Mode" value={<Pill tone={modeTone(active.dashboardMode)}>{active.dashboardMode}</Pill>} />
                 <StatCard col="col-4" label="Plan" value={active.plan} detail={active.paidPaise > 0 ? `paid ₹${(active.paidPaise / 100).toLocaleString("en-IN")}` : "kabhi pay nahi kiya"} tone={active.paidPaise > 0 ? "up" : undefined} />
                 <StatCard col="col-4" label="Credits" value={fmtN(active.credits)} />
-                <StatCard col="col-4" label="Unlocks" value={fmtN(active.unlocks)} />
+                <StatCard col="col-4" label="Leads found" value={fmtN(active.unlocks)} />
                 <StatCard col="col-4" label="Scans" value={fmtN(active.scans)} />
                 <StatCard col="col-4" label="Applications" value={fmtN(active.applications)} />
               </CardRow>

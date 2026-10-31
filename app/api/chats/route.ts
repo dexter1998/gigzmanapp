@@ -14,9 +14,10 @@ export async function GET() {
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const chats = await sql`
-    SELECT id, title, updated_at FROM chats
+    SELECT id, title, updated_at, pinned_at FROM chats
     WHERE user_email = ${session.user.email}
-    ORDER BY updated_at DESC
+    -- Pinned chats first so an old pin is never cut off by the limit; the sidebar splits them out.
+    ORDER BY (pinned_at IS NOT NULL) DESC, updated_at DESC
     LIMIT 50
   `;
   return NextResponse.json({ chats });

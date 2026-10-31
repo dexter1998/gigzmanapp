@@ -1,22 +1,53 @@
 import { recordApiFailure } from "@/lib/api-alerts";
+import { googleFetch, hasGoogleKey } from "@/lib/google-key";
 
 export type GeocodeOutcome<T> = { value: T | null; apiDown: boolean };
 
 /** Resolves free-text location to coordinates via the Google Geocoding API — never done by the
  * LLM itself, so a chat message can't smuggle arbitrary lat/lng through model output. Confirmed
- * live that the existing GOOGLE_PLACES_API_KEY has the Geocoding API enabled.
+ * live that the existing GOOGLE_PLACES_API_KEY has the Geocoding API enabled. Keys: lib/google-key.ts.
  *
  * Returns `apiDown: true` only for a real failure (network error, non-2xx, or a status other
  * than OK/ZERO_RESULTS) — a genuinely unresolvable/ambiguous place name (ZERO_RESULTS) is not
  * an outage and must not trigger the maintenance banner. */
-export async function geocodeText(text: string): Promise<GeocodeOutcome<{ lat: number; lng: number }>> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key || !text.trim()) return { value: null, apiDown: false };
+/** Names another country (or a famous foreign city): then the India bias is dropped. */
+const FOREIGN = /\b(usa|u\.s\.a?|united states|america|uk|united kingdom|england|london|uae|dubai|abu dhabi|sharjah|australia|sydney|melbourne|canada|toronto|vancouver|germany|berlin|france|paris|singapore|saudi|riyadh|jeddah|nigeria|lagos|kenya|nairobi|nepal|kathmandu|bangladesh|dhaka|sri lanka|colombo|pakistan|vietnam|china|japan|tokyo|sweden|serbia|bosnia|italy|portugal|brazil|mexico|new york|los angeles|chicago|houston|dallas|texas|california|florida|washington|pierce county|batley|manchester|birmingham)\b/i;
 
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(text)}&key=${key}`;
+export async function geocodeText(text: string): Promise<GeocodeOutcome<{ lat: number; lng: number }>> {
+  // Mantis's users are mostly in India: an unqualified "Kota" is Rajasthan, not Kota, Japan, and
+  // "North Chennai" is not a Bengaluru street (both seen on the fallback geocoder, 2026-10-31).
+  const india = !FOREIGN.test(text);
+  const g = await googleGeocode(text, india);
+  if (!g.apiDown) return g;
+  // Google down or refused (2026-10-22: the GCP project's billing lapsed and every geocode came back
+  // REQUEST_DENIED, so "Gwalior" was asked back forever). OpenStreetMap keeps area lookups working.
+  const osm = (india ? await osmGeocode(text, "in") : null) ?? await osmGeocode(text);
+  return osm ? { value: osm, apiDown: false } : g;
+}
+
+/** OpenStreetMap Nominatim — fallback only (its usage policy allows ~1 request/second). */
+async function osmGeocode(text: string, country?: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(text)}${country ? `&countrycodes=${country}` : ""}`, {
+      headers: { "user-agent": "MantisAi/1.0 (https://mantisai.in)", "accept-language": "en" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const [hit] = (await res.json()) as Array<{ lat?: string; lon?: string }>;
+    const lat = Number(hit?.lat), lng = Number(hit?.lon);
+    return Number.isFinite(lat) && Number.isFinite(lng) && hit ? { lat, lng } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function googleGeocode(text: string, india = true): Promise<GeocodeOutcome<{ lat: number; lng: number }>> {
+  if (!hasGoogleKey() || !text.trim()) return { value: null, apiDown: false };
+
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(text)}${india ? "&region=in" : ""}`;
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await googleFetch(url, {}, "query");
   } catch (err) {
     await recordApiFailure("google_geocoding", `Network error: ${(err as Error).message}`, { text });
     return { value: null, apiDown: true };
@@ -45,13 +76,12 @@ export async function geocodeText(text: string): Promise<GeocodeOutcome<{ lat: n
  * chat flow (and its history) can read naturally, rather than threading raw coordinates through
  * the planner. */
 export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeOutcome<string>> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) return { value: null, apiDown: false };
+  if (!hasGoogleKey()) return { value: null, apiDown: false };
 
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}`;
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await googleFetch(url, {}, "query");
   } catch (err) {
     await recordApiFailure("google_geocoding", `Network error: ${(err as Error).message}`, { lat, lng });
     return { value: null, apiDown: true };

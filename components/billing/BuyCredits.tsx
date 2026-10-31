@@ -1,12 +1,14 @@
 "use client";
 
 import { CreditPackCards, CreditPackFootnote } from "./CreditPackCards";
-import { useCashfreeCheckout } from "./useCashfreeCheckout";
+import { AddFunds } from "./AddFunds";
+import { useCashfreeCheckout, TOPUP_BUSY_ID } from "./useCashfreeCheckout";
 
-/** Credit purchase on the billing page. The cards and the checkout call are shared with the
- * in-app modal, so both surfaces charge the same prices through the same path. */
-export function BuyCredits({ mode }: { mode: "production" | "sandbox" }) {
-  const { buy, sdkReady, busyPackId, error } = useCashfreeCheckout(mode);
+/** Plans + Add funds on the billing page. The cards, the top-up strip and the checkout call are
+ * shared with the in-app modal, so both surfaces charge the same prices through the same path.
+ * One checkout hook for both, so a plan and a top-up can never be opening at the same time. */
+export function BuyCredits({ mode, sectionTitleStyle }: { mode: "production" | "sandbox"; sectionTitleStyle: React.CSSProperties }) {
+  const { buy, topup, sdkReady, busyPackId, error } = useCashfreeCheckout(mode);
 
   return (
     <>
@@ -18,6 +20,9 @@ export function BuyCredits({ mode }: { mode: "production" | "sandbox" }) {
 
       <CreditPackCards onBuy={buy} busyPackId={busyPackId} disabled={!sdkReady || busyPackId !== null} showFree={false} />
       <CreditPackFootnote />
+
+      <h2 id="add-funds" style={{ ...sectionTitleStyle, marginTop: 44 }}>Add funds</h2>
+      <AddFunds onTopup={topup} busy={busyPackId === TOPUP_BUSY_ID} disabled={!sdkReady || busyPackId !== null} />
     </>
   );
 }

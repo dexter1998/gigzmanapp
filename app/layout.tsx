@@ -5,6 +5,7 @@ import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
 import { AnalyticsScripts } from "@/components/AnalyticsScripts";
 import { CookieConsent } from "@/components/CookieConsent";
+import { AttributionCapture } from "@/components/AttributionCapture";
 import { FounderWidgetScript } from "@/components/widget/FounderWidgetScript";
 
 const GA_MEASUREMENT_ID = "G-BBJ4EB6XYK";
@@ -68,6 +69,10 @@ export const metadata: Metadata = {
   // absolute (lib/og builds them from COMPANY.site), but a single relative one anywhere would
   // otherwise silently produce a broken social card.
   metadataBase: new URL(COMPANY.site),
+  // Meta Business domain verification for mantisai.in — must be in the server-rendered <head> of
+  // the home page (Facebook reads raw HTML, not JS-inserted tags). Remove only after Meta shows
+  // the domain as verified AND we no longer need Meta ads/pixel ownership for it.
+  verification: { other: { "facebook-domain-verification": "ka1wwc8lmgska3owr802oubvzd94bk" } },
   // `template` applies to every page that sets a plain string title, so an app page writes only
   // its own name ("Billing") and still renders "Billing | Mantis" in the tab. `default` is what
   // a page with no title of its own gets — it must stand on its own as a real title, because
@@ -109,6 +114,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <AnalyticsScripts measurementId={GA_MEASUREMENT_ID} />
         <CookieConsent />
+        <AttributionCapture />
         <FounderWidgetScript />
       </body>
     </html>

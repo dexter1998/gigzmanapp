@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Built bundle of the site reader (services/site-reader/build.sh).
+    "services/site-reader/dist/**",
   ]),
 ]);
 

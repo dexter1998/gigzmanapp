@@ -1,10 +1,14 @@
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { sql } from "@/lib/db";
 import { hasJobsAccess } from "@/lib/jobs/access";
-import { CreditsIndicator } from "@/components/CreditsIndicator";
-import { DashboardModeBadge } from "@/components/DashboardModeBadge";
+import { SupportLink } from "@/components/outreach/integrations/shared";
+import { SettingsShell, SettingsPage, SettingsCard, SettingsRow } from "@/components/settings/SettingsShell";
+import { DeleteAccountRow } from "@/components/settings/DeleteAccount";
+import { getPendingRequest } from "@/lib/account-deletion";
 
 export const metadata = { title: "Profile" };
 
@@ -19,6 +23,7 @@ export default async function ProfilePage() {
   `;
   const [unlockCount] = await sql`SELECT COUNT(*)::int AS count FROM unlocks WHERE unlocked_by = ${email}`;
   const jobsAccess = await hasJobsAccess(email);
+  const pendingDeletion = email ? await getPendingRequest(email.toLowerCase()) : null;
 
   async function updateName(formData: FormData) {
     "use server";
@@ -42,209 +47,92 @@ export default async function ProfilePage() {
     redirect(mode === "jobs" ? "/jobs/map" : "/home");
   }
 
-  return (
-    <div style={{ padding: "32px 24px 120px", maxWidth: 640, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--g-ink)", margin: 0 }}>Settings</h1>
-          <p style={{ fontSize: 13, color: "var(--g-gray-500)", marginTop: 4 }}>Manage your account and preferences</p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <DashboardModeBadge />
-          <CreditsIndicator />
-        </div>
-      </div>
+  const name = profile?.name ?? "";
+  const plan = (profile?.plan ?? "free").replace(/^\w/, (c: string) => c.toUpperCase());
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Account */}
-        <Card>
-          <CardHeader title="Account" />
-          <Row label="Email" value={email} />
-          <form action={updateName} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--g-border)", gap: 10 }}>
-            <span style={{ fontSize: 12.5, color: "var(--g-gray-500)", flexShrink: 0 }}>Name</span>
-            <div style={{ display: "flex", gap: 8, flex: 1, justifyContent: "flex-end" }}>
-              <input
-                name="name"
-                defaultValue={profile?.name ?? ""}
-                placeholder="Add your name"
-                maxLength={MAX_NAME_CHARS}
-                style={nameInput}
-              />
-              <button type="submit" style={pillSecondarySmall}>
-                Save
-              </button>
-            </div>
-          </form>
-          <Row label="Leads unlocked" value={String(unlockCount?.count ?? 0)} last />
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <button type="submit" style={pillPrimary}>
-              Sign out
-            </button>
-          </form>
-        </Card>
+  return (
+    <SettingsShell>
+      <SettingsPage title="Profile">
+        <SettingsCard title="Profile">
+          <SettingsRow label="Photo" desc="From sign-in provider">
+            <span className="set-avatar">{(name || email || "?").charAt(0).toUpperCase()}</span>
+          </SettingsRow>
+          <SettingsRow label="Name">
+            <form action={updateName} style={{ display: "flex", gap: 8 }}>
+              <input name="name" defaultValue={name} placeholder="Add your name" maxLength={MAX_NAME_CHARS} className="set-input" />
+              <button type="submit" className="set-btn">Save</button>
+            </form>
+          </SettingsRow>
+          <SettingsRow label="Email">{email}</SettingsRow>
+          <SettingsRow label="Leads unlocked">{String(unlockCount?.count ?? 0)}</SettingsRow>
+        </SettingsCard>
 
         {/* Dashboard mode — which of the two product surfaces this account opens into. The
             pulsing badge in the app toolbar links straight here, so this card is the one place
             the switch lives. */}
         {jobsAccess && (
-          <Card>
-            <CardHeader title="Dashboard" />
-            <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-              Mantis has two dashboards. <strong>Leads</strong> finds local businesses that need a
-              website. <strong>Jobs</strong> finds open roles at businesses near you.
-            </p>
+          <SettingsCard
+            title="Dashboard"
+            desc={<span title="Leads finds local businesses that need a website. Jobs finds open roles at businesses near you."><strong>Leads</strong> · businesses needing a site &nbsp;·&nbsp; <strong>Jobs</strong> · nearby open roles</span>}
+          >
             {/* Switching to Leads is one-way while jobs is closed: access is proved by the mode
                 itself (see lib/jobs/access.ts), so giving it up gives up the dashboard. Said out
                 loud here rather than letting someone discover it afterwards. */}
-            <p style={{ fontSize: 12, color: "var(--g-amber-text, #b45309)", background: "var(--g-amber-tint)", padding: "8px 10px", borderRadius: "var(--radius-sm)", marginBottom: 14 }}>
-              Jobs is closed to new sign-ups while we rebuild it. Your account keeps access — but if
-              you switch to Leads you will not be able to switch back.
-            </p>
-            <form action={updateDashboardMode} style={{ display: "flex", gap: 8 }}>
-              <select
-                name="dashboard_mode"
-                defaultValue={profile?.dashboard_mode ?? "leads"}
-                style={{ ...nameInput, maxWidth: "none", flex: 1 }}
-              >
-                <option value="leads">Leads — find businesses to pitch</option>
-                <option value="jobs">Jobs — find roles to apply to</option>
-              </select>
-              <button type="submit" style={pillSecondarySmall}>
-                Switch
-              </button>
-            </form>
-          </Card>
+            <SettingsRow
+              label="Open into"
+              desc={<span title="Jobs is closed to new sign-ups while we rebuild it. Your account keeps access — but if you switch to Leads you will not be able to switch back." style={{ color: "#8a5a00", display: "inline-flex", alignItems: "center", gap: 5 }}><AlertTriangle size={12} /> Jobs closed · switching to Leads is one-way</span>}
+            >
+              <form action={updateDashboardMode} style={{ display: "flex", gap: 8 }}>
+                <select name="dashboard_mode" defaultValue={profile?.dashboard_mode ?? "leads"} className="set-input" style={{ width: 200 }}>
+                  <option value="leads">Leads</option>
+                  <option value="jobs">Jobs</option>
+                </select>
+                <button type="submit" className="set-btn">Switch</button>
+              </form>
+            </SettingsRow>
+          </SettingsCard>
         )}
 
-        {/* Billing & usage — links out to the real billing/usage pages (both already fully
-            wired with Cashfree + credit ledger) rather than duplicating them here. */}
-        <Card>
-          <CardHeader title="Billing & Usage" />
-          <Row label="Plan" value={(profile?.plan ?? "free").replace(/^\w/, (c: string) => c.toUpperCase())} />
-          <Row label="Credits remaining" value={`${profile?.credits ?? 0} / ${profile?.credits_limit ?? 0}`} last />
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <a href="/settings/billing" style={{ ...pillSecondary, textDecoration: "none", textAlign: "center", flex: 1 }}>
-              Manage billing
-            </a>
-            <a href="/settings/usage" style={{ ...pillSecondary, textDecoration: "none", textAlign: "center", flex: 1 }}>
-              View usage
-            </a>
-          </div>
-        </Card>
+        {/* Billing & usage — links out to the real billing/usage pages rather than duplicating them. */}
+        <SettingsCard title="Plan & credits" desc="Pay per real work">
+          <SettingsRow label="Plan">{plan}</SettingsRow>
+          <SettingsRow label="Credits remaining">
+            {`${profile?.credits ?? 0} / ${profile?.credits_limit ?? 0}`}
+          </SettingsRow>
+          <SettingsRow label="Billing" desc="Credits · invoices">
+            <Link href="/settings/billing" className="set-btn">Manage billing</Link>
+          </SettingsRow>
+          <SettingsRow label="Usage" desc="Credit ledger · newest first">
+            <Link href="/settings/usage" className="set-btn">View usage</Link>
+          </SettingsRow>
+        </SettingsCard>
 
-        {/* Leads summary (replaces Pindrop's Payouts card — no builder marketplace here) */}
-        <Card>
-          <CardHeader title="Leads" />
-          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-            Manage the leads you have found, filter by area or category, and unlock enrichment.
-          </p>
-          <a href="/my-leads" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
-            Open Leads
-          </a>
-        </Card>
+        <SettingsCard title="Help">
+          <SettingsRow label="Leads" desc="Filter, manage, enrich">
+            <Link href="/my-leads" className="set-btn">Open Leads</Link>
+          </SettingsRow>
+          <SettingsRow label="Feedback" desc="Ideas · bugs">
+            <SupportLink subject="Mantis feedback" className="set-btn">Send feedback</SupportLink>
+          </SettingsRow>
+        </SettingsCard>
 
-        {/* Support */}
-        <Card>
-          <CardHeader title="Support" />
-          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginBottom: 16 }}>
-            Have an idea or hit a snag? Tell us and help shape Mantis Ai.
-          </p>
-          <a href="mailto:support@gigzmanapp.com" style={{ ...pillSecondary, textDecoration: "none", display: "block", textAlign: "center" }}>
-            Send feedback
-          </a>
-        </Card>
-      </div>
-    </div>
+        <SettingsCard title="Account">
+          <SettingsRow label="Sign out" desc={email}>
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/login" });
+              }}
+            >
+              <button type="submit" className="set-btn danger">Sign out</button>
+            </form>
+          </SettingsRow>
+          <DeleteAccountRow
+            email={email}
+            pendingAt={pendingDeletion ? new Date(pendingDeletion.requested_at).toISOString() : null}
+          />
+        </SettingsCard>
+      </SettingsPage>
+    </SettingsShell>
   );
 }
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: "var(--g-white)",
-        border: "1px solid var(--g-border)",
-        borderRadius: "var(--radius-lg)",
-        padding: 24,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CardHeader({ title }: { title: string }) {
-  return <div style={{ fontSize: 15, fontWeight: 600, color: "var(--g-ink)", marginBottom: 14 }}>{title}</div>;
-}
-
-function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 0",
-        borderBottom: last ? "none" : "1px solid var(--g-border)",
-      }}
-    >
-      <span style={{ fontSize: 12.5, color: "var(--g-gray-500)" }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>{value}</span>
-    </div>
-  );
-}
-
-const pillPrimary: React.CSSProperties = {
-  width: "100%",
-  marginTop: 4,
-  padding: "11px 0",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--g-green-darker)",
-  color: "#fff",
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const pillSecondary: React.CSSProperties = {
-  width: "100%",
-  padding: "11px 0",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--g-border)",
-  background: "var(--g-white)",
-  color: "var(--g-ink)",
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const pillSecondarySmall: React.CSSProperties = {
-  padding: "7px 14px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--g-border)",
-  background: "var(--g-white)",
-  color: "var(--g-ink)",
-  fontSize: 12.5,
-  fontWeight: 600,
-  cursor: "pointer",
-  flexShrink: 0,
-};
-
-const nameInput: React.CSSProperties = {
-  padding: "7px 10px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--g-border)",
-  background: "var(--g-white)",
-  color: "var(--g-ink)",
-  fontSize: 13,
-  fontFamily: "inherit",
-  minWidth: 0,
-  flex: 1,
-  maxWidth: 220,
-};

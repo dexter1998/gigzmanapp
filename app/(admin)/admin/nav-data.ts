@@ -4,6 +4,8 @@ export const NAV: { group: string; storageKey: string; items: { href: string; la
   { group: "Analysis", storageKey: "adm-nav-analysis", items: [
     { href: "/admin", label: "Overview", icon: "overview" },
     { href: "/admin/users", label: "Users", icon: "users" },
+    { href: "/admin/activity", label: "Activity", icon: "overview" },
+    { href: "/admin/analysis", label: "Analysis", icon: "economics" },
     { href: "/admin/economics", label: "Economics", icon: "economics" },
     { href: "/admin/inbound", label: "Inbound", icon: "inbound" },
     { href: "/admin/widget", label: "Founder inbox", icon: "inbound" },
@@ -13,6 +15,10 @@ export const NAV: { group: string; storageKey: string; items: { href: string; la
   ]},
   { group: "Billing", storageKey: "adm-nav-billing", items: [
     { href: "/admin/grants", label: "Plan grants", icon: "economics" },
+    { href: "/admin/deletions", label: "Deletion requests", icon: "users" },
+  ]},
+  { group: "Lead generation", storageKey: "adm-nav-scraping", items: [
+    { href: "/admin/scraping", label: "Scraping", icon: "search" },
   ]},
   { group: "Systems", storageKey: "adm-nav-systems", items: [
     { href: "/admin/mailing", label: "Mailing", icon: "mailing" },

@@ -65,10 +65,10 @@ export const getLiveData = unstable_cache(
                  count(*) FILTER (WHERE onboarding_completed)::int AS onboarded
             FROM user_profiles`,
       // n_live_tup for `leads`: it is a ~300k-row table and this is a headline tile, not an audit.
-      sql`SELECT (SELECT count(*)::int FROM unlocks) AS unlocks,
-                 (SELECT count(DISTINCT unlocked_by)::int FROM unlocks) AS unlock_users,
-                 (SELECT count(*)::int FROM unlocks
-                   WHERE unlocked_at > now() - interval '7 days') AS unlocks7,
+      sql`SELECT (SELECT count(*)::int FROM lead_finds) AS unlocks,
+                 (SELECT count(DISTINCT user_email)::int FROM lead_finds) AS unlock_users,
+                 (SELECT count(*)::int FROM lead_finds
+                   WHERE found_at > now() - interval '7 days') AS unlocks7,
                  (SELECT coalesce(n_live_tup, 0)::int FROM pg_stat_user_tables
                    WHERE relname = 'leads') AS leads`,
       sql`SELECT coalesce(sum(amount_paise) FILTER (WHERE status = 'paid'), 0)::bigint AS paise,
@@ -82,8 +82,8 @@ export const getLiveData = unstable_cache(
       sql`SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day, count(*)::int AS n
             FROM user_profiles WHERE created_at > now() - interval '30 days'
            GROUP BY 1 ORDER BY 1`,
-      sql`SELECT to_char(date_trunc('day', unlocked_at), 'YYYY-MM-DD') AS day, count(*)::int AS n
-            FROM unlocks WHERE unlocked_at > now() - interval '30 days'
+      sql`SELECT to_char(date_trunc('day', found_at), 'YYYY-MM-DD') AS day, count(*)::int AS n
+            FROM lead_finds WHERE found_at > now() - interval '30 days'
            GROUP BY 1 ORDER BY 1`,
       sql`SELECT coalesce(business_type, 'Not set') AS label, count(*)::int AS n
             FROM user_profiles GROUP BY 1 ORDER BY n DESC`,
@@ -92,7 +92,7 @@ export const getLiveData = unstable_cache(
       // How deep usage goes, not just whether it happened. `role` used to sit here, but
       // onboarding never writes that column -- the card rendered "Not set: everyone".
       sql`WITH per AS (
-            SELECT p.email, (SELECT count(*) FROM unlocks u WHERE u.unlocked_by = p.email) AS n
+            SELECT p.email, (SELECT count(*) FROM lead_finds u WHERE u.user_email = p.email) AS n
               FROM user_profiles p
           )
           SELECT CASE WHEN n = 0 THEN 'No unlocks yet'
@@ -114,9 +114,9 @@ export const getLiveData = unstable_cache(
              WHERE created_at > now() - interval '8 weeks'
           ), a AS (
             SELECT DISTINCT c.cohort, c.email,
-                   (extract(epoch FROM date_trunc('week', u.unlocked_at) - c.cohort) / 604800)::int AS wk
-              FROM c JOIN unlocks u ON u.unlocked_by = c.email
-             WHERE u.unlocked_at >= c.cohort
+                   (extract(epoch FROM date_trunc('week', u.found_at) - c.cohort) / 604800)::int AS wk
+              FROM c JOIN lead_finds u ON u.user_email = c.email
+             WHERE u.found_at >= c.cohort
           )
           SELECT to_char(c.cohort, 'YYYY-MM-DD') AS cohort,
                  count(DISTINCT c.email)::int AS size,
@@ -126,7 +126,7 @@ export const getLiveData = unstable_cache(
 
       sql`SELECT p.email, p.country, p.business_type, p.plan,
                  to_char(p.created_at, 'DD Mon') AS joined,
-                 (SELECT count(*)::int FROM unlocks u WHERE u.unlocked_by = p.email) AS unlocks
+                 (SELECT count(*)::int FROM lead_finds u WHERE u.user_email = p.email) AS unlocks
             FROM user_profiles p ORDER BY p.created_at DESC LIMIT 40`,
 
       sql`SELECT partnership_reason AS text, full_name, city, country

@@ -19,5 +19,6 @@ export async function POST() {
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const results = await advanceInFlightForUser(session.user.email);
-  return NextResponse.json({ advanced: results.length, results });
+  // Per-job error text names the upstream lookup; the client only needs the status.
+  return NextResponse.json({ advanced: results.length, results: results.map(({ leadId, status }) => ({ leadId, status })) });
 }

@@ -91,14 +91,17 @@ export function GapTable({
   caption,
   head,
   rows,
+  minWidth = 460,
 }: {
   caption?: string;
   head: string[];
   rows: Array<{ key: string; cells: React.ReactNode[]; href?: string }>;
+  /** Narrow tables (2–3 short columns) pass 0 so they fit a phone instead of scrolling. */
+  minWidth?: number;
 }) {
   return (
     <div style={{ overflowX: "auto", border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", background: "var(--g-white)" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14.5, minWidth: 460 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14.5, minWidth }}>
         {caption && <caption style={{ captionSide: "top", textAlign: "left", padding: "14px 18px 0", fontSize: 13, color: "var(--g-gray-500)" }}>{caption}</caption>}
         <thead>
           <tr>

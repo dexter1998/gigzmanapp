@@ -19,7 +19,9 @@ export function HeatGauge({ score, size = 120 }: { score: number; size?: number 
   const angleFor = (pct: number) => 180 - (pct / 100) * 180;
   const pointAt = (angleDeg: number) => {
     const rad = (angleDeg * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+    // Rounded: the server and the browser print the last float digit differently, which made every
+    // gauge a hydration mismatch.
+    return { x: Math.round((cx + r * Math.cos(rad)) * 100) / 100, y: Math.round((cy - r * Math.sin(rad)) * 100) / 100 };
   };
 
   const start = pointAt(180);

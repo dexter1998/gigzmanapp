@@ -1,0 +1,33 @@
+/* "Sending as" in the Campaign Planner (components/outreach/CampaignBuilder.tsx). */
+.sa-card { border: 1px solid var(--g-border); border-radius: var(--radius-md, 8px); background: var(--g-white); padding: 12px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.sa-head { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--g-ink); }
+.sa-badge { margin-left: auto; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: #fdf6e3; color: #8a5a00; }
+.sa-card label { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; font-size: 12px; color: var(--g-gray-500); }
+.sa-card input { height: 32px; padding: 0 10px; border: 1px solid var(--g-border); border-radius: var(--radius-sm, 6px); font: inherit; font-size: 13px; color: var(--g-ink); background: var(--g-white); min-width: 0; }
+.sa-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.sa-chip { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--g-ink); border: 1px solid var(--g-border); border-radius: 999px; padding: 5px 6px 5px 10px; background: var(--g-white); margin-bottom: 10px; }
+.sa-chip b { font-weight: 600; }
+.sa-sep { color: var(--g-gray-500); }
+.sa-offer { color: var(--g-gray-500); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-edit { margin-left: auto; display: inline-flex; border: 0; background: none; color: var(--g-gray-500); cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.sa-edit:hover { color: var(--g-ink); background: var(--g-cream); }
+
+/* Test results (Send yourself a test → results): one compact row per touch. */
+.tr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--g-border); border-radius: var(--radius-md, 8px); overflow: hidden; }
+.tr-row { display: grid; grid-template-columns: 26px 64px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; color: var(--g-ink); }
+.tr-row + .tr-row { border-top: 1px solid var(--g-border); }
+.tr-ic { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: var(--g-cream); color: var(--g-gray-500); }
+.tr-ic.ch-email { color: #d93025; } .tr-ic.ch-whatsapp { color: #1aa752; } .tr-ic.ch-call { color: var(--g-ink); }
+.tr-touch { font-weight: 600; white-space: nowrap; }
+.tr-to { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--g-ink); }
+.tr-from { font-size: 11px; color: var(--g-gray-500); background: var(--g-cream); border-radius: 999px; padding: 2px 8px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.tr-badge.ok { background: #eaf5e6; color: #2b7a35; }
+.tr-badge.warn { background: #fdf6e3; color: #8a5a00; }
+.tr-hint { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--g-gray-500); }
+@media (max-width: 560px) { .tr-row { grid-template-columns: 26px 1fr auto; } .tr-to, .tr-from { grid-column: 2 / -1; } }
+
+/* Not confirmed yet: a warning line that reopens the popup. */
+.sa-chip.warn { border-color: #e7c66b; background: #fdf6e0; color: #7a5a00; cursor: pointer; font: inherit; font-size: 12.5px; }
+.sa-why { margin: 0 0 10px; font-size: 13px; color: var(--g-gray-500, #6b6b6b); }
+.ox-modal .sa-card { border: 0; padding: 0; background: none; }

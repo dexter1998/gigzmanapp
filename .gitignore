@@ -44,3 +44,7 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 backups/
+services/fetchd/.venv/
+
+# site reader bundle (built by services/site-reader/build.sh)
+services/site-reader/dist/

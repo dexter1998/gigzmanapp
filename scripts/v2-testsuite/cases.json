@@ -1,0 +1,14 @@
+[
+  { "id": "CA_01", "query": "Find CA firms in Gurgaon", "industry": "Professional services", "offering": "Consulting", "fit": "A", "validates": "Niche business-category discovery" },
+  { "id": "DENTAL_01", "query": "Find dental clinics in Gurgaon with no website listed", "industry": "Healthcare", "offering": "Website development", "fit": "A", "validates": "Website URL absence handling", "expectSignal": "no_website" },
+  { "id": "HOSPITAL_01", "query": "Find multispecialty hospitals in Gurgaon with several departments", "industry": "Healthcare", "offering": "Hospital website / patient portal", "fit": "A", "validates": "Long-page/content extraction" },
+  { "id": "GYM_01", "query": "Find gyms in Gurgaon with online booking or membership pages", "industry": "Fitness", "offering": "Gym-management SaaS", "fit": "A", "validates": "Service and booking-signal extraction", "expectSignal": "has_booking" },
+  { "id": "SALON_01", "query": "Find salons and spas in Gurgaon that offer online appointment booking", "industry": "Personal care", "offering": "Salon booking SaaS", "fit": "A", "validates": "Booking-flow detection", "expectSignal": "has_booking" },
+  { "id": "SCHOOL_01", "query": "Find private schools in Gurgaon with admissions pages", "industry": "Education", "offering": "Admissions software", "fit": "A", "validates": "Multiple programme/page extraction", "expectSignal": "has_admissions" },
+  { "id": "REALESTATE_01", "query": "Find real estate agencies in Gurgaon without a website listed", "industry": "Real estate", "offering": "Website development", "fit": "A", "validates": "Local business discovery + website matching", "expectSignal": "no_website" },
+  { "id": "VIDEO_01", "query": "Find video production companies in Gurgaon", "industry": "Media", "offering": "Video production", "fit": "A", "validates": "Portfolio and service extraction" },
+  { "id": "RESTAURANT_01", "query": "Find restaurants in Gurgaon with online menus", "industry": "Hospitality", "offering": "Restaurant ordering system", "fit": "B", "validates": "Menu and contact-link extraction", "expectSignal": "has_menu" },
+  { "id": "MANUFACTURER_01", "query": "Find industrial manufacturers in Manesar", "industry": "Manufacturing", "offering": "Manufacturing ERP", "fit": "B", "validates": "Product/category extraction" },
+  { "id": "LOGISTICS_01", "query": "Find logistics and transport companies in Gurgaon", "industry": "Logistics", "offering": "Logistics / fleet SaaS", "fit": "B", "validates": "Service coverage and contact extraction" },
+  { "id": "SAAS_01", "query": "Find SaaS companies in India", "industry": "Technology", "offering": "SaaS-to-SaaS", "fit": "C", "validates": "Current Maps discovery limitation (expected source gap)" }
+]

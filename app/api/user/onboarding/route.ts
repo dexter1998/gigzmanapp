@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { recordSignupSource } from "@/lib/attribution";
+import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 
@@ -35,6 +37,7 @@ export async function POST(req: NextRequest) {
       name = ${body.name},
       updated_at = now()
   `;
+  recordSignupSource(email, req.headers.get("cookie"));
 
   if (body.workMode === "company") {
     const companyName = body.companyName!;
@@ -52,5 +55,6 @@ export async function POST(req: NextRequest) {
     `;
   }
 
+  trackEvent(email, EV.onboardingDone, {});
   return NextResponse.json({ ok: true });
 }

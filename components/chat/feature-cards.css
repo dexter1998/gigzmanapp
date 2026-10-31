@@ -1,0 +1,219 @@
+/* Feature cards under the /chat composer. Scoped under .fc-row so nothing leaks. */
+
+/* Magic UI Orbiting Circles keyframes (registry `css` block). */
+@keyframes orbit {
+  0% {
+    transform: rotate(calc(var(--angle) * 1deg)) translateY(calc(var(--radius) * 1px)) rotate(calc(var(--angle) * -1deg));
+  }
+  100% {
+    transform: rotate(calc(var(--angle) * 1deg + 360deg)) translateY(calc(var(--radius) * 1px)) rotate(calc((var(--angle) * -1deg) - 360deg));
+  }
+}
+.mu-orbit {
+  animation: orbit calc(var(--duration) * 1s) linear infinite;
+}
+
+.fc-wrap {
+  width: 100%;
+  max-width: 1264px;
+  margin: 0 auto;
+  padding: 0 24px 72px;
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+
+.fc-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fc-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--g-white);
+  border: 1px solid var(--g-border);
+  border-radius: 12px;
+  padding: 20px 20px 18px;
+  text-align: left;
+  box-shadow: 0 1px 2px oklch(0.2 0.01 68 / 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.fc-card:hover {
+  border-color: var(--g-gray-300, var(--g-border));
+  box-shadow: 0 1px 2px oklch(0.2 0.01 68 / 0.04), 0 10px 28px -14px oklch(0.2 0.01 68 / 0.18);
+}
+
+.fc-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-gray-500);
+  margin: 0 0 8px;
+}
+.fc-kicker::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--g-green);
+}
+.fc-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--g-ink);
+  margin: 0 0 4px;
+}
+.fc-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--g-gray-500);
+  margin: 0;
+  min-height: calc(13px * 1.45 * 2);
+}
+
+.fc-art {
+  position: relative;
+  height: 184px;
+  margin: 16px -20px 16px;
+  overflow: hidden;
+  border-top: 1px solid var(--g-border);
+  border-bottom: 1px solid var(--g-border);
+  background: var(--g-gray-100);
+  background-image: radial-gradient(oklch(0.2 0.01 68 / 0.07) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+.fc-btn {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: flex-start;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--g-border);
+  background: var(--g-white);
+  color: var(--g-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.fc-btn:hover {
+  background: var(--g-gray-100);
+  border-color: var(--g-gray-300, var(--g-border));
+}
+.fc-btn--primary {
+  background: var(--g-green-darker);
+  border-color: var(--g-green-darker);
+  color: var(--accent-ink, #fff);
+}
+.fc-btn--primary:hover {
+  background: var(--g-green-darker);
+  border-color: var(--g-green-darker);
+  filter: brightness(1.08);
+}
+.fc-btn:focus-visible {
+  outline: 2px solid var(--g-green-darker);
+  outline-offset: 2px;
+}
+
+/* Small round node used by the orbit + beam illustrations. */
+.fc-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--g-white);
+  border: 1px solid var(--g-border);
+  box-shadow: 0 1px 2px oklch(0.2 0.01 68 / 0.06), 0 4px 10px -4px oklch(0.2 0.01 68 / 0.12);
+}
+.fc-mark {
+  background: url("/mantis-logo-wordmark.png") left center / auto 100% no-repeat;
+}
+
+/* Notification rows in the Book meetings card. */
+.fc-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--g-white);
+  border: 1px solid var(--g-border);
+  box-shadow: 0 1px 2px oklch(0.2 0.01 68 / 0.05);
+}
+.fc-note-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.fc-note-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--g-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fc-note-sub {
+  font-size: 11px;
+  color: var(--g-gray-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fc-note-time {
+  margin-left: auto;
+  flex: none;
+  font-size: 10px;
+  color: var(--g-gray-500);
+}
+
+/* Breakpoints follow the space the row actually gets (the app sidebar eats ~250px), not the viewport. */
+/* Tablet: 2 x 2. */
+@container (max-width: 940px) {
+  .fc-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 680px;
+    margin: 0 auto;
+  }
+}
+/* Mobile: one column. */
+@container (max-width: 520px) {
+  .fc-row {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 420px;
+  }
+}
+@media (max-width: 640px) {
+  .fc-wrap {
+    padding: 0 16px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mu-orbit {
+    animation: none;
+    transform: rotate(calc(var(--angle) * 1deg)) translateY(calc(var(--radius) * 1px)) rotate(calc(var(--angle) * -1deg));
+  }
+}

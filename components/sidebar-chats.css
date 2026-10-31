@@ -1,0 +1,45 @@
+/* Sidebar chat rows (components/SidebarChatRow.tsx), ChatGPT-style hover actions. Base row look
+   (.nav-row / .sb-recent) stays in globals.css; this file only adds the row actions, the inline
+   rename input, the row menu, and the wider expanded sidebar. */
+
+/* Wider expanded sidebar (248 -> 288) on desktop; phones keep 248 so the content column survives. */
+@media (min-width: 900px) {
+  aside.app-sidebar:not([data-collapsed]) { width: 288px; }
+}
+
+.sb-recent.sbc-row { position: relative; padding: 0; gap: 0; }
+.sbc-link { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 7px 10px; color: inherit;
+  text-decoration: none; border-radius: inherit; outline: none; }
+.sbc-link:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* Actions sit over the right end of the title; the title's ellipsis moves in when they show. */
+.sbc-actions { display: none; align-items: center; gap: 0; padding-right: 4px; flex: none; }
+.sbc-row:hover .sbc-actions,
+.sbc-row:focus-within .sbc-actions,
+.sbc-row[data-menu] .sbc-actions { display: inline-flex; }
+.sbc-btn { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  border: none; background: none; border-radius: var(--radius-sm, 6px); color: var(--ink-muted); cursor: pointer; }
+.sbc-btn:hover, .sbc-row[data-menu] .sbc-btn[aria-expanded="true"] { background: color-mix(in oklab, var(--ink) 8%, transparent); color: var(--ink); }
+.sbc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sbc-row[data-menu] { background: color-mix(in oklab, var(--surface-sunk) 60%, transparent); color: var(--ink); }
+
+/* Touch screens have no hover: keep the "…" reachable. */
+@media (hover: none) {
+  .sbc-actions { display: inline-flex; }
+  .sbc-actions .sbc-btn:not([aria-haspopup]) { display: none; }
+}
+
+.sbc-row[data-editing] { padding: 3px 4px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule-strong, var(--rule)); }
+.sbc-input { flex: 1; min-width: 0; height: 26px; padding: 0 6px; border: none; outline: none; background: transparent;
+  font: inherit; font-size: 13px; color: var(--ink); }
+.sbc-row[data-editing]:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+
+.sbc-menu { position: fixed; z-index: 80; width: 180px; padding: 4px; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: var(--radius-md, 8px); box-shadow: 0 8px 24px oklch(0.2 0.01 68 / 0.12); }
+.sbc-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border: none; background: none;
+  border-radius: var(--radius-sm, 6px); font: inherit; font-size: 13px; font-weight: 400; color: var(--ink); cursor: pointer; text-align: left; }
+.sbc-menu-item svg { color: var(--ink-muted); flex: none; }
+.sbc-menu-item:hover, .sbc-menu-item:focus-visible { background: var(--surface-sunk); outline: none; }
+
+/* Pinned section sits directly above Recent, without a second divider between them. */
+.sb-chats-section + .sb-chats-section { margin-top: 4px; border-top: none; }

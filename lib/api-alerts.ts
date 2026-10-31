@@ -1,6 +1,6 @@
 import { sql } from "@/lib/db";
 
-export type ApiProvider = "google_places" | "google_geocoding" | "bedrock" | "ses" | "message_central";
+export type ApiProvider = "google_places" | "google_geocoding" | "bedrock" | "anthropic" | "ses" | "message_central";
 
 // Best-effort observability, not a critical path — a failure writing the alert itself must
 // never break the caller (which is usually already in the middle of handling its own real

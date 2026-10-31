@@ -7,3 +7,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Before adding structure
+
+Before adding a new table, service, queue, worker, agent or abstraction layer — or fixing a bug by
+wrapping it in a guard — follow `.claude/skills/architecture-simplification/SKILL.md` and its
+`references/mantis-seams.md`. Most features here are a new use of an existing seam.

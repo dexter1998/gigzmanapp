@@ -216,6 +216,8 @@ a.rc-tag-link:hover { background: color-mix(in srgb, var(--g-green-text) 8%, var
   text-decoration: none; border: none; cursor: pointer;
 }
 .rc-btn.dark { background: var(--g-ink); }
+/* The article link colour (.rc-body a) out-ranks .rc-btn and turned the label green-on-green. */
+.rc-body a.rc-btn, .rc-body a.rc-btn:hover, .rc-body a.rc-btn:visited { color: #fff; text-decoration: none; }
 
 /* tip box */
 .rc-tip {

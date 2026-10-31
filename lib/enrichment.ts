@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import type { JSONValue } from "postgres";
+import { googleFetch, hasGoogleKey } from "@/lib/google-key";
 
 /**
  * Detail lookup for a single already-unlocked lead: description, opening hours, website, and the
@@ -19,7 +20,6 @@ import type { JSONValue } from "postgres";
  * address. The `lead_enrichment` row survives as a cache and an audit trail, not as a work queue.
  */
 
-const PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 export type EnrichmentStatus =
   // starting_instance and scraping can no longer be reached; they remain so that rows written by
@@ -79,8 +79,8 @@ type PlaceDetails = Record<string, unknown>;
 
 async function fetchDetails(placeId: string): Promise<{ data: PlaceDetails } | { error: string }> {
   for (const mask of [FULL_MASK, BASIC_MASK]) {
-    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=en`, {
-      headers: { "X-Goog-Api-Key": PLACES_KEY!, "X-Goog-FieldMask": mask },
+    const res = await googleFetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=en`, {
+      headers: { "X-Goog-FieldMask": mask },
       cache: "no-store",
     });
     if (res.ok) return { data: (await res.json()) as PlaceDetails };
@@ -143,7 +143,7 @@ function descriptionFrom(d: PlaceDetails): string | null {
  * does).
  */
 export async function advance(leadId: string, lead: LeadForEnrichment) {
-  if (!PLACES_KEY) {
+  if (!hasGoogleKey()) {
     return { status: "failed" as const, error: "GOOGLE_PLACES_API_KEY is not configured" };
   }
 

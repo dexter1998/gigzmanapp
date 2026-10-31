@@ -5,6 +5,7 @@ import { maskName } from "@/lib/mask";
 import { heatScore } from "@/lib/lead-quality";
 import { TYPE_TO_SECTION } from "@/lib/categories";
 import { ALLOWED_LEAD_TYPES_SQL } from "@/lib/lead-quality";
+import { dataSignals } from "@/lib/v2/playbooks";
 
 // A map viewport shows a few dozen pins, not five hundred, and every row here carries the full
 // lead record. Returning 500 on every pan was the single largest source of database egress in
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
   const rows = await sql`
     SELECT l.id, l.business_name, l.category, l.address, l.lat, l.lng, l.phone, l.email,
            l.has_website, l.contacted, l.is_competitor, l.created_at, l.rating, l.review_count,
+           l.website_url, l.city_slug,
            (u.id IS NOT NULL) AS is_unlocked,
            -- Enrichment rides along rather than being fetched per row: the leads table shows a
            -- "More details" control for every saved lead, and one request per visible row just to
@@ -96,10 +98,32 @@ export async function GET(req: NextRequest) {
   // whole point of flagging them. A business that already has a website is exempt for the same
   // reason — it was never actually sellable as a lead, so there's nothing being protected by
   // hiding its name either.
-  const leads = rows.map((r) => {
+  // Branch counts for the "Several branches" signal — the same rule as the V2 runner (listings
+  // sharing a name within a city). Explicit name/city arrays keep this on idx_leads_pseo_city:
+  // ~10ms for a 120-row viewport, where a correlated count per row took over a second.
+  const names = [...new Set(rows.map((r) => String(r.business_name).toLowerCase()))];
+  const cities = [...new Set(rows.map((r) => r.city_slug).filter(Boolean))] as string[];
+  const branchRows = names.length && cities.length
+    ? await sql`
+        SELECT lower(business_name) AS n, city_slug AS c, count(*)::int AS k FROM leads
+        WHERE city_slug = ANY(${cities}) AND lower(business_name) = ANY(${names})
+        GROUP BY 1, 2 HAVING count(*) > 1`
+    : [];
+  const branches = new Map(branchRows.map((b) => [`${b.n}|${b.c}`, b.k as number]));
+
+  const leads = rows.map(({ website_url, city_slug, ...r }) => {
     const reveal = r.is_unlocked || r.is_competitor || r.has_website === true;
     return {
       ...r,
+      // The V2 catalog's `data` signals (lib/v2/playbooks.ts), computed here so the map can filter
+      // on them without ever receiving the website URL or the real name of a locked lead.
+      signals: dataSignals({
+        website: website_url,
+        has_website: r.has_website,
+        rating: r.rating,
+        review_count: r.review_count,
+        branches: city_slug ? (branches.get(`${String(r.business_name).toLowerCase()}|${city_slug}`) ?? 1) : null,
+      }),
       business_name: reveal ? r.business_name : maskName(r.business_name),
       // Category isn't identity — knowing "Coaching Center" doesn't let anyone recover which
       // specific business this is, so there's nothing to protect by masking it, and showing it

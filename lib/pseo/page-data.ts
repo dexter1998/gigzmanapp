@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { cityPath } from "@/lib/pseo/urls";
 import { CITY_BY_SLUG, areaDisplayName } from "@/lib/pseo/locations";
 import { SERVICE_BY_SLUG } from "@/lib/pseo/services";
 import { loadScope, type Scope, type PageStats, type ScoredLead } from "@/lib/pseo/stats";
@@ -59,7 +60,16 @@ export async function loadPageData(
   const registryRow = await getPage(pageKey);
   // withheld, or never evaluated, means the data doesn't support a page. A crawler probing the URL
   // space gets a real 404 rather than a thin page.
-  if (!registryRow || registryRow.status === "withheld") notFound();
+  if (!registryRow || registryRow.status === "withheld") {
+    // An area or category page that existed once and has since lost its data (or was retired) is
+    // still linked from old crawls — Search Console listed 24 such 404s on 2026-10-24. Send it to its
+    // city page when that one is live: the closest page that still answers the same query.
+    if (scope.kind !== "city") {
+      const cityRow = await getPage(pageKeyFor(serviceSlug, { kind: "city", citySlug }));
+      if (cityRow && cityRow.status !== "withheld") permanentRedirect(cityPath(serviceSlug, citySlug));
+    }
+    notFound();
+  }
 
   // Four independent reads, issued together. They used to run one after another — and with
   // publishedChildren and nearbyPublishedCities awaited inline in the returned object below, one

@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { isV2Email } from "@/lib/v2";
 import { sql } from "@/lib/db";
 import { AppSidebar } from "@/components/AppSidebar";
+import { TopCredits } from "@/components/TopCredits";
 import { GeoBeacon } from "@/components/GeoBeacon";
+import { ActivityBeacon } from "@/components/ActivityBeacon";
 import { PopupHost } from "@/components/popup/PopupHost";
 import { SticklyScript } from "@/components/SticklyScript";
 import {
@@ -60,13 +63,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const PLAN_LABEL: Record<string, string> = { starter: "Starter", pro: "Pro", business: "Business", free: "Free" };
   const planName = PLAN_LABEL[String(profile.plan ?? "")] ?? "Your plan";
 
+  // One class carries the whole V2 look. Re-pointing tokens under `.v2` moves the V2 surface
+  // without touching the inline styles scattered across the dashboard — the same lever
+  // `.mantis-app` already pulls for the dashboard as a whole.
+  const v2 = isV2Email(session.user.email);
+
   return (
     // `mantis-app` is what scopes the dashboard token layer in app/globals.css. The marketing
     // pages sit outside it and keep the original palette.
-    <div className="mantis-app" style={{ minHeight: "100vh", display: "flex", background: "var(--g-cream)" }}>
-      <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} />
-      <main style={{ flex: 1, position: "relative", minWidth: 0 }}>{children}</main>
+    <div className={v2 ? "mantis-app v2" : "mantis-app"} style={{ minHeight: "100vh", display: "flex", background: "var(--g-cream)" }}>
+      <AppSidebar name={profile?.name ?? session.user.name ?? null} email={session.user.email} v2={isV2Email(session.user.email)} />
+      <main style={{ flex: 1, position: "relative", minWidth: 0 }}><TopCredits />{children}</main>
       <GeoBeacon />
+      <ActivityBeacon />
       <PopupHost
         audience={audience}
         vars={{ plan: planName }}

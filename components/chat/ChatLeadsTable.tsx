@@ -25,7 +25,7 @@ export type ChatLead = {
  * "Add to leads" action that calls the same /api/leads/[id]/unlock route the map's own
  * "Add to leads" button uses, so a lead added from chat shows up in Leads exactly the
  * same way one added from the map does. */
-export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
+export function ChatLeadsTable({ leads, fill = false, onAdded }: { leads: ChatLead[]; fill?: boolean; onAdded?: (leadIds: string[]) => void }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
@@ -52,6 +52,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
     const ids = [...selected].filter((id) => !unlockedIds.has(id));
     if (ids.length === 0) return;
     setAdding(true);
+    const added: string[] = [];
     try {
       for (const id of ids) {
         const res = await fetch(`/api/leads/${id}/unlock`, { method: "POST" });
@@ -62,8 +63,10 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
         const data = (await res.json()) as { unlocked?: boolean };
         if (data.unlocked) {
           setUnlockedIds((prev) => new Set(prev).add(id));
+          added.push(id);
         }
       }
+      if (added.length) onAdded?.(added);
       window.dispatchEvent(new Event("gigzman:credits-changed"));
     } finally {
       setAdding(false);
@@ -74,11 +77,13 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
   const pendingCount = [...selected].filter((id) => !unlockedIds.has(id)).length;
 
   return (
-    <div style={{ marginTop: 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-      <div style={{ overflowX: "auto" }}>
+    // `fill`: inside the V2 panel the table takes the remaining height and scrolls its own rows, so
+    // the "Add to leads" bar below stays on screen however long the list gets.
+    <div style={{ marginTop: fill ? 0 : 14, border: "1px solid var(--g-border)", borderRadius: "var(--radius-lg)", overflow: "hidden", ...(fill ? { display: "flex", flexDirection: "column", flex: 1, minHeight: 0 } : {}) }}>
+      <div className={fill ? "v2-leads-scroll" : undefined} style={{ overflowX: "auto", ...(fill ? { overflowY: "auto", flex: 1, minHeight: 0 } : {}) }}>
         <table className="tnum" style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
           <thead>
-            <tr className="sunk" style={{ fontSize: 10.5, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <tr className="sunk" style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               <th style={{ padding: "9px 10px", textAlign: "left", borderBottom: "1px solid var(--g-border)", width: 32 }}>
                 {selectableIds.length > 0 && (
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" style={{ cursor: "pointer" }} />
@@ -107,7 +112,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
                   <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>
                     {lead.business_name}
                     {lead.verified_at && (
-                      <span style={{ display: "block", fontSize: 10.5, fontWeight: 400, color: "var(--g-gray-500)", marginTop: 2 }}>
+                      <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: "var(--g-gray-500)", marginTop: 2 }}>
                         Checked {new Date(lead.verified_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                       </span>
                     )}
@@ -128,7 +133,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
                   <td style={{ padding: "8px 10px" }}>
                     <span
                       style={{
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: 600,
                         padding: "2px 8px",
                         borderRadius: "var(--radius-pill)",
@@ -150,8 +155,8 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
         </table>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderTop: "1px solid var(--g-border)", background: "var(--g-cream)" }}>
-        <span style={{ fontSize: 11.5, color: "var(--g-gray-500)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderTop: "1px solid var(--g-border)", background: "var(--g-cream)", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
           {pendingCount > 0 ? `${pendingCount} selected` : "Select leads to add"}
         </span>
         <button
@@ -164,7 +169,7 @@ export function ChatLeadsTable({ leads }: { leads: ChatLead[] }) {
             border: "none",
             background: pendingCount > 0 ? "var(--g-green-dark)" : "var(--g-gray-100)",
             color: pendingCount > 0 ? "#fff" : "var(--g-gray-500)",
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 600,
             cursor: pendingCount > 0 && !adding ? "pointer" : "default",
           }}

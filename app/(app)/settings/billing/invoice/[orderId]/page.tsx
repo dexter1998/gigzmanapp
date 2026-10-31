@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { COMPANY, addressOneLine } from "@/lib/company";
-import { formatINR } from "@/lib/credits/pricing";
+import { formatINR, packById, PLAN_PERIOD_DAYS, TOPUP_PACK_ID } from "@/lib/credits/pricing";
 import { PrintButton } from "@/components/billing/PrintButton";
 
 export const metadata = { title: "Invoice — Mantis" };
@@ -24,7 +24,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
   const { orderId } = await params;
 
   const [payment] = await sql`
-    SELECT order_id, cf_payment_id, credits, amount_paise, status, paid_at, created_at
+    SELECT order_id, cf_payment_id, pack_id, credits, amount_paise, status, paid_at, created_at
     FROM payments
     WHERE order_id = ${orderId} AND user_email = ${userEmail} AND status = 'paid'
   `;
@@ -36,7 +36,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
   return (
     <div style={{ padding: "28px 24px 80px", maxWidth: 780, margin: "0 auto" }}>
       <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-        <Link href="/settings/billing" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink-soft)", textDecoration: "none" }}>
+        <Link href="/settings/billing" style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink-soft)", textDecoration: "none" }}>
           ← Back to billing
         </Link>
         <PrintButton />
@@ -49,7 +49,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, marginBottom: 36 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 600, color: "var(--g-ink)", letterSpacing: "-0.02em" }}>{COMPANY.brandLong}</div>
-            <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.6, marginTop: 8, maxWidth: 260 }}>
+            <div style={{ fontSize: 12, color: "var(--g-gray-500)", lineHeight: 1.6, marginTop: 8, maxWidth: 260 }}>
               {COMPANY.legalName}
               <br />
               {addressOneLine()}
@@ -59,17 +59,17 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--g-gray-500)" }}>Invoice</div>
-            <div style={{ fontSize: 12.5, color: "var(--g-ink)", marginTop: 8, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 12, color: "var(--g-ink)", marginTop: 8, fontVariantNumeric: "tabular-nums" }}>
               {payment.order_id}
             </div>
-            <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 4 }}>
               {issued.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
             </div>
           </div>
         </header>
 
         <section style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase", color: "var(--g-gray-500)", marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase", color: "var(--g-gray-500)", marginBottom: 6 }}>
             Billed to
           </div>
           <div style={{ fontSize: 14, color: "var(--g-ink)" }}>{profile?.name ?? session!.user!.name ?? userEmail}</div>
@@ -89,8 +89,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
                 <div style={{ fontSize: 14, color: "var(--g-ink)", fontWeight: 600 }}>
                   {payment.credits.toLocaleString("en-IN")} Mantis credits
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 2 }}>
-                  Prepaid credit top-up · credits do not expire
+                <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
+                  {payment.pack_id === TOPUP_PACK_ID
+                    ? "Add funds · prepaid credit top-up · credits do not expire"
+                    : `${packById(payment.pack_id as string)?.label ?? "Monthly"} plan · ${PLAN_PERIOD_DAYS} days · credits do not expire`}
                 </div>
               </td>
               <td style={{ ...tdStyle, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
@@ -103,15 +105,15 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
         <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 14, borderTop: "2px solid var(--g-ink)" }}>
           <div style={{ display: "flex", gap: 40, alignItems: "baseline" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>Total paid</span>
-            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: 17, fontWeight: 600, color: "var(--g-ink)", fontVariantNumeric: "tabular-nums" }}>
               {formatINR(payment.amount_paise)}
             </span>
           </div>
         </div>
 
-        <footer style={{ marginTop: 36, paddingTop: 18, borderTop: "1px solid var(--g-border)", fontSize: 11.5, color: "var(--g-gray-500)", lineHeight: 1.7 }}>
+        <footer style={{ marginTop: 36, paddingTop: 18, borderTop: "1px solid var(--g-border)", fontSize: 12, color: "var(--g-gray-500)", lineHeight: 1.7 }}>
           <p style={{ margin: 0 }}>
-            Paid in full via Cashfree{payment.cf_payment_id ? ` · Payment reference ${payment.cf_payment_id}` : ""}.
+            Paid online{payment.cf_payment_id ? ` · Payment reference ${payment.cf_payment_id}` : ""}.
           </p>
           {/* Amounts are stated as charged. A GSTIN and tax breakdown belong here once the entity
               is registered — printing a tax line before then would be wrong, not merely missing. */}
@@ -126,7 +128,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ orderI
 
 const thStyle: React.CSSProperties = {
   textAlign: "left",
-  fontSize: 10.5,
+  fontSize: 11,
   fontWeight: 600,
   letterSpacing: "0.09em",
   textTransform: "uppercase",

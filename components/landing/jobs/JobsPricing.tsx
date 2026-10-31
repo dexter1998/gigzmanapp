@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CREDIT_COST, CREDIT_PACKS, FREE_MONTHLY_CREDITS, JOB_SEEKER_DISCOUNT_PCT, formatINR, jobSeekerDiscountPctFor, jobSeekerPricePaise, rupees } from "@/lib/credits/pricing";
+import { CREDIT_COST, CREDIT_PACKS, FREE_SIGNUP_CREDITS, JOB_SEEKER_DISCOUNT_PCT, formatINR, jobSeekerDiscountPctFor, jobSeekerPricePaise, rupees } from "@/lib/credits/pricing";
 import { CheckIcon, HelpIcon } from "@/components/icons";
 
 /**
@@ -74,10 +74,10 @@ export function JobsPricing() {
             title="Free"
             fullPrice="₹0"
             price="₹0"
-            priceNote="every month, forever"
-            headline={`${FREE_MONTHLY_CREDITS} credits`}
+            priceNote="once, when you sign up"
+            headline={`${FREE_SIGNUP_CREDITS} credits`}
             features={[
-              `≈ ${leadsFor(FREE_MONTHLY_CREDITS)} job applications tracked`,
+              `≈ ${leadsFor(FREE_SIGNUP_CREDITS)} job applications tracked`,
               "Unlimited search in scanned areas",
               "5 new-area searches a day",
               "Basic opportunity match",

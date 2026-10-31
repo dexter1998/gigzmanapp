@@ -31,7 +31,7 @@ export default function PaymentReturnPage() {
     async function check() {
       attempts++;
       try {
-        const res = await fetch(`/api/payments/cashfree/status?order_id=${encodeURIComponent(orderId!)}`);
+        const res = await fetch(`/api/payments/status?order_id=${encodeURIComponent(orderId!)}`);
         const data = (await res.json()) as { status?: Status; credits?: number };
         if (cancelled) return;
 
@@ -71,7 +71,7 @@ export default function PaymentReturnPage() {
               <span className="chat-searching-dot" />
             </div>
             <h1 style={heading}>Confirming your payment…</h1>
-            <p style={body}>This usually takes a few seconds. You can safely leave this page open.</p>
+            <p style={body}>A few seconds · safe to keep open</p>
           </>
         )}
 
@@ -82,7 +82,7 @@ export default function PaymentReturnPage() {
             </div>
             <h1 style={heading}>Payment successful</h1>
             <p style={body}>
-              {credits ? `${credits.toLocaleString("en-IN")} credits have been added to your account.` : "Your credits have been added."}
+              {credits ? `+${credits.toLocaleString("en-IN")} credits added` : "Credits added"}
             </p>
             <Link href="/home" style={primaryBtn}>
               Start finding leads
@@ -96,7 +96,7 @@ export default function PaymentReturnPage() {
               <XIcon size={22} color="var(--g-red-text)" />
             </div>
             <h1 style={heading}>Payment didn&apos;t go through</h1>
-            <p style={body}>Nothing was charged. You can try again, or use a different payment method.</p>
+            <p style={body}>Nothing charged · retry or switch method</p>
             <Link href="/settings/billing" style={primaryBtn}>
               Back to billing
             </Link>
@@ -106,7 +106,7 @@ export default function PaymentReturnPage() {
         {status === "error" && (
           <>
             <h1 style={heading}>Order not found</h1>
-            <p style={body}>We couldn&apos;t find this order. If money left your account, contact us and we&apos;ll sort it out.</p>
+            <p style={body}>Money debited? Contact us · we&apos;ll fix it</p>
             <Link href="/settings/billing" style={primaryBtn}>
               Back to billing
             </Link>
@@ -127,7 +127,7 @@ const ring: React.CSSProperties = {
   margin: "0 auto 18px",
 };
 
-const heading: React.CSSProperties = { fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" };
+const heading: React.CSSProperties = { fontSize: 17, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" };
 const body: React.CSSProperties = { fontSize: 14, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 0 24px" };
 
 const primaryBtn: React.CSSProperties = {

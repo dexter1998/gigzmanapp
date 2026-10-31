@@ -1,0 +1,53 @@
+/* Lead contact UI (components/leads/v2/contact.tsx). Classes are prefixed `lc-`. */
+.lc-actions { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.lc-actions .v2-cbtn { margin-right: 0; color: var(--g-gray-500); }
+.lc-actions a.v2-cbtn:hover { color: var(--g-ink); }
+/* WhatsApp keeps its brand colour on the glyph only; the box stays neutral. */
+.lc-actions a.v2-cbtn.wa { color: #1f9d55; }
+/* Disabled: muted, but still hoverable so the tooltip says why. */
+.lc-actions .v2-cbtn.off { pointer-events: auto; cursor: not-allowed; color: #c9ccc4; background: var(--g-white); border-color: #eef0eb; }
+.lc-actions .v2-cbtn.off:hover { background: var(--g-white); }
+
+.lc-cell { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; white-space: nowrap; }
+.lc-val { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--g-ink); }
+.lc-more { flex: none; font-size: 12px; font-weight: 500; color: var(--g-gray-500); }
+
+.lc-tier, .lc-kind { flex: none; display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; cursor: help; }
+.lc-tier.t1 { background: var(--v2-good-soft, #eaf6e6); color: #2b7a35; }
+.lc-tier.t2 { background: #f1f2ee; color: var(--g-ink); }
+.lc-tier.t3 { background: transparent; color: var(--g-gray-500); box-shadow: inset 0 0 0 1px #e3e5df; }
+.lc-kind.mobile { background: #f1f2ee; color: var(--g-ink); }
+.lc-kind.landline, .lc-kind.tollfree { background: transparent; color: var(--g-gray-500); box-shadow: inset 0 0 0 1px #e3e5df; }
+
+.lc-extra { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--g-ink); }
+
+/* Sticky business column: the table scrolls sideways under it. */
+.v2-ltable .lc-sticky { position: sticky; left: 0; z-index: 2; background: var(--g-white); box-shadow: inset -1px 0 0 var(--v2-line); min-width: 180px; max-width: 240px; }
+.v2-ltable thead th.lc-sticky { z-index: 3; background: #f6f7f4; }
+.v2-ltable .lc-sticky.after-cb { left: 34px; }
+.v2-ltable .cb.lc-sticky-cb { position: sticky; left: 0; z-index: 2; background: var(--g-white); }
+.v2-ltable thead th.cb.lc-sticky-cb { z-index: 3; background: #f6f7f4; }
+.v2-lrow:hover .lc-sticky, .v2-lrow:hover .lc-sticky-cb { background: #fafbf8; }
+.v2-ltable .lc-sticky .v2-bname { overflow-wrap: anywhere; }
+.v2-ltable.lc-wide { width: max-content; min-width: 100%; }
+
+/* Drawer: every email / number, best first, with the same tags. */
+.lc-drow { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; color: var(--g-ink); min-width: 0; }
+.lc-drow > a { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.lc-drow > a:hover { color: var(--g-green-dark); }
+.lc-drow > svg { flex: none; color: var(--g-gray-500); }
+.lc-drawer-actions { display: flex; gap: 6px; margin: 4px 0 8px; }
+.lc-extras { display: grid; grid-template-columns: minmax(110px, 40%) 1fr; gap: 6px 12px; font-size: 14px; }
+.lc-extras dt { color: var(--v2-ink2); }
+.lc-extras dd { margin: 0; color: var(--g-ink); overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .v2-ltable .lc-sticky { min-width: 130px; max-width: 150px; }
+  .lc-cell { max-width: 220px; }
+}
+
+/* Leads header at phone width: the search drops under the stats instead of pushing the page sideways. */
+@media (max-width: 640px) {
+  .v2-lms-head { flex-wrap: wrap; align-items: stretch; }
+  .v2-lms-head .v2-search { min-width: 0; flex: 1 1 100%; }
+}

@@ -25,6 +25,7 @@ const ICONS: Record<string, React.ReactNode> = {
   jobs: <IconBriefcase size={16} />,
   mailing: <IconMail size={16} />,
   pseo: <IconSearch size={16} />,
+  search: <IconSearch size={16} />,
   health: <IconActivity size={16} />,
   campaigns: <IconRocket size={16} />,
 };

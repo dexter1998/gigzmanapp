@@ -3,6 +3,9 @@ import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { advance, assertUnlocked } from "@/lib/enrichment";
 
+/** The job's own error text names the upstream lookup; the client only needs to know it failed. */
+const forClient = <T extends { error?: string | null }>(r: T): T => (r.error ? { ...r, error: "Couldn't fetch more details for this business." } : r);
+
 // The per-lead view of the enrichment queue. The engine itself lives in lib/enrichment.ts because
 // the cron tick drives the same jobs when nobody has a page open — this route is just the
 // authenticated, single-lead entry point into it.
@@ -26,7 +29,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     WHERE lead_id = ${id} AND status = 'failed'
   `;
 
-  return NextResponse.json(await advance(id, lead));
+  return NextResponse.json(forClient(await advance(id, lead)));
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,5 +43,5 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const [existing] = await sql`SELECT * FROM lead_enrichment WHERE lead_id = ${id}`;
   if (!existing) return NextResponse.json({ status: "not_started" });
 
-  return NextResponse.json(await advance(id, lead));
+  return NextResponse.json(forClient(await advance(id, lead)));
 }

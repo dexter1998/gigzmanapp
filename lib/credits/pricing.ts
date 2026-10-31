@@ -26,9 +26,12 @@ export const CREDIT_COST = {
   /** Cache hit — the area was already scanned, so this is a DB read and costs us nothing. Charging
    * for it would tax the cheapest thing we do and push users away from the behaviour we want. */
   cached_search: 0,
-  /** Break-even-ish. See CREDIT_FLOOR_INR below for why this number and the pack prices are
-   * locked together. */
-  billed_places_call: 8,
+  /** A live map lookup. Deliberately BELOW cost since 2026-10-23 (Tarun: "places api 8 ki jgh 2
+   * krdo — strategic hai, finding mein km credit kte, final lead jb list mein add ho tb dhng se"):
+   * finding is cheap, adding a lead is where the user pays. The subsidy per call is
+   * PLACES_CALL_COST_INR - 2 credits' worth; the pack floor below is pinned separately so it can't
+   * silently drop with this number. */
+  billed_places_call: 2,
   chat_turn: 2,
   /** Contact reveal. Zero COGS — the phone number already arrived with discovery — so this is
    * where the margin actually lives. Keyed `lead_unlock` to match the ledger reason the map's
@@ -40,6 +43,11 @@ export const CREDIT_COST = {
   verified_phone: 30,
   find_founder: 20,
   pitch_script: 10,
+  /** One CONNECTED minute of an AI voice call (Mantis voice agent on Telnyx), billed per started
+   * minute after the call. Cost basis: assistant + STT/TTS + PSTN ≈ $0.10–0.15/min ≈ ₹8.5–13; at the
+   * ₹0.385 credit floor that is 22–33 credits, so 30 keeps every pack above cost. Unanswered and
+   * failed calls are free. */
+  voice_minute: 30,
 
   /* -------------------------------------------------------------- jobs mode
    * Job discovery is materially cheaper for us than lead discovery: the careers-page scrape is
@@ -66,6 +74,10 @@ export type CreditPack = {
   pricePaise: number;
   label: string;
   badge?: string;
+  /** The user_profiles.plan this pack switches on for PLAN_PERIOD_DAYS. Plan ids predate the pack
+   * labels (admin grants and the schema use free | starter | pro | business), so the two names
+   * differ on purpose — show planLabel(), never the raw id. */
+  planId: "starter" | "pro" | "business";
 };
 
 /**
@@ -77,12 +89,36 @@ export type CreditPack = {
  * a user can read the rate card as rupees without converting anything.
  */
 export const CREDIT_PACKS: CreditPack[] = [
-  { id: "pack_2k", credits: 2_000, pricePaise: 199_900, label: "Starter" },
-  { id: "pack_4k", credits: 4_000, pricePaise: 349_900, label: "Growth", badge: "Most popular" },
-  { id: "pack_10k", credits: 10_000, pricePaise: 749_900, label: "Scale", badge: "Best value" },
+  { id: "pack_2k", credits: 2_000, pricePaise: 199_900, label: "Starter", planId: "starter" },
+  { id: "pack_4k", credits: 4_000, pricePaise: 349_900, label: "Growth", badge: "Most popular", planId: "pro" },
+  { id: "pack_10k", credits: 10_000, pricePaise: 749_900, label: "Scale", badge: "Best value", planId: "business" },
 ];
 
-export const FREE_MONTHLY_CREDITS = 500;
+/**
+ * Buying a pack is buying a month of the plan. The credits it brings never expire; the plan does,
+ * and the plan is what unlocks launching campaigns (see lib/credits/plan.ts). A second purchase
+ * before the end extends from the current end date rather than from today, so nobody loses days
+ * by renewing early.
+ */
+export const PLAN_PERIOD_DAYS = 30;
+
+/** What every paid plan includes, beyond the credits themselves. One list for every surface. */
+export const PLAN_FEATURES: Array<{ label: string; soon?: boolean }> = [
+  { label: "Bulk email campaigns" },
+  { label: "Bulk WhatsApp campaigns", soon: true },
+  { label: "Bulk AI voice calls" },
+  { label: "Auto campaign planner & executor" },
+];
+
+const PLAN_LABELS: Record<string, string> = { free: "Free", starter: "Starter", pro: "Growth", business: "Scale" };
+/** Display name for a user_profiles.plan id ("pro" is sold as Growth). */
+export const planLabel = (plan: string | null | undefined) => PLAN_LABELS[plan ?? "free"] ?? (plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "Free");
+
+/** Free credits a new account starts with — once, at signup (Tarun, 2026-10-23: "one time 500 credits").
+ *  Nothing refills them monthly; the monthly free thing is the search allowance (ALLOWANCE). */
+export const FREE_SIGNUP_CREDITS = 500;
+/** @deprecated the name said "monthly"; it was always a one-time signup grant. Use FREE_SIGNUP_CREDITS. */
+export const FREE_MONTHLY_CREDITS = FREE_SIGNUP_CREDITS;
 
 export function packById(id: string): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id);
@@ -96,8 +132,9 @@ export const formatINR = (paise: number) => `₹${rupees(paise).toLocaleString("
 /**
  * The cheapest a credit may ever be sold for.
  *
- * A billed Places call costs us ₹3.08 and we charge 8 credits for it, so those 8 credits have to
- * bring in at least ₹3.08 — meaning one credit can never be worth less than ₹3.08 / 8. Sell a pack
+ * A billed Places call costs us ₹3.08; at break-even it is worth 8 credits, so one credit can never
+ * be sold for less than ₹3.08 / 8. (Live search is now charged 2 credits — a chosen subsidy, see
+ * CREDIT_COST.billed_places_call — which this floor deliberately ignores.) Sell a pack
  * below this and every single discovery call loses money, quietly, while revenue keeps arriving
  * and hides it.
  *
@@ -105,15 +142,55 @@ export const formatINR = (paise: number) => `₹${rupees(paise).toLocaleString("
  * pricing change that looks fine in a spreadsheet: nobody re-derives this ratio by eye when adding
  * a bigger, cheaper pack.
  */
-export const CREDIT_FLOOR_INR = PLACES_CALL_COST_INR / CREDIT_COST.billed_places_call; // ≈ ₹0.385
+/** Credits a live lookup would cost at break-even. The floor is derived from THIS, not from the
+ *  (subsidised) live-search price — dropping that price to 2 must not drop the floor with it. */
+export const BREAK_EVEN_LOOKUP_CREDITS = 8;
+export const CREDIT_FLOOR_INR = PLACES_CALL_COST_INR / BREAK_EVEN_LOOKUP_CREDITS; // ≈ ₹0.385
 
 for (const pack of CREDIT_PACKS) {
   const perCredit = rupees(pack.pricePaise) / pack.credits;
   if (perCredit < CREDIT_FLOOR_INR) {
     throw new Error(
       `Credit pack "${pack.id}" prices a credit at ₹${perCredit.toFixed(4)}, below the ₹${CREDIT_FLOOR_INR.toFixed(4)} floor. ` +
-        `At that rate every billed Places call loses money. Either raise the pack price, or raise CREDIT_COST.billed_places_call.`
+        `At that rate every live lookup loses money. Raise the price or the lookup's credit cost.`
     );
+  }
+}
+
+/* ------------------------------------------------------------------ add funds (top-up) */
+
+/**
+ * "Add funds": any whole-rupee amount, credited at a flat rate that is deliberately worse than every
+ * plan. Plans are the product; a top-up is for running a little short mid-month, and pricing it
+ * at or below a plan would make "never buy a plan, just top up" the rational choice. A top-up adds
+ * credits only — it never switches a plan on.
+ *
+ * Credits are always computed here, on the server, from the rupee amount. The client sends an
+ * amount and nothing else.
+ */
+export const TOPUP_PACK_ID = "topup";
+/** Paise per credit. ₹1.25 → ₹50 buys 40 credits. */
+export const TOPUP_PAISE_PER_CREDIT = 125;
+export const TOPUP_MIN_RUPEES = 50;
+export const TOPUP_MAX_RUPEES = 100_000;
+export const TOPUP_QUICK_RUPEES = [50, 200, 500, 1_000] as const;
+
+/** Credits a top-up of `rupees` buys, or null when the amount is not a valid top-up. */
+export function topupCredits(rupeesAmount: number): number | null {
+  if (!Number.isInteger(rupeesAmount) || rupeesAmount < TOPUP_MIN_RUPEES || rupeesAmount > TOPUP_MAX_RUPEES) return null;
+  return Math.floor((rupeesAmount * 100) / TOPUP_PAISE_PER_CREDIT);
+}
+
+{
+  const perCredit = TOPUP_PAISE_PER_CREDIT / 100;
+  if (perCredit < CREDIT_FLOOR_INR) {
+    throw new Error(`Top-up rate ₹${perCredit} per credit is below the ₹${CREDIT_FLOOR_INR.toFixed(4)} floor.`);
+  }
+  // A top-up cheaper than a plan would undercut the plans themselves.
+  for (const pack of CREDIT_PACKS) {
+    if (perCredit <= rupees(pack.pricePaise) / pack.credits) {
+      throw new Error(`Top-up rate ₹${perCredit} per credit is not above the "${pack.id}" plan rate — top-ups must cost more than plans.`);
+    }
   }
 }
 

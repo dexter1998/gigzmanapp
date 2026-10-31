@@ -1099,7 +1099,7 @@ export default function JobsPage() {
                 disabled={discovering}
                 style={{
                   padding: "8px 16px", borderRadius: "var(--radius-pill)", border: "none",
-                  background: "var(--g-green-darker)", color: "#fff", fontSize: 12.5, fontWeight: 600,
+                  background: "var(--g-green-darker)", color: "#fff", fontSize: 12, fontWeight: 600,
                   cursor: discovering ? "wait" : "pointer", opacity: discovering ? 0.7 : 1, boxShadow: "var(--shadow-pop)",
                 }}
               >
@@ -1111,7 +1111,7 @@ export default function JobsPage() {
               </button>
             </div>
             {notice && (
-              <p style={{ fontSize: 11.5, fontWeight: 500, color: "var(--g-ink-soft)", background: "var(--g-white)", border: "1px solid var(--g-border)", padding: "6px 12px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-pop)", margin: 0, maxWidth: 340 }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: "var(--g-ink-soft)", background: "var(--g-white)", border: "1px solid var(--g-border)", padding: "6px 12px", borderRadius: "var(--radius-pill)", boxShadow: "var(--shadow-pop)", margin: 0, maxWidth: 340 }}>
                 {notice}
               </p>
             )}
@@ -1155,7 +1155,7 @@ export default function JobsPage() {
               borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-pop)", zIndex: 10, padding: 10,
             }}
           >
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
               {hoveredStack.length} companies here
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1174,7 +1174,7 @@ export default function JobsPage() {
                   <span style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {c.name}
                   </span>
-                  <span style={{ flexShrink: 0, fontSize: 10.5, color: "var(--g-gray-500)" }}>
+                  <span style={{ flexShrink: 0, fontSize: 11, color: "var(--g-gray-500)" }}>
                     {c.roles > 0 ? `${c.roles} role${c.roles > 1 ? "s" : ""}` : "—"}
                   </span>
                 </button>
@@ -1202,14 +1202,14 @@ export default function JobsPage() {
               padding: 10,
             }}
           >
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink)", marginBottom: 8, paddingLeft: 2 }}>
               {hoveredCompany.name}
               {hoveredJobs.length > 0
                 ? ` · ${hoveredJobs.length} open role${hoveredJobs.length > 1 ? "s" : ""}`
                 : ""}
             </div>
             {hoveredJobs.length === 0 && (
-              <div style={{ fontSize: 11.5, color: "var(--g-gray-500)", paddingLeft: 2, paddingBottom: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--g-gray-500)", paddingLeft: 2, paddingBottom: 2 }}>
                 No open roles right now — click to see the company.
               </div>
             )}
@@ -1228,7 +1228,7 @@ export default function JobsPage() {
                       {job.title}
                     </div>
                     {job.location && (
-                      <div style={{ fontSize: 10.5, color: "var(--g-gray-500)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: 11, color: "var(--g-gray-500)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {job.location}
                       </div>
                     )}
@@ -1240,7 +1240,7 @@ export default function JobsPage() {
                       void toggleSave(job);
                     }}
                     style={{
-                      flexShrink: 0, fontSize: 10.5, fontWeight: 600, padding: "5px 9px",
+                      flexShrink: 0, fontSize: 11, fontWeight: 600, padding: "5px 9px",
                       borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
                       background: job.applicationStatus ? "var(--g-green-mint)" : "var(--g-green-darker)",
                       color: job.applicationStatus ? "var(--g-green-text)" : "#fff",
@@ -1277,7 +1277,7 @@ export default function JobsPage() {
                 style={{
                   display: "block", padding: "9px 12px", borderRadius: "var(--radius-sm)",
                   background: "var(--g-green-mint)", color: "var(--g-green-text)", textDecoration: "none",
-                  fontSize: 12.5, fontWeight: 600,
+                  fontSize: 12, fontWeight: 600,
                 }}
               >
                 Add your resume to unlock your match on every job →
@@ -1340,7 +1340,7 @@ function CompanyJobsPanel({
         display: "flex", flexDirection: "column",
       }}
     >
-      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : jobs.length ? "var(--g-green-darker)" : "var(--g-gray-500)" }}>
+      <div style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#fff", background: golden ? "#d4a72c" : jobs.length ? "var(--g-green-darker)" : "var(--g-gray-500)" }}>
         {golden ? "Golden opportunity" : jobs.length ? "Hiring" : "No open roles"}
       </div>
       <div style={{ padding: 16, borderBottom: "1px solid var(--g-border)", display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -1349,7 +1349,7 @@ function CompanyJobsPanel({
           <img src={company.faviconUrl} alt="" width={40} height={40} style={{ borderRadius: 8, border: "1px solid var(--g-border)", flexShrink: 0 }} />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--g-ink)" }}>{company.name}</div>
+          <div style={{ fontSize: 17, fontWeight: 600, color: "var(--g-ink)" }}>{company.name}</div>
           <div style={{ fontSize: 12, color: "var(--g-gray-500)" }}>
             {loading ? "Loading roles…" : `${jobs.length} open role${jobs.length === 1 ? "" : "s"}`}
           </div>
@@ -1360,7 +1360,7 @@ function CompanyJobsPanel({
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
         {!loading && jobs.length === 0 && (
-          <div style={{ fontSize: 12.5, color: "var(--g-gray-500)", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: "var(--g-gray-500)", lineHeight: 1.6 }}>
             Nothing open at {company.name} right now. Mantis re-checks this company on a schedule, so
             it will appear here when it starts hiring.
             {company.careersUrl && (
@@ -1375,7 +1375,7 @@ function CompanyJobsPanel({
         )}
         {jobs.map((job) => (
           <div key={job.id} style={{ border: "1px solid var(--g-border)", borderRadius: "var(--radius-md)", padding: 12 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", marginBottom: 3 }}>{job.title}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
               {job.jobFamily && <ChipTag>{JOB_FAMILY_LABEL[job.jobFamily] ?? job.jobFamily}</ChipTag>}
               {job.location && <ChipTag>{job.location}</ChipTag>}
@@ -1410,7 +1410,7 @@ function CompanyJobsPanel({
 
 function ChipTag({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 600, color: "var(--g-ink-soft)", background: "var(--g-cream)", padding: "3px 8px", borderRadius: "var(--radius-pill)", whiteSpace: "nowrap" }}>
+    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--g-ink-soft)", background: "var(--g-cream)", padding: "3px 8px", borderRadius: "var(--radius-pill)", whiteSpace: "nowrap" }}>
       {children}
     </span>
   );
@@ -1469,7 +1469,7 @@ const floatingSelectStyle: React.CSSProperties = {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="sunk" style={{ fontSize: 12.5, color: "var(--g-gray-500)", textAlign: "center", padding: "40px 20px", lineHeight: 1.6, borderRadius: "var(--radius-md)", margin: 0 }}>
+    <p className="sunk" style={{ fontSize: 12, color: "var(--g-gray-500)", textAlign: "center", padding: "40px 20px", lineHeight: 1.6, borderRadius: "var(--radius-md)", margin: 0 }}>
       {children}
     </p>
   );

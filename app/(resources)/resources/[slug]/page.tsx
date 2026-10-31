@@ -173,6 +173,15 @@ export default async function ArticlePage({ params }: Props) {
             </nav>
 
             <div className="rc-body">
+              {/* The post's own illustration, at the top of the body (2026-10-24). It was only ever used on
+                  the index card and the social card, so a reader landing from search never saw it. */}
+              {post.hero_image && (
+                <figure style={{ margin: "0 0 28px" }}>
+                  <Image src={post.hero_image} alt={post.hero_alt ?? post.title} width={1600} height={900} priority
+                    sizes="(max-width: 900px) 100vw, 720px"
+                    style={{ width: "100%", height: "auto", display: "block", borderRadius: 16, border: "1px solid var(--g-border)" }} />
+                </figure>
+              )}
               <Blocks blocks={post.body} />
 
               {post.faqs.length > 0 && (

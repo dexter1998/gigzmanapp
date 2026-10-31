@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { CREDIT_COST, CREDIT_PACKS, PLACES_CALL_COST_INR, CREDIT_FLOOR_INR, FREE_MONTHLY_CREDITS } from "@/lib/credits/pricing";
+import { CREDIT_COST, CREDIT_PACKS, PLACES_CALL_COST_INR, CREDIT_FLOOR_INR, FREE_SIGNUP_CREDITS } from "@/lib/credits/pricing";
 import { PageHeader, StatCard, CardRow, Table, fmtDT, fmtINR, fmtN } from "../ui";
 
 /** Unit economics — collected vs COGS, month-wise. COGS ka bada driver Places API hai (billed
@@ -62,6 +62,8 @@ export default async function EconomicsPage() {
             detail={totCollected > 0 ? `₹${Math.round(totCollected - totCogs).toLocaleString("en-IN")}` : "abhi revenue nahi"} tone={totCollected - totCogs >= 0 ? "up" : "bad"} />
           <StatCard label="Credits sold" value={fmtN(led.granted)} detail={`spent ${fmtN(led.spent)}`} />
           <StatCard label="Credit floor" value={`₹${CREDIT_FLOOR_INR.toFixed(3)}`} detail="COGS per credit — kabhi isse neeche mat becho" />
+          <StatCard label="Live lookup subsidy" value={`₹${(PLACES_CALL_COST_INR - CREDIT_COST.billed_places_call * CREDIT_FLOOR_INR).toFixed(2)}+ / call`}
+            detail={`Google ₹${PLACES_CALL_COST_INR.toFixed(2)} per call, user pays ${CREDIT_COST.billed_places_call} credits — finding is subsidised on purpose; adding a lead (${CREDIT_COST.lead_unlock} cr) pays for it`} />
         </CardRow>
 
         <div className="flex flex-wrap gap-3 mb-3">
@@ -84,7 +86,7 @@ export default async function EconomicsPage() {
             rows={spendByReason.map((r) => [r.reason, fmtN(r.n), fmtN(r.credits),
               (CREDIT_COST as Record<string, number>)[r.reason] != null ? `${(CREDIT_COST as Record<string, number>)[r.reason]} cr` : "?"])}
             empty="abhi koi spend nahi" />
-          <Table col="col-lg-6" title="Rate card (live from code)" note={`Free allowance ${FREE_MONTHLY_CREDITS} credits/month. Source: lib/credits/pricing.ts`}
+          <Table col="col-lg-6" title="Rate card (live from code)" note={`Free credits: ${FREE_SIGNUP_CREDITS} once at signup. Source: lib/credits/pricing.ts`}
             head={["Item", { label: "Value", num: true }]}
             rows={[
               ...Object.entries(CREDIT_COST).map(([k, v]) => [k, `${v} credits`]),

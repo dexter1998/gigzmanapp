@@ -5,10 +5,15 @@ import Link from "next/link";
 import { PartnerApplicationModal } from "./PartnerApplicationModal";
 import { XIcon, CheckIcon } from "./icons";
 import { CreditPackCards, CreditPackFootnote } from "./billing/CreditPackCards";
-import { useCashfreeCheckout } from "./billing/useCashfreeCheckout";
+import { AddFunds } from "./billing/AddFunds";
+import { TOPUP_MIN_RUPEES } from "@/lib/credits/pricing";
+import { useCashfreeCheckout, TOPUP_BUSY_ID } from "./billing/useCashfreeCheckout";
 
 /**
- * Buy credits, from inside the app.
+ * Plans + Add funds, from inside the app.
+ *
+ * A pack is a 30-day plan (credits + campaign launching); Add funds is a pricier pay-as-you-go
+ * top-up that adds credits without a plan. Both go through the same checkout hook.
  *
  * This used to be a plan picker whose "Choose" button called /api/user/plan — a route that granted
  * up to 30,000 credits to anyone signed in, because no gateway existed when it was written. Now
@@ -26,7 +31,7 @@ export function PlansModal({
   onPlanChange?: (plan: string) => void;
 }) {
   const [partnerOpen, setPartnerOpen] = useState(false);
-  const { buy, sdkReady, busyPackId, error } = useCashfreeCheckout(
+  const { buy, topup, sdkReady, busyPackId, error } = useCashfreeCheckout(
     // The client can't read the server's secret, so the SDK mode keys off the host instead:
     // anything that isn't the live domain is treated as test.
     typeof window !== "undefined" && window.location.hostname === "mantisai.in" ? "production" : "sandbox"
@@ -42,14 +47,14 @@ export function PlansModal({
             <XIcon />
           </button>
 
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>Add credits</h2>
-          <p style={{ fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 22px", maxWidth: 460 }}>
-            Credits are spent only when Mantis does real work — adding a lead, or searching ground
-            nobody has covered yet. Searching an area you&apos;ve already scanned is always free.
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>Plans</h2>
+          <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 24px", maxWidth: 520 }}
+            title="Credits are spent only when Mantis does real work — adding a lead, or searching ground nobody has covered yet. Searching an area you've already scanned is always free.">
+            Monthly plans · launch campaigns · credits never expire
           </p>
 
           {error && (
-            <p style={{ fontSize: 12.5, color: "var(--g-red-text)", background: "var(--g-red-tint)", padding: "9px 12px", borderRadius: "var(--radius-sm)", marginBottom: 14 }}>
+            <p style={{ fontSize: 12, color: "var(--g-red-text)", background: "var(--g-red-tint)", padding: "9px 12px", borderRadius: "var(--radius-sm)", marginBottom: 14 }}>
               {error}
             </p>
           )}
@@ -57,11 +62,17 @@ export function PlansModal({
           <CreditPackCards onBuy={buy} busyPackId={busyPackId} disabled={!sdkReady || busyPackId !== null} showFree={false} minCardWidth={200} />
           <CreditPackFootnote />
 
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, margin: "24px 0 12px" }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--g-ink)", margin: 0 }}>Or add funds</h3>
+            <span style={{ fontSize: 12, color: "var(--g-gray-500)" }}>Pay as you go · from ₹{TOPUP_MIN_RUPEES}</span>
+          </div>
+          <AddFunds onTopup={topup} busy={busyPackId === TOPUP_BUSY_ID} disabled={!sdkReady || busyPackId !== null} />
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--g-border)" }}>
-            <Link href="/settings/billing" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none" }}>
+            <Link href="/settings/billing" onClick={onClose} style={{ fontSize: 12, fontWeight: 600, color: "var(--g-green-text)", textDecoration: "none" }}>
               See what credits buy →
             </Link>
-            <Link href="/settings/usage" onClick={onClose} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--g-ink-soft)", textDecoration: "none" }}>
+            <Link href="/settings/usage" onClick={onClose} style={{ fontSize: 12, fontWeight: 600, color: "var(--g-ink-soft)", textDecoration: "none" }}>
               Usage history
             </Link>
           </div>
@@ -80,7 +91,7 @@ export function PlansModal({
           >
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--g-ink)" }}>Partner with us</div>
-              <div style={{ fontSize: 11.5, color: "var(--g-ink-soft)", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--g-ink-soft)", marginTop: 2 }}>
                 Approved agency partners get higher limits, priority support and referral revenue.
               </div>
             </div>

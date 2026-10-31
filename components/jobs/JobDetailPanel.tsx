@@ -66,7 +66,7 @@ export function JobDetailPanel({
               style={{ borderRadius: 8, border: "1px solid var(--g-border)", flexShrink: 0 }} />
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, margin: 0, color: "var(--g-ink)" }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, margin: 0, color: "var(--g-ink)" }}>
               {job.title}
             </h2>
             <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "4px 0 0" }}>
@@ -75,7 +75,7 @@ export function JobDetailPanel({
             </p>
             {golden && (
               <span style={{
-                display: "inline-block", marginTop: 8, fontSize: 10.5, fontWeight: 600,
+                display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 600,
                 textTransform: "uppercase", letterSpacing: "0.04em", padding: "3px 9px",
                 borderRadius: "var(--radius-pill)", background: "#f5e6bf", color: "#7a5c12",
               }}>
@@ -112,7 +112,7 @@ export function JobDetailPanel({
         {/* Why this score — the rubric is shown, not just its output, so the number is actionable. */}
         <div style={{ background: "var(--g-cream)", borderRadius: "var(--radius-md)", padding: 14, marginBottom: 18 }}>
           {job.matchScore === null ? (
-            <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 600, color: "var(--g-gray-500)", margin: 0 }}>
+            <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 600, color: "var(--g-gray-500)", margin: 0 }}>
               <LockIcon />
               <span>
                 Your opportunity match is locked.{" "}
@@ -140,14 +140,14 @@ export function JobDetailPanel({
         {job.description && (
           <div style={{ marginBottom: 18 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 6px" }}>About the role</h3>
-            <p style={{ fontSize: 12.5, lineHeight: 1.65, color: "var(--g-ink-soft, var(--g-gray-500))", margin: 0, whiteSpace: "pre-wrap" }}>
+            <p style={{ fontSize: 12, lineHeight: 1.65, color: "var(--g-ink-soft, var(--g-gray-500))", margin: 0, whiteSpace: "pre-wrap" }}>
               {job.description.slice(0, 2000)}
             </p>
           </div>
         )}
 
         {job.confidence === "low" && (
-          <p style={{ fontSize: 11.5, color: "var(--g-gray-500)", margin: "0 0 14px", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, color: "var(--g-gray-500)", margin: "0 0 14px", lineHeight: 1.5 }}>
             This listing was read from the company&apos;s careers page rather than a structured job
             feed, so the details above may be incomplete. Check the original posting before applying.
           </p>
@@ -189,13 +189,13 @@ export function JobDetailPanel({
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div>
-      <dt style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--g-gray-500)" }}>
+      <dt style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--g-gray-500)" }}>
         {label}
       </dt>
       <dd style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)", margin: "3px 0 0", textTransform: "capitalize" }}>
         {value}
       </dd>
-      {note && <div style={{ fontSize: 10.5, color: "var(--g-gray-500)", marginTop: 2 }}>{note}</div>}
+      {note && <div style={{ fontSize: 11, color: "var(--g-gray-500)", marginTop: 2 }}>{note}</div>}
     </div>
   );
 }

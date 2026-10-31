@@ -148,7 +148,7 @@ export default function ApplicationsPage() {
             type="button"
             onClick={() => setStatusFilter(t.key)}
             style={{
-              padding: "6px 14px", borderRadius: "var(--radius-pill)", fontSize: 12.5, fontWeight: 600,
+              padding: "6px 14px", borderRadius: "var(--radius-pill)", fontSize: 12, fontWeight: 600,
               cursor: "pointer",
               border: `1px solid ${statusFilter === t.key ? "var(--accent)" : "var(--g-border)"}`,
               background: statusFilter === t.key ? "var(--accent)" : "var(--g-white)",
@@ -198,7 +198,7 @@ export default function ApplicationsPage() {
                 }
                 style={{ flex: "1 1 220px", minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit" }}
               >
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--g-ink)" }}>{app.job.title}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--g-ink)" }}>{app.job.title}</div>
                 <div style={{ fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>
                   {app.company.name}
                   {app.job.location ? ` · ${app.job.location}` : ""}
@@ -235,7 +235,7 @@ export default function ApplicationsPage() {
                 disabled={app.status === "applied"}
                 style={{
                   padding: "9px 16px", borderRadius: "var(--radius-sm)", border: "none",
-                  fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
+                  fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
                   cursor: app.status === "applied" ? "default" : "pointer",
                   background: app.status === "applied" ? "var(--g-green-mint)" : "var(--g-green-darker)",
                   color: app.status === "applied" ? "var(--g-green-text)" : "#fff",

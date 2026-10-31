@@ -3,7 +3,7 @@ import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
-import { CREDIT_PACKS, FREE_MONTHLY_CREDITS, rupees } from "@/lib/credits/pricing";
+import { CREDIT_PACKS, FREE_SIGNUP_CREDITS, rupees } from "@/lib/credits/pricing";
 import { PricingPlans } from "@/components/marketing/PricingPlans";
 import { EyebrowPill, FaqAccordion, MarketingCta, OrigamiFloor, SectionHeading } from "@/components/marketing/MarketingPieces";
 import { UserIcon, GlobeIcon, ZapIcon, PinIcon, TableIcon, ShieldIcon } from "@/components/icons";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   // "cost" earns its place in the title: it is the phrase people actually type when comparing
   // tools, and the old title spent those characters on "for agencies & freelancers" instead.
   title: { absolute: `Pricing & Lead Credits Cost — ${COMPANY.brandLong} for Agencies` },
-  description: `Compare ${COMPANY.brandLong} plans: ${FREE_MONTHLY_CREDITS} free credits a month, then packs from ₹1,999. Pay only for the local leads you unlock — no seats, no contracts. Start free.`,
+  description: `Compare ${COMPANY.brandLong} plans: ${FREE_SIGNUP_CREDITS} free credits when you sign up, then packs from ₹1,999. Pay only for the local leads you unlock — no seats, no contracts. Start free.`,
   keywords: [
     "Mantis Ai pricing",
     "lead generation pricing India",
@@ -59,19 +59,19 @@ const FAQS = [
   },
   {
     q: `Can I use ${COMPANY.brand} for free?`,
-    a: `Yes. The Free plan gives you ${FREE_MONTHLY_CREDITS} credits every month with no card, and unlimited searching on top. It's enough to work one neighbourhood properly and judge the lead quality before you pay for anything.`,
+    a: `Yes. Every new account gets ${FREE_SIGNUP_CREDITS} free credits once, with no card, and unlimited searching on top. It's enough to work one neighbourhood properly and judge the lead quality before you pay for anything.`,
   },
   {
     q: "Do unused credits roll over?",
-    a: "No. Credits reset at the start of each billing period, so pick the plan that matches what you actually work through in a month rather than stockpiling.",
+    a: "Yes. Credits never expire. A paid plan runs for 30 days and unlocks bulk email campaigns, bulk AI voice calls and the auto campaign planner; the credits it brings stay in your account after it ends.",
   },
   {
     q: "Can I change plan later?",
-    a: "Yes, up or down, at any time. Changes apply from your next billing period, so you keep what you have already paid for.",
+    a: "Yes, at any time. Buying a plan while one is running adds 30 days from your current end date, so renewing early never costs you days.",
   },
   {
     q: "Is there a contract?",
-    a: "No. Plans are monthly and you can cancel whenever you like — your plan simply runs to the end of the period you have paid for.",
+    a: "No. Plans are monthly and never auto-renew — your plan simply runs to the end of the 30 days you have paid for.",
   },
   {
     q: "Do you offer agency and enterprise plans?",
@@ -99,7 +99,7 @@ export default function PricingPage() {
                 price: "0",
                 priceCurrency: "INR",
                 url: `${COMPANY.site}/pricing`,
-                description: `${FREE_MONTHLY_CREDITS} lead credits every month.`,
+                description: `${FREE_SIGNUP_CREDITS} free credits when you sign up.`,
               },
               ...CREDIT_PACKS.map((pack) => ({
                 "@type": "Offer",
@@ -107,7 +107,7 @@ export default function PricingPage() {
                 price: String(rupees(pack.pricePaise)),
                 priceCurrency: "INR",
                 url: `${COMPANY.site}/pricing`,
-                description: `${pack.credits.toLocaleString("en-IN")} lead credits, one-time purchase, never expire.`,
+                description: `Monthly plan: ${pack.credits.toLocaleString("en-IN")} lead credits that never expire, plus bulk email campaigns, bulk AI voice calls and the auto campaign planner for 30 days.`,
               })),
             ],
           }),

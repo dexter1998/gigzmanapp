@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { creditCost } from "@/lib/credits/pricing";
@@ -62,5 +63,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     ON CONFLICT (user_email, lead_id, reason) DO NOTHING
   `;
 
+  trackEvent(session?.user?.email, EV.leadUnlock, { lead_id: id });
   return NextResponse.json({ unlocked: true, alreadyUnlocked: false, credits: updated.credits });
 }

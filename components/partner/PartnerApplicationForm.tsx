@@ -75,7 +75,7 @@ export function PartnerApplicationForm({
         <div style={successRing}>
           <CheckIcon size={24} color="var(--g-green-text)" />
         </div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 8px" }}>Application received</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 8px" }}>Application received</h2>
         <p style={{ fontSize: 14, color: "var(--g-gray-500)", margin: "0 auto 24px", maxWidth: 380, lineHeight: 1.6 }}>
           Thanks — we review every application ourselves. Expect to hear from our partnerships team within two
           business days at <strong style={{ color: "var(--g-ink)" }}>{f.email}</strong>.
@@ -97,7 +97,7 @@ export function PartnerApplicationForm({
     <div style={cardStyle(isModal)}>
       {!isModal && (
         <>
-          <h2 style={{ fontSize: 19, fontWeight: 800, color: "var(--g-ink)", margin: "0 0 4px" }}>Apply for Partner Access</h2>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: "var(--g-ink)", margin: "0 0 4px" }}>Apply for Partner Access</h2>
           <p style={{ fontSize: 13, color: "var(--g-gray-500)", margin: "0 0 18px" }}>
             Five short steps. Free portal access for approved partners.
           </p>
@@ -122,8 +122,8 @@ export function PartnerApplicationForm({
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--g-green-text)" }}>{STEPS[step].label}</span>
-          <span style={{ fontSize: 11.5, color: "var(--g-gray-500)", fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--g-green-text)" }}>{STEPS[step].label}</span>
+          <span style={{ fontSize: 12, color: "var(--g-gray-500)", fontVariantNumeric: "tabular-nums" }}>
             Step {step + 1} of {STEPS.length}
           </span>
         </div>
@@ -172,8 +172,8 @@ export function PartnerApplicationForm({
                       }}
                     />
                     <span>
-                      <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--g-ink)" }}>{t.label}</span>
-                      <span style={{ display: "block", fontSize: 12.5, color: "var(--g-gray-500)", marginTop: 2 }}>{t.desc}</span>
+                      <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "var(--g-ink)" }}>{t.label}</span>
+                      <span style={{ display: "block", fontSize: 12, color: "var(--g-gray-500)", marginTop: 2 }}>{t.desc}</span>
                     </span>
                   </button>
                 );
@@ -276,7 +276,7 @@ export function PartnerApplicationForm({
       </div>
 
       {error && (
-        <p style={{ fontSize: 12.5, color: "var(--g-red-text)", background: "var(--g-red-tint)", padding: "9px 12px", borderRadius: "var(--radius-sm)", margin: "14px 0 0" }}>
+        <p style={{ fontSize: 12, color: "var(--g-red-text)", background: "var(--g-red-tint)", padding: "9px 12px", borderRadius: "var(--radius-sm)", margin: "14px 0 0" }}>
           {error}
         </p>
       )}
@@ -397,12 +397,12 @@ const cardStyle = (isModal: boolean): React.CSSProperties =>
         padding: 28,
       };
 
-const helpText: React.CSSProperties = { fontSize: 12.5, color: "var(--g-gray-500)", margin: "0 0 14px", lineHeight: 1.55 };
+const helpText: React.CSSProperties = { fontSize: 12, color: "var(--g-gray-500)", margin: "0 0 14px", lineHeight: 1.55 };
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  fontSize: 11.5,
-  fontWeight: 700,
+  fontSize: 12,
+  fontWeight: 600,
   color: "var(--g-gray-500)",
   marginBottom: 5,
 };
@@ -412,7 +412,7 @@ const inputStyle: React.CSSProperties = {
   padding: "10px 12px",
   borderRadius: "var(--radius-sm)",
   border: "1px solid var(--g-border)",
-  fontSize: 13.5,
+  fontSize: 13,
   color: "var(--g-ink)",
   background: "var(--g-white)",
   outline: "none",
@@ -430,7 +430,7 @@ const primaryBtn: React.CSSProperties = {
   background: "var(--g-green-darker)",
   color: "#fff",
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
   fontFamily: "inherit",
 };
@@ -442,7 +442,7 @@ const ghostBtn: React.CSSProperties = {
   background: "var(--g-white)",
   color: "var(--g-ink)",
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: "pointer",
   fontFamily: "inherit",
 };

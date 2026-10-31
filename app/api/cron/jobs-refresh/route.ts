@@ -22,9 +22,8 @@ const BATCH_SIZE = 60;
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-  const fromVercelCron = req.headers.get("x-vercel-cron") !== null;
 
-  if (!fromVercelCron && (!secret || authHeader !== `Bearer ${secret}`)) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

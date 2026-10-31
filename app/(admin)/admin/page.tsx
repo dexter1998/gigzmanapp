@@ -56,21 +56,21 @@ const getOverview = unstable_cache(
       // n_live_tup, not count(*): `leads` is ~300k rows / ~200MB and this is a headline tile, not
       // an invoice. Autovacuum keeps the estimate far closer than anyone reads off a card.
       sql`SELECT (SELECT coalesce(n_live_tup, 0)::int FROM pg_stat_user_tables WHERE relname = 'leads') AS leads,
-                 (SELECT count(*)::int FROM unlocks) AS unlocks,
-                 (SELECT count(DISTINCT unlocked_by)::int FROM unlocks) AS unlock_users,
-                 (SELECT count(*)::int FROM unlocks WHERE unlocked_at > now() - interval '7 days') AS unlocks7,
+                 (SELECT count(*)::int FROM lead_finds) AS unlocks,
+                 (SELECT count(DISTINCT user_email)::int FROM lead_finds) AS unlock_users,
+                 (SELECT count(*)::int FROM lead_finds WHERE found_at > now() - interval '7 days') AS unlocks7,
                  (SELECT count(*)::int FROM chat_messages WHERE created_at > now() - interval '7 days' AND role = 'user') AS chat7,
                  (SELECT coalesce(sum(billed_places_calls), 0)::int FROM area_scans WHERE created_at > now() - interval '30 days') AS billed30`,
       sql`SELECT (SELECT count(*)::int FROM user_profiles
                    WHERE created_at > now() - interval '14 days' AND created_at <= now() - interval '7 days') AS prev_signups,
-                 (SELECT count(*)::int FROM unlocks
-                   WHERE unlocked_at > now() - interval '14 days' AND unlocked_at <= now() - interval '7 days') AS prev_unlocks,
+                 (SELECT count(*)::int FROM lead_finds
+                   WHERE found_at > now() - interval '14 days' AND found_at <= now() - interval '7 days') AS prev_unlocks,
                  (SELECT count(*)::int FROM chat_messages
                    WHERE role = 'user' AND created_at > now() - interval '14 days' AND created_at <= now() - interval '7 days') AS prev_chat,
                  (SELECT coalesce(sum(billed_places_calls), 0)::int FROM area_scans
                    WHERE created_at > now() - interval '60 days' AND created_at <= now() - interval '30 days') AS prev_billed`,
       sql`SELECT date_trunc('day', created_at) AS day, count(*)::int AS n FROM user_profiles WHERE created_at > now() - interval '30 days' GROUP BY 1`,
-      sql`SELECT date_trunc('day', unlocked_at) AS day, count(*)::int AS n FROM unlocks WHERE unlocked_at > now() - interval '30 days' GROUP BY 1`,
+      sql`SELECT date_trunc('day', found_at) AS day, count(*)::int AS n FROM lead_finds WHERE found_at > now() - interval '30 days' GROUP BY 1`,
       sql`SELECT coalesce(country, 'Unknown') AS country, count(*)::int AS n FROM user_profiles GROUP BY 1 ORDER BY n DESC LIMIT 8`,
       sql`SELECT DISTINCT ON (job) job, started_at, ok, error FROM cron_runs ORDER BY job, started_at DESC`,
       sql`SELECT count(*)::int AS n FROM api_alerts WHERE created_at > now() - interval '24 hours' AND resolved_at IS NULL`,
@@ -120,7 +120,7 @@ export default async function OverviewPage() {
             <Stat label="Active 7d" value={fmtN(u.active7)} sub={`${pct(u.active7, u.total)} of all users`} />
             <Stat label="Revenue 30d" value={fmtINR(Number(rev.m_paise))} delta={Math.round((Number(rev.m_paise) - Number(rev.prev_m_paise)) / 100)} deltaLabel="₹ vs prev 30d" accent={C.revenue} />
             <Stat label="Paid users" value={fmtN(rev.paid_users)} sub={`${fmtN(rev.paid_orders)} orders · ${fmtINR(Number(rev.all_paise))} all-time`} />
-            <Stat label="Unlocks 7d" value={fmtN(act.unlocks7)} delta={act.unlocks7 - deltas.prev_unlocks} sub={`${fmtN(act.unlocks)} all-time`} accent={C.unlocks} />
+            <Stat label="Leads found 7d" value={fmtN(act.unlocks7)} delta={act.unlocks7 - deltas.prev_unlocks} sub={`${fmtN(act.unlocks)} all-time`} accent={C.unlocks} />
             <Stat label="Billed calls 30d" value={fmtN(act.billed30)} delta={act.billed30 - deltas.prev_billed} goodDirection="down" deltaLabel="Places COGS" />
           </div>
 
@@ -138,7 +138,7 @@ export default async function OverviewPage() {
                   // unlocks/3 and promptly rendered "150% carry through" — a funnel stage wider
                   // than the one above it, which is the clearest possible sign the number is made
                   // up. Counting the people is both cheaper to explain and actually right.
-                  { label: "Unlocked a lead", value: act.unlock_users, note: `${fmtN(act.unlocks)} unlocks` },
+                  { label: "Found a lead", value: act.unlock_users, note: `${fmtN(act.unlocks)} leads` },
                   { label: "Paid", value: rev.paid_users, note: pct(rev.paid_users, u.total) },
                 ]}
               />

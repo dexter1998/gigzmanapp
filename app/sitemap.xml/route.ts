@@ -35,6 +35,9 @@ export async function GET() {
     console.error("sitemap index: could not read published articles", err);
   }
 
+  // List pages (lib/lists): their own segment so Search Console reports their coverage separately.
+  children.push({ id: "lists" });
+
   // A failure in the lead registry must not take the marketing sitemap down with it.
   try {
     children.push(...(await pseoSitemapSegments()));

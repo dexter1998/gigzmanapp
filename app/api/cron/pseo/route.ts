@@ -5,6 +5,8 @@ import { recordCronRun } from "@/lib/cron-runs";
 import { submitToIndexNow } from "@/lib/pseo/indexnow";
 import { PSEO_SEGMENTS } from "@/lib/pseo/sitemap";
 import { COMPANY } from "@/lib/company";
+import { refreshFundedIfDue } from "@/lib/funded/refresh";
+import { listSitemapUrls } from "@/lib/lists/sitemap";
 
 /**
  * Daily recompute of every lead page: statistics, the quality gate, and the 15-day rotation.
@@ -20,9 +22,8 @@ export const maxDuration = 300;
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  const fromVercelCron = req.headers.get("x-vercel-cron") !== null;
 
-  if (!fromVercelCron && (!secret || auth !== `Bearer ${secret}`)) {
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -52,6 +53,15 @@ export async function GET(req: NextRequest) {
   // profile, which is what is wanted here — the tag is only attached to these aggregates.
   revalidateTag("no-website", "max");
 
+  // Funded-startups pages: a weekly funding-news refresh, piggybacking on this daily run (it no-ops
+  // unless the last successful refresh is over six days old). Never allowed to fail the lead pages.
+  const funded = await refreshFundedIfDue().catch(() => ({ ran: false }));
+  if (funded.ran) { revalidatePath("/funded-startups-india"); revalidatePath("/funded-startups-india/[city]", "page"); }
+
+  // Warm the list-pages sitemap here (300 s budget) so Googlebot's fetch never pays for its ~60
+  // gate queries inside App Runner's 120 s request limit.
+  const listUrls = await listSitemapUrls().then((u) => u.length).catch(() => -1);
+
   if (changed.length) {
     // The index and the segment the change lives in. Segments are cheap to rebuild and there are
     // three of them, so this is simpler than working out which one a given page belongs to.
@@ -76,6 +86,7 @@ export async function GET(req: NextRequest) {
     revalidated: changed.length,
     promoted: promoted.length,
     counts,
+    listUrls,
   });
   return NextResponse.json({
     evaluated: results.length,

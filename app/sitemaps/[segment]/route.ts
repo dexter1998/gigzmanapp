@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { COMPANY } from "@/lib/company";
 import { isPseoSegment, pseoSitemapUrls, PSEO_SEGMENTS, type SitemapEntry } from "@/lib/pseo/sitemap";
 import { BLOG_SEGMENT, blogSitemapUrls } from "@/lib/blog/sitemap";
+import { LISTS_SEGMENT, listSitemapUrls } from "@/lib/lists/sitemap";
 
 /**
  * One `<urlset>` per content type, listed by the index at /sitemap.xml.
@@ -29,6 +30,15 @@ const STATIC_PAGES: SitemapEntry[] = [
   { path: "/web-design-leads", changeFrequency: "weekly", priority: 0.8 },
   { path: "/industries-without-websites", changeFrequency: "weekly", priority: 0.8 },
   { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
+  // Tool and comparison pages (static, high-intent: "google maps scraper", "lead generation tool",
+  // "clay/zoominfo/apollo alternative"...). Shared layout in components/marketing/ToolPagePieces.tsx.
+  { path: "/google-maps-scraper", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/lead-generation-tool", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/lead-finder", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/ai-cold-calling", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/clay-alternative", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/zoominfo-alternative", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/apollo-alternative", changeFrequency: "monthly", priority: 0.7 },
   { path: "/partner", changeFrequency: "monthly", priority: 0.8 },
   { path: "/company", changeFrequency: "monthly", priority: 0.6 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.6 },
@@ -44,6 +54,7 @@ export function generateStaticParams() {
   return [
     { segment: "pages.xml" },
     { segment: `${BLOG_SEGMENT}.xml` },
+    { segment: `${LISTS_SEGMENT}.xml` },
     ...PSEO_SEGMENTS.map((id) => ({ segment: `${id}.xml` })),
   ];
 }
@@ -55,6 +66,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ segment
   let entries: SitemapEntry[];
   if (id === "pages") entries = STATIC_PAGES;
   else if (id === BLOG_SEGMENT) entries = await blogSitemapUrls();
+  else if (id === LISTS_SEGMENT) entries = await listSitemapUrls();
   else if (isPseoSegment(id)) entries = await pseoSitemapUrls(id);
   else notFound();
 

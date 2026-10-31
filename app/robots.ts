@@ -65,7 +65,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // /api/og is the social-card image every page's og:image points at. Under the blanket
+        // `/api/` disallow Search Console reported 35 of them as "Blocked by robots.txt"
+        // (2026-10-24); the longer Allow wins over `Disallow: /api/`.
+        allow: ["/", "/api/og"],
         disallow: PRIVATE_PATHS,
       },
       {
@@ -73,7 +76,7 @@ export default function robots(): MetadataRoute.Robots {
         // The two llms files and the sitemap index are named explicitly. Redundant against
         // `Allow: /`, but they are the entry points these crawlers look for, and naming them is
         // the cheapest way to make the invitation unambiguous.
-        allow: ["/", "/llms.txt", "/llms-full.txt", "/sitemap.xml", "/leads/feed.xml"],
+        allow: ["/", "/api/og", "/llms.txt", "/llms-full.txt", "/sitemap.xml", "/leads/feed.xml"],
         disallow: PRIVATE_PATHS,
       },
     ],
