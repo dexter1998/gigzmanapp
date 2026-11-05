@@ -47,6 +47,8 @@ type AssistantIntent = ChatIntent & {
   apiDown?: boolean; // a real third-party API failure happened this turn (not just an empty/ambiguous result)
 };
 
+const STOPPED_TEXT = "Stopped. Tell me what to change, or ask again.";
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -128,9 +130,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cha
     if (scope && scope.type === "scope") trackEvent(userEmail, EV.chatPlan, { run_id: scope.runId, target: scope.target, est_credits: scope.usage.credits, reused: scope.reusedPipeline, chat_id: chatId });
     if (v2Action?.type === "run_plan" && v2.action === "search_leads") trackEvent(userEmail, EV.chatRunStart, { run_id: v2Action.runId, chat_id: chatId });
     if (v2Action?.type === "more_run" && v2Action.count) trackEvent(userEmail, EV.chatRunStart, { run_id: v2Action.runId, more: v2Action.count, chat_id: chatId });
+    // The user pressed Stop (the browser aborted the request): keep "Stopped" in the thread, not an
+    // answer they never saw — it would appear on the next reload as if they had read it. Not for a
+    // finished plan or a started run, though: App Runner cuts a request at 120 s, which reads as an
+    // abort here, and a 3-minute plan was thrown away as "Stopped" (prod 2026-11-04). The client
+    // picks such a reply up by polling the chat.
+    const produced = !!scope || v2.action === "search_leads";
+    const stopped = req.signal.aborted && !produced;
     const [saved] = await sql`
       INSERT INTO chat_messages (chat_id, role, content, intent)
-      VALUES (${chatId}, 'assistant', ${v2.reply}, ${sql.json(v2 as unknown as Parameters<typeof sql.json>[0])})
+      VALUES (${chatId}, 'assistant', ${stopped ? STOPPED_TEXT : v2.reply},
+              ${sql.json((stopped ? { v2: true, turnType: v2.turnType, action: "stopped", reply: STOPPED_TEXT } : v2) as unknown as Parameters<typeof sql.json>[0])})
       RETURNING id, role, content, intent, created_at
     `;
     await sql`UPDATE chats SET updated_at = now() WHERE id = ${chatId}`;

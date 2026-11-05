@@ -14,7 +14,7 @@ export const legacyVoiceConfigured = () => !!VOICE_BASE && !!SECRET;
 /** Some backend can place AI calls. */
 export const voiceConfigured = () => hostedConfigured() || legacyVoiceConfigured();
 
-export { VOICE_SKILLS, isVoiceSkill, CALL_WINDOW, EST_MINUTES_PER_CALL, MIN_MINUTES_BALANCE, creditsForSeconds, type VoiceSkill } from "./voiceShared";
+export { VOICE_SKILLS, isVoiceSkill, CALL_WINDOW, ASKED_CALLBACK_WINDOW, callWindowFor, EST_MINUTES_PER_CALL, MIN_MINUTES_BALANCE, creditsForSeconds, type VoiceSkill } from "./voiceShared";
 import { CALL_WINDOW, type VoiceSkill } from "./voiceShared";
 import { hostedConfigured, hostedHealth } from "./hosted-voice";
 
@@ -38,6 +38,11 @@ export function toE164(raw: string | null | undefined): string | null {
   return null;
 }
 
+/** An Indian mobile (+91 6-9…). AI calls only ever dial these in India. */
+export const isIndianMobile = (e164: string | null | undefined) => !!e164 && /^\+91[6-9]\d{9}$/.test(e164);
+/** Dialable by the AI agent: any non-Indian E.164, or an Indian mobile — never an Indian landline. */
+export const aiDialable = (e164: string | null | undefined) => !!e164 && (!e164.startsWith("+91") || isIndianMobile(e164));
+
 export type VoiceCallInput = {
   ref: string; phone: string; skill: VoiceSkill; businessName: string; contactName: string | null; area: string | null; brief: string;
   offer: { company: string; offerName: string; summary: string; benefits: string; deal: string; followUpWith: string; callerName: string | null };
@@ -51,6 +56,8 @@ export type VoiceResult = {
   /** Hosted calls have no transcript; the agent's own summary, notes and (test calls) feedback stand in. */
   summary?: string | null; notes?: string | null;
   feedback?: { rating: string | null; wouldPay: string | null; text: string | null } | null;
+  /** Hosted calls: "agent:interaction id" for the recording (hosted-voice fetchRecording). */
+  recording?: string | null;
 };
 
 async function call(method: "GET" | "POST", path: string, body?: unknown): Promise<{ status: number; data: Record<string, unknown> }> {

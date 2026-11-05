@@ -8,12 +8,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { MapPin, Star, Phone, Mail, MoreVertical, ChevronDown, Square, Search, Send, ChevronLeft, ChevronRight, X, Globe, Building2, ArrowUpRight, Sparkles, Check, Loader2 } from "lucide-react";
+import { MapPin, Star, Phone, Mail, MoreVertical, ChevronDown, Square, Search, Send, ChevronLeft, ChevronRight, X, Globe, Building2, ArrowUpRight, Sparkles, Check, Loader2, MessageCircle, Settings2, Play } from "lucide-react";
+import { WHATSAPP_LIVE } from "@/lib/v2/outreach/channels";
 import type { ChatLead } from "../ChatLeadsTable";
 import type { RunSnapshot, RunResultView } from "@/lib/v2/runner";
 import type { TurnStep, PlanCard as PlanCardData } from "@/lib/v2/turn";
 import { useNow, fmtDur } from "./RunProgress";
 import { ContactActions, EmailCell, PhoneCell, ExtraCells, TierBadge, PhoneKindTag, normalizeContact, type Contact, type ContactInput, type LeadEmail, type LeadPhone, type Pitch, type ExtraColumn } from "@/components/leads/v2/contact";
+
+/** A Quick Outreach pick: one channel is a quick campaign of that kind, two or more a sequence. */
+export type OutreachChannel = "email" | "whatsapp" | "call";
+export type QuickOutreachPick = { kind: "sequence" | "quick_email" | "quick_whatsapp" | "quick_call"; channels: OutreachChannel[]; customize: boolean };
 
 export type PanelContent =
   | { kind: "run"; run: RunSnapshot | null }
@@ -113,13 +118,12 @@ function Select({ label, value, options, onChange, icon }: { label: string; valu
   );
 }
 
-export function V2Panel({ content, working, workingSec, onControl, onFindMore, onQuickOutreach }: {
+export function V2Panel({ content, working, workingSec, onControl, onQuickOutreach }: {
   content: PanelContent; working: boolean; workingSec: number;
-  onRefresh?: () => void; onControl?: (action: "pause" | "resume" | "stop") => void; onFindMore?: () => void;
-  /** Opens the campaign builder for this chat's list. */
-  onQuickOutreach?: () => Promise<void> | void;
+  onRefresh?: () => void; onControl?: (action: "pause" | "resume" | "stop") => void;
+  /** Opens the campaign builder for this chat's list, with the channels picked in the card. */
+  onQuickOutreach?: (pick: QuickOutreachPick) => Promise<void> | void;
 }) {
-  const [outreachBusy, setOutreachBusy] = useState(false);
   const run = content.kind === "run" ? content.run : null;
   const running = run?.status === "running";
   const now = useNow(!!running);
@@ -221,17 +225,71 @@ export function V2Panel({ content, working, workingSec, onControl, onFindMore, o
           </span>
         </div>
 
-        <div className="v2-actions">
-          <button type="button" className="v2-btn primary" onClick={onFindMore} disabled={!onFindMore || busy}><Search size={16} /> Find more leads</button>
-          <button type="button" className="v2-btn" disabled={!onQuickOutreach || busy || outreachBusy}
-            title={onQuickOutreach ? "Build a campaign for these leads" : "Needs leads first"}
-            onClick={async () => { if (!onQuickOutreach) return; setOutreachBusy(true); try { await onQuickOutreach(); } finally { setOutreachBusy(false); } }}>
-            <Send size={15} /> {outreachBusy ? "Opening…" : "Quick Outreach"}
-          </button>
-        </div>
+        <QuickOutreach rows={run ? rows.filter((r) => r.rank != null) : rows} disabled={working} onStart={onQuickOutreach} />
       </div>
       {drawer && <LeadDrawer resultId={drawer} pitch={pitch} columns={columns} onClose={() => setDrawer(null)} />}
     </aside>
+  );
+}
+
+const CHANNELS: Array<{ key: OutreachChannel; label: string; icon: React.ReactNode }> = [
+  { key: "email", label: "Email", icon: <Mail size={18} /> },
+  { key: "whatsapp", label: "WhatsApp", icon: <MessageCircle size={18} /> },
+  { key: "call", label: "AI Voice Call", icon: <Phone size={18} /> },
+];
+
+/**
+ * Under the table: the delivered leads, and per channel how many of them that channel can reach
+ * (the sends a campaign would make). One channel ticked creates a quick campaign of that kind;
+ * two or more a sequence; Customize opens the builder on a sequence either way.
+ */
+function QuickOutreach({ rows, disabled, onStart }: { rows: Row[]; disabled: boolean; onStart?: (pick: QuickOutreachPick) => Promise<void> | void }) {
+  const avail: Record<OutreachChannel, number> = {
+    email: rows.filter((r) => r.contact.emails.length > 0).length,
+    whatsapp: rows.filter((r) => !!r.contact.whatsapp).length,
+    call: rows.filter((r) => r.contact.phones.some((p) => p.kind !== "tollfree")).length,
+  };
+  const live = (c: OutreachChannel) => c !== "whatsapp" || WHATSAPP_LIVE;
+  // Untouched (null): every live channel that can reach someone is ticked.
+  const [touched, setPicked] = useState<Set<OutreachChannel> | null>(null);
+  const picked = touched ?? new Set(CHANNELS.map((c) => c.key).filter((k) => live(k) && avail[k] > 0));
+  const [busy, setBusy] = useState<"create" | "customize" | null>(null);
+  const chosen = CHANNELS.map((c) => c.key).filter((k) => picked.has(k) && live(k) && avail[k] > 0);
+  const can = !!onStart && !disabled && !busy && rows.length > 0;
+  const go = async (customize: boolean) => {
+    if (!onStart) return;
+    const kind: QuickOutreachPick["kind"] = !customize && chosen.length === 1 ? (`quick_${chosen[0]}` as QuickOutreachPick["kind"]) : "sequence";
+    setBusy(customize ? "customize" : "create");
+    try { await onStart({ kind, channels: chosen, customize }); } finally { setBusy(null); }
+  };
+  return (
+    <section className="v2-qo" aria-label="Quick Outreach">
+      <div className="v2-qo-head">
+        <span className="v2-qo-ic" aria-hidden><Send size={20} /></span>
+        <div className="v2-qo-text"><b>Quick Outreach</b><span>Run a multi-channel campaign to reach selected leads.</span></div>
+        <span className="v2-qo-count">{rows.length} {rows.length === 1 ? "lead" : "leads"} selected</span>
+        <button type="button" className="v2-qo-custom" disabled={!can} onClick={() => go(true)}>
+          <Settings2 size={15} /> {busy === "customize" ? "Opening…" : "Customize"}
+        </button>
+      </div>
+      <div className="v2-qo-row">
+        {CHANNELS.map((c) => {
+          const soon = !live(c.key);
+          const on = picked.has(c.key) && !soon && avail[c.key] > 0;
+          return (
+            <label key={c.key} className={`v2-qo-ch${on ? " on" : ""}${soon || !avail[c.key] ? " off" : ""}`} title={soon ? "WhatsApp sending is coming soon" : `Bulk ${c.label.toLowerCase()} to ${avail[c.key]} leads`}>
+              <input type="checkbox" checked={on} disabled={soon || !avail[c.key]}
+                onChange={() => { const n = new Set(picked); if (n.has(c.key)) n.delete(c.key); else n.add(c.key); setPicked(n); }} />
+              <span className="v2-qo-ch-ic" aria-hidden>{c.icon}</span>
+              <span className="v2-qo-ch-text"><b>{c.label}</b><span>{soon ? "Coming soon" : `${avail[c.key]} available`}</span></span>
+            </label>
+          );
+        })}
+        <button type="button" className="v2-btn primary v2-qo-go" disabled={!can || !chosen.length} onClick={() => go(false)}>
+          {busy === "create" ? "Creating…" : <>Create Campaign <Play size={13} fill="currentColor" /></>}
+        </button>
+      </div>
+    </section>
   );
 }
 

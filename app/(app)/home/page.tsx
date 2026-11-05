@@ -13,6 +13,7 @@ import { CrosshairIcon, FilterIcon, LockIcon, CheckIcon, ArrowRightIcon, BellIco
 import { CreditsIndicator } from "@/components/CreditsIndicator";
 import { HeatGauge } from "@/components/HeatGauge";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
+import { isDailyUnlockLimit, showDailyUnlockLimit } from "@/components/toast/unlock-limit";
 
 type Lead = {
   id: string;
@@ -825,6 +826,10 @@ export default function HomePage() {
     setAddingLead(true);
     try {
       const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: "POST" });
+      if (isDailyUnlockLimit(res)) {
+        showDailyUnlockLimit(((await res.json().catch(() => ({}))) as { limit?: number }).limit);
+        return;
+      }
       if (res.status === 402) {
         window.dispatchEvent(new Event("gigzman:open-plans"));
         return;

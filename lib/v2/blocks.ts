@@ -4,7 +4,7 @@
  * answers stay one markdown block; a lead request adds a `scope` card. New block types are added
  * here and in the renderer's registry — nothing else changes.
  */
-import { SIGNALS, type SignalId } from "./playbooks";
+import { SIGNALS, playbookById, type SignalId } from "./playbooks";
 import { STRATEGY_LABEL, segmentsOf, type Strategy } from "./runner";
 import { CREDIT_COST } from "@/lib/credits/pricing";
 import type { CompiledPlan } from "./planner";
@@ -15,6 +15,8 @@ export type ScopeBlock = {
   industry: string;
   geography: string;
   signals: Array<{ id: string; label: string; detail: string }>;
+  /** Signals the scope card can switch on or off when editing (the required ones first). */
+  signalOptions?: Array<{ id: string; label: string; detail: string }>;
   contacts: string[];
   target: number;
   steps: Array<{ title: string; detail: string }>;
@@ -66,6 +68,7 @@ export function scopeBlock(runId: string, p: CompiledPlan): ScopeBlock {
       const q = segmentsOf(p)?.find((g) => g.signal === m)?.quota;
       return { id: m, label: `${SIGNALS[m as SignalId]?.label ?? m}${q ? ` · ${q} of ${p.target}` : ""}`, detail: SIGNAL_DETAIL(m) };
     }),
+    signalOptions: signalOptions(p),
     contacts: p.needContacts ? ["Public business email", "Company LinkedIn URL"] : [],
     target: p.target,
     steps: [
@@ -77,4 +80,14 @@ export function scopeBlock(runId: string, p: CompiledPlan): ScopeBlock {
     assumptions: p.assumptions, cannotDo: p.cannotDo,
     reasoning: p.approach?.reasoning ?? null, reusedPipeline: !!p.approach?.reusePipelineId,
   };
+}
+
+// What a seller usually filters on; the plan's own playbook signals are offered first.
+const COMMON_SIGNALS: SignalId[] = ["no_website", "social_as_website", "old_copyright", "no_mobile", "no_instagram", "few_reviews", "low_rating", "hiring", "funded_recent"];
+
+/** The signals the scope card offers as toggles: the plan's required ones, its playbooks', then common ones. */
+function signalOptions(p: CompiledPlan): NonNullable<ScopeBlock["signalOptions"]> {
+  const ids = [...(p.mustHave ?? []), ...p.playbookIds.flatMap((id) => playbookById(id)?.signals ?? []), ...COMMON_SIGNALS];
+  return [...new Set(ids)].filter((id): id is SignalId => id in SIGNALS).slice(0, 12)
+    .map((id) => ({ id, label: SIGNALS[id].label, detail: SIGNAL_DETAIL(id) }));
 }

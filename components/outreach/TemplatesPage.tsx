@@ -14,6 +14,7 @@ import { touchesOf, type Graph } from "@/lib/v2/outreach/graph";
 import { EmailPreview, WhatsAppPreview, CallPreview } from "./Previews";
 import { BrandLogo } from "./BrandLogo";
 import "../compact.css";
+import { toast } from "@/components/toast/toast";
 
 export type Kind = "email" | "whatsapp" | "call" | "campaign";
 export type Tpl = { id: string; kind: Kind; name: string; subject: string | null; body: string; isHtml: boolean; graph: Graph | null; mediaUrl: string | null; usedBy: number; campaignId: string | null; updatedAt: string };
@@ -66,13 +67,15 @@ export function TemplatesPage() {
 
   async function remove(t: Tpl) {
     if (!confirm(`Delete “${t.name}”?${t.usedBy ? ` ${t.usedBy} campaign${t.usedBy === 1 ? " keeps" : "s keep"} its own copy.` : ""}`)) return;
-    await fetch(`/api/v2/outreach/templates?id=${t.id}`, { method: "DELETE" });
+    const r = await fetch(`/api/v2/outreach/templates?id=${t.id}`, { method: "DELETE" }).catch(() => null);
+    if (r?.ok) toast.success("Template deleted", `“${t.name}” is gone.`); else toast.error("Couldn't delete the template", "Please try again.");
     if (peek?.id === t.id) setPeek(null);
     load();
   }
   async function startFromSequence(t: Tpl) {
-    const d = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ templateId: t.id, name: t.name }) })).json();
-    if (d.id) router.push(`/campaigns/${d.id}`);
+    const d = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ templateId: t.id, name: t.name }) })).json().catch(() => ({}));
+    if (d.id) { toast.success("Campaign created", `Started from “${t.name}”.`); router.push(`/campaigns/${d.id}`); }
+    else toast.error("Couldn't create the campaign", d.error ?? "Please try again.");
   }
 
   return (

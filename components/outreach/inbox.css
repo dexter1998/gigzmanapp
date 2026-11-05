@@ -268,3 +268,17 @@
 
 /* Room for the global credits pill (components/TopCredits.tsx) beside "Sync now". */
 @media (min-width: 641px) { .ox-head.ix-head { padding-right: 215px; } }
+
+/* AI call still running: a quiet strip above the inbox, and the call's recording in the thread. */
+.ix-calling { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 9px 13px; border-radius: 10px; border: 1px solid #b9dcb0; background: #f3faef; color: #22662d; font-size: 13px; }
+.ix-calling-dot { width: 8px; height: 8px; border-radius: 50%; background: #2f9e44; animation: ix-pulse 1.2s ease-in-out infinite; }
+@keyframes ix-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .ix-calling-dot { animation: none; } }
+.ix-audio { display: block; width: 100%; max-width: 420px; height: 34px; margin: 2px 0 8px; }
+/* Call outcome: what the lead actually said, at a glance. */
+.ix-chip.oc-green, .ix-outcome.oc-green { background: #e3f4dd; color: #22662d; }
+.ix-chip.oc-amber, .ix-outcome.oc-amber { background: #fdf3dc; color: #8a5a00; }
+.ix-chip.oc-red, .ix-outcome.oc-red { background: #fdecea; color: #a8261d; }
+.ix-chip.oc-grey, .ix-outcome.oc-grey { background: #f1f0e9; color: #55574f; }
+.ix-outcome { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; margin: 0 0 8px; border-radius: 999px; font-size: 13px; }
+.ix-outcome b { font-weight: 600; }

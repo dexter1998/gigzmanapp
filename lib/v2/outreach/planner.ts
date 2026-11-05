@@ -10,9 +10,9 @@ import { WHATSAPP_LIVE } from "./channels";
 import { sql } from "@/lib/db";
 import { callTool, MODELS, type Msg } from "../claude";
 import { loadProfile } from "../scout";
-import { proposedProfileFor } from "./sender-profile";
+import { proposedProfileFor, cleanSenderProfile, playbookText } from "./sender-profile";
 import { listLeads } from "../lms";
-import { compile, touchesOf, VARIABLES, type Graph, type Touch, type Channel } from "./graph";
+import { compile, touchesOf, VARIABLES, DEFAULT_CALL_RETRY, MAX_CALL_DIALS, type Graph, type Touch, type Channel } from "./graph";
 import { syncTemplatesFromGraph } from "./templates";
 import { VOICE_SKILLS, isVoiceSkill } from "./voice";
 
@@ -33,8 +33,13 @@ const TOOL = {
             skill: { type: ["string", "null"], enum: [...VOICE_SKILLS.map((s) => s.id), null], description: "Call touches only: what the AI voice agent is calling FOR — " + VOICE_SKILLS.map((s) => `${s.id} (${s.desc})`).join("; ") + ". Pick from what the user wants (selling → pitch/sales; resellers → partnership; co-marketing → collaboration; news/offer → announcement; buying from them → purchase)." },
             waitDays: { type: "number", description: "Days to wait after the previous touch. 0 for the first." },
             subject: { type: ["string", "null"], description: "Email only. Under 7 words, lowercase-ish, no clickbait." },
-            body: { type: "string", description: "The message. Email: 50-110 words, plain, one ask. WhatsApp: under 60 words. Call: the AI voice agent's BRIEF for this lead (it speaks Hinglish and improvises around it): why we're calling (what we noticed, {{signal}}), the offer in one line, ONE question to ask, short answers to the two likeliest objections, and what to book. Under 120 words, plain sentences, no greetings." },
+            body: { type: "string", description: "The message. Email: 50-110 words, plain, one ask. WhatsApp: under 60 words. Call: the AI voice agent's BRIEF for this lead (it speaks Hinglish and improvises around it): why we're calling (what we noticed, {{signal}}), the offer in one line, ONE question to ask, short answers to the two likeliest objections, and what to book. Under 120 words, plain sentences, no greetings. Every message: ONE paragraph in one JSON string — no line breaks, no \\r or \\n (they sent the model into a loop of blank lines until the token limit, 2026-11-03)." },
             goal: { type: "string", description: "What this touch is for, in a few words." },
+            retry: {
+              type: ["object", "null"],
+              description: "AI call touches only: how often to dial again when the lead doesn't pick up, is busy or says 'call me later'. maxAttempts = dials in all (1-7), gapHours = hours between dials (24 = next day). Default 3 dials, 24 h apart. Follow the user if they say e.g. 'try 7 times', 'call again next day'.",
+              properties: { maxAttempts: { type: "number" }, gapHours: { type: "number" } },
+            },
           },
           required: ["channel", "waitDays", "body"],
         },
@@ -75,27 +80,34 @@ export async function planCampaign(input: { email: string; campaignId: string; i
     "Channels: email only reaches leads with an email, call/WhatsApp only those with a phone; every lead gets every touch, and a touch whose channel a lead can't be reached on is skipped for that lead. So: touch 1 uses the channel MORE of the list can be reached on (if fewer than a third have an email, touch 1 is a call). When both are common, open with email and add a call touch so phone-only leads are still reached. WhatsApp is never the first touch to a stranger (Meta policy: no unsolicited first messages without an approved template) — use it as a later touch, after email or a call.",
     ...(WHATSAPP_LIVE ? [] : ["WhatsApp sending is COMING SOON and not available yet: never use the whatsapp channel. If the user asks for WhatsApp, use email or a call instead and say in one short line that WhatsApp is coming soon."]),
     "Never name the AI model, voice, mail or data provider behind Mantis in your reply — it is Mantis's own AI.",
+    "Call touches loop on their own: a lead who doesn't pick up, is busy or asks to be called later is dialled again (retry: up to 7 dials, e.g. next day) until they answer yes or no — so ONE call touch with a retry rule covers 'keep calling until the list is exhausted'. Interested → Inbox and the sequence stops; not interested → stops.",
     "Space touches 2-4 days apart. The sequence stops automatically when someone replies, so later touches can assume no reply.",
     quick ? `This is a QUICK SEND: exactly one ${quickChannel} touch, no follow-ups.` : "This is a sequence: 3-5 touches unless the user asks otherwise.",
     `LIST: "${listName}" — ${leads.length} leads; ${withEmail} with email, ${withPhone} with phone. Categories: ${cats.join(", ") || "unknown"}. What we noticed: ${topSignals.join(", ") || "nothing specific"}.`,
     // The campaign's confirmed "sending as" profile is the voice of every touch; the seller profile otherwise.
     c.sender_profile?.company
-      ? `SELLER (confirmed for this campaign — write as them): ${c.sender_profile.company} — offer: ${c.sender_profile.offer}. ${c.sender_profile.summary ?? ""}${c.sender_profile.callerName ? ` Sign off as ${c.sender_profile.callerName}.` : ""}`
+      ? `SELLER (confirmed for this campaign — write as them): ${c.sender_profile.company} — offer: ${c.sender_profile.offer}. ${c.sender_profile.summary ?? ""}${c.sender_profile.callerName ? ` Sign off as ${c.sender_profile.callerName}.` : ""}${playbookText(cleanSenderProfile(c.sender_profile)) ? `\n\nCAMPAIGN PLAYBOOK (the user's own — build every touch on it: open with the hook, pitch the way it says, answer objections its way): ${playbookText(cleanSenderProfile(c.sender_profile))}` : ""}`
       // The chat says what is sold here; the saved profile only speaks when it sells that.
       : proposed.offer && !proposed.company ? `SELLER: sells ${proposed.offer} (what the user asked leads for in this chat). Their company name isn't confirmed yet — use {{sender_name}}, never invent a company, and don't pitch anything else.`
       : profile ? `SELLER: ${profile.company ?? ""} — ${profile.summary} Services: ${profile.services.join(", ")}.${proposed.offer ? ` This campaign's offer: ${proposed.offer}.` : ""}` : "SELLER: no profile yet — keep the offer generic (website, local marketing) and say so in the reply.",
     `CONNECTED SENDERS: ${senders.map((s) => `${s.channel}/${s.provider}`).join(", ") || "none yet (the user will connect one before sending)"}.`,
-    current.length ? `CURRENT SEQUENCE (edit this, return the whole new one): ${JSON.stringify(current.map(({ channel, waitDays, subject, body }) => ({ channel, waitDays, subject, body })))}` : "",
+    current.length ? `CURRENT SEQUENCE (edit this, return the whole new one): ${JSON.stringify(current.map(({ channel, waitDays, subject, body, skill, retry }) => ({ channel, waitDays, subject, body, ...(channel === "call" ? { skill, retry } : {}) })))}` : "",
   ].filter(Boolean).join("\n\n");
 
   const ask = input.instruction?.trim() || (current.length ? "Improve this sequence." : "Design the sequence for this list.");
   const messages = [...history, { role: "user", content: ask }].filter((m, i) => !(i === 0 && m.role === "assistant")) as Msg[];
-  // Sonnet can't be forced to call the tool, and now and then answers in prose instead. One retry
-  // with that prose handed back and a plain instruction fixes it; a second miss is a real error.
-  let raw = await callTool({ agent: "campaign_planner", model: MODELS.best, system, messages, tool: TOOL, maxTokens: 2200, force: false });
-  if (!Array.isArray(raw.touches) || !raw.touches.length) {
+  // Now and then the model answers in prose ("Here's the full sequence via design_sequence — 4
+  // touches…") instead of calling the tool; that prose reached the user as a red error and the canvas
+  // kept the old sequence (prod 2026-11-02). The retry forces the tool call.
+  // Kimi's reasoning is billed against max_tokens: three long call scripts plus its thinking ran past
+  // 2600 and the tool call was cut off ("The planner returned no touches", prod 2026-11-03). Forced
+  // from the first try — the unforced answer came back as prose about half the time.
+  let raw = await callTool({ agent: "campaign_planner", model: MODELS.best, system, messages, tool: TOOL, maxTokens: 8000, force: true });
+  // Up to two forced retries: a degenerate answer (whitespace until the token limit) is rare and
+  // does not repeat.
+  for (let k = 0; k < 2 && (!Array.isArray(raw.touches) || !raw.touches.length); k++) {
     raw = await callTool({
-      agent: "campaign_planner", model: MODELS.best, system, tool: TOOL, maxTokens: 2200, force: false,
+      agent: "campaign_planner", model: MODELS.best, system, tool: TOOL, maxTokens: 8000, force: true,
       messages: [...messages, { role: "assistant", content: typeof raw.text === "string" ? raw.text.slice(0, 2000) : "(no answer)" },
         { role: "user", content: "Now return it by calling design_sequence — every touch with channel, waitDays and body." }],
     });
@@ -108,6 +120,9 @@ export async function planCampaign(input: { email: string; campaignId: string; i
     subject: typeof t.subject === "string" ? t.subject.slice(0, 120) : undefined,
     body: String(t.body ?? "").slice(0, 4000),
     goal: typeof t.goal === "string" ? t.goal : undefined,
+    // The model leaves `retry` out about half the time even when asked: what the user just said wins,
+    // then the model's rule, then the touch's current one, then the default.
+    retry: t.channel === "call" ? retryOf(t.retry ?? null, current[i]?.retry, retryAsked(ask)) : undefined,
   })).filter((t) => t.body.trim() && (WHATSAPP_LIVE || quickChannel === "whatsapp" || t.channel !== "whatsapp"));
   if (quickChannel && touches[0]) touches[0].channel = quickChannel;
   if (!touches.length) throw new Error(typeof raw.text === "string" ? raw.text.slice(0, 300) : "The planner returned no touches.");
@@ -125,4 +140,26 @@ export async function planCampaign(input: { email: string; campaignId: string; i
             WHERE id = ${c.id}`;
   await sql`INSERT INTO v2_campaign_messages (campaign_id, role, content) VALUES (${c.id}, 'user', ${ask}), (${c.id}, 'assistant', ${reply})`;
   return { graph, reply, name };
+}
+
+/** "try 7 times", "max 5 attempts", "call again next day" → the parts of a retry rule the user stated. */
+function retryAsked(text: string): Partial<NonNullable<Touch["retry"]>> | null {
+  const n = /\b(\d{1,2})\s*(?:x\b|times|tries|attempts|dials|baar)/i.exec(text) ?? /\b(?:max(?:imum)?|up to)\s*(\d{1,2})\b/i.exec(text);
+  const daily = /\b(next day|every day|daily|each day|agle din|roz)\b/i.test(text);
+  const r: Partial<NonNullable<Touch["retry"]>> = { ...(n ? { maxAttempts: Number(n[1]) } : {}), ...(daily ? { gapHours: 24 } : {}) };
+  return Object.keys(r).length ? r : null;
+}
+
+/** A call touch's retry rule from the planner, clamped: 1-7 dials, 2 h to 3 days apart. */
+function retryOf(v: unknown, current?: Partial<NonNullable<Touch["retry"]>> | null, asked?: Partial<NonNullable<Touch["retry"]>> | null): Touch["retry"] {
+  // Kimi sometimes sends nested objects as JSON strings too.
+  let o = v;
+  if (typeof o === "string") { try { o = JSON.parse(o); } catch { o = null; } }
+  const r = { ...(current ?? {}), ...((o ?? {}) as { maxAttempts?: unknown; gapHours?: unknown }), ...(asked ?? {}) };
+  const max = Math.round(Number(r.maxAttempts)), gap = Math.round(Number(r.gapHours));
+  return {
+    maxAttempts: Number.isFinite(max) && max >= 1 ? Math.min(MAX_CALL_DIALS, max) : DEFAULT_CALL_RETRY.maxAttempts,
+    gapHours: Number.isFinite(gap) && gap >= 2 ? Math.min(72, gap) : DEFAULT_CALL_RETRY.gapHours,
+    followCallback: true,
+  };
 }

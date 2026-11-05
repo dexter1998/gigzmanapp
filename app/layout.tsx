@@ -5,6 +5,7 @@ import { COMPANY } from "@/lib/company";
 import { ogImageMeta } from "@/lib/og";
 import { AnalyticsScripts } from "@/components/AnalyticsScripts";
 import { CookieConsent } from "@/components/CookieConsent";
+import { Toaster } from "@/components/toast/Toaster";
 import { AttributionCapture } from "@/components/AttributionCapture";
 import { FounderWidgetScript } from "@/components/widget/FounderWidgetScript";
 
@@ -114,6 +115,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <AnalyticsScripts measurementId={GA_MEASUREMENT_ID} />
         <CookieConsent />
+        <Toaster />
         <AttributionCapture />
         <FounderWidgetScript />
       </body>

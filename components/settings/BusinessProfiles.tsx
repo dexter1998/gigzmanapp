@@ -4,6 +4,7 @@ import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { Globe, Plus, Pencil, Trash2, Star, X, Loader2, PenLine } from "lucide-react";
 import type { BusinessProfile } from "@/lib/v2/business-profiles";
 import s from "./BusinessProfiles.module.css";
+import { toast } from "@/components/toast/toast";
 
 /**
  * Settings → Business profiles. Cards in the Settings column: who the business is, what it sells
@@ -33,8 +34,13 @@ export function BusinessProfiles({ initial }: { initial: BusinessProfile[] }) {
   const [adding, setAdding] = useState(initial.length === 0);
 
   async function call(url: string, method: string, body?: unknown) {
-    const res = await fetch(url, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "failed");
+    const res = await fetch(url, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+    if (!res?.ok) {
+      const error = res ? (await res.json().catch(() => ({}))).error : null;
+      if (method !== "GET") toast.error(method === "DELETE" ? "Couldn't delete" : "Couldn't save", error ?? "Please try again.");
+      throw new Error(error ?? "failed");
+    }
+    if (method !== "GET") toast.success(method === "DELETE" ? "Business removed" : "Saved");
     return res.json();
   }
   const reload = async () => setProfiles((await call("/api/v2/business-profiles", "GET")).profiles);

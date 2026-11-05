@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { HeatGauge } from "@/components/HeatGauge";
 import { CheckIcon, StarIcon } from "@/components/icons";
+import { isDailyUnlockLimit, showDailyUnlockLimit } from "@/components/toast/unlock-limit";
 
 export type ChatLead = {
   id: string;
@@ -56,6 +57,10 @@ export function ChatLeadsTable({ leads, fill = false, onAdded }: { leads: ChatLe
     try {
       for (const id of ids) {
         const res = await fetch(`/api/leads/${id}/unlock`, { method: "POST" });
+        if (isDailyUnlockLimit(res)) {
+          showDailyUnlockLimit(((await res.json().catch(() => ({}))) as { limit?: number }).limit);
+          break;
+        }
         if (res.status === 402) {
           window.dispatchEvent(new Event("gigzman:open-plans"));
           break;

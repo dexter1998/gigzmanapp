@@ -14,6 +14,7 @@ import { WHATSAPP_LIVE } from "@/lib/v2/outreach/channels";
 import "../../compact.css";
 import { BrandLogo } from "../BrandLogo";
 import { SetupShell, SetupStep, ConnectedList, PoolTable, CopyField, useOutreachData, FlashBar, SupportLink, type Flash } from "./shared";
+import { toast } from "@/components/toast/toast";
 
 const META_DOCS = "https://developers.facebook.com/docs/whatsapp/cloud-api/get-started";
 
@@ -181,8 +182,8 @@ function MetaForm({ onDone }: { onDone: (f: Flash) => void }) {
       body: JSON.stringify({ type: "meta", phoneNumberId: f.phoneNumberId, wabaId: f.wabaId, token: f.token }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({})) ?? {}) as { ok?: boolean; error?: string; number?: string };
     setBusy(false);
-    if (d.ok) { form.reset(); onDone({ ok: true, text: `Connected WhatsApp ${d.number ?? ""} · verified by Meta` }); }
-    else setErr(d.error ?? "Couldn't connect.");
+    if (d.ok) { form.reset(); onDone({ ok: true, text: `Connected WhatsApp ${d.number ?? ""} · verified by Meta` }); toast.success("WhatsApp connected", `${d.number ?? "Your number"} · verified by Meta.`); }
+    else { setErr(d.error ?? "Couldn't connect."); toast.error("Couldn't connect WhatsApp", d.error ?? "Check the details and try again."); }
   }
   return (
     <form className="ox-form" onSubmit={submit}>

@@ -20,7 +20,7 @@ import { liveDiscover, readResults, coveredCities, lastMapCenter, localPlace, re
 import { runScout, loadProfile, findUrl, type SellerProfile } from "./scout";
 import { listProfiles, getProfile, matchProfile, touchProfile, hostOf, defaultProfile, toSeller, type BusinessProfile } from "./business-profiles";
 import { makePlan, makeContactsPlan, makeMorePlan, COUNTRY_RE, NEAR_ME_RE, isCountryArea, type CompiledPlan, type PlanOutcome } from "./planner";
-import { startRun, STRATEGY_LABEL, segmentsOf, type Strategy } from "./runner";
+import { startRun, startRunChecked, STRATEGY_LABEL, segmentsOf, type Strategy } from "./runner";
 import { playbookById, SIGNALS } from "./playbooks";
 import { creditStatus } from "./credits";
 import { scopeBlock, type Block } from "./blocks";
@@ -163,7 +163,20 @@ export async function runV2Turn(input: {
       waitingBrief = brief;
       // "coimbatore" / "PARIS FRANCE" / "UK" here is the AREA (prod: it was saved as a business profile).
       const placeReply = !findUrl(input.message) && input.message.trim().split(/\s+/).length <= 4 && await answersPendingBrief("area", input.message);
-      const ans = placeReply ? { kind: "moved_on" as const } : await answerWhichBusiness(input.userEmail, input.message, step, askedNew, state.failedSite);
+      // "dentists" typed back at "which business?" is the trade they want, not their own business:
+      // plan it without a profile instead of asking again (prod 2026-11-03: asked twice, user left).
+      const tradeReply = !placeReply && askedNew && !findUrl(input.message) && input.message.trim().split(/\s+/).length <= 4
+        && !!resolveCategoryPhrase(input.message.trim()) && !/\b(i|we|my|our|mera|hum|hamara)\b/i.test(input.message);
+      if (tradeReply) {
+        const words = brief.toLowerCase();
+        state = { ...state, pendingProfileBrief: null, profileSkipped: true };
+        input = { ...input, action: { type: "plan", brief: words.includes(input.message.trim().toLowerCase()) ? brief : `${input.message.trim()} ${brief}`.slice(0, 300), skipProfile: true } };
+      }
+      // "Change Gigzman's profile: offering: SEO services" (the card's Edit button) names the business,
+      // so it read as picking it again: the edit was dropped and the same card re-shown after another
+      // ICP pass (prod 2026-11-05, Yashraj, twice). An edit goes to the assistant instead.
+      const profileEdit = !askedNew && !!state.businessProfileId && PROFILE_EDIT_RE.test(input.message);
+      const ans = placeReply || tradeReply || profileEdit ? { kind: "moved_on" as const } : await answerWhichBusiness(input.userEmail, input.message, step, askedNew, state.failedSite);
       if (placeReply) {
         state = { ...state, areaText: input.message.trim(), pendingProfileBrief: null };
         input = { ...input, action: { type: "plan", brief: `${brief.replace(/\s+(in|near)\s+[^,.]*$/i, "")} in ${input.message.trim()}` } };
@@ -262,6 +275,15 @@ export async function runV2Turn(input: {
         route = { ...route, type: "search" };
         turnType = "search";
       }
+      // "only ones who require SEO services" / "remove the ones scoring under 40" after a planned run:
+      // the same ask with the condition added. It became the old map search ("Showing 20 real estate
+      // agencies near Gurugram within 3 km") with masked names and no phones, so AI calls showed 0
+      // (prod 2026-11-05, Yashraj).
+      if (!replanBrief && route.type === "refine" && state.lastBrief && !route.areaText && !route.more && !route.widen) {
+        replanBrief = `${state.lastBrief.replace(/[.!?\s]+$/, "")} — ${input.message.trim().slice(0, 200)}`;
+        route = { ...route, type: "search" };
+        turnType = "search";
+      }
       if (SEARCH_TYPES.includes(route.type) && route.type !== "search") state = mergeSlots(state, route);
     }
 
@@ -344,12 +366,21 @@ export async function runV2Turn(input: {
       // "Run with my credits": shrink the planned run to what the balance pays for before it starts.
       if (act.count) await sql`UPDATE v2_runs SET target = LEAST(target, ${act.count}), plan = jsonb_set(plan, '{target}', to_jsonb(LEAST(target, ${act.count})))
                                WHERE id = ${act.runId} AND user_email = ${input.userEmail} AND status = 'planned'`;
-      const ok = await step("Starting the run", () => startRun(act.runId, input.userEmail));
-      payload = ok
-        ? { action: "search_leads", reply: t(state.lang, "Running it — progress and results are on the right.", "Chala raha hoon — progress aur results right side pe."), chips: [], runId: act.runId }
-        : { action: "answer_from_existing", reply: t(state.lang, "That plan has already run (or was replaced).", "Ye plan pehle hi chal chuka hai (ya badal gaya)."), chips: [] };
-    } else if (act?.type === "plan" || (route && PLAN_TYPES.includes(route.type)) || (route?.type === "contacts" && state.placeType)) {
+      const r = await step("Starting the run", () => startRunChecked(act.runId, input.userEmail), (x) => (x.ok ? `${x.target} leads` : x.reason));
+      payload = r.ok
+        ? { action: "search_leads", runId: act.runId, chips: [],
+            reply: r.cutFrom
+              ? t(state.lang, `Running it for **${r.target}** leads — what your credits cover (you asked for ${r.cutFrom}). Top up and tap Find more for the rest. Progress and results are on the right.`,
+                  `**${r.target}** leads ke liye chala raha hoon — itne hi aapke credits mein aate hain (aapne ${r.cutFrom} maange the). Top up karke Find more dabaiye. Progress right side pe.`)
+              : t(state.lang, "Running it — progress and results are on the right.", "Chala raha hoon — progress aur results right side pe.") }
+        : r.reason === "no_credits"
+          ? { action: "needs_clarification", chips: [{ label: t(state.lang, "Add credits", "Credits add karein"), action: { type: "open", href: "/settings/billing" } as ChatAction }],
+              reply: t(state.lang, `You have ${r.credits} credits — a lead costs ${CREDIT_COST.lead_unlock}, so this can't run yet. Add credits and tap Run this again.`,
+                `Aapke paas ${r.credits} credits hain — ek lead ${CREDIT_COST.lead_unlock} credits ka hai, isliye abhi run nahi ho sakta. Credits add karke dobara Run this dabaiye.`) }
+          : { action: "answer_from_existing", reply: t(state.lang, "That plan has already run (or was replaced).", "Ye plan pehle hi chal chuka hai (ya badal gaya)."), chips: [] };
+    } else if (act?.type === "plan" || (route && PLAN_TYPES.includes(route.type)) || route?.type === "contacts") {
       const brief = act?.type === "plan" ? act.brief : replanBrief ?? input.message;
+      if (act?.type === "plan" && act.skipProfile) state = { ...state, profileSkipped: true, pendingProfileBrief: null };
       const fromRunId = /^emails:([0-9a-f-]{36})$/i.exec(brief)?.[1];
       // Which business these leads are for: named in the message, chosen earlier in this chat, or
       // asked once. A contacts follow-up of an earlier run never asks — it continues that run.
@@ -365,9 +396,17 @@ export async function runV2Turn(input: {
       const allProfiles = await listProfiles(input.userEmail);
       const sells = route?.serviceText ? serviceOwner(allProfiles, route.serviceText) : null;
       const sellerInMessage = route?.type === "service_search" && !!route.serviceText && !sells && !matchProfile(allProfiles, input.message);
-      const pick = sells && !ownAsk ? { chosen: sells, ask: false, created: false } : ownAsk || sellerInMessage ? { chosen: null, ask: false, created: false } : fromRunId || route?.type === "contacts"
+      const pick = state.profileSkipped && !sells ? { chosen: null, ask: false, created: false }
+        : sells && !ownAsk ? { chosen: sells, ask: false, created: false } : ownAsk || sellerInMessage ? { chosen: null, ask: false, created: false } : fromRunId || route?.type === "contacts"
         ? { chosen: await chatOrDefault(input.userEmail, state), ask: false, created: false }
         : await pickBusiness({ email: input.userEmail, state, brief, message: act?.type === "plan" ? null : input.message, savedOnly: !!input.savedOnly, step });
+      // An ask that already names what to find ("gyms without a website"), from an account with no
+      // business saved and no onboarding website: plan it straight away. "Which business are these
+      // leads for?" was where these users left — 4 of the 7 stuck chats on 2026-11-05 ended on it.
+      if (!genericAsk && !ownAsk && !pick.chosen && !pick.failedSite && !sellerInMessage && !fromRunId && route?.type !== "contacts"
+        && !state.contextConfirmed && !state.profileSkipped && !input.savedOnly && !allProfiles.length && !(await onboardingWebsite(input.userEmail))) {
+        state = { ...state, profileSkipped: true, pendingProfileBrief: null };
+      }
       if (ownAsk) {
         state = ownAsk.state;
         payload = ownAsk.payload;
@@ -377,11 +416,11 @@ export async function runV2Turn(input: {
         payload = b2cAlert(pick.chosen, state.lang);
       } else if (pick.failedSite) {
         state = { ...state, failedSite: pick.failedSite, pendingProfileBrief: `new:${brief.slice(0, 290)}` };
-        payload = whichBusinessAsk(state.lang, hostOf(pick.failedSite) ?? pick.failedSite);
+        payload = whichBusinessAsk(state.lang, hostOf(pick.failedSite) ?? pick.failedSite, brief);
       } else if (pick.ask) {
         state = { ...state, pendingProfileBrief: brief.slice(0, 300) };
         payload = profileQuestion(await listProfiles(input.userEmail), brief.slice(0, 300), state.lang);
-      } else if (!input.savedOnly && !fromRunId && route?.type !== "contacts" && !state.contextConfirmed) {
+      } else if (!input.savedOnly && !fromRunId && route?.type !== "contacts" && !state.contextConfirmed && !state.profileSkipped) {
         // Client context first (the pitch-deck order): WHO these leads are for — business, offering,
         // buyers — is shown and confirmed before any scope, signal or pipeline is worked out.
         let target = pick.chosen;
@@ -401,17 +440,20 @@ export async function runV2Turn(input: {
           // saved: read the onboarding website, else ask for the business.
           const oa = await ownBusinessAsk({ email: input.userEmail, state: { ...state, businessProfileId: null }, brief, step });
           if (oa) { state = oa.state; payload = oa.payload; }
-          else { state = { ...state, pendingProfileBrief: `new:${brief.slice(0, 290)}` }; payload = whichBusinessAsk(state.lang, null); }
+          else { state = { ...state, pendingProfileBrief: `new:${brief.slice(0, 290)}` }; payload = whichBusinessAsk(state.lang, null, brief); }
         }
       } else {
         if (pick.chosen) { state = { ...state, businessProfileId: pick.chosen.id }; void touchProfile(pick.chosen.id); }
         if (pick.created && pick.chosen) profileNote = t(state.lang, `Saved **${pick.chosen.name}** as a new business profile.`, `**${pick.chosen.name}** ko nayi business profile mein save kar diya.`);
         // The confirmed offering narrows the seller to that one service, so the planner picks buyers and
         // signals for it rather than for everything the business sells.
-        const profile: SellerProfile | null = pick.chosen ? focusOffering(toSeller(pick.chosen), state.offering) : sellerInMessage ? null : await loadProfile(input.userEmail);
-        let outcome: PlanOutcome = route?.type === "contacts" || fromRunId
+        const profile: SellerProfile | null = pick.chosen ? focusOffering(toSeller(pick.chosen), state.offering) : sellerInMessage || state.profileSkipped ? null : await loadProfile(input.userEmail);
+        // "Dentist email list … Bangalore" with no earlier search is a NEW search that also reads
+        // contacts — it used to answer "Run a search first" (prod 2026-11-03).
+        const contactsOfEarlier = fromRunId || (route?.type === "contacts" && !!state.placeType && !!state.center);
+        let outcome: PlanOutcome = contactsOfEarlier
           ? await step("Planning contact search", () => makeContactsPlan({ chatId: input.chatId, userEmail: input.userEmail, state, fromRunId }))
-          : await step("Planning the run", () => makePlan({ chatId: input.chatId, userEmail: input.userEmail, message: brief, history, profile, state, savedOnly: input.savedOnly, here: hereNow }),
+          : await step("Planning the run", () => makePlan({ chatId: input.chatId, userEmail: input.userEmail, message: brief, history, profile, state, savedOnly: input.savedOnly, here: hereNow, signals: act?.type === "plan" ? act.signals : undefined }),
               (o) => (o.ok ? `${o.plan.steps.length} steps` : o.reason));
         // The seller said what they sell and the planner still found no buyers: think again with
         // the job spelled out, rather than ask them for a business they already described (round 3 ED12).
@@ -433,7 +475,7 @@ export async function runV2Turn(input: {
         // "which business?" because one planning attempt came back empty (round 4 EN08).
         if (!outcome.ok && outcome.reason === "no_trade" && !sellerInMessage && genericAsk && (!profile || (!profile.services.length && !profile.targetTrades.length)) && !input.savedOnly) {
           state = { ...state, pendingProfileBrief: `new:${brief.slice(0, 290)}` };
-          payload = whichBusinessAsk(state.lang, null);
+          payload = whichBusinessAsk(state.lang, null, brief);
         }
         if (!outcome.ok && outcome.reason === "no_area") state = { ...state, pendingBrief: brief.slice(0, 240) };
         if (outcome.ok && !fromRunId && route?.type !== "contacts") state = { ...state, lastBrief: brief.slice(0, 300) };
@@ -799,7 +841,7 @@ function profileFacts(b: BusinessProfile, L: Lang): string {
 }
 
 /** "Which business is yours?" when nothing is saved — the description becomes its profile. */
-function whichBusinessAsk(L: Lang, failedHost: string | null): Omit<V2Payload, "steps" | "tookMs" | "turnType" | "v2"> {
+function whichBusinessAsk(L: Lang, failedHost: string | null, brief?: string | null): Omit<V2Payload, "steps" | "tookMs" | "turnType" | "v2"> {
   const mapsLink = !!failedHost && /(^|\.)(goo\.gl|g\.page|google\.[a-z.]+)$/i.test(failedHost);
   const text = mapsLink
     ? t(L, "That's a Google Maps link, not a website, so there's nothing for me to read about what you sell. Paste your website, or tell me in one line what you sell and who buys it (e.g. \"Office interiors for IT companies in Gurgaon\").",
@@ -811,7 +853,13 @@ function whichBusinessAsk(L: Lang, failedHost: string | null): Omit<V2Payload, "
         "Ye leads kis business ke liye hain? Website paste karein, ya ek line mein bataiye ye kya bechta hai aur kaun kharidta hai — main ise business profile mein save karke search plan karunga.");
   return {
     action: "needs_clarification", reply: text, chips: [], blocks: [{ type: "markdown", text }],
-    clarification: { question: t(L, "Which business?", "Kaunsa business?"), options: [{ label: t(L, "Paste website or describe it", "Website paste karein ya batayein"), description: "e.g. acme.in", value: FOCUS_COMPOSER }] },
+    clarification: { question: t(L, "Which business?", "Kaunsa business?"), options: [
+      { label: t(L, "Paste website or describe it", "Website paste karein ya batayein"), description: "e.g. acme.in", value: FOCUS_COMPOSER },
+      // The question blocked new users who only wanted a list (prod 2026-11-03: "dentists" typed
+      // twice, the same question twice, gone). Skipping plans without a profile.
+      ...(brief?.trim() ? [{ label: t(L, "Skip — just find the leads", "Skip — bas leads dhoondo"), description: t(L, "Search without a business profile", "Business profile ke bina search"),
+        action: { type: "plan", brief: brief.replace(/^new:/, "").trim(), skipProfile: true } as ChatAction }] : []),
+    ] },
   };
 }
 
@@ -846,11 +894,11 @@ async function ownBusinessAsk(input: { email: string; state: ChatState; brief: s
       else failedHost = hostOf(site) ?? site;
       if (!usable) {
         // The one-line answer lands on this website's (empty) profile instead of a second one.
-        return { state: { ...input.state, failedSite: site, pendingProfileBrief: `new:${input.brief.slice(0, 290)}` }, payload: whichBusinessAsk(L, failedHost) };
+        return { state: { ...input.state, failedSite: site, pendingProfileBrief: `new:${input.brief.slice(0, 290)}` }, payload: whichBusinessAsk(L, failedHost, input.brief) };
       }
     }
   }
-  if (!profiles.length) return { state: { ...input.state, pendingProfileBrief: `new:${input.brief.slice(0, 290)}` }, payload: whichBusinessAsk(L, null) };
+  if (!profiles.length) return { state: { ...input.state, pendingProfileBrief: `new:${input.brief.slice(0, 290)}` }, payload: whichBusinessAsk(L, null, input.brief) };
   return { state: { ...input.state, pendingProfileBrief: input.brief.slice(0, 300) }, payload: profileQuestion(profiles, input.brief.slice(0, 300), L, justRead) };
 }
 
@@ -878,6 +926,9 @@ function contextCardPayload(b: BusinessProfile, brief: string, L: Lang, fresh: b
     ],
   };
 }
+
+/** A typed change to the business on the card, not a pick of it. */
+const PROFILE_EDIT_RE = /^\s*(change|edit|update)\b.*\bprofile\b|\b(add|remove|replace|change)\b.*\b(offering|service|buyers?|icp|customers?|area)s?\b|\b(offering|buyers?|icp)\s*:/i;
 
 /** A typed reply to a waiting Client context card that confirms it: yes, or one of its offerings. */
 async function cardAnswer(email: string, profileId: string, message: string): Promise<boolean> {

@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 import { signUnsubscribeToken } from "@/lib/unsubscribe-token";
 import { isUnsubscribed } from "@/lib/email-suppression";
 import { COMPANY } from "@/lib/company";
+import { streamConfig, type MailStream } from "@/lib/email/streams";
 
 /**
  * Sends one non-transactional message.
@@ -63,9 +64,22 @@ export type BulkSend = {
    *  credits depend on it — must set this or the answer goes to a mailbox nobody reads. Reply-To
    *  is not authenticated by SPF or DMARC, so it can name a different domain than From. */
   replyTo?: string | null;
+  /** Sends as one of Mantis's opt-in streams (lib/email/streams.ts): that stream's domain, its
+   *  configuration set and its AWS account, unless sender/configSet/replyTo are passed explicitly.
+   *  Omitted, the message goes out exactly as before, which is what cold outreach and the Stickly
+   *  and Dhando blasts rely on. */
+  via?: MailStream;
+  /** Images carried inside the message and referenced as src="cid:<cid>". Only for test sends from
+   *  a laptop, where an image URL on the app wouldn't resolve yet; real sends use hosted images. */
+  inlineImages?: Array<{ cid: string; contentType: string; data: Buffer }>;
 };
 
-export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; reason?: string }> {
+export async function sendBulkEmail(input: BulkSend): Promise<{ sent: boolean; reason?: string }> {
+  const route = input.via ? streamConfig(input.via) : null;
+  const msg: BulkSend = route
+    ? { ...input, sender: input.sender ?? route.from, configSet: input.configSet ?? route.configSet,
+        replyTo: input.replyTo ?? route.replyTo }
+    : input;
   if (await isUnsubscribed(msg.to, msg.stream)) {
     return { sent: false, reason: "unsubscribed" };
   }
@@ -100,6 +114,8 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
     const text = msg.text.replaceAll("{{unsubscribe_url}}", unsubUrl);
     const boundary = `--mantis-${sendId}`;
     const domain = new URL(COMPANY.site).hostname;
+    // Message-ID on the From domain, so the id and the DKIM signature name the same sender.
+    const idDomain = route?.domain ?? domain;
 
     const headers = [
       `From: ${msg.sender ?? SENDER}`,
@@ -107,7 +123,7 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
       `Subject: ${encodeHeader(msg.subject)}`,
       ...(msg.replyTo ? [`Reply-To: ${msg.replyTo}`] : []),
       `Date: ${new Date().toUTCString()}`,
-      `Message-ID: <${sendId}@${domain}>`,
+      `Message-ID: <${sendId}@${idDomain}>`,
       `MIME-Version: 1.0`,
       `List-Unsubscribe: <${unsubUrl}>, <mailto:unsubscribe@${domain}?subject=unsubscribe>`,
       `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
@@ -117,18 +133,22 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
       ...((msg.configSet ?? process.env.SES_CONFIGURATION_SET)
         ? [`X-SES-CONFIGURATION-SET: ${msg.configSet ?? process.env.SES_CONFIGURATION_SET}`]
         : []),
+      // Gmail groups complaint rates by this in Postmaster Tools, so a bad template shows up as
+      // itself instead of dragging the whole domain's numbers.
+      `Feedback-ID: ${msg.template.replace(/[^a-zA-Z0-9_-]/g, "_")}:${msg.campaignId}:${msg.stream}:mantis`,
       `X-Mantis-Campaign-Id: ${msg.campaignId}`,
       `X-Mantis-Step: ${msg.stepKey}`,
       // The dimensions SES splits its own open/click/bounce metrics on, so reporting lines up with
       // what's stored in email_sends rather than being a separate universe.
       `X-SES-MESSAGE-TAGS: campaign_id=${msg.campaignId}, stream=${msg.stream}, template=${msg.template.replace(/-/g, "_")}`,
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      msg.inlineImages?.length
+        ? `Content-Type: multipart/related; boundary="${boundary}-rel"`
+        : `Content-Type: multipart/alternative; boundary="${boundary}"`,
     ].join("\r\n");
 
     // Base64 rather than quoted-printable: the HTML has long lines and SMTP caps a line at 998
     // octets, and base64 wrapped at 76 can't trip that however the template changes.
-    const body = [
-      ``,
+    const alternative = [
       `--${boundary}`,
       `Content-Type: text/plain; charset=UTF-8`,
       `Content-Transfer-Encoding: base64`,
@@ -142,10 +162,34 @@ export async function sendBulkEmail(msg: BulkSend): Promise<{ sent: boolean; rea
       base64Body(html),
       ``,
       `--${boundary}--`,
-      ``,
-    ].join("\r\n");
+    ];
+    // With inline images the alternative part nests inside multipart/related, next to the images.
+    const related = `${boundary}-rel`;
+    const body = (msg.inlineImages?.length
+      ? [
+          ``,
+          `--${related}`,
+          `Content-Type: multipart/alternative; boundary="${boundary}"`,
+          ``,
+          ...alternative,
+          ``,
+          ...msg.inlineImages.flatMap((img) => [
+            `--${related}`,
+            `Content-Type: ${img.contentType}`,
+            `Content-Transfer-Encoding: base64`,
+            `Content-ID: <${img.cid}>`,
+            `Content-Disposition: inline`,
+            ``,
+            (img.data.toString("base64").match(/.{1,76}/g) ?? []).join("\r\n"),
+            ``,
+          ]),
+          `--${related}--`,
+          ``,
+        ]
+      : [``, ...alternative, ``]
+    ).join("\r\n");
 
-    const res = await ses.send(
+    const res = await (route?.client ?? ses).send(
       new SendRawEmailCommand({ RawMessage: { Data: Buffer.from(headers + "\r\n" + body, "utf-8") } })
     );
     await sql`UPDATE email_sends SET ses_message_id = ${res.MessageId ?? null} WHERE id = ${sendId}`;

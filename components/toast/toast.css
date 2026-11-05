@@ -1,0 +1,21 @@
+/* Toasts: a white card on a tinted panel, countdown underneath (Tarun's reference, 2026-11-04).
+   Top-left with a stronger tone (2026-11-05): the pale version vanished against the cream app background. */
+.tst-stack { position: fixed; left: 20px; top: 20px; z-index: 2147483000; display: flex; flex-direction: column; gap: 10px; width: min(420px, calc(100vw - 32px)); pointer-events: none; }
+.tst { --tone: #3b82f6; --tint: #eef4ff; pointer-events: auto; border-radius: 14px; padding: 8px 8px 6px; background: color-mix(in srgb, var(--tone) 22%, var(--tint)); border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent); box-shadow: 0 18px 40px -14px rgba(16, 18, 20, .45), 0 2px 6px rgba(16, 18, 20, .12); animation: tst-in .22s cubic-bezier(.2, .8, .3, 1); font-family: inherit; }
+.tst-success { --tone: #16a34a; --tint: #e9f8ee; }
+.tst-warning { --tone: #d97706; --tint: #fdf5e3; }
+.tst-error { --tone: #dc2626; --tint: #fdeeee; }
+.tst-card { display: flex; align-items: flex-start; gap: 10px; background: #fff; border-radius: 10px; padding: 10px 10px 10px 12px; box-shadow: inset 3px 0 0 var(--tone), 0 1px 2px rgba(16, 18, 20, .08); }
+.tst-icon { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--tone); margin-top: 1px; }
+.tst-text { flex: 1; min-width: 0; }
+.tst-text b { display: block; font-size: 13.5px; font-weight: 650; color: #101214; line-height: 1.35; }
+.tst-text p { margin: 2px 0 0; font-size: 12.5px; color: #667085; line-height: 1.45; overflow-wrap: anywhere; }
+.tst-act { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e5e8e2; border-radius: 7px; background: #fff; font: inherit; font-size: 12px; font-weight: 500; color: #101214; cursor: pointer; }
+.tst-act:hover { background: #f6f7f4; }
+.tst-x { flex: none; width: 26px; height: 28px; display: grid; place-items: center; border: 0; background: none; color: #667085; cursor: pointer; border-radius: 6px; }
+.tst-x:hover { background: #f2f3f0; color: #101214; }
+.tst-foot { text-align: center; font-size: 11.5px; color: #3f4650; padding: 6px 0 2px; }
+.tst-foot b { color: var(--tone); font-weight: 600; }
+@keyframes tst-in { from { opacity: 0; transform: translateY(-10px) scale(.98); } }
+@media (max-width: 520px) { .tst-stack { right: 16px; left: 16px; top: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .tst { animation: none; } }

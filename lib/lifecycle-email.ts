@@ -50,7 +50,7 @@ type Candidate = {
 };
 
 /** City from a Google-formatted Indian address: the component before the one carrying the PIN. */
-function cityFromAddress(address: string | null): string | null {
+export function cityFromAddress(address: string | null): string | null {
   if (!address) return null;
   const parts = address.split(",").map((p) => p.trim());
   const pinIndex = parts.findIndex((p) => /\b\d{6}\b/.test(p));
@@ -192,6 +192,7 @@ async function sendPartnership(user: Candidate, dryRun: boolean): Promise<Lifecy
     stepKey: "partnership_invite",
     template: "05-partnership-proposal",
     stream: "customer_offer",
+    via: "user",
   });
   return { email: user.email, step: "partnership_invite", sent: res.sent, reason: res.reason };
 }
@@ -239,6 +240,7 @@ async function sendReactivation(
       stepKey,
       template: "04-urgent-single-lead",
       stream: "lifecycle",
+      via: "user",
       leadId: top.id,
     });
     return { email: user.email, step: stepKey, sent: res.sent, reason: res.reason };
@@ -261,6 +263,7 @@ async function sendReactivation(
     stepKey,
     template: "02-15-urgent-leads",
     stream: "lifecycle",
+    via: "user",
   });
   return { email: user.email, step: stepKey, sent: res.sent, reason: res.reason };
 }

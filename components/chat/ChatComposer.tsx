@@ -14,8 +14,11 @@ export function ChatComposer({
   initialValue = "",
   autoFocus = false,
   disabled = false,
+  onStop,
 }: {
   onSubmit: (message: string) => void;
+  /** While an answer is on its way: the send button becomes Stop (ChatGPT-style) and calls this. */
+  onStop?: () => void;
   placeholder?: string;
   /** Pre-filled text, e.g. a starter from the New chat menu. */
   initialValue?: string;
@@ -95,9 +98,16 @@ export function ChatComposer({
         <button type="button" disabled title="Voice input (coming soon)" style={composerIconButton}>
           <MicIcon size={16} color="var(--g-gray-500)" />
         </button>
+        {disabled && onStop ? (
+          <button type="button" onClick={onStop} aria-label="Stop" title="Stop"
+            style={{ width: 34, height: 34, borderRadius: "50%", border: "none", background: "var(--g-ink)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <span aria-hidden style={{ width: 11, height: 11, borderRadius: 2, background: "currentColor" }} />
+          </button>
+        ) : (
         <button
           type="button"
           onClick={submit}
+          aria-label="Send"
           disabled={!value.trim() || disabled}
           style={{
             width: 34,
@@ -115,6 +125,7 @@ export function ChatComposer({
         >
           <ArrowRightIcon />
         </button>
+        )}
       </div>
     </div>
   );

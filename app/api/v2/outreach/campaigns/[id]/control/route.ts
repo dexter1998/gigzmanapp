@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const u = await v2User(); if (isResp(u)) return u;
   const { id } = await params;
   const { action } = (await req.json().catch(() => ({}))) as { action?: string };
-  if (action !== "pause" && action !== "resume" && action !== "stop") return NextResponse.json({ error: "bad_action" }, { status: 400 });
+  if (action !== "pause" && action !== "resume" && action !== "stop" && action !== "restart") return NextResponse.json({ error: "bad_action" }, { status: 400 });
   // Resuming starts sending again, so it sits behind the same plan gate as Approve. Pause and stop
   // never do, and must always work.
   if (action === "resume" && !(await hasActivePlan(u.email))) return NextResponse.json(PLAN_REQUIRED, { status: 402 });

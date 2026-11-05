@@ -10,16 +10,18 @@ import {
   Megaphone, ArrowUpRight, Check, FlaskConical, Sparkles, ArrowRight,
 } from "lucide-react";
 import "./inbox.css";
+import { CALL_OUTCOME } from "@/lib/v2/outreach/voiceShared";
+import { toast } from "@/components/toast/toast";
 
 type Touch = { n: number | null; channel: string; sentAt: string | null; subject: string | null; body: string | null };
 type Lead = { id: string; person: string | null; role: string | null; company: string | null; email: string | null; phone: string | null; area: string | null; industry: string | null; website: string | null };
 type M = {
   id: string; channel: string; from: string; fromName: string | null; subject: string | null; body: string; receivedAt: string; read: boolean;
-  sentiment: string | null; kind: string; test?: boolean; gmailUrl: string | null; campaignId: string | null; campaign: string | null;
+  sentiment: string | null; kind: string; test?: boolean; recording?: boolean; callOutcome?: string | null; callMeeting?: string | null; gmailUrl: string | null; campaignId: string | null; campaign: string | null;
   touch: Touch | null; lead: Lead | null; lastTouchAt: string | null; pending: number;
 };
 type Campaign = { id: string; name: string; status: string; audience: string | null; launchedAt: string | null; createdAt: string | null; touches: number; chatId: string | null };
-type Data = { messages: M[]; campaigns: Campaign[]; watching: Array<{ channel: string; provider: string; address: string }>; lastSynced: string | null };
+type Data = { messages: M[]; campaigns: Campaign[]; watching: Array<{ channel: string; provider: string; address: string }>; lastSynced: string | null; calling?: number };
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   interested: { label: "Interested", tone: "green" },
@@ -94,11 +96,20 @@ export function InboxPage() {
     const d = await (await fetch("/api/v2/outreach/inbox", { method: "POST" })).json().catch(() => ({}));
     const r = d.result;
     setSyncNote(!r ? "Sync failed" : r.errors?.length ? r.errors[0] : r.replies || r.bounces ? `+${r.replies} repl${r.replies === 1 ? "y" : "ies"}${r.bounces ? ` · ${r.bounces} bounced` : ""}` : null);
+    if (!r) toast.error("Sync failed", "Couldn't check your mailboxes. Please try again.");
+    else if (r.errors?.length) toast.warning("Some mailboxes didn't sync", r.errors[0]);
+    else toast.success("Inbox synced", r.replies || r.bounces ? `${r.replies} new repl${r.replies === 1 ? "y" : "ies"}${r.bounces ? `, ${r.bounces} bounced` : ""}.` : "No new replies.");
     setSyncing(false); setNow(Date.now()); load();
   }
   // Opening the Inbox checks the mailboxes once; after that it's the Sync button (and the cron).
   useEffect(() => { load(); const t = setTimeout(() => void sync(), 0); return () => clearTimeout(t); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
+  // An AI call still running lands here when it ends: check again every 15 s until it does.
+  useEffect(() => {
+    if (!data?.calling) return;
+    const t = setInterval(() => load(), 15_000);
+    return () => clearInterval(t);
+  }, [data?.calling]);
 
   const patchMsg = (id: string, p: Partial<M>) => setData((d) => d && { ...d, messages: d.messages.map((m) => (m.id === id ? { ...m, ...p } : m)) });
   const open = (m: M) => {
@@ -108,7 +119,8 @@ export function InboxPage() {
   async function setStatus(m: M, sentiment: string) {
     const prev = m.sentiment; patchMsg(m.id, { sentiment });
     const r = await fetch(`/api/v2/outreach/inbox/${m.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ sentiment }) }).catch(() => null);
-    if (!r?.ok) patchMsg(m.id, { sentiment: prev });
+    if (!r?.ok) { patchMsg(m.id, { sentiment: prev }); toast.error("Couldn't update the status", "Please try again."); }
+    else toast.success("Status updated");
   }
 
   const all = useMemo(() => data?.messages ?? [], [data]);
@@ -137,6 +149,10 @@ export function InboxPage() {
         </span>
       </header>
 
+      {!!data?.calling && (
+        <div className="ix-calling" role="status"><span className="ix-calling-dot" aria-hidden /><Phone size={14} />
+          {data.calling === 1 ? "An AI call is in progress" : `${data.calling} AI calls in progress`} — the summary and recording land here when it ends.</div>
+      )}
       <div className={`ix-body${mobileThread ? " ix-threadmode" : ""}`}>
       {data && !all.length ? (
         <div className="ix-empty">
@@ -196,6 +212,7 @@ export function InboxPage() {
                       <ChannelChip channel={m.touch?.channel ?? m.channel} n={m.touch?.n} />
                       <StatusChip m={m} />
                       {m.test && <i className="ix-chip test"><FlaskConical size={11} />Test</i>}
+                      {m.callOutcome && CALL_OUTCOME[m.callOutcome] && <i className={`ix-chip oc-${CALL_OUTCOME[m.callOutcome].tone}`}>{CALL_OUTCOME[m.callOutcome].label}</i>}
                     </span>
                     {m.campaign && <span className="ix-row-camp">Campaign: {m.campaign}</span>}
                   </span>
@@ -265,7 +282,8 @@ function usePause(m: M, onReload: () => void) {
     const r = await fetch(`/api/v2/outreach/inbox/${m.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "pause" }) }).catch(() => null);
     const d = r ? await r.json().catch(() => ({})) : {};
     setState(r?.ok ? `Paused · ${d.paused ?? 0} touch${d.paused === 1 ? "" : "es"} stopped` : "Couldn't pause");
-    if (r?.ok) onReload();
+    if (r?.ok) { onReload(); toast.success("Lead paused", `${d.paused ?? 0} queued touch${d.paused === 1 ? "" : "es"} stopped.`); }
+    else toast.error("Couldn't pause this lead", "Please try again.");
   }
   return { can, why, state, pause };
 }
@@ -351,6 +369,16 @@ function Conversation({ m, c, onStatus, onBack, onReload }: { m: M; c?: Campaign
         <div className="ix-msg theirs">
           <div className="ix-msg-head"><Avatar name={m.fromName ?? nameOf(m)} size={22} /><b>{m.fromName ?? nameOf(m)}</b><time>{when(m.receivedAt)}</time></div>
           <div className="ix-bubble">
+            {m.callOutcome && CALL_OUTCOME[m.callOutcome] && (
+              <div className={`ix-outcome oc-${CALL_OUTCOME[m.callOutcome].tone}`}>
+                <b>{CALL_OUTCOME[m.callOutcome].label}</b>{m.callMeeting && <span>· {m.callMeeting}</span>}
+              </div>
+            )}
+            {m.recording && (
+              <audio className="ix-audio" controls preload="none" src={`/api/v2/outreach/voice/recording/${m.id}`}>
+                <a href={`/api/v2/outreach/voice/recording/${m.id}`}>Download the recording</a>
+              </audio>
+            )}
             <div className="ix-bubble-body">{reply}</div>
           </div>
         </div>

@@ -156,9 +156,34 @@ export async function callTool(opts: {
     opts.agent
   );
   const block = data.content.find((c) => c.type === "tool_use");
-  if (block) return (block.input ?? {}) as Record<string, unknown>;
+  if (block) return unstringify((block.input ?? {}) as Record<string, unknown>, opts.tool);
   const text = data.content.filter((c) => c.type === "text").map((c) => c.text as string).join("\n").trim();
   return text ? { text } : {};
+}
+
+/**
+ * Kimi now and then sends an array or object argument as a JSON STRING ("touches": "[{…}]") —
+ * the campaign planner then saw no touches and showed its reply as an error (1 run in 4 locally,
+ * 2026-11-02). Where the schema says array/object and a string came, parse it.
+ */
+function unstringify(input: Record<string, unknown>, tool: ToolDef): Record<string, unknown> {
+  const props = ((tool.input_schema as { properties?: Record<string, { type?: string | string[] }> }).properties) ?? {};
+  const out = { ...input };
+  for (const [k, v] of Object.entries(out)) {
+    const t = props[k]?.type; const types = Array.isArray(t) ? t : t ? [t] : [];
+    if (typeof v !== "string" || !types.some((x) => x === "array" || x === "object") || !/^\s*[[{]/.test(v)) continue;
+    try { out[k] = JSON.parse(v); } catch {
+      // A raw newline inside a string value is the usual breakage; as a space it parses.
+      const flat = v.replace(/[\u0000-\u001f]+/g, " ");
+      try { out[k] = JSON.parse(flat); } catch {
+        // A run of whitespace until max_tokens cut the array short (seen 2026-11-02): keep every
+        // item that was finished.
+        const end = flat.lastIndexOf("}");
+        try { if (flat.trimStart().startsWith("[") && end > 0) out[k] = JSON.parse(`${flat.slice(0, end + 1)}]`); } catch { /* the caller's own checks reject it */ }
+      }
+    }
+  }
+  return out;
 }
 
 type Block = Record<string, unknown>;
@@ -189,7 +214,7 @@ export async function callAgent(opts: {
     if (text) thoughts.push(text);
     const uses = data.content.filter((c) => c.type === "tool_use");
     const fin = uses.find((u) => u.name === opts.final.name);
-    if (fin) return { input: (fin.input ?? {}) as Record<string, unknown>, trace, thought: thoughts.join("\n") };
+    if (fin) return { input: unstringify((fin.input ?? {}) as Record<string, unknown>, opts.final), trace, thought: thoughts.join("\n") };
     msgs.push({ role: "assistant", content: data.content });
     if (!uses.length) { msgs.push({ role: "user", content: `Now call ${opts.final.name}.` }); continue; }
     const results: Block[] = [];

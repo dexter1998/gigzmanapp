@@ -16,7 +16,7 @@ import { BUYER_SIZE_SCHEMA, DEFAULT_BUYER_SIZE, cleanBuyerSize, type BuyerSize }
 import { PLAYBOOKS, SIGNALS, catalogForPrompt, playbookById, playbookForSignal, type SignalId } from "./playbooks";
 import { resolveArea, localPlace, lastMapCenter, placeName } from "./search";
 import type { SellerProfile } from "./scout";
-import type { ChatState } from "./state";
+import { MAX_MORE, type ChatState } from "./state";
 import { pipelineId, NO_SITE_IMPLIES } from "./runner";
 import { chooseApproach, recordApproach } from "./orchestrator";
 import { cleanColumns, DEFAULT_COLUMNS, EXTRA_COLUMNS_SCHEMA, type ExtraColumn } from "./extras";
@@ -97,7 +97,7 @@ const TOOL = {
       tradeWords: { type: "array", items: { type: "string" }, description: "The trades in plain words as the user would say them ('logistics companies', 'freight forwarders', 'sterling silver jewellery importers'). Used for labels, web search and, if no place type fits, to match business names." },
       nameMustContain: { type: "array", items: { type: "string" }, description: "0-3 single words a business's NAME must contain to be what the user asked, when the place type is broader than the ask — ALWAYS set them when no place type means the trade exactly (coaching institutes → educational_institution holds driving schools and art galleries, so ['coaching','classes','academy']): 'silver jewellery makers' -> ['silver'] (jewelry_store also holds gold showrooms); 'sterling silver importers' -> ['silver','sterling']. EMPTY when the place type already means it (dentists, plumbers) or when names wouldn't show it (multispecialty hospitals, schools with admissions pages)." },
       areaText: { type: ["string", "null"], description: "City/area the USER named, in this message or earlier in this chat. Country-wide asks ('pan India', 'all over India', 'across India') → 'India'. Never take it from the seller profile — that is where the seller works, not where they want leads. Null if the user named none; the app will ask." },
-      target: { type: "number", description: "Exactly how many results they asked for ('just 3' = 3, '5 leads' = 5). Default 20 only when they named no number; max 50." },
+      target: { type: "number", description: "Exactly how many results they asked for ('just 3' = 3, '5 leads' = 5). Default 20 only when they named no number; max 500." },
       needContacts: { type: "boolean", description: "Whether to find emails from each business's website. Default TRUE — reading emails costs nothing; false only if the user said they don't need contacts." },
       assumptions: { type: ["string", "null"], description: "One short line naming defaults you chose (e.g. '20 results; read \"old website\" as copyright older than 2 years')." },
       cannotDo: { type: ["string", "null"], description: "Anything in the request this catalog cannot do (e.g. named HR heads, company size), one line. Null if all doable." },
@@ -154,6 +154,8 @@ export async function makePlan(input: {
   profile: SellerProfile | null; state: ChatState; savedOnly?: boolean;
   /** The device's location for "near me" asks (browser permission), exact. */
   here?: { lat: number; lng: number } | null;
+  /** The scope card's signal toggles: the required signals, exactly (an empty list = none). */
+  signals?: string[];
 }): Promise<PlanOutcome> {
   const profileText = input.profile
     ? `SELLER PROFILE: ${input.profile.summary} Business type: ${businessTypeById(input.profile.businessModel)?.label ?? "unknown"}; sells to ${input.profile.sellsTo ?? "unknown"}. Services: ${input.profile.services.join(", ")}. Targets: ${input.profile.targetTrades.join(", ")}.${input.profile.partnerTrades?.length ? ` Partners: ${input.profile.partnerTrades.join(", ")}.` : ""} Areas: ${input.profile.targetAreas.join(", ")}.`
@@ -171,7 +173,7 @@ export async function makePlan(input: {
     "When the user names the businesses they want (\"cafes in Indiranagar\", \"real estate developers\"), find exactly those. The seller profile then only helps choose which signals to read and which columns to show — never add a condition the user did not ask for (no 'raised funding' on a developers ask because the seller is a fundraising advisor), never swap in other trades, and never list a seller-specific signal as 'not possible'. Derive buyers from the profile only when the user asked for leads without naming them.",
     "Prefer sensible defaults over questions for trades and count (20 results unless asked). The area is the exception: use only a place the user named in this chat; if none, leave areaText null and the app asks.",
     "goal: when the user SELLS to them (importers, distributors, wholesale buyers, retailers who would stock their product), it is 'clients', not 'vendors'.",
-    "Default pipeline when the user just names businesses: find them, read each website for emails, hiring and the company LinkedIn (needContacts true). Any condition the user states about the business or its website goes in mustHave if a signal exists for it: 'with online booking' -> has_booking, 'online menus' -> has_menu, 'admissions pages' -> has_admissions, 'hiring' -> hiring, 'multiple branches' -> multi_location, 'no website listed' -> no_website, 'no Google Analytics' -> no_analytics, 'raised funding' -> funded, 'no Instagram' -> no_instagram. If no signal exists for a stated condition, say so in cannotDo.",
+    "Default pipeline when the user just names businesses: find them, read each website for emails, hiring and the company LinkedIn (needContacts true). Any condition the user states about the business or its website goes in mustHave if a signal exists for it: 'with online booking' -> has_booking, 'online menus' -> has_menu, 'admissions pages' -> has_admissions, 'hiring' -> hiring, 'multiple branches' -> multi_location, 'no website listed' / 'without a website' / 'no website' -> no_website, 'need / want / require SEO services', 'poor SEO', 'not ranking', 'website but no reach' -> seo_basics_missing (and no_blog when they mention content or blogs), 'incomplete Google profile' -> gbp_incomplete, 'no Google Analytics' -> no_analytics, 'raised funding' -> funded, 'no Instagram' -> no_instagram. If no signal exists for a stated condition, say so in cannotDo.",
     profileText, current, catalogForPrompt(),
   ].join("\n\n");
   const agent = await callAgent({
@@ -197,7 +199,10 @@ export async function makePlan(input: {
   const stated = statedSignals(input.message);
   const msgWords = new Set(input.message.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4));
   const mentioned = (sig: string) => sig in SIGNALS && SIGNALS[sig as SignalId].label.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4).some((w) => msgWords.has(w));
-  const mustHave = [...new Set([...stated, ...list(raw.mustHave).filter((x) => stated.includes(x as SignalId) || mentioned(x))])].filter((x): x is SignalId => x in SIGNALS).slice(0, 3);
+  // Signals picked on the scope card are the user's own choice: kept exactly, nothing re-added from
+  // the trade words ("website design leads" must stay no-website only, not "+ funded").
+  const mustHave = (input.signals ? input.signals : [...new Set([...stated, ...list(raw.mustHave).filter((x) => stated.includes(x as SignalId) || mentioned(x))])])
+    .filter((x): x is SignalId => x in SIGNALS).slice(0, 3);
   const playbookIds = list(raw.playbookIds).filter((id) => playbookById(id)).slice(0, 2);
   // "What the site offers" only earns its place when one of its signals was actually asked for.
   for (let k = playbookIds.length - 1; k >= 0; k--) {
@@ -321,7 +326,9 @@ export async function makePlan(input: {
   }
 
   // The count the user asked for, exactly — "just 3" is 3 (it used to be raised to 5).
-  const target = Math.max(1, Math.min(50, Math.round(typeof raw.target === "number" ? raw.target : 20)));
+  // Up to MAX_MORE in one plan, like "find more": the old 50 here turned an edited "500" scope into
+  // 50 (prod 2026-11-03, "i asked for 500 leads but got 50 only"). The quote shows the cost first.
+  const target = Math.max(1, Math.min(MAX_MORE, Math.round(typeof raw.target === "number" ? raw.target : 20)));
   const needContacts = raw.needContacts !== false;
   const books = playbookIds.map((id) => playbookById(id)!);
   const needsSite = needContacts || books.some((b) => b.signals.some((s) => SIGNALS[s].source === "site"));
@@ -379,7 +386,7 @@ export async function makePlan(input: {
       sizeNote(cleanBuyerSize(raw.buyerSize)),
     ].filter(Boolean).join(" ") || null,
     // "Has a website" is not a missing capability — website-signal plans only ever read sites that exist.
-    cannotDo: [conflictNote, typeof raw.cannotDo === "string" && !/has a website|have a website|with a website/i.test(raw.cannotDo) ? raw.cannotDo.slice(0, 200) : null].filter(Boolean).join(" ") || null,
+    cannotDo: [conflictNote, typeof raw.cannotDo === "string" && !/^\s*(null|none|n\/?a|nothing)?\s*\.?\s*$/i.test(raw.cannotDo) && !/has a website|have a website|with a website/i.test(raw.cannotDo) ? raw.cannotDo.slice(0, 200) : null].filter(Boolean).join(" ") || null,
     steps,
     extraColumns: planColumns(raw.extraColumns),
     // Upper bound: ~2 billed Places calls per trade; a repeat of an already-searched area is free.
@@ -565,6 +572,10 @@ async function strategyOrder(o: { hasTypes: boolean; hasAdjacent: boolean; hasWo
 
 /** Conditions the user wrote, mapped to signals by phrase — the floor under the model's mustHave. */
 const STATED: Array<[RegExp, SignalId]> = [
+  // "who need SEO services", "require SEO", "poor SEO", "not ranking", "website but no reach": the
+  // planner read these as the seller's service and left mustHave empty (prod 2026-11-05, Yashraj).
+  [/\b(need|needs|want|wants|require|requires|requiring|looking for)\b[^.]{0,25}\bseo\b|\b(poor|bad|weak|no|missing)\s+seo\b|\bnot\s+ranking\b|\bno\s+reach\b/i, "seo_basics_missing"],
+  [/\b(no|not|without|stopped|inactive)\b[^.]{0,25}\bblog/i, "no_blog"],
   [/\b(no|without|don'?t have|do not have|missing)\b[^.]{0,20}\bwebsite/i, "no_website"],
   [/(online\s*)?(booking|appointments?)\b(?![^.]{0,12}\b(no|without)\b)/i, "has_booking"],
   [/\b(online\s*)?menus?\b|\bonline\s*order/i, "has_menu"],

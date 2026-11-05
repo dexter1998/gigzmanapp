@@ -7,13 +7,13 @@
  */
 
 import { sql } from "@/lib/db";
+import { logSend } from "./sendlog";
 import { logOutcome } from "../learning";
 import { listLeads, type LmsLead } from "../lms";
 import { touchesOf, fill, emailHtml, type Graph } from "./graph";
 import { senderFor, sendEmail, sendWhatsApp } from "./senders";
-import { nextCallSlot, toE164, voiceConfigured } from "./voice";
+import { nextCallSlot, toE164, voiceConfigured, isIndianMobile, callWindowFor } from "./voice";
 import { dispatchVoiceCall, userInCall } from "./voiceCalls";
-import { hostedConfigured, testAgentConfigured } from "./hosted-voice";
 import { syncTemplatesFromGraph } from "./templates";
 import { WHATSAPP_LIVE, WHATSAPP_SOON_NOTE } from "./channels";
 import { hasActivePlan } from "@/lib/credits/plan";
@@ -64,10 +64,31 @@ export type CampaignView = {
   senderProfile: SenderProfile | null;
   /** The suggestion shown for confirmation (from the user's seller profile). */
   proposedProfile: SenderProfile;
+  /** The latest "Send test" AI call: ringing, then its result, summary and recording. */
+  testCall: TestCallView | null;
+  /** The planner is designing in the background (started under 5 minutes ago), or its last error. */
+  planning: boolean; planError: string | null;
 };
+export type TestCallView = { sendId: number; status: "calling" | "done" | "failed"; note: string | null; at: string; inboxId: string | null; summary: string | null; recording: boolean };
+
+/** The latest test call of a campaign, with the Inbox row it settled into. */
+export async function latestCampaignTestCall(id: string): Promise<TestCallView | null> {
+  const [r] = await sql`
+    SELECT s.id, s.status, s.status_note, s.due_at, s.recording AS send_rec, i.id AS inbox_id, i.body, i.recording AS inbox_rec
+    FROM v2_sends s LEFT JOIN v2_inbox i ON i.external_id = 'voice:' || s.external_id AND i.campaign_id = s.campaign_id
+    WHERE s.campaign_id = ${id} AND s.is_test AND s.channel = 'call' ORDER BY s.due_at DESC NULLS LAST LIMIT 1`;
+  if (!r) return null;
+  const status = r.status === "calling" || r.status === "sending" ? "calling" : r.status === "sent" ? "done" : "failed";
+  return {
+    sendId: Number(r.id), status, note: (r.status_note as string) ?? null, at: (r.due_at as Date | null)?.toISOString() ?? new Date().toISOString(),
+    inboxId: r.inbox_id ? String(r.inbox_id) : null, summary: r.body ? String(r.body).slice(0, 600) : null, recording: !!(r.inbox_rec || r.send_rec),
+  };
+}
 export { type SenderProfile, proposedProfileFor, cleanSenderProfile } from "./sender-profile";
 import { type SenderProfile, proposedProfileFor, cleanSenderProfile } from "./sender-profile";
-export type CampaignStats = { recipients: number; queued: number; sent: number; opened: number; replied: number; bounced: number; skipped: number; nextDue: string | null };
+export type CampaignStats = { recipients: number; queued: number; sent: number; opened: number; replied: number; bounced: number; skipped: number; nextDue: string | null;
+  /** Per LEAD, not per send (120 leads × 3 touches read as "345 queued"): reached at least once, still to be reached, never reachable. */
+  leads: { total: number; reached: number; waiting: number; unreachable: number } };
 
 async function stats(id: string): Promise<CampaignStats> {
   const [s] = await sql`
@@ -78,7 +99,14 @@ async function stats(id: string): Promise<CampaignStats> {
       count(*) FILTER (WHERE status = 'skipped')::int AS skipped,
       min(due_at) FILTER (WHERE status IN ('queued','scheduled')) AS next_due
     FROM v2_sends WHERE campaign_id = ${id} AND NOT is_test`;
-  return { ...s, nextDue: s.next_due?.toISOString() ?? null } as CampaignStats;
+  const [l] = await sql`
+    SELECT count(*)::int AS total,
+      count(*) FILTER (WHERE reached)::int AS reached,
+      count(*) FILTER (WHERE NOT reached AND pending)::int AS waiting,
+      count(*) FILTER (WHERE NOT reached AND NOT pending)::int AS unreachable
+    FROM (SELECT result_id, bool_or(status = 'sent' OR outcome IS NOT NULL) AS reached, bool_or(status IN ('queued','scheduled','sending','calling')) AS pending
+          FROM v2_sends WHERE campaign_id = ${id} AND NOT is_test GROUP BY result_id) x`;
+  return { ...s, nextDue: s.next_due?.toISOString() ?? null, leads: l } as CampaignStats;
 }
 
 export async function getCampaign(email: string, id: string): Promise<CampaignView | null> {
@@ -100,6 +128,10 @@ export async function getCampaign(email: string, id: string): Promise<CampaignVi
     previewValues: list ? await previewValuesFor(email, list.chatId) : null,
     senderProfile: cleanSenderProfile(c.sender_profile),
     proposedProfile: await proposedProfileFor(email, c.id as string),
+    testCall: await latestCampaignTestCall(id),
+    // A planner that died with the server never clears planning_since: 5 minutes is the cut-off.
+    planning: !!c.planning_since && (c.planning_since as Date).getTime() > Date.now() - 5 * 60_000,
+    planError: (c.plan_error as string | null) ?? null,
   };
 }
 
@@ -211,7 +243,7 @@ export async function testCampaign(email: string, id: string, to: TestContacts, 
       if (!voiceConfigured()) { out.push({ touch: n, channel: "call", to: to.mobile ?? null, ok: false, note: "Voice not set up" }); continue; }
       if (!mobile) { out.push({ touch: n, channel: "call", to: to.mobile ?? null, ok: false, note: "No mobile given" }); continue; }
       if (out.some((x) => x.channel === "call" && x.ok)) { out.push({ touch: n, channel: "call", to: mobile, ok: false, note: "Skipped", detail: "One test call per test." }); continue; }
-      if (await userInCall(email)) { out.push({ touch: n, channel: "call", to: mobile, ok: false, note: "Busy", detail: "Another AI call is in progress — test again when it ends." }); continue; }
+      if (await userInCall(email)) { out.push({ touch: n, channel: "call", to: mobile, ok: false, note: "Busy", detail: "One of your AI calls is on the line right now (a campaign call or another test) — test again in a few minutes." }); continue; }
       // A test send row lets the result callback settle (and bill) the test call like any other.
       const [row] = await sql`INSERT INTO v2_sends (campaign_id, result_id, node_id, channel, to_address, due_at, status, is_test)
         VALUES (${id}, ${Number(leads[0]?.id ?? 0)}, ${t.nodeId}, 'call', ${mobile}, now(), 'sending', true)
@@ -219,13 +251,11 @@ export async function testCampaign(email: string, id: string, to: TestContacts, 
         RETURNING id`;
       const d = await dispatchVoiceCall(email, { id: row.id, campaign_id: id, result_id: Number(leads[0]?.id ?? 0), node_id: t.nodeId, to_address: mobile },
         { skill: node.data.voice.skill, brief: body, values: vals as Record<string, string>, redirectPhone: mobile, test: true });
-      if (d.status === "calling") await sql`UPDATE v2_sends SET status = 'calling', external_id = ${d.sessionId ?? null} WHERE id = ${row.id}`;
+      if (d.status === "calling") await sql`UPDATE v2_sends SET status = 'calling', external_id = ${d.sessionId ?? null}, due_at = now() WHERE id = ${row.id}`;
       else await sql`UPDATE v2_sends SET status = 'failed', status_note = ${d.note} WHERE id = ${row.id}`;
       const calling = d.status === "calling";
       out.push({ touch: n, channel: "call", to: mobile, ok: calling, note: calling ? "Calling now" : "Failed", from: "Mantis AI voice",
-        detail: !calling ? d.note : hostedConfigured() && testAgentConfigured()
-          ? "Your phone rings now — a short test call that plays this touch in brief and asks what you think. The summary lands in Inbox."
-          : "Your phone rings now — the AI agent runs this touch on you." });
+        detail: !calling ? d.note : "Your phone rings now — the AI agent pitches you exactly as it will pitch a lead. The summary and the recording land in Inbox when the call ends." });
     }
   }
   // Only a test that actually reached the user counts — a run of "No mailbox" failures used to unlock Approve.
@@ -233,7 +263,14 @@ export async function testCampaign(email: string, id: string, to: TestContacts, 
   return out;
 }
 
-export type Schedule = { startAt: string | null; from: string; to: string; days: number[]; dailyCap: number; tz: "Asia/Kolkata" };
+export type Schedule = { startAt: string | null; from: string; to: string; days: number[]; dailyCap: number; tz: "Asia/Kolkata";
+  /** Seconds between two AI calls (chosen at Approve, 30 s to 1 h). The next call is dialled this
+   *  long after the previous one ends; callGapMin is the older minutes-only form. */
+  callGapSec?: number; callGapMin?: number };
+
+/** The campaign's gap between AI calls, in seconds. */
+export const callGapOf = (s: Partial<Schedule> | null | undefined) =>
+  Math.max(30, Math.min(3600, Number(s?.callGapSec) || (Number(s?.callGapMin) || 5) * 60));
 
 /** IST send window: the next allowed instant at or after `t`. */
 function nextInWindow(t: Date, s: Schedule): Date {
@@ -278,12 +315,15 @@ export async function approveCampaign(email: string, id: string, s: Schedule): P
       // Best contact per channel: emails are tier-ordered; calls prefer a mobile and never dial a
       // toll-free line; WhatsApp only ever goes to a mobile.
       const callTo = (l.phones ?? []).find((ph) => ph.kind === "mobile") ?? (l.phones ?? []).find((ph) => ph.kind !== "tollfree");
+      // The AI agent dials mobiles only: a landline is a reception desk or a dead line, and the dial
+      // just hangs (prod 2026-11-02: "Prime Collection", 020 7081 4175, sat "on the line" 10 min).
+      const mobile = (l.phones ?? []).find((ph) => ph.kind === "mobile")?.e164 ?? (isIndianMobile(toE164(l.phone)) ? toE164(l.phone) : null);
       const addr = t.channel === "email" ? l.emails[0]
         : t.channel === "whatsapp" ? (l.whatsapp ?? null)
-        : aiCall ? (callTo?.e164 ?? toE164(l.phone)) : (callTo?.number ?? l.phone);
+        : aiCall ? mobile : (callTo?.number ?? l.phone);
       let due = nextInWindow(new Date(start.getTime() + (t.offsetDays + dayShift) * 86_400_000 + (li % perDay) * 90_000), s);
-      // AI calls also keep to the India calling window, and are spaced so one runs at a time.
-      if (aiCall) due = nextCallSlot(new Date(due.getTime() + (li % perDay) * 4 * 60_000));
+      // AI calls: one every callGap from the start, inside this campaign's calling window.
+      if (aiCall) due = nextCallSlot(new Date(start.getTime() + (t.offsetDays + dayShift) * 86_400_000 + (li % perDay) * callGapOf(s) * 1000), callWindowFor(s));
       // WhatsApp is coming soon: its touches are recorded as skipped so the campaign still reads
       // honestly (and the rest of the sequence goes out), but nothing is queued on that channel.
       const waOff = t.channel === "whatsapp" && !WHATSAPP_LIVE;
@@ -291,18 +331,31 @@ export async function approveCampaign(email: string, id: string, s: Schedule): P
       await sql`
         INSERT INTO v2_sends (campaign_id, result_id, node_id, channel, to_address, due_at, status, status_note)
         VALUES (${id}, ${Number(l.id)}, ${t.nodeId}, ${t.channel}, ${addr ?? null}, ${due}, ${status},
-                ${waOff ? WHATSAPP_SOON_NOTE : !addr ? `no ${t.channel === "email" ? "email" : "phone"} for this lead` : !SENDING_ON ? "waiting — live sending is switched off here" : null})
-        ON CONFLICT (campaign_id, result_id, node_id, is_test) DO UPDATE SET due_at = EXCLUDED.due_at, status = EXCLUDED.status, status_note = EXCLUDED.status_note`;
+                ${waOff ? WHATSAPP_SOON_NOTE : !addr ? (aiCall && l.phone ? "only a landline — AI calls go to mobiles" : `no ${t.channel === "email" ? "email" : "phone"} for this lead`) : !SENDING_ON ? "waiting — live sending is switched off here" : null})
+        ON CONFLICT (campaign_id, result_id, node_id, is_test) DO UPDATE SET due_at = EXCLUDED.due_at, status = EXCLUDED.status, status_note = EXCLUDED.status_note,
+          call_attempt = 0, outcome = NULL, external_id = NULL
+        -- A restarted campaign never repeats a touch that already went out or was answered.
+        WHERE v2_sends.status NOT IN ('sent', 'calling') AND v2_sends.replied_at IS NULL`;
       if (addr && !waOff) queued++; else skipped++;
       if (addr && !waOff && t === touches[0]) void logOutcome({ userEmail: email, event: "queued_in_campaign", resultId: Number(l.id), campaignId: id, channel: t.channel });
     }
   }
+  await logSend(id, null, "campaign", `Approved — ${queued} sends queued, ${skipped} skipped (no contact on that channel, or landline only for AI calls)`);
   await sql`UPDATE v2_campaigns SET status = ${start > new Date(Date.now() + 60_000) ? "scheduled" : "running"}, approved_at = now(),
             schedule = ${sql.json(s as unknown as Parameters<typeof sql.json>[0])}, updated_at = now() WHERE id = ${id}`;
   return { queued, skipped };
 }
 
-export async function controlCampaign(email: string, id: string, action: "pause" | "resume" | "stop") {
+export async function controlCampaign(email: string, id: string, action: "pause" | "resume" | "stop" | "restart") {
+  // Restart: a stopped or finished campaign goes back to editable (Tested), to be changed and
+  // approved again; approving skips every lead a touch already reached (Tarun, 2026-11-02).
+  if (action === "restart") {
+    const r = await sql`UPDATE v2_campaigns SET status = CASE WHEN test_sent_at IS NULL THEN 'draft' ELSE 'testing' END, approved_at = NULL, updated_at = now()
+              WHERE id = ${id} AND user_email = ${email} AND status = 'done' RETURNING id`;
+    if (r.length) await logSend(id, null, "campaign", "Restarted — back to editing");
+    return;
+  }
+  await logSend(id, null, "campaign", action === "pause" ? "Paused" : action === "resume" ? "Resumed" : "Stopped — queued sends cancelled");
   const next = action === "pause" ? "paused" : action === "resume" ? "running" : "done";
   await sql`UPDATE v2_campaigns SET status = ${next}, updated_at = now() WHERE id = ${id} AND user_email = ${email}
             AND status IN ('running','scheduled','paused')`;

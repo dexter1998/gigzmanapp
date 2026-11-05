@@ -16,6 +16,7 @@ import "../../compact.css";
 import {
   SetupShell, SetupStep, ConnectedList, PoolTable, FlashBar, useOutreachData, useReturnFlash, SupportLink, type Flash,
 } from "./shared";
+import { toast } from "@/components/toast/toast";
 
 export type EmailMethod = "gmail" | "outlook" | "smtp" | "mantis";
 
@@ -135,8 +136,8 @@ function SmtpForm({ preset, outlook, onDone }: { preset?: Preset; outlook?: bool
         imapHost: f.imapHost, imapPort: Number(f.imapPort), secure: Number(f.port) === 465 }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({})) ?? {}) as { ok?: boolean; error?: string };
     setBusy(false);
-    if (d.ok) { form.reset(); onDone({ ok: true, text: `Connected ${f.address} · login verified` }); }
-    else setErr(d.error ?? "Couldn't connect.");
+    if (d.ok) { form.reset(); onDone({ ok: true, text: `Connected ${f.address} · login verified` }); toast.success("Mailbox connected", `${f.address} · login verified.`); }
+    else { setErr(d.error ?? "Couldn't connect."); toast.error("Couldn't connect the mailbox", d.error ?? "Check the details and try again."); }
   }
   return (
     <form className="ox-form" onSubmit={submit}>

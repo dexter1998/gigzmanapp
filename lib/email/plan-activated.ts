@@ -10,12 +10,10 @@ import { COMPANY } from "@/lib/company";
  * so the unique index on (recipient, campaign_id, step_key) makes a re-run or a retried request a
  * no-op rather than a second congratulations.
  *
- * Named mantis-transactional explicitly. This is the same trap that cost the partner send its
- * event tracking: SES_CONFIGURATION_SET is set in the App Runner environment, so anything invoked
- * from a script on a laptop sends with no configuration set and therefore no bounce or complaint
- * feedback at all.
+ * Sent on the user stream, which names its configuration set itself. That matters: anything that
+ * relied on SES_CONFIGURATION_SET from the App Runner environment sent with no configuration set,
+ * and so no bounce or complaint feedback, whenever it ran from a script on a laptop.
  */
-const CONFIG_SET = "mantis-transactional";
 
 /** Admin plan ids are lowercase; nobody wants to read "your starter plan is active". */
 function planLabel(plan: string): string {
@@ -70,6 +68,6 @@ export async function sendPlanActivated(opts: {
     stepKey: `plan-activation:${opts.grantId}`,
     template: "plan_activated",
     stream: "lifecycle",
-    configSet: CONFIG_SET,
+    via: "user",
   });
 }

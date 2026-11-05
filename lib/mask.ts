@@ -7,3 +7,11 @@ export function maskName(name: string): string {
   const head = first.slice(0, 3);
   return `${head}${"•".repeat(Math.max(3, first.length - 3))}`;
 }
+
+/** Like maskName, but keeps a short title ("Dr.", "Sri", "The") whole and masks the word after it,
+ *  so "Dr. Sharma Dental" reads "Dr. Sha•••" rather than the meaningless "Dr•••". */
+export function maskBusinessName(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length > 1 && words[0].replace(/\./g, "").length <= 3) return `${words[0]} ${maskName(words.slice(1).join(" "))}`;
+  return maskName(name);
+}

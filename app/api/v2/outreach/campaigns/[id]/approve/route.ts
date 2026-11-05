@@ -4,6 +4,7 @@ import { v2User, isResp } from "../../../_auth";
 import { approveCampaign, getCampaign, PlanRequiredError, type Schedule } from "@/lib/v2/outreach/campaigns";
 import { hasActivePlan, PLAN_REQUIRED } from "@/lib/credits/plan";
 import { publicError } from "@/lib/v2/public";
+import { drainQueue } from "@/lib/v2/outreach/worker";
 
 /**
  * Approve → every lead × touch is queued inside the send window.
@@ -22,10 +23,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     from: hhmm(b.from, "09:30"), to: hhmm(b.to, "18:30"),
     days: Array.isArray(b.days) && b.days.length ? b.days.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7) : [1, 2, 3, 4, 5, 6],
     dailyCap: Math.max(5, Math.min(500, Number(b.dailyCap) || 40)), tz: "Asia/Kolkata",
+    callGapSec: Math.max(30, Math.min(3600, Math.round(Number(b.callGapSec) || 300))),
   };
   try {
     const r = await approveCampaign(u.email, id, s);
     trackEvent(u.email, EV.campaignApprove, { campaign_id: id });
+    // Whatever is due goes now, not at the next 5-minute cron tick ("call chlaya and call chli bhi nhi",
+    // 2026-11-03). One AI call at most — the worker's own per-tick rule.
+    await drainQueue({ campaignId: id, limit: 10 }).catch(() => null);
     return NextResponse.json({ ...r, campaign: await getCampaign(u.email, id) });
   } catch (err) {
     if (err instanceof PlanRequiredError) return NextResponse.json(PLAN_REQUIRED, { status: 402 });

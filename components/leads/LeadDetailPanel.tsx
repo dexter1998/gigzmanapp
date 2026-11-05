@@ -5,6 +5,8 @@ import { HeatGauge } from "@/components/HeatGauge";
 import { StarIcon, LockIcon, GlobeIcon, ClockIcon, PhoneIcon, MailIcon } from "@/components/icons";
 import { formatCategory } from "@/lib/categories";
 import type { Lead } from "./LeadsTable";
+import { toast } from "@/components/toast/toast";
+import { isDailyUnlockLimit, showDailyUnlockLimit } from "@/components/toast/unlock-limit";
 
 type Enrichment = {
   status: "not_started" | "pending" | "starting_instance" | "scraping" | "done" | "failed";
@@ -76,12 +78,19 @@ export function LeadDetailPanel({ lead, onUnlocked }: { lead: Lead | null; onUnl
     if (!lead) return;
     setUnlocking(true);
     try {
-      const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: "POST" });
-      if (res.status === 402) {
+      const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: "POST" }).catch(() => null);
+      if (res && isDailyUnlockLimit(res)) {
+        showDailyUnlockLimit(((await res.json().catch(() => ({}))) as { limit?: number }).limit);
+        return;
+      }
+      if (res?.status === 402) {
+        toast.warning("Action needed to continue", "You're out of credits for this unlock.");
         window.dispatchEvent(new Event("gigzman:open-plans"));
         return;
       }
+      if (!res?.ok) { toast.error("Couldn't unlock this lead", "Please try again."); return; }
       window.dispatchEvent(new Event("gigzman:credits-changed"));
+      toast.success("Lead unlocked", `${lead.business_name}'s contact details are yours.`);
       onUnlocked();
     } finally {
       setUnlocking(false);

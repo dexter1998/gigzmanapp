@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast/toast";
 import { FOCUS_COMPOSER } from "@/lib/chat-clarifications";
 import { ChatComposer } from "./ChatComposer";
 import { ChatLeadsTable, type ChatLead } from "./ChatLeadsTable";
@@ -49,6 +50,7 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
   const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
   const [sending, setSending] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const [thinkingSec, setThinkingSec] = useState(0);
   const [otherDraft, setOtherDraft] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
@@ -192,6 +194,8 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
       ...prev,
       { id: `local-${Date.now()}`, role: "user", content: displayText, intent: null, created_at: new Date().toISOString() },
     ]);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       const text = sendValue ?? displayText;
       const here = NEAR_ME.test(text) && !/\blast\s+(searched\s+)?(area|location|place)\b/i.test(text) ? await deviceLocation() : null;
@@ -199,15 +203,26 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: text, action, ...(here ? { here } : {}) }),
+        signal: ctrl.signal,
       });
-      const { message: assistantMessage } = (await res.json()) as { message: Message };
+      // A gateway cut (App Runner's 120 s) answers 502/504 while the server keeps going and still
+      // saves its reply: wait for that reply instead of leaving the turn with nothing.
+      const assistantMessage = res.ok ? ((await res.json()) as { message: Message }).message : await awaitSavedReply(chatId, ctrl.signal);
+      if (!assistantMessage) { setMessages((prev) => [...prev, { id: `local-fail-${Date.now()}`, role: "assistant", content: "That took too long and didn't come back. Ask again — it usually works the second time.", intent: null, created_at: new Date().toISOString() }]); return; }
       setMessages((prev) => [...prev, assistantMessage]);
       if (assistantMessage.intent?.apiDown) setShowMaintenance(true);
+    } catch (err) {
+      // Stop pressed: the thread says so (the server keeps the same line).
+      if ((err as Error).name === "AbortError") {
+        setMessages((prev) => [...prev, { id: `local-stop-${Date.now()}`, role: "assistant", content: "Stopped. Tell me what to change, or ask again.", intent: null, created_at: new Date().toISOString() }]);
+      } else throw err;
     } finally {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (abortRef.current === ctrl) abortRef.current = null;
       setSending(false);
     }
   }
+  const stop = () => abortRef.current?.abort();
 
   async function setFeedback(messageId: string, feedback: "up" | "down") {
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, feedback: m.feedback === feedback ? null : feedback } : m)));
@@ -399,7 +414,7 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
             </div>
           </div>
         )}
-        <ChatComposer onSubmit={send} disabled={sending} placeholder="Ask a follow-up…" />
+        <ChatComposer onSubmit={send} disabled={sending} onStop={stop} placeholder="Ask a follow-up…" />
       </div>
     </div>
   );
@@ -430,12 +445,21 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
           working={sending}
           workingSec={thinkingSec}
           onControl={controlRun}
-          onFindMore={run && run.status !== "running" && run.status !== "paused" ? () => send("Find more leads like these", undefined, { type: "more_run", runId: run.id }) : undefined}
-          onQuickOutreach={run && (run.status === "done" || run.status === "stopped") && run.delivered > 0 ? async () => {
-            // The chat's list goes straight into the builder; the planner starts drafting there.
-            const d = (await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" },
-              body: JSON.stringify({ listChatId: chatId, origin: "chat", kind: "sequence" }) })).json()) as { id?: string };
-            if (d.id) router.push(`/campaigns/${d.id}`);
+          // Delivered leads are outreach-ready while the run still checks the rest (prod 2026-11-05: a run
+          // left "running" with 20 delivered kept AI Voice Call switched off).
+          onQuickOutreach={run && run.delivered > 0 ? async (pick) => {
+            // The chat's list goes straight into the builder. A new multi-channel sequence gets its
+            // channels handed to the planner, which drafts in the background while the builder opens.
+            const r = await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ listChatId: chatId, origin: "chat", kind: pick.kind }) }).catch(() => null);
+            const d = ((await r?.json().catch(() => null)) ?? {}) as { id?: string; existing?: boolean; message?: string };
+            if (!d.id) { toast.error("Couldn't open the campaign", d.message ?? "Please try again."); return; }
+            if (!d.existing && pick.kind === "sequence" && pick.channels.length) {
+              const names = { email: "email", whatsapp: "WhatsApp", call: "AI voice call" } as const;
+              void fetch(`/api/v2/outreach/campaigns/${d.id}/plan`, { method: "POST", headers: { "content-type": "application/json" },
+                body: JSON.stringify({ message: `Use only these channels: ${pick.channels.map((c) => names[c]).join(", ")}.` }) }).catch(() => {});
+            }
+            router.push(`/campaigns/${d.id}`);
           } : undefined}
           onRefresh={() => {
             if (sourceRunId) fetch(`/api/v2/runs/${sourceRunId}`).then((r) => r.json()).then((d: { run?: RunSnapshot }) => d.run && setRun(d.run)).catch(() => {});
@@ -444,6 +468,18 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
       )}
     </div>
   );
+}
+
+/** Polls the chat for the assistant reply the server saves after a cut request; null after ~4 min. */
+async function awaitSavedReply(chatId: string, signal: AbortSignal): Promise<Message | null> {
+  // The user's message is saved before the turn runs, so the chat ends on it until the reply lands.
+  for (let i = 0; i < 48 && !signal.aborted; i++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    const d = (await fetch(`/api/chats/${chatId}`, { signal }).then((r) => r.json()).catch(() => null)) as { messages?: Message[] } | null;
+    const last = d?.messages?.at(-1);
+    if (last?.role === "assistant") return last;
+  }
+  return null;
 }
 
 /** Narrowest chat column that still reads well, and the table's narrowest width with every column. */

@@ -2,7 +2,9 @@
 import { sql } from "@/lib/db";
 import { finalizeVoiceCall } from "@/lib/v2/outreach/voiceCalls";
 (async () => {
-  const [c] = await sql`SELECT id FROM v2_campaigns WHERE user_email = 'test@mantisai.in' ORDER BY created_at DESC LIMIT 1`;
+  const [c] = await sql`SELECT id, status FROM v2_campaigns WHERE user_email = 'test@mantisai.in' ORDER BY created_at DESC LIMIT 1`;
+  // The loop only redials for a live campaign: run as one, then put the status back.
+  await sql`UPDATE v2_campaigns SET status = 'running' WHERE id = ${c.id}`;
   const leads = await sql`SELECT id FROM v2_results ORDER BY id DESC LIMIT 3`;
   const show = async (id: number, label: string) => {
     const [r] = await sql`SELECT status, call_attempt, outcome, to_char(due_at AT TIME ZONE 'Asia/Kolkata','Dy DD Mon HH24:MI') due, to_char(callback_at AT TIME ZONE 'Asia/Kolkata','Dy DD Mon HH24:MI') cb, replied_at IS NOT NULL replied, status_note FROM v2_sends WHERE id = ${id}`;
@@ -41,5 +43,6 @@ import { finalizeVoiceCall } from "@/lib/v2/outreach/voiceCalls";
   // clean up the simulation rows
   await sql`DELETE FROM v2_inbox WHERE external_id LIKE 'voice:sim-%'`;
   await sql`DELETE FROM v2_sends WHERE campaign_id = ${c.id} AND node_id LIKE 'sim-%'`;
+  await sql`UPDATE v2_campaigns SET status = ${c.status} WHERE id = ${c.id}`;
   process.exit(0);
 })();

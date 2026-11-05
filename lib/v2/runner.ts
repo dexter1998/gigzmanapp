@@ -85,12 +85,34 @@ export type RunSnapshot = {
 
 type RunRow = { id: string; chat_id: string; user_email: string; kind: string; plan: CompiledPlan; status: string; target: number };
 
+/**
+ * Start a planned run — only for as many leads as the balance pays for. Billing happens per delivered
+ * lead at the end, so a 500-lead run on 500 credits used to start, read 2,000 businesses and then
+ * drop 400 of them (and once, through a Stop race, deliver all 500 unbilled — prod 2026-11-04).
+ * Now: a target above what the credits cover is cut to it before the run starts, and a balance that
+ * covers no lead does not start the run at all.
+ */
 export async function startRun(runId: string, userEmail: string): Promise<boolean> {
+  const r = await startRunChecked(runId, userEmail);
+  return r.ok;
+}
+
+export type StartResult = { ok: true; target: number; cutFrom: number | null } | { ok: false; reason: "not_planned" | "no_credits"; credits: number };
+
+export async function startRunChecked(runId: string, userEmail: string): Promise<StartResult> {
+  const [p] = await sql`SELECT credits FROM user_profiles WHERE email = ${userEmail}`;
+  const credits = Number(p?.credits ?? 0);
+  const affordable = Math.floor(credits / CREDIT_COST.lead_unlock);
+  const [run] = await sql`SELECT target FROM v2_runs WHERE id = ${runId} AND user_email = ${userEmail} AND status = 'planned'`;
+  if (!run) return { ok: false, reason: "not_planned", credits };
+  if (affordable < 1) return { ok: false, reason: "no_credits", credits };
+  const target = Math.min(Number(run.target), affordable);
   const rows = await sql`
-    UPDATE v2_runs SET status = 'running', started_at = now()
+    UPDATE v2_runs SET status = 'running', started_at = now(), target = ${target}, plan = jsonb_set(plan, '{target}', to_jsonb(${target}::int))
     WHERE id = ${runId} AND user_email = ${userEmail} AND status = 'planned' RETURNING id
   `;
-  return rows.length > 0;
+  if (!rows.length) return { ok: false, reason: "not_planned", credits };
+  return { ok: true, target, cutFrom: target < Number(run.target) ? Number(run.target) : null };
 }
 
 export async function tickRun(runId: string, userEmail: string): Promise<RunSnapshot | null> {
@@ -177,7 +199,8 @@ async function runStep(run: RunRow, step: { id: number; op: string; input: Recor
     const strategy = (typeof step.input.strategy === "string" ? step.input.strategy : "primary") as Strategy;
     const kws = (Array.isArray(step.input.keywords) ? (step.input.keywords as string[]) : plan.nameHints ?? []).filter((k) => /^[a-z]{3,20}$/.test(k));
     const keywordRe = kws.length ? `\\m(${kws.join("|")})` : null;
-    const cap = siteRun ? Math.min(400, plan.target * 15) : Math.min(200, plan.target * 4);
+    // Read enough of the pool for the target: 200 capped a 500-lead run at a few hundred candidates.
+    const cap = siteRun ? Math.min(2000, plan.target * 15) : Math.min(2000, plan.target * 4);
 
     if (strategy === "funding_news") {
       const n = await collectFromFunding(run, plan, Math.min(60, plan.target * 2));
@@ -587,6 +610,15 @@ async function rankResults(runId: string, plan: CompiledPlan): Promise<{ kept: n
   await sql`UPDATE v2_results SET rank = NULL WHERE run_id = ${runId}`;
   for (const [i, r] of top.entries()) await sql`UPDATE v2_results SET score = ${r.score}, rank = ${i + 1} WHERE id = ${r.id}`;
   await sql`UPDATE v2_runs SET delivered = ${top.length} WHERE id = ${runId}`;
+  // A rank that lands after the run finished (a tick still in flight when Stop was pressed) is
+  // billed here: finishRun had already charged for the 0 ranked then, and 500 leads went out free
+  // (prod 2026-11-04, a 500-credit account holding 600 leads). Charging skips what was paid and
+  // drops what the balance can't cover.
+  const [st] = await sql`SELECT id, chat_id, user_email, kind, plan, status, target FROM v2_runs WHERE id = ${runId}`;
+  if (st && (st.status === "done" || st.status === "stopped")) {
+    const billed = await chargeDelivered(st as unknown as RunRow);
+    if (billed.dropped) return { kept: top.length - billed.dropped, total: rows.length, reachable: top.filter((r) => r.reachable).length, segShort };
+  }
   return { kept: top.length, total: rows.length, reachable: top.filter((r) => r.reachable).length, segShort };
 }
 
@@ -1398,8 +1430,10 @@ export async function controlRun(runId: string, userEmail: string, action: "paus
   if (action === "resume") await sql`UPDATE v2_runs SET status = 'running' WHERE id = ${runId} AND user_email = ${userEmail} AND status = 'paused'`;
   let summaryMessage: Record<string, unknown> | null = null;
   if (action === "stop") {
+    // Taken over with a short lock first: a tick still in flight must not run its own rank step
+    // after this one (the race that delivered a stopped run's leads unbilled).
     const [run] = await sql`
-      UPDATE v2_runs SET status = 'running' WHERE id = ${runId} AND user_email = ${userEmail} AND status IN ('running', 'paused')
+      UPDATE v2_runs SET status = 'running', locked_until = now() + interval '2 minutes' WHERE id = ${runId} AND user_email = ${userEmail} AND status IN ('running', 'paused')
       RETURNING id, chat_id, user_email, kind, plan, status, target`;
     if (run) {
       await sql`UPDATE v2_run_steps SET status = 'skipped', detail = coalesce(detail, 'stopped by you'), ended_at = now()

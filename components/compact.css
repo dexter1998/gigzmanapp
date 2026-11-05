@@ -37,3 +37,75 @@
 .cp-retry label { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
 .cp-retry select { font: inherit; padding: 2px 6px; border: 1px solid var(--g-border); border-radius: 6px; background: var(--g-white); }
 .cp-retry .cp-check input { margin: 0; }
+
+/* Canvas "+ Add step" (n8n node picker) and the editor's remove action. */
+.ox-addstep { position: absolute; top: 14px; right: 14px; z-index: 6; }
+.ox-addstep-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 999px; border: 1px solid #b9dcb0; background: var(--g-white, #fff); color: #22662d; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(30, 60, 20, .08); transition: background .15s, transform .12s; }
+.ox-addstep-btn:hover { background: #f3faef; }
+.ox-addstep-btn:active { transform: scale(.97); }
+.ox-addstep-btn:focus-visible { outline: 2px solid #2f9e44; outline-offset: 2px; }
+.ox-addstep-menu { position: absolute; top: calc(100% + 8px); right: 0; width: 264px; padding: 6px; border-radius: 12px; border: 1px solid var(--g-border, #e4e3db); background: var(--g-white, #fff); box-shadow: 0 12px 32px rgba(20, 24, 16, .14); animation: v2-fadein .14s ease-out both; }
+.ox-addstep-where { padding: 6px 8px 8px; font-size: 11.5px; color: var(--g-gray-500, #7b7d73); text-transform: uppercase; letter-spacing: .04em; }
+.ox-addstep-item { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 8px; border: none; border-radius: 8px; background: none; text-align: left; font: inherit; color: var(--g-ink, #1d1f1a); cursor: pointer; }
+.ox-addstep-item:hover, .ox-addstep-item:focus-visible { background: #f6f5ef; outline: none; }
+.ox-addstep-item > span:last-child { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ox-addstep-item b { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.ox-addstep-item em { font-style: normal; font-size: 12px; color: var(--g-gray-500, #7b7d73); }
+.ox-addstep-ic { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #eef2fb; color: #3557b7; }
+.ox-addstep-item.k-call .ox-addstep-ic { background: #e3f4dd; color: #22662d; }
+.ox-addstep-item.k-whatsapp .ox-addstep-ic { background: #e6f6ec; color: #128c4a; }
+.ox-remove { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 6px; padding: 7px 11px; border-radius: 8px; border: 1px solid #f0d4d0; background: #fff; color: #b3261e; font: inherit; font-size: 13px; cursor: pointer; }
+.ox-remove:hover { background: #fdf2f1; }
+.cp-loop { display: block; font-size: 11.5px; line-height: 1.45; color: #22662d; background: #f3faef; border-radius: 6px; padding: 5px 8px; }
+
+/* Live calls panel (left of the canvas while a calling campaign runs). */
+.ox-ai-tabs { display: flex; gap: 4px; padding: 10px 12px 8px; border-bottom: 1px solid var(--g-border, #e4e3db); }
+.ox-ai-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: none; background: none; font: inherit; font-size: 13px; color: var(--g-gray-500, #7b7d73); cursor: pointer; }
+.ox-ai-tabs button.on { background: #e3f4dd; color: #22662d; font-weight: 600; }
+.lc-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+.lc-tally { display: flex; flex-wrap: wrap; gap: 6px; }
+.lc-tally span { padding: 4px 9px; border-radius: 999px; background: #f1f0e9; font-size: 12px; color: #55574f; }
+.lc-tally span.g { background: #e3f4dd; color: #22662d; } .lc-tally span.r { background: #fdecea; color: #a8261d; }
+.lc-tally b { font-weight: 700; margin-right: 2px; }
+.lc-sec h4 { margin: 0 0 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--g-gray-500, #7b7d73); display: flex; gap: 6px; }
+.lc-sec h4 span { font-weight: 500; }
+.lc-now { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; border: 1px solid #b9dcb0; background: #f3faef; }
+.lc-ring { position: relative; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #2f9e44; color: #fff; }
+.lc-ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #2f9e44; animation: tc-ring 1.4s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lc-ring::after { animation: none; } }
+.lc-who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lc-who b { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-who em { font-style: normal; font-size: 11.5px; color: var(--g-gray-500, #7b7d73); }
+.lc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lc-list > li { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-top: 1px solid #f0f0ea; }
+.lc-list > li:first-child { border-top: none; }
+.lc-list time { flex: none; font-size: 11.5px; color: var(--g-gray-500, #7b7d73); }
+.lc-done { flex-direction: column; align-items: stretch !important; }
+.lc-row { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: none; padding: 0; font: inherit; text-align: left; color: inherit; cursor: pointer; }
+.lc-oc { flex: none; font-style: normal; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.lc-oc.green { background: #e3f4dd; color: #22662d; } .lc-oc.amber { background: #fdf3dc; color: #8a5a00; }
+.lc-oc.red { background: #fdecea; color: #a8261d; } .lc-oc.grey { background: #f1f0e9; color: #55574f; }
+.lc-more { padding: 6px 0 2px; display: flex; flex-direction: column; gap: 6px; }
+.lc-more p { margin: 0; font-size: 12px; color: var(--g-ink-soft, #45473f); }
+.lc-more audio { width: 100%; height: 32px; }
+.lc-empty { margin: 0; font-size: 12.5px; color: var(--g-gray-500, #7b7d73); }
+.lc-inbox { align-self: flex-start; }
+.lc-nowbox { display: flex; flex-direction: column; gap: 6px; }
+.lc-wait { margin: 0; padding: 6px 9px; border-radius: 8px; background: #fdf8ee; color: #8a5a00; font-size: 11.5px; line-height: 1.45; }
+.lc-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.lc-log li { display: grid; grid-template-columns: 62px 1fr; gap: 6px; padding: 4px 0 4px 8px; border-left: 2px solid #e4e3db; color: var(--g-ink-soft, #45473f); line-height: 1.4; }
+.lc-log time { color: var(--g-gray-500, #7b7d73); font-variant-numeric: tabular-nums; font-size: 11px; padding-top: 1px; }
+.lc-log li.k-dial { border-left-color: #2f9e44; } .lc-log li.k-outcome { border-left-color: #3557b7; }
+.lc-log li.k-failed, .lc-log li.k-skipped { border-left-color: #d9534f; } .lc-log li.k-deferred, .lc-log li.k-retry { border-left-color: #e0a526; }
+.lc-log li.k-campaign { border-left-color: #1d1f1a; font-weight: 600; } .lc-log li.k-call_status { border-left-color: #8a8c83; }
+.lc-log.mini li { grid-template-columns: 56px 1fr; font-size: 11.5px; }
+.lc-touches { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--g-ink-soft, #45473f); padding: 8px 10px; border-radius: 8px; background: #f6f5ef; }
+.lc-touches b { font-weight: 600; margin-right: 4px; }
+.v2-lms-actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ox-gap { display: flex; flex-direction: column; gap: 6px; }
+.ox-stepper { display: inline-flex; align-items: center; align-self: flex-start; border: 1px solid var(--g-border, #e4e3db); border-radius: 999px; overflow: hidden; background: #fff; }
+.ox-stepper button { width: 36px; height: 34px; border: none; background: none; font: inherit; font-size: 18px; color: var(--g-ink, #1d1f1a); cursor: pointer; }
+.ox-stepper button:hover:not(:disabled) { background: #f3faef; color: #22662d; }
+.ox-stepper button:disabled { color: #c0c1b8; cursor: default; }
+.ox-stepper output { min-width: 104px; text-align: center; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; border-left: 1px solid #f0f0ea; border-right: 1px solid #f0f0ea; padding: 0 8px; line-height: 34px; }
+.lc-pos { flex: none; width: 20px; font-size: 11px; color: var(--g-gray-500, #7b7d73); font-variant-numeric: tabular-nums; text-align: right; }

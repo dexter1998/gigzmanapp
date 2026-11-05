@@ -14,6 +14,7 @@ import "../compact.css";
 import { VARIABLES, touchesOf } from "@/lib/v2/outreach/graph";
 import { EmailPreview, WhatsAppPreview, CallPreview, looksHtml } from "./Previews";
 import { KINDS, uploadImage, type Kind, type Tpl } from "./TemplatesPage";
+import { toast } from "@/components/toast/toast";
 
 type Draft = { id?: string; kind: Kind; name: string; subject: string; body: string; isHtml: boolean; mediaUrl: string | null };
 
@@ -53,14 +54,16 @@ export function TemplateEditor({ id, kind: newKind }: { id: string | null; kind:
     if (!d.name.trim()) { setNote("Name required"); return; }
     setState("saving"); setNote(null);
     const r = await (await fetch("/api/v2/outreach/templates", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(d) })).json().catch(() => ({}));
-    if (!r.template) { setState("idle"); setNote(r.error ?? "Couldn't save."); return; }
-    setDirty(false); setState("saved");
+    if (!r.template) { setState("idle"); setNote(r.error ?? "Couldn't save."); toast.error("Couldn't save the template", r.error ?? "Please try again."); return; }
+    setDirty(false); setState("saved"); toast.success("Template saved", `“${d.name.trim()}” is up to date.`);
     if (!d.id) router.replace(`/templates/${r.template.id}`);
     setD((x) => ({ ...x, id: r.template.id }));
   }
   async function remove() {
     if (!d.id || !confirm("Delete this template? Campaigns keep their own copy.")) return;
-    await fetch(`/api/v2/outreach/templates?id=${d.id}`, { method: "DELETE" });
+    const r = await fetch(`/api/v2/outreach/templates?id=${d.id}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) { toast.error("Couldn't delete the template", "Please try again."); return; }
+    toast.success("Template deleted");
     router.push("/templates");
   }
   function insertVar(key: string) {
@@ -121,8 +124,9 @@ export function TemplateEditor({ id, kind: newKind }: { id: string | null; kind:
                 </ol>
                 <p className="cp-hint" title="Sequences are edited inside a campaign. Start one from this sequence to change it."><Info size={13} /> Edit inside a campaign</p>
                 <button type="button" className="v2-btn primary" onClick={async () => {
-                  const r = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ templateId: d.id, name: d.name }) })).json();
-                  if (r.id) router.push(`/campaigns/${r.id}`);
+                  const r = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ templateId: d.id, name: d.name }) })).json().catch(() => ({}));
+                  if (r.id) { toast.success("Campaign created", `Started from “${d.name}”.`); router.push(`/campaigns/${r.id}`); }
+                  else toast.error("Couldn't create the campaign", r.error ?? "Please try again.");
                 }}>Use in campaign <ArrowRight size={15} /></button>
               </>
             ) : (

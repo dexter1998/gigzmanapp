@@ -3,6 +3,10 @@ import { trackEvent, EV } from "@/lib/events";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { creditCost } from "@/lib/credits/pricing";
+import { hasActivePlan } from "@/lib/credits/plan";
+
+/** Map unlocks a free account gets per IST day; more needs a credit pack (an active plan). */
+const FREE_DAILY_UNLOCKS = 5;
 
 /**
  * "Add to leads" — spends credits (priced in lib/credits/pricing.ts) and reveals full contact
@@ -35,6 +39,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     SELECT id FROM unlocks WHERE lead_id = ${id} AND unlocked_by = ${userEmail}
   `;
   if (alreadyUnlocked) return NextResponse.json({ unlocked: true, alreadyUnlocked: true, credits });
+
+  if (!(await hasActivePlan(userEmail))) {
+    const [{ n }] = await sql`
+      SELECT count(*)::int AS n FROM unlocks
+      WHERE unlocked_by = ${userEmail}
+        AND unlocked_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`;
+    if (n >= FREE_DAILY_UNLOCKS) {
+      return NextResponse.json({ error: "daily_unlock_limit", limit: FREE_DAILY_UNLOCKS, credits }, { status: 429 });
+    }
+  }
 
   if (credits < cost) {
     return NextResponse.json({ error: "insufficient_credits", credits, required: cost }, { status: 402 });

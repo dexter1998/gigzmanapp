@@ -31,7 +31,7 @@ Input variables (all "include in context"):
 
 | name | meaning | example |
 |---|---|---|
-| `agent_name` | what the caller calls herself | Chinki |
+| `agent_name` | what the caller calls herself | Neha |
 | `caller_company` | who the call is on behalf of (campaign "sending as") | Gigzman |
 | `followup_with` | the human who follows up | Tarun from Gigzman |
 | `offer_name` | what is offered / asked about | SEO |

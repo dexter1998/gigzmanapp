@@ -20,10 +20,11 @@ export async function POST(req: NextRequest) {
   const kind = (["sequence", "quick_email", "quick_whatsapp", "quick_call"].includes(String(b.kind)) ? b.kind : "sequence") as CampaignKind;
   if (kind === "quick_whatsapp" && !WHATSAPP_LIVE) return NextResponse.json({ error: "whatsapp_coming_soon", message: "WhatsApp is coming soon." }, { status: 400 });
   // Quick Outreach on a chat that already has its campaign opens that campaign — a second tap (or
-  // coming back to the chat later) used to create a fresh draft every time.
+  // coming back to the chat later) used to create a fresh draft every time. Per kind: a Bulk email
+  // pick must not reopen the chat's earlier sequence.
   if (b.origin === "chat" && isUuid(b.listChatId)) {
     const [existing] = await sql`
-      SELECT id FROM v2_campaigns WHERE user_email = ${u.email} AND list_chat_id = ${b.listChatId} AND origin = 'chat' AND status <> 'done'
+      SELECT id FROM v2_campaigns WHERE user_email = ${u.email} AND list_chat_id = ${b.listChatId} AND origin = 'chat' AND kind = ${kind} AND status <> 'done'
       ORDER BY (status IN ('running','scheduled','paused')) DESC, (test_sent_at IS NOT NULL) DESC,
                (jsonb_array_length(coalesce(graph->'nodes', '[]'::jsonb)) > 0) DESC, updated_at DESC LIMIT 1`;
     if (existing) return NextResponse.json({ id: existing.id, existing: true, planError: null });

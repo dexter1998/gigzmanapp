@@ -13,6 +13,7 @@ import "../sending-as.css";
 import { VOICE_SKILLS, CALL_WINDOW, EST_MINUTES_PER_CALL, MIN_MINUTES_BALANCE } from "@/lib/v2/outreach/voiceShared";
 import { CREDIT_COST } from "@/lib/credits/pricing";
 import { SetupShell, SetupStep, useOutreachData, SupportLink } from "./shared";
+import { toast } from "@/components/toast/toast";
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function dayRange(days: number[]) {
@@ -149,7 +150,8 @@ function TestCallCard({ ready }: { ready: boolean }) {
     const r = await fetch("/api/v2/outreach/voice/test-call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: f.phone, name: f.name }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({})) ?? {}) as { ok?: boolean; call?: TestCall; error?: string };
     setBusy(false);
-    if (d.ok && d.call) setCall(d.call); else setErr(d.error ?? "Couldn't place the call.");
+    if (d.ok && d.call) { setCall(d.call); toast.success("Calling you now", "Pick up — the summary and recording land in Inbox."); }
+    else { setErr(d.error ?? "Couldn't place the call."); toast.error("Couldn't place the call", d.error ?? "Please try again."); }
   }
 
   const can = ready && info?.ready !== false;

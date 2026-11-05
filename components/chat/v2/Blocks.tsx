@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { SlidersHorizontal, Pencil, Store, MapPin, ScanSearch, CircleCheck, Contact, Check, Target, Map as MapIcon, Globe, Filter, Coins, ArrowDown, X, AlertTriangle, Play, Building2, Package, Users, ArrowLeftRight, Lightbulb } from "lucide-react";
+import { SlidersHorizontal, Pencil, Store, MapPin, ScanSearch, CircleCheck, Contact, Check, Target, Map as MapIcon, Globe, Filter, Coins, ArrowDown, AlertTriangle, Play, Building2, Package, Users, ArrowLeftRight, Lightbulb } from "lucide-react";
 import type { Block, ScopeBlock, ContextBlock } from "@/lib/v2/blocks";
 import type { ChatAction } from "@/lib/v2/state";
 import { Markdown } from "./Markdown";
@@ -27,6 +27,8 @@ export function Blocks({ blocks, onSend, onViewRun, startedRunIds }: { blocks: B
 }
 
 const STEP_ICON = [MapIcon, Globe, Filter];
+/** The planner keeps at most three required signals. */
+const MAX_SIGNALS = 3;
 
 /** "Search scope": what Mantis understood, as a card the user can edit and re-run. */
 function ScopeCard({ b, onSend, onViewRun, started }: { b: ScopeBlock; onSend: Send; onViewRun?: () => void; started: boolean }) {
@@ -37,11 +39,14 @@ function ScopeCard({ b, onSend, onViewRun, started }: { b: ScopeBlock; onSend: S
   const [signals, setSignals] = useState(b.signals.map((s) => s.id));
   const [contacts, setContacts] = useState(b.contacts.length > 0);
 
+  // Older cards carry no options: the plan's own signals are the only toggles then.
+  const options = b.signalOptions?.length ? b.signalOptions : b.signals.map((s) => ({ ...s, label: s.label.replace(/ · \d+ of \d+$/, "") }));
+
   function rerun() {
-    const sig = b.signals.filter((s) => signals.includes(s.id)).map((s) => s.label.toLowerCase());
+    const sig = options.filter((s) => signals.includes(s.id)).map((s) => s.label.toLowerCase());
     const brief = `Find ${target} ${industry} in ${geo}${sig.length ? ` that have: ${sig.join(", ")}` : ""}${contacts ? ", with emails and company LinkedIn" : ", no contacts needed"}`;
     setEdit(false);
-    onSend(`Edit scope: ${target} ${industry} in ${geo}${sig.length ? ` · ${sig.join(", ")}` : ""}`, undefined, { type: "plan", brief });
+    onSend(`Edit scope: ${target} ${industry} in ${geo}${sig.length ? ` · ${sig.join(", ")}` : " · no signal filter"}`, undefined, { type: "plan", brief, signals });
   }
 
   return (
@@ -57,21 +62,38 @@ function ScopeCard({ b, onSend, onViewRun, started }: { b: ScopeBlock; onSend: S
           {edit ? <input value={geo} onChange={(e) => setGeo(e.target.value)} aria-label="Geography" /> : <b>{b.geography}</b>}</div>
       </div>
 
-      {b.signals.length > 0 && (
+      {edit ? (
+        // Editing: every offered signal is a toggle. What is picked here is exactly what the run
+        // filters on — nothing is added back from the trade words (Tarun, 2026-11-02).
+        <div className="blk-box blk-sigpick">
+          <div className="blk-box-head"><ScanSearch size={16} /> <b>Signals</b>
+            <span className={`blk-pill${signals.length ? " green" : ""}`}>{signals.length ? `${signals.length} of ${MAX_SIGNALS} picked` : "Any business"}</span></div>
+          <div className="blk-sigpick-grid" role="group" aria-label="Signals to require">
+            {options.map((s) => {
+              const on = signals.includes(s.id);
+              const full = !on && signals.length >= MAX_SIGNALS;
+              return (
+                <button type="button" key={s.id} aria-pressed={on} disabled={full} className={`blk-sigopt${on ? " on" : ""}`}
+                  title={full ? `Up to ${MAX_SIGNALS} signals — remove one first` : s.detail}
+                  onClick={() => setSignals(on ? signals.filter((x) => x !== s.id) : [...signals, s.id])}>
+                  <span className="blk-sigopt-box" aria-hidden>{on && <Check size={12} strokeWidth={3} />}</span>
+                  <span className="blk-sigopt-text"><b>{s.label}</b><em>{s.detail}</em></span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="blk-fine">{signals.length > 1 ? "Each signal is its own reason to qualify — results are split between them." : signals.length ? "Every result will have this signal." : "No signal: businesses of this type, ranked by fit."}</p>
+        </div>
+      ) : b.signals.length > 0 && (
         <div className="blk-box">
           <div className="blk-box-head"><ScanSearch size={16} /> <b>Website signals</b><span className="blk-pill">Filters</span></div>
-          {b.signals.map((s) => {
-            const on = signals.includes(s.id);
-            return (
-              <div key={s.id} className={`blk-sig${on ? "" : " off"}`}>
-                <CircleCheck size={17} className="blk-sig-icon" />
-                <span><b>{s.label}</b><em>{s.detail}</em></span>
-                {edit
-                  ? <button type="button" className="blk-pill" onClick={() => setSignals(on ? signals.filter((x) => x !== s.id) : [...signals, s.id])}>{on ? <><X size={12} /> Remove</> : "Add back"}</button>
-                  : <span className="blk-pill green">Required</span>}
-              </div>
-            );
-          })}
+          {b.signals.map((s) => (
+            <div key={s.id} className="blk-sig">
+              <CircleCheck size={17} className="blk-sig-icon" />
+              <span><b>{s.label}</b><em>{s.detail}</em></span>
+              <span className="blk-pill green">Required</span>
+            </div>
+          ))}
           <p className="blk-fine" title="Absence is only marked when the website could be read; pages that didn't load stay unverified.">Unreadable sites stay unverified</p>
         </div>
       )}
@@ -89,7 +111,7 @@ function ScopeCard({ b, onSend, onViewRun, started }: { b: ScopeBlock; onSend: S
       <div className="blk-box">
         <div className="blk-target"><Target size={22} />
           <span><em>Target results</em>{edit
-            ? <input type="number" min={5} max={50} value={target} onChange={(e) => setTarget(Math.max(5, Math.min(50, Number(e.target.value) || 20)))} aria-label="Target" />
+            ? <input type="number" min={5} max={500} value={target} onChange={(e) => setTarget(Math.max(5, Math.min(500, Number(e.target.value) || 20)))} aria-label="Target" />
             : <b>{b.target} businesses</b>}</span>
           <span className="blk-pill">Estimate</span></div>
         <ol className="blk-steps">

@@ -5,7 +5,11 @@
 import { sql } from "@/lib/db";
 import { chatProfile } from "../business-profiles";
 
-export type SenderProfile = { company: string; offer: string; summary: string; callerName: string };
+export type SenderProfile = { company: string; offer: string; summary: string; callerName: string; companySpoken?: string } & Partial<CampaignPlaybook>;
+/** The campaign's own playbook (Tarun, 2026-11-03): what is sold, the opening hook, how to pitch it,
+ *  answers to objections, the language to start in. The planner writes every touch from it and the
+ *  AI caller gets it on every call. All optional. */
+export type CampaignPlaybook = { hook: string; pitch: string; objections: string; language: string };
 
 type Prof = { company?: string; summary?: string; services?: string[]; primaryService?: string };
 
@@ -56,7 +60,13 @@ export function cleanSenderProfile(v: unknown): SenderProfile | null {
   if (!v || typeof v !== "object") return null;
   const o = v as Record<string, unknown>;
   const str = (x: unknown, n: number) => (typeof x === "string" ? x.trim().slice(0, n) : "");
-  const p = { company: str(o.company, 120), offer: str(o.offer, 160), summary: str(o.summary, 400), callerName: str(o.callerName, 60) };
+  const p: SenderProfile = { company: str(o.company, 120), offer: str(o.offer, 160), summary: str(o.summary, 400), callerName: str(o.callerName, 60) };
+  // How the AI caller says the company: voice read "Gigzman" in Latin letters as "Gegsman" mid-
+  // sentence and no one caught the name (prod 2026-11-04); "गिग्ज़मैन" is read cleanly.
+  const spoken = str(o.companySpoken, 80); if (spoken) p.companySpoken = spoken;
+  // Room for a real script (a 3-part Gigzman playbook is ~9,000 characters); 400/800 cut the hook
+  // mid-sentence and dropped every objection (prod 2026-11-04).
+  for (const [k, n] of [["hook", 4000], ["pitch", 6000], ["objections", 6000], ["language", 40]] as const) { const v = str(o[k], n); if (v) p[k] = v; }
   return p.company && p.offer ? p : null;
 }
 
@@ -76,4 +86,11 @@ export async function pitchFor(email: string, chatId?: string | null): Promise<{
     offer: (service || prof.primaryService || prof.services?.[0] || "").trim(),
   };
   return out.company || out.offer ? out : null;
+}
+
+/** The playbook as one block of plain lines, for prompts and the caller's brief. Empty when none. */
+export function playbookText(sp: SenderProfile | null | undefined): string {
+  if (!sp) return "";
+  return [sp.hook && `Opening hook: ${sp.hook}`, sp.pitch && `How to pitch: ${sp.pitch}`, sp.objections && `Objections: ${sp.objections}`, sp.language && `Start the call in: ${sp.language}`]
+    .filter(Boolean).join(" / ");
 }

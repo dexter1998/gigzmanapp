@@ -5,8 +5,9 @@
 import { WHATSAPP_LIVE } from "@/lib/v2/outreach/channels";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Workflow, Mail, MessageCircle, Phone, Loader2, X, CalendarClock, ShieldCheck, Send } from "lucide-react";
+import { Plus, Workflow, Mail, MessageCircle, Phone, Loader2, X, CalendarClock, ShieldCheck, Send, Sparkles } from "lucide-react";
 import "../compact.css";
+import { toast } from "@/components/toast/toast";
 
 type Row = { id: string; name: string; kind: string; status: string; listName: string | null; touches: number; channels: string[]; updatedAt: string;
   stats: { recipients: number; queued: number; sent: number; replied: number; nextDue: string | null } };
@@ -29,14 +30,17 @@ export function CampaignsPage() {
   const [kind, setKind] = useState<string>("sequence");
   const [lists, setLists] = useState<ListInfo[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // "Build it myself": an empty canvas with + Add step, no AI draft (Tarun, 2026-11-02).
+  const [manual, setManual] = useState(false);
 
   useEffect(() => { fetch("/api/v2/outreach/campaigns").then((r) => r.json()).then((d) => setRows(d.campaigns ?? [])).catch(() => setRows([])); }, []);
   useEffect(() => { if (creating && !lists) fetch("/api/v2/leads").then((r) => r.json()).then((d) => setLists(d.lists ?? [])).catch(() => setLists([])); }, [creating, lists]);
 
   async function create(listChatId: string) {
     setBusy(listChatId);
-    const d = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ listChatId, kind }) })).json();
-    if (d.id) router.push(`/campaigns/${d.id}`); else setBusy(null);
+    const d = await (await fetch("/api/v2/outreach/campaigns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ listChatId, kind }) })).json().catch(() => ({}));
+    if (d.id) { toast.success("Campaign created"); router.push(`/campaigns/${d.id}${manual ? "?manual=1" : ""}`); }
+    else { setBusy(null); toast.error("Couldn't create the campaign", d.error ?? "Please try again."); }
   }
 
   return (
@@ -88,6 +92,12 @@ export function CampaignsPage() {
                 );
               })}
             </div>
+            {kind === "sequence" && (
+              <div className="ox-seg big" role="group" aria-label="How to build it">
+                <button type="button" className={!manual ? "on" : ""} onClick={() => setManual(false)}><Sparkles size={14} /> AI drafts it</button>
+                <button type="button" className={manual ? "on" : ""} onClick={() => setManual(true)}><Workflow size={14} /> Build it myself</button>
+              </div>
+            )}
             <div className="ox-sub-title">Pick a list</div>
             <div className="ox-picklist">
               {lists === null && <div className="v2-empty"><Loader2 size={16} className="ox-spin" /> Loading lists…</div>}

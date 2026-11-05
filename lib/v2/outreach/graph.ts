@@ -42,7 +42,7 @@ export type CNode = {
 export type CEdge = { id: string; from: string; to: string; label?: "yes" | "no" };
 export type Graph = { nodes: CNode[]; edges: CEdge[] };
 
-export type Touch = { channel: Channel; waitDays: number; subject?: string; body: string; goal?: string; skill?: string };
+export type Touch = { channel: Channel; waitDays: number; subject?: string; body: string; goal?: string; skill?: string; retry?: CNode["data"]["retry"] };
 
 const COL = 230;
 const ROW = 150;
@@ -91,7 +91,7 @@ export function compile(touches: Touch[], trigger: CNode["data"]): Graph {
 function touchData(t: Touch, n: number): CNode["data"] {
   const label = t.channel === "email" ? "Email" : t.channel === "whatsapp" ? "WhatsApp" : "Call";
   return { title: `Touch ${n} · ${t.channel === "call" ? "AI call" : label}`, touch: n, subject: t.subject, body: t.body,
-    ...(t.channel === "call" ? { voice: { mode: "ai" as const, skill: t.skill ?? "pitch" } } : {}) };
+    ...(t.channel === "call" ? { voice: { mode: "ai" as const, skill: t.skill ?? "pitch" }, retry: t.retry ?? DEFAULT_CALL_RETRY } : {}) };
 }
 
 /** Graph → touches, for the planner's edit mode and for the queue. */
@@ -107,7 +107,8 @@ export function touchesOf(g: Graph): Array<Touch & { nodeId: string; offsetDays:
     seen.add(cur.id);
     if (cur.kind === "wait") { pendingWait += cur.data.days ?? 0; offset += cur.data.days ?? 0; }
     if (cur.kind === "email" || cur.kind === "whatsapp" || cur.kind === "call") {
-      out.push({ channel: cur.kind, waitDays: pendingWait, subject: cur.data.subject, body: cur.data.body ?? "", nodeId: cur.id, offsetDays: offset, skill: cur.data.voice?.skill });
+      out.push({ channel: cur.kind, waitDays: pendingWait, subject: cur.data.subject, body: cur.data.body ?? "", nodeId: cur.id, offsetDays: offset, skill: cur.data.voice?.skill,
+        ...(cur.kind === "call" ? { retry: cur.data.retry } : {}) });
       pendingWait = 0;
     }
     const outs = next(cur.id);
@@ -115,6 +116,39 @@ export function touchesOf(g: Graph): Array<Touch & { nodeId: string; offsetDays:
     cur = pick ? byId.get(pick.to) : undefined;
   }
   return out;
+}
+
+/** One touch with everything its node carries (template link, image, voice mode…), for manual edits. */
+export type TouchStep = { channel: Channel; waitDays: number; data: CNode["data"] };
+
+/** The sequence as editable steps — the inverse of `rebuild`. */
+export function stepsOf(g: Graph): TouchStep[] {
+  return touchesOf(g).map((t) => ({ channel: t.channel, waitDays: t.waitDays, data: g.nodes.find((n) => n.id === t.nodeId)?.data ?? { title: "" } }));
+}
+
+/**
+ * Steps → graph, keeping each touch's own data. Manual edits on the canvas (add / remove a step,
+ * n8n-style) go through this, so the graph keeps the same shape the planner's graphs have.
+ */
+export function rebuild(g: Graph, steps: TouchStep[], trigger?: CNode["data"]): Graph {
+  const trig = trigger ?? g.nodes.find((n) => n.kind === "trigger")?.data ?? { title: "Leads list" };
+  const out = compile(steps.map((s, i) => ({ channel: s.channel, waitDays: i === 0 ? 0 : Math.max(1, s.waitDays || 3), body: s.data.body ?? "", subject: s.data.subject, skill: s.data.voice?.skill, retry: s.data.retry })), trig);
+  out.nodes = out.nodes.map((n) => {
+    if (!n.data.touch) return n;
+    const src = steps[n.data.touch - 1].data;
+    const task = n.kind === "call" && src.voice?.mode === "task";
+    return { ...n, data: { ...src, touch: n.data.touch, title: task ? `Touch ${n.data.touch} · Call` : n.data.title, ...(n.kind === "call" ? { voice: src.voice ?? n.data.voice, retry: src.retry ?? n.data.retry } : {}) } };
+  });
+  return out;
+}
+
+/** A blank step the user adds by hand: a short starting text they then edit. */
+export function blankStep(channel: Channel, mode: "ai" | "task" = "ai"): TouchStep {
+  const body = channel === "email"
+    ? "Hi {{first_name}},\n\nI noticed {{signal}} at {{business_name}}. We help businesses like yours fix exactly that.\n\nWorth a 10-minute call this week?\n\n{{sender_name}}, {{sender_company}}"
+    : channel === "whatsapp" ? "Hi, this is {{sender_name}} from {{sender_company}}. Following up on my note about {{business_name}} — open to a quick chat?"
+    : "Calling {{business_name}} in {{area}}. What we noticed: {{signal}}. Offer in one line, one question about how they get customers today, and book a 15-minute call with {{sender_name}}. If not interested, thank them and end politely.";
+  return { channel, waitDays: 3, data: { title: "", subject: channel === "email" ? "quick question about {{business_name}}" : undefined, body, ...(channel === "call" ? { voice: { mode, skill: "pitch" }, retry: DEFAULT_CALL_RETRY } : {}) } };
 }
 
 /** Placeholders a message may use; filled per lead at send time. */
@@ -149,8 +183,10 @@ export function emailHtml(body: string, mediaUrl: string | null | undefined, foo
 
 export const SAMPLE_VALUES: Record<string, string> = Object.fromEntries(VARIABLES.map((v) => [v.key, v.sample]));
 
-/** The retry rule of an AI call touch — on by default: 3 dials, 4 h apart, at the time the lead asked. */
-export const DEFAULT_CALL_RETRY = { maxAttempts: 3, gapHours: 4, followCallback: true };
+/** The retry rule of an AI call touch — on by default: 3 dials, next day, or at the time the lead asked. */
+export const DEFAULT_CALL_RETRY = { maxAttempts: 3, gapHours: 24, followCallback: true };
+/** Most dials one lead gets on one call touch (Tarun, 2026-11-02: "max try ek call pr 7 baar"). */
+export const MAX_CALL_DIALS = 7;
 export function callRetryOf(g: Graph, nodeId: string) {
   const n = g.nodes.find((x) => x.id === nodeId);
   return { ...DEFAULT_CALL_RETRY, ...(n?.data.retry ?? {}) };

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Clock, X } from "lucide-react";
 import { SettingsRow } from "@/components/settings/SettingsShell";
+import { toast } from "@/components/toast/toast";
 
 /**
  * "Delete account" row for the Account card, directly under Sign out.
@@ -46,9 +47,11 @@ export function DeleteAccountRow({ email, pendingAt }: { email: string; pendingA
       if (!res.ok) throw new Error(data.error || "Couldn't send the request. Try again.");
       setPending(data.pending?.requestedAt ?? new Date().toISOString());
       close();
+      toast.warning("Deletion requested", "Your account is scheduled for deletion. You can cancel it from here.");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
+      toast.error("Couldn't send the request", (err as Error).message);
     } finally {
       setBusy(false);
     }
@@ -61,6 +64,7 @@ export function DeleteAccountRow({ email, pendingAt }: { email: string; pendingA
       const res = await fetch("/api/account/delete-request", { method: "DELETE" });
       if (!res.ok && res.status !== 404) throw new Error("Couldn't cancel. Try again.");
       setPending(null);
+      toast.success("Deletion cancelled", "Your account stays as it is.");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);

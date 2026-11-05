@@ -53,6 +53,8 @@ export type ChatState = {
    * ask shows that card instead of a plan.
    */
   contextConfirmed: boolean;
+  /** "Skip — just find the leads": plan without a business profile in this chat (no "which business?"). */
+  profileSkipped?: boolean;
   lang: Lang;
 };
 
@@ -104,7 +106,7 @@ export type ChatAction =
   | { type: "only_no_website" }
   | { type: "search"; placeType: string; label: string; areaText: string }
   /** Ask the Planner for a run; `brief` is what it plans from. */
-  | { type: "plan"; brief: string }
+  | { type: "plan"; brief: string; signals?: string[]; skipProfile?: boolean }
   /** The user's approval of a planned run. */
   | { type: "run_plan"; runId: string; count?: number }
   /** More of what a run found, by the same pipeline. No count yet = ask how many. */
@@ -159,6 +161,7 @@ export function readState(raw: unknown): ChatState {
     failedSite: typeof r.failedSite === "string" ? r.failedSite.slice(0, 300) : null,
     offering: typeof r.offering === "string" && r.offering.trim() ? r.offering.slice(0, 160) : null,
     contextConfirmed: r.contextConfirmed === true,
+    profileSkipped: r.profileSkipped === true,
     lang: r.lang === "hinglish" || r.lang === "hi" ? r.lang : "en",
     here: r.here && num(r.here.lat) !== null && num(r.here.lng) !== null && num(r.here.at) !== null ? { lat: r.here.lat, lng: r.here.lng, at: r.here.at } : null,
   };
@@ -190,7 +193,11 @@ export function parseAction(raw: unknown): ChatAction | null {
         ? { type: "search", placeType: a.placeType, label: a.label.slice(0, 80), areaText: a.areaText.trim().slice(0, 120) }
         : null;
     case "plan":
-      return typeof a.brief === "string" && a.brief.trim() ? { type: "plan", brief: a.brief.trim().slice(0, 300) } : null;
+      return typeof a.brief === "string" && a.brief.trim()
+        ? { type: "plan", brief: a.brief.trim().slice(0, 300),
+            // Edit scope's signal toggles: exactly these, never re-guessed from the words (Tarun, 2026-11-02).
+            ...(Array.isArray(a.signals) ? { signals: a.signals.filter((x): x is string => typeof x === "string").slice(0, 3) } : {}),
+            ...(a.skipProfile === true ? { skipProfile: true } : {}) } : null;
     case "run_plan":
       return typeof a.runId === "string" && /^[0-9a-f-]{36}$/i.test(a.runId)
         ? { type: "run_plan", runId: a.runId, ...(Number.isInteger(a.count) && (a.count as number) > 0 && (a.count as number) <= 500 ? { count: a.count as number } : {}) } : null;

@@ -18,7 +18,8 @@ const mediaOf = (g: Graph, nodeId: string) => g.nodes.find((n) => n.id === nodeI
 import { sendEmail, sendWhatsApp, type SenderRow } from "./senders";
 import { WHATSAPP_LIVE, WHATSAPP_SOON_NOTE } from "./channels";
 import { SENDING_ON, REDIRECT_TO } from "./campaigns";
-import { dispatchVoiceCall, reconcileStuckCalls } from "./voiceCalls";
+import { dispatchVoiceCall, reconcileStuckCalls, QUEUED_BEHIND_CALL } from "./voiceCalls";
+import { logSend } from "./sendlog";
 import { SIGNALS, consistentSignals, type SignalId } from "../playbooks";
 import { formatCategory } from "@/lib/categories";
 
@@ -45,6 +46,9 @@ export async function drainQueue(o: { limit?: number; campaignId?: string } = {}
     RETURNING *`;
   out.claimed = claimed.length;
 
+  // One AI call per user per tick, whatever the busy check says: calls run one at a time, and a
+  // wrong busy answer must never turn into a burst of dials (prod 2026-11-03: 26 in 15 s).
+  const dialledThisTick = new Set<string>();
   for (const row of claimed) {
     const [c] = await sql`SELECT id, user_email, graph, status FROM v2_campaigns WHERE id = ${row.campaign_id}`;
     if (c.status === "scheduled") await sql`UPDATE v2_campaigns SET status = 'running' WHERE id = ${c.id} AND status = 'scheduled'`;
@@ -61,7 +65,7 @@ export async function drainQueue(o: { limit?: number; campaignId?: string } = {}
 
     // The lead already answered (or can't be mailed): the rest of their sequence is off.
     const stop = await stopReason(c.user_email, row);
-    if (stop) { await done("cancelled", stop); out.cancelled++; continue; }
+    if (stop) { await done("cancelled", stop); void logSend(c.id, Number(row.id), "skipped", `Not sent — ${stop}`); out.cancelled++; continue; }
 
     const touch = touchesOf(c.graph as Graph).find((t) => t.nodeId === row.node_id);
     if (!touch) { await done("cancelled", "touch removed from the sequence"); out.cancelled++; continue; }
@@ -72,15 +76,29 @@ export async function drainQueue(o: { limit?: number; campaignId?: string } = {}
       if (node?.data.voice?.mode !== "ai") { await done("task", "call task — talk track ready in the campaign"); out.tasks++; continue; }
       const redirectPhone = REDIRECT_TO ? (process.env.V2_VOICE_REDIRECT_PHONE?.trim() || null) : null;
       if (REDIRECT_TO && !redirectPhone) { await defer(row.id, "test mode: set V2_VOICE_REDIRECT_PHONE to place AI calls", 60); out.deferred++; continue; }
+      // Next in line, behind the call just placed: back to the queue in the same place.
+      if (dialledThisTick.has(c.user_email)) { await sql`UPDATE v2_sends SET status = 'queued', status_note = ${QUEUED_BEHIND_CALL} WHERE id = ${row.id}`; out.deferred++; continue; }
       const d = await dispatchVoiceCall(c.user_email, row as never, { skill: node.data.voice.skill, brief: fill(touch.body, values), values, redirectPhone });
+      if (d.status === "calling") dialledThisTick.add(c.user_email);
+      const who = `${values.business_name ?? "lead"} (${redirectPhone ?? row.to_address ?? "no number"})`;
       if (d.status === "calling") {
-        await sql`UPDATE v2_sends SET status = 'calling', status_note = ${d.note}, external_id = ${d.sessionId ?? null}, redirected_to = ${redirectPhone} WHERE id = ${row.id}`;
+        // due_at becomes the DIAL time: every "how long has this call been on" check reads it. Left at
+        // the old scheduled time, the next row's busy check saw a 20-hour-old call, settled it as "no
+        // result", and dialled again — 26 leads in 15 s (prod 2026-11-03 13:58 IST).
+        await sql`UPDATE v2_sends SET status = 'calling', status_note = ${d.note}, external_id = ${d.sessionId ?? null}, redirected_to = ${redirectPhone}, due_at = now() WHERE id = ${row.id}`;
+        void logSend(c.id, Number(row.id), "dial", `Dialling ${who}${Number(row.call_attempt ?? 0) ? ` — dial ${Number(row.call_attempt) + 1}` : ""}`);
         out.sent++;
+      } else if (d.status === "deferred" && d.note === QUEUED_BEHIND_CALL) {
+        await sql`UPDATE v2_sends SET status = 'queued', status_note = ${d.note} WHERE id = ${row.id}`;
+        // Busy once is busy for the rest of this tick: no busy check (and analytics read) per row.
+        dialledThisTick.add(c.user_email);
+        out.deferred++;
       } else if (d.status === "deferred") {
         await sql`UPDATE v2_sends SET status = 'queued', status_note = ${d.note}, due_at = ${d.retryAt ?? new Date(Date.now() + 600_000)} WHERE id = ${row.id}`;
+        void logSend(c.id, Number(row.id), "deferred", `Held ${who}: ${d.note}`);
         out.deferred++;
       } else if (d.status === "task") { await done("task", d.note); out.tasks++; }
-      else { await done("failed", d.note); out.failed++; }
+      else { await done("failed", d.note); void logSend(c.id, Number(row.id), "failed", `Not called ${who}: ${d.note}`); out.failed++; }
       continue;
     }
     try {
@@ -102,6 +120,7 @@ export async function drainQueue(o: { limit?: number; campaignId?: string } = {}
           unsubscribeMailto: `mailto:${sender.address}?subject=unsubscribe`,
         });
         await done("sent", REDIRECT_TO ? `test redirect → ${REDIRECT_TO}` : null, { sent_at: new Date(), sender_id: sender.id, external_id: r.messageId, thread_id: r.threadId, redirected_to: REDIRECT_TO });
+        void logSend(c.id, Number(row.id), "sent", `Email sent to ${values.business_name ?? "lead"} (${to}) from ${sender.address}`);
         out.sent++;
       } else if (row.channel === "whatsapp" && !WHATSAPP_LIVE) {
         // Coming soon: anything queued before the switch is skipped, never sent.
@@ -117,7 +136,7 @@ export async function drainQueue(o: { limit?: number; campaignId?: string } = {}
       }
     } catch (err) {
       const msg = (err as Error).message.slice(0, 300);
-      if (row.attempts >= 3) { await done("failed", msg); out.failed++; }
+      if (row.attempts >= 3) { await done("failed", msg); void logSend(c.id, Number(row.id), "failed", `Gave up after 3 tries: ${msg.slice(0, 160)}`); out.failed++; }
       else { await defer(row.id, `retrying: ${msg}`, 15); out.deferred++; }
     }
   }

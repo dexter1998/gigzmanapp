@@ -8,7 +8,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { MapPin, Star, Phone, Mail, Search, List, LayoutGrid, ChevronLeft, ChevronRight, ArrowUpRight, MessageSquare, Sparkles, Plus } from "lucide-react";
+import { MapPin, Star, Phone, Mail, Search, List, LayoutGrid, ChevronLeft, ChevronRight, ArrowUpRight, MessageSquare, Sparkles, Plus, Upload } from "lucide-react";
+import { ImportModal } from "./ImportModal";
 import "@/components/compact.css";
 import { LeadDrawer } from "@/components/chat/v2/V2Panel";
 import { ContactActions, EmailCell, PhoneCell, ExtraCells, normalizeContact, type LeadEmail, type LeadPhone, type Pitch, type ExtraColumn } from "./contact";
@@ -62,6 +63,7 @@ export function V2Leads() {
   const [page, setPage] = useState(0);
   const [columns, setColumns] = useState<ExtraColumn[]>([]);
   const [pitch, setPitch] = useState<Pitch>(null);
+  const [importing, setImporting] = useState(false);
 
   // ?list=<chatId> (from the chat's "added to Leads" link) opens that list directly.
   useEffect(() => {
@@ -103,8 +105,12 @@ export function V2Leads() {
             <span className="cp-stat" title="Every lead Mantis finds in chat is added here automatically, in a list named after that chat."><Sparkles size={12} /> Auto-saved from chat</span>
           </div>
         </div>
-        <label className="v2-search"><Search size={15} aria-hidden /><input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={tab === "lists" && !list ? "Search lists" : "Search leads"} /></label>
+        <span className="v2-lms-actions">
+          <label className="v2-search"><Search size={15} aria-hidden /><input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={tab === "lists" && !list ? "Search lists" : "Search leads"} /></label>
+          <button type="button" className="v2-btn" onClick={() => setImporting(true)} title="Bring your own list (CSV or Excel) and run campaigns on it"><Upload size={15} /> Import</button>
+        </span>
       </header>
+      {importing && <ImportModal onClose={() => setImporting(false)} onDone={(chatId) => { setImporting(false); setTab("lists"); setPage(0); setList({ chatId, name: "", count: 0, updatedAt: null }); }} />}
 
       <div className="v2-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "all"} className={tab === "all" ? "on" : ""} onClick={() => { setTab("all"); setList(null); setPage(0); }}><List size={15} /> All <span>{tab === "all" && !list ? leads.length : ""}</span></button>

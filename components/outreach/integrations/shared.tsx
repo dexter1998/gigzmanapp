@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, AlertTriangle, Copy, Pause, Play, Trash2, LifeBuoy } from "lucide-react";
 import { BrandLogo, type Brand } from "../BrandLogo";
+import { toast } from "@/components/toast/toast";
 
 export type Sender = { id: string; channel: string; provider: string; address: string; displayName: string | null; status: string; statusNote: string | null; dailyLimit: number; sentToday: number; lastChecked: string | null };
 export type PoolRow = { id: string; channel: string; domain: string | null; address: string; health: number | null; warming_days: number | null; domain_age_days: number | null; warmup_sent: number | null; warmup_replies: number | null; price_inr: number | null };
@@ -66,8 +67,9 @@ export function useOutreachData() {
     const r = body === "delete"
       ? await fetch(`/api/v2/outreach/senders?id=${id}`, { method: "DELETE" })
       : await fetch("/api/v2/outreach/senders", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, ...body }) });
-    const d = (await r.json().catch(() => ({}))) as { senders?: Sender[] };
-    if (d.senders) setData((x) => (x ? { ...x, senders: d.senders! } : x));
+    const d = (await r.json().catch(() => ({}))) as { senders?: Sender[]; error?: string };
+    if (d.senders) { setData((x) => (x ? { ...x, senders: d.senders! } : x)); toast.success(body === "delete" ? "Disconnected" : "Saved"); }
+    else toast.error(body === "delete" ? "Couldn't disconnect" : "Couldn't save", d.error ?? "Please try again.");
   }, []);
 
   return { data, failed, load, manage, of: (ch: string) => data?.senders.filter((s) => s.channel === ch) ?? [] };

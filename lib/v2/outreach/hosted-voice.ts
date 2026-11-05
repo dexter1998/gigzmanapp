@@ -78,7 +78,7 @@ export async function placeHostedCall(o: { agent: HostedAgent; phone: string; va
 
 /** One finished call as the analytics API reports it (only the fields Mantis reads). */
 export type Interaction = {
-  job_id?: string; duration_in_seconds?: number | null; num_messages?: number | null; ended_by?: string | null; failure_reason?: string | null;
+  interaction_id?: string; job_id?: string; duration_in_seconds?: number | null; num_messages?: number | null; ended_by?: string | null; failure_reason?: string | null;
   language_name?: string | null; agent_variables?: Record<string, unknown> | null; audio_url?: string | null;
 };
 
@@ -99,6 +99,25 @@ export async function findInteraction(agent: HostedAgent, jobId: string, from: D
     } catch { return null; }
   }
   return null;
+}
+
+/** "caller:<interaction id>" — what a settled call keeps so its recording can be fetched later. */
+export const recordingRef = (agent: HostedAgent, it: Interaction) => (it.interaction_id ? `${agent}:${it.interaction_id}` : null);
+
+/**
+ * One call's recording (WAV) from the analytics API. The interaction's own `audio_url` is a
+ * dashboard link behind a browser check; this endpoint takes the API key. Null when unavailable.
+ */
+export async function fetchRecording(ref: string): Promise<Response | null> {
+  // Interaction ids look like "20261102/fed4a822-13:32:18-25c98bad": the slash is part of the path.
+  const m = /^(caller|test):([\w/:.-]{8,120})$/.exec(ref);
+  const c = conf(), app = m ? agentApp(m[1] as HostedAgent) : null;
+  if (!m || !c || !app) return null;
+  try {
+    const r = await fetch(`${API}/analytics/v1/${encodeURIComponent(c.org)}/${encodeURIComponent(c.ws)}/${encodeURIComponent(app.id)}/recordings/${m[2].split("/").map(encodeURIComponent).join("/")}`,
+      { headers: { "x-api-key": c.key }, signal: AbortSignal.timeout(30_000) });
+    return r.ok && /^audio\//.test(r.headers.get("content-type") ?? "") ? r : null;
+  } catch { return null; }
 }
 
 /** Is the platform reachable with these keys? A one-minute analytics read, nothing placed. */

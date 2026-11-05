@@ -14,8 +14,16 @@ const STARTERS: Record<string, string> = {
   find: "Find ",
 };
 
-export default async function ChatPage({ searchParams }: { searchParams: Promise<{ start?: string }> }) {
-  const { start } = await searchParams;
+/** A search phrase handed over from an email button (?q=). Only ever PREFILLS the composer — the user
+ *  still reads it and presses send — and is limited to a short plain phrase, so a crafted link can't
+ *  put arbitrary content in front of them. */
+function emailPrompt(q: string | undefined): string | null {
+  const t = (q ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+  return t && /^[\p{L}\p{N} ,.'&()\-/]+$/u.test(t) ? t : null;
+}
+
+export default async function ChatPage({ searchParams }: { searchParams: Promise<{ start?: string; q?: string }> }) {
+  const { start, q } = await searchParams;
   const session = await auth();
   const name = session?.user?.name ?? null;
 
@@ -33,5 +41,5 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
       AND created_at > now() - interval '14 days'
     ORDER BY created_at DESC LIMIT 3` : [];
   return <ChatLanding name={name} suggestions={suggestions.map((r) => withCity(r.prompt_text as string, city))} v2={isV2Email(session?.user?.email)}
-    unfinished={unfinished.map((r) => ({ chatId: String(r.chat_id), title: String(r.title ?? "Search"), delivered: Number(r.delivered ?? 0), target: Number(r.target ?? 0) }))} prefill={STARTERS[start ?? ""] ?? ""} />;
+    unfinished={unfinished.map((r) => ({ chatId: String(r.chat_id), title: String(r.title ?? "Search"), delivered: Number(r.delivered ?? 0), target: Number(r.target ?? 0) }))} prefill={STARTERS[start ?? ""] ?? emailPrompt(q) ?? ""} />;
 }

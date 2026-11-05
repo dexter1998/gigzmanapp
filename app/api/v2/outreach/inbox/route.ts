@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { v2User, isResp } from "../_auth";
 import { syncInbox } from "@/lib/v2/outreach/inbox";
+import { reconcileStuckCalls } from "@/lib/v2/outreach/voiceCalls";
 import { fill, touchesOf, type Graph } from "@/lib/v2/outreach/graph";
 import { formatCategory } from "@/lib/categories";
 import { SIGNALS, consistentSignals, type SignalId } from "@/lib/v2/playbooks";
@@ -68,7 +69,8 @@ export async function GET() {
     const emails = (Array.isArray(r.lead_emails) ? r.lead_emails : []) as Array<{ email?: string }>;
     return {
       id: String(r.id), channel: r.channel, from: r.from_address, fromName: r.from_name, subject: r.subject, body: r.body,
-      receivedAt: r.received_at.toISOString(), read: !!r.read_at, sentiment: r.sentiment, kind: r.kind, test: !!r.is_test,
+      receivedAt: r.received_at.toISOString(), read: !!r.read_at, sentiment: r.sentiment, kind: r.kind, test: !!r.is_test, recording: !!r.recording,
+      callOutcome: r.call_outcome ?? null, callMeeting: r.call_meeting ?? null,
       campaignId: r.campaign_id ?? null, campaign: r.campaign_name ?? null,
       gmailUrl: r.thread_id && /^gmail:/.test(r.external_id ?? "") ? `https://mail.google.com/mail/#all/${r.thread_id}` : null,
       touch: r.send_node ? {
@@ -87,10 +89,17 @@ export async function GET() {
     };
   });
   const synced = senders.map((s) => s.last_synced).filter(Boolean).map((d) => new Date(d).getTime());
+  // AI calls still ringing (campaign or self-test): the page says so and checks back, and a call
+  // whose end-of-call nudge never came is settled here rather than on the next sweep.
+  const [busy] = await sql`
+    SELECT (SELECT count(*)::int FROM v2_sends s JOIN v2_campaigns c ON c.id = s.campaign_id WHERE c.user_email = ${u.email} AND s.status = 'calling')
+         + (SELECT count(*)::int FROM v2_voice_tests WHERE user_email = ${u.email} AND status = 'calling') AS n`;
+  if (busy.n > 0) await reconcileStuckCalls(u.email).catch(() => 0);
   return NextResponse.json({
     messages, campaigns: [...campaigns.values()],
     watching: senders.map((s) => ({ channel: s.channel, provider: s.provider, address: s.address })),
     lastSynced: synced.length ? new Date(Math.max(...synced)).toISOString() : null,
+    calling: Number(busy.n) || 0,
   });
 }
 

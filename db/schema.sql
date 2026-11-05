@@ -1842,3 +1842,26 @@ CREATE INDEX IF NOT EXISTS idx_product_events_section_time ON product_events(sec
 -- First-touch acquisition (2026-10-26): utm / referrer / landing page from the m_src cookie
 -- (components/AttributionCapture.tsx), written once at signup or onboarding (lib/attribution.ts).
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS signup_source JSONB;
+
+-- 2026-11-02: AI call recordings ("agent:interaction id", fetched through /api/v2/outreach/voice/recording).
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS recording TEXT;
+ALTER TABLE v2_sends ADD COLUMN IF NOT EXISTS recording TEXT;
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS call_outcome TEXT;   -- booked | interested | not_interested | callback | wrong_person | no_conversation
+ALTER TABLE v2_inbox ADD COLUMN IF NOT EXISTS call_meeting TEXT;   -- "Tuesday 4 pm" when a meeting was booked on the call
+
+-- 2026-11-02: a campaign's activity log — every step of every send (queued, dialling, the call's
+-- end status, outcome, retry, skip, stop/restart), shown live in the builder and kept afterwards.
+CREATE TABLE IF NOT EXISTS v2_send_log (
+  id          BIGSERIAL PRIMARY KEY,
+  campaign_id UUID NOT NULL,
+  send_id     BIGINT,
+  at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  kind        TEXT NOT NULL,      -- queued | dial | deferred | call_status | outcome | retry | skipped | failed | sent | campaign
+  text        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_v2_send_log_campaign ON v2_send_log(campaign_id, at DESC);
+CREATE INDEX IF NOT EXISTS idx_v2_send_log_send ON v2_send_log(send_id, at);
+
+-- 2026-11-04: the Campaign Planner runs in the background (App Runner cuts requests at 120 s).
+ALTER TABLE v2_campaigns ADD COLUMN IF NOT EXISTS planning_since TIMESTAMPTZ;
+ALTER TABLE v2_campaigns ADD COLUMN IF NOT EXISTS plan_error TEXT;

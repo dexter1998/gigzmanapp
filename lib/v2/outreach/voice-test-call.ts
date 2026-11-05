@@ -8,7 +8,7 @@
 import { sql } from "@/lib/db";
 import { CREDIT_COST } from "@/lib/credits/pricing";
 import { MIN_MINUTES_BALANCE, toE164 } from "./voice";
-import { findInteraction, interactionToResult, placeHostedCall, testAgentConfigured } from "./hosted-voice";
+import { findInteraction, interactionToResult, placeHostedCall, recordingRef, testAgentConfigured } from "./hosted-voice";
 import { testVariables } from "./voice-context";
 import { NO_RESULT_MIN, callBody, chargeCallOnce, hasCallBalance, hostedCallbackUrl, userInCall } from "./voiceCalls";
 
@@ -71,8 +71,8 @@ export async function settleTestCall(id: number): Promise<{ ok: boolean; note: s
   await sql`UPDATE v2_voice_tests SET status_note = ${note} WHERE id = ${id}`;
   if (secs > 0) {
     await sql`
-      INSERT INTO v2_inbox (user_email, campaign_id, result_id, channel, from_address, from_name, subject, body, external_id, kind, sentiment, is_test)
-      VALUES (${t.user_email}, NULL, NULL, 'call', ${t.phone}, 'Test call', 'AI test call summary', ${callBody(res)}, ${`voice:${res.sessionId}`}, 'reply', NULL, true)
+      INSERT INTO v2_inbox (user_email, campaign_id, result_id, channel, from_address, from_name, subject, body, external_id, kind, sentiment, is_test, recording)
+      VALUES (${t.user_email}, NULL, NULL, 'call', ${t.phone}, 'Test call', 'AI test call summary', ${callBody(res)}, ${`voice:${res.sessionId}`}, 'reply', NULL, true, ${recordingRef("test", it)})
       ON CONFLICT (user_email, external_id) DO NOTHING`;
   }
   return { ok: true, note };

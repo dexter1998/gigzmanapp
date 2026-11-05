@@ -51,9 +51,63 @@ export const VOICE_SKILL_PLAYBOOK: Record<VoiceSkill, { goal: string; playbook: 
 
 /** India calling window Mantis keeps (stricter than TRAI's 9–21): 10:00–19:30 IST, Mon–Sat. */
 export const CALL_WINDOW = { from: "10:00", to: "19:30", days: [1, 2, 3, 4, 5, 6] };
+/** TRAI's own limits: a campaign's chosen hours are kept inside these. */
+const LEGAL_WINDOW = { from: "09:00", to: "21:00" };
+/** A time the lead asked for is kept even outside the campaign's hours — but never outside TRAI's. */
+export const ASKED_CALLBACK_WINDOW = { ...LEGAL_WINDOW, days: [1, 2, 3, 4, 5, 6, 7] };
+
+/**
+ * The calling window for one campaign: the hours and days chosen at Approve, kept inside TRAI's
+ * 9–21. Calls used to follow CALL_WINDOW whatever the campaign said — a 09:30–18:30 campaign was
+ * dialled 10:00–19:30 (prod 2026-11-04). No schedule (tests, old campaigns) → CALL_WINDOW.
+ */
+export function callWindowFor(s: { from?: unknown; to?: unknown; days?: unknown } | null | undefined): typeof CALL_WINDOW {
+  const hm = (x: unknown) => (typeof x === "string" && /^\d{1,2}:\d{2}$/.test(x) ? x.padStart(5, "0") : null);
+  const from = hm(s?.from), to = hm(s?.to);
+  if (!from || !to || from >= to) return CALL_WINDOW;
+  const days = Array.isArray(s?.days) ? (s.days as unknown[]).map(Number).filter((d) => d >= 1 && d <= 7) : [];
+  return { from: from < LEGAL_WINDOW.from ? LEGAL_WINDOW.from : from, to: to > LEGAL_WINDOW.to ? LEGAL_WINDOW.to : to, days: days.length ? days : CALL_WINDOW.days };
+}
+/**
+ * Festival days that move callbacks ("Diwali ke baad") and that the caller must not get wrong — it
+ * told a lead "Diwali nikal gayi" two days before Dhanteras (prod 2026-11-04). IST dates; extend as
+ * the year goes on.
+ */
+export const FESTIVALS: Array<{ date: string; name: string }> = [
+  { date: "2026-11-06", name: "Dhanteras" },
+  { date: "2026-11-08", name: "Diwali" },
+  { date: "2026-12-25", name: "Christmas" },
+  { date: "2027-01-01", name: "New Year" },
+];
+
+/** "Thursday, 5 November 2026" in IST, and the next `days` days as "Fri 6 Nov", for date talk on calls. */
+export function istCalendar(now = new Date(), days = 10): { today: string; next: string[]; festivals: string[] } {
+  const IST = 330 * 60_000;
+  const d0 = new Date(now.getTime() + IST);
+  const f = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString("en-GB", { ...o, timeZone: "UTC" });
+  const today = f(d0, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const next = Array.from({ length: days }, (_, i) => f(new Date(d0.getTime() + (i + 1) * 864e5), { weekday: "short", day: "numeric", month: "short" }));
+  const iso = d0.toISOString().slice(0, 10);
+  const festivals = FESTIVALS.filter((x) => x.date >= iso).slice(0, 3)
+    .map((x) => `${x.name} ${f(new Date(`${x.date}T00:00:00Z`), { weekday: "short", day: "numeric", month: "short" })}`);
+  return { today, next, festivals };
+}
+
 /** Minutes assumed per connected call when estimating credits before a campaign runs. */
 export const EST_MINUTES_PER_CALL = 3;
 /** A call is not placed unless the balance covers this many minutes. */
 export const MIN_MINUTES_BALANCE = 3;
 export const creditsForSeconds = (secs: number) => (secs > 0 ? Math.ceil(secs / 60) * CREDIT_COST.voice_minute : 0);
 
+
+/** What a call came to, as the user reads it (Inbox, the live call panel). */
+export const CALL_OUTCOME: Record<string, { label: string; tone: "green" | "amber" | "red" | "grey" }> = {
+  booked: { label: "Meeting scheduled", tone: "green" },
+  interested: { label: "Interested", tone: "green" },
+  callback: { label: "Call back later", tone: "amber" },
+  not_interested: { label: "Declined", tone: "red" },
+  wrong_person: { label: "Wrong person", tone: "grey" },
+  no_answer: { label: "Didn't pick up", tone: "grey" },
+  busy: { label: "Busy", tone: "grey" },
+  no_conversation: { label: "No real conversation", tone: "grey" },
+};

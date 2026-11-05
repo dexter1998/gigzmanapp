@@ -2,6 +2,7 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { recordApiFailure } from "@/lib/api-alerts";
 import { OTP_EMAIL_HTML } from "@/lib/email/otp-template";
 import { COMPANY } from "@/lib/company";
+import { streamConfig } from "@/lib/email/streams";
 
 declare global {
   var __gigzmanSes: SESClient | undefined;
@@ -17,12 +18,9 @@ if (process.env.NODE_ENV !== "production") {
   global.__gigzmanSes = ses;
 }
 
-// Sign-in codes come from the brand domain, not blogyapp.com. Both are verified SES identities in
-// ap-south-1, and they're split on purpose: mantisai.in carries transactional and lifecycle mail,
-// blogyapp.com absorbs cold outreach, so prospecting reputation can never affect whether someone
-// can receive the code they need to log in.
-const FROM_ADDRESS = process.env.SES_FROM_ADDRESS || `Mantis Ai <no-reply@${new URL(COMPANY.site).hostname}>`;
-
+// Sign-in codes take their sender, configuration set and AWS account from the otp stream
+// (lib/email/streams.ts): mantisai.in for now, mantisotp.live once that domain has sending history,
+// and a separate AWS account once the opt-in streams move, since SES pauses whole accounts.
 /**
  * Every transactional send goes through a configuration set, which is the only way SES emits
  * delivery, bounce and complaint events at all.
@@ -38,6 +36,8 @@ const FROM_ADDRESS = process.env.SES_FROM_ADDRESS || `Mantis Ai <no-reply@${new 
  * would put both under one reputation metric again.
  */
 export const TRANSACTIONAL_CONFIG_SET = process.env.SES_CONFIG_SET || "mantis-transactional";
+
+const otp = () => streamConfig("otp");
 
 function fill(template: string, values: Record<string, string>) {
   return Object.entries(values).reduce(
@@ -62,10 +62,10 @@ export async function sendVerificationEmail(to: string, code: string) {
     `Didn't request this? You can safely ignore this email.\n`;
 
   try {
-    await ses.send(
+    await otp().client.send(
       new SendEmailCommand({
-        ConfigurationSetName: TRANSACTIONAL_CONFIG_SET,
-        Source: FROM_ADDRESS,
+        ConfigurationSetName: otp().configSet,
+        Source: otp().from,
         Destination: { ToAddresses: [to] },
         Message: {
           // The code in the subject line so it's readable from a notification without opening
@@ -97,10 +97,10 @@ export async function sendPasswordResetEmail(to: string, code: string) {
     `It expires in 10 minutes. Enter it on the reset page along with your new password.\n\n` +
     `Didn't request this? You can safely ignore this email — your password stays unchanged.\n`;
   try {
-    await ses.send(
+    await otp().client.send(
       new SendEmailCommand({
-        ConfigurationSetName: TRANSACTIONAL_CONFIG_SET,
-        Source: FROM_ADDRESS,
+        ConfigurationSetName: otp().configSet,
+        Source: otp().from,
         Destination: { ToAddresses: [to] },
         Message: {
           Subject: { Data: `${code} is your Mantis password reset code` },
