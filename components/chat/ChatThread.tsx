@@ -454,10 +454,12 @@ export function ChatThread({ chatId, title, initialMessages, v2 = false, userIni
               body: JSON.stringify({ listChatId: chatId, origin: "chat", kind: pick.kind }) }).catch(() => null);
             const d = ((await r?.json().catch(() => null)) ?? {}) as { id?: string; existing?: boolean; message?: string };
             if (!d.id) { toast.error("Couldn't open the campaign", d.message ?? "Please try again."); return; }
-            if (!d.existing && pick.kind === "sequence" && pick.channels.length) {
+            // A quick send is drafted too: left to the builder's auto-plan it stayed an empty canvas
+            // whenever the sender picker opened first (7 of 11 prod quick campaigns, 2026-11-06).
+            if (!d.existing && (pick.kind !== "sequence" || pick.channels.length)) {
               const names = { email: "email", whatsapp: "WhatsApp", call: "AI voice call" } as const;
               void fetch(`/api/v2/outreach/campaigns/${d.id}/plan`, { method: "POST", headers: { "content-type": "application/json" },
-                body: JSON.stringify({ message: `Use only these channels: ${pick.channels.map((c) => names[c]).join(", ")}.` }) }).catch(() => {});
+                body: JSON.stringify({ message: pick.kind === "sequence" ? `Use only these channels: ${pick.channels.map((c) => names[c]).join(", ")}.` : null }) }).catch(() => {});
             }
             router.push(`/campaigns/${d.id}`);
           } : undefined}

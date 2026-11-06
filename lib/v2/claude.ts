@@ -178,8 +178,10 @@ function unstringify(input: Record<string, unknown>, tool: ToolDef): Record<stri
       try { out[k] = JSON.parse(flat); } catch {
         // A run of whitespace until max_tokens cut the array short (seen 2026-11-02): keep every
         // item that was finished.
+        // The salvaged list is marked: the cut usually lands after touch 1 or 2 of 4, and a caller
+        // that took it as the whole answer saved a short sequence (6 of 13 prod campaigns, 2026-11-06).
         const end = flat.lastIndexOf("}");
-        try { if (flat.trimStart().startsWith("[") && end > 0) out[k] = JSON.parse(`${flat.slice(0, end + 1)}]`); } catch { /* the caller's own checks reject it */ }
+        try { if (flat.trimStart().startsWith("[") && end > 0) { out[k] = JSON.parse(`${flat.slice(0, end + 1)}]`); out.__salvaged = true; } } catch { /* the caller's own checks reject it */ }
       }
     }
   }

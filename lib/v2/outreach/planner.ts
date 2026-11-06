@@ -105,13 +105,19 @@ export async function planCampaign(input: { email: string; campaignId: string; i
   let raw = await callTool({ agent: "campaign_planner", model: MODELS.best, system, messages, tool: TOOL, maxTokens: 8000, force: true });
   // Up to two forced retries: a degenerate answer (whitespace until the token limit) is rare and
   // does not repeat.
-  for (let k = 0; k < 2 && (!Array.isArray(raw.touches) || !raw.touches.length); k++) {
+  // A salvaged list (the answer broke off into whitespace, see unstringify) is only the touches
+  // written before the break: ask again, and keep the longest list any attempt produced.
+  const count = (r: Record<string, unknown>) => (Array.isArray(r.touches) ? r.touches.length : 0);
+  let best = raw;
+  for (let k = 0; k < 2 && (!count(raw) || raw.__salvaged); k++) {
     raw = await callTool({
       agent: "campaign_planner", model: MODELS.best, system, tool: TOOL, maxTokens: 8000, force: true,
       messages: [...messages, { role: "assistant", content: typeof raw.text === "string" ? raw.text.slice(0, 2000) : "(no answer)" },
         { role: "user", content: "Now return it by calling design_sequence — every touch with channel, waitDays and body." }],
     });
+    if (count(raw) > count(best) || (count(raw) === count(best) && !raw.__salvaged)) best = raw;
   }
+  raw = count(raw) && !raw.__salvaged ? raw : best;
 
   const touches: Touch[] = (Array.isArray(raw.touches) ? raw.touches : []).slice(0, quick ? 1 : 6).map((t: Record<string, unknown>, i: number) => ({
     channel: (["email", "whatsapp", "call"].includes(String(t.channel)) ? t.channel : "email") as Channel,
