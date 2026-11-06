@@ -60,7 +60,7 @@ function latToY(lat: number, z: number) {
 async function fetchTile(z: number, x: number, y: number): Promise<Buffer> {
   const res = await fetch(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, {
     // OSM's tile policy requires an identifying User-Agent with a contact.
-    headers: { "User-Agent": "MantisAi-email-map/1.0 (+https://mantisai.in; tarun@gigzman.com)" },
+    headers: { "User-Agent": "MantisAi-email-map/1.0 (+https://mantisai.in; tarun@mantisai.in)" },
   });
   if (!res.ok) throw new Error(`osm tile ${z}/${x}/${y}: ${res.status}`);
   return Buffer.from(await res.arrayBuffer());

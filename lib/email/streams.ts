@@ -39,12 +39,12 @@ const STREAMS: Record<MailStream, StreamConfig> = {
     from: process.env.SES_USER_FROM || "Mantis Ai <hello@mantisuser.live>",
     configSet: process.env.SES_USER_CONFIG_SET || "mantis-user",
     // Offers and invites get answered; none of the .live domains has a mailbox behind it.
-    replyTo: process.env.SES_USER_REPLY_TO || "tarun@gigzman.com",
+    replyTo: process.env.SES_USER_REPLY_TO || "tarun@mantisai.in",
   },
   leads: {
     from: process.env.SES_LEADS_FROM || "Mantis Leads <alerts@mantisleads.live>",
     configSet: process.env.SES_LEADS_CONFIG_SET || "mantis-leads",
-    replyTo: process.env.SES_LEADS_REPLY_TO || "tarun@gigzman.com",
+    replyTo: process.env.SES_LEADS_REPLY_TO || "tarun@mantisai.in",
   },
 };
 

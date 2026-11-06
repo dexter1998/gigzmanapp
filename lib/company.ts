@@ -16,7 +16,7 @@ export const COMPANY = {
   /** Product/brand name used in page copy and titles. */
   brand: "Mantis",
   brandLong: "Mantis Ai",
-  email: "tarun@gigzman.com",
+  email: "tarun@mantisai.in",
   // The Google Business Profile carries no public phone number, so none is published here either.
   // Inventing one, or publishing a different number from the profile, is precisely the NAP
   // mismatch this file exists to avoid. Add it to the profile first, then mirror it here.

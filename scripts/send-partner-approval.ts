@@ -19,7 +19,7 @@ const BRAND_KIT_URL = "https://mantisai.in/partner/brand-kit";
 /** The mail's step 2 asks for a reply, and credits depend on it. The default sender is no-reply@,
  *  so without this the answer lands nowhere. Reply-To is not SPF/DMARC-checked, so a different
  *  domain than From is fine. */
-const REPLY_TO = "Tarun Kumar <tarun@gigzman.com>";
+const REPLY_TO = "Tarun Kumar <tarun@mantisai.in>";
 const SUBJECT = "You're approved — Mantis Ai is now your lead partner";
 /**
  * Named here rather than left to SES_CONFIGURATION_SET.

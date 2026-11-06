@@ -37,7 +37,7 @@ const FROM = process.env.SES_FOUNDER_FROM || `Founder MantisAI <tarun@${new URL(
 
 /** Where a reply to the founder's own email should land. His real inbox, not the widget — an
  *  email that cannot be replied to is the thing that makes people stop replying. */
-const FOUNDER_REPLY_TO = (process.env.FOUNDER_REPLY_TO || "tarun@gigzman.com").trim();
+const FOUNDER_REPLY_TO = (process.env.FOUNDER_REPLY_TO || "tarun@mantisai.in").trim();
 /**
  * Where "somebody wrote in" lands.
  *
