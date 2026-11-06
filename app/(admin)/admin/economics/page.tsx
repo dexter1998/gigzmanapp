@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { sql } from "@/lib/db";
 import { CREDIT_COST, CREDIT_PACKS, PLACES_CALL_COST_INR, CREDIT_FLOOR_INR, FREE_SIGNUP_CREDITS } from "@/lib/credits/pricing";
 import { PageHeader, StatCard, CardRow, Table, fmtDT, fmtINR, fmtN } from "../ui";
@@ -99,7 +100,7 @@ export default async function EconomicsPage() {
         <div className="flex flex-wrap gap-3">
           <Table col="col-12" title="Abandoned checkouts (30d)" note="Order bana par payment nahi — inhe email/call se follow-up karna sabse sasta revenue hai."
             head={["When", "User", "Pack", { label: "Amount", num: true }]}
-            rows={abandoned.map((a) => [fmtDT(a.created_at), a.user_email, a.pack_id, fmtINR(Number(a.amount_paise))])}
+            rows={abandoned.map((a) => [fmtDT(a.created_at), <Link key="e" href={`/admin/users/${encodeURIComponent(String(a.user_email))}`}>{a.user_email}</Link>, a.pack_id, fmtINR(Number(a.amount_paise))])}
             empty="koi abandoned order nahi" />
         </div>
       </div>

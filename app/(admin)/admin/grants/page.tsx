@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
@@ -80,7 +81,7 @@ export default async function GrantsPage() {
           note="Credits already spent are never clawed back — revoking stops the plan, the ledger keeps the history."
           head={["Account", "Plan", { label: "Credits", num: true }, "Runs until", "Reason", "By", "When", ""]}
           rows={grants.map((g) => [
-            <span key="e" className="text-[var(--ink)]">{g.user_email}</span>,
+            <Link key="e" href={`/admin/users/${encodeURIComponent(String(g.user_email))}`} className="text-[var(--ink)]">{g.user_email}</Link>,
             <span key="p" className="flex items-center gap-2">
               <Pill tone={g.revoked_at ? "mut" : "ok"}>{g.plan}</Pill>
               {g.revoked_at && <span className="text-[10.5px] text-[var(--ink-faint)]">revoked</span>}

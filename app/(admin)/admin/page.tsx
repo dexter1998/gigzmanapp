@@ -188,7 +188,7 @@ export default async function OverviewPage() {
               <MiniTable
                 head={["User", "Amount", "Status"]}
                 rows={(recentPayments as unknown as { user_email: string; amount_paise: number; status: string; created_at: string }[]).map((p) => [
-                  <span key="e" title={p.user_email}>{p.user_email.length > 22 ? `${p.user_email.slice(0, 21)}…` : p.user_email}</span>,
+                  <Link key="e" href={`/admin/users/${encodeURIComponent(String(p.user_email))}`} title={p.user_email}>{p.user_email.length > 22 ? `${p.user_email.slice(0, 21)}…` : p.user_email}</Link>,
                   fmtINR(Number(p.amount_paise)),
                   <span key="s" style={{ color: p.status === "paid" ? "var(--ok)" : "var(--ink-faint)" }}>{p.status}</span>,
                 ])}

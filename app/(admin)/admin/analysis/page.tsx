@@ -194,7 +194,7 @@ export default async function AnalysisPage({ searchParams }: { searchParams: Pro
           const seg = segOfEmail.get(String(c.user_email)) ?? "Casual";
           return [
             <Link key="c" href={`/admin/analysis/chats/${c.id}`} className="underline">{String(c.title ?? c.first_msg ?? "Untitled").slice(0, 70)}</Link>,
-            String(c.user_email), <Pill key="t" tone={SEG_TONE[seg]}>{seg}</Pill>, fmtN(n(c.turns)),
+            <Link key="u" href={`/admin/users/${encodeURIComponent(String(c.user_email))}`} className="underline">{String(c.user_email)}</Link>, <Pill key="t" tone={SEG_TONE[seg]}>{seg}</Pill>, fmtN(n(c.turns)),
             c.status ? `${c.status} ${n(c.delivered)}/${n(c.target)}` : "no plan",
             `${n(c.pos) ? `👍${n(c.pos)} ` : ""}${n(c.neg) ? `👎${n(c.neg)}` : ""}` || "—", fmtAgo(c.last as Date),
           ];
