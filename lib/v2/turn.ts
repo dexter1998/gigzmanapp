@@ -165,7 +165,9 @@ export async function runV2Turn(input: {
       const placeReply = !findUrl(input.message) && input.message.trim().split(/\s+/).length <= 4 && await answersPendingBrief("area", input.message);
       // "dentists" typed back at "which business?" is the trade they want, not their own business:
       // plan it without a profile instead of asking again (prod 2026-11-03: asked twice, user left).
-      const tradeReply = !placeReply && askedNew && !findUrl(input.message) && input.message.trim().split(/\s+/).length <= 4
+      // The same holds at the saved-businesses picker (no card open yet): "interior design" typed there
+      // asked the picker again, three times in the stuck replay (2026-11-06).
+      const tradeReply = !placeReply && (askedNew || !state.businessProfileId) && !findUrl(input.message) && input.message.trim().split(/\s+/).length <= 4
         && !!resolveCategoryPhrase(input.message.trim()) && !/\b(i|we|my|our|mera|hum|hamara)\b/i.test(input.message);
       if (tradeReply) {
         const words = brief.toLowerCase();
@@ -232,7 +234,11 @@ export async function runV2Turn(input: {
       route = answerPending(route, state, input.message);
       // A place named in any message is the chat's area from now on — it used to be dropped whenever
       // the turn went through the business / context questions first, and then asked again.
-      if (route.areaText && !route.nearMe) state = { ...state, areaText: route.areaText };
+      // A different place also drops the old centre: the map search compares against this areaText,
+      // saw "the same place" and kept the previous centre — "Gurgaon" after "out of maharashtra"
+      // searched 1.5 km around Maharashtra's centroid and said Gurgaon wasn't mapped (replay 2026-11-06).
+      if (route.areaText && !route.nearMe && route.areaText.toLowerCase() !== (state.areaText ?? "").toLowerCase())
+        state = { ...state, areaText: route.areaText, center: null, radiusM: 1500 };
       // The router decides what a message is (lib/v2/router.ts carries the rules). Code keeps two
       // guardrails that are not judgement calls: a bare URL is the user's business, and a saved
       // business named as "for X" with nothing to find switches the chat to it.
@@ -970,6 +976,10 @@ function profileQuestion(profiles: BusinessProfile[], brief: string, L: Lang, ju
     clarification: { question: t(L, "Which business are these leads for?", "Ye leads kis business ke liye?"), options: [
       ...profiles.slice(0, 5).map((b) => ({ label: b.name, description: hostOf(b.website) ?? b.summary.slice(0, 80), action: { type: "use_profile", profileId: b.id, brief } as ChatAction })),
       newOpt,
+      // Same way out as the no-profile question: a typed answer that names none of these ("interior
+      // design") re-asked this question every turn (stuck replay 2026-11-06).
+      ...(brief.trim() ? [{ label: t(L, "Skip — just find the leads", "Skip — bas leads dhoondo"), description: t(L, "Search without a business profile", "Business profile ke bina search"),
+        action: { type: "plan", brief: brief.replace(/^new:/, "").trim(), skipProfile: true } as ChatAction }] : []),
     ] },
   };
 }
