@@ -143,7 +143,9 @@ export async function saveScoutProfile(email: string, p: SellerProfile): Promise
   const host = hostOf(p.website);
   const mine = await listProfiles(email);
   const same = host ? mine.find((b) => hostOf(b.website) === host) : null;
-  const name = (p.company?.trim() || host || "My business").slice(0, 100);
+  // realName: the model sends company "null" as a string — 7 prod profiles were named null, and the
+  // chat then asked "Are these leads for **null**?" in a loop (2026-11-06).
+  const name = (realName(p.company) || host || "My business").slice(0, 100);
   let row: Row;
   if (same) {
     [row] = await sql`
