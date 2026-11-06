@@ -18,6 +18,7 @@ import { formatCategory } from "@/lib/categories";
 import { hasKey } from "./sources/key-chain";
 import { apolloMatch } from "./sources/apollo";
 import { judgeFit, inBand, type FitJudgement } from "./size-fit";
+import { areaExtentM } from "@/lib/geocode";
 import { liveDiscover } from "./search";
 import { readState } from "./state";
 import { domainOf } from "./net";
@@ -550,10 +551,14 @@ async function rankResults(runId: string, plan: CompiledPlan): Promise<{ kept: n
     // Segments: a site-signal match is only ever set by a read, and a listing one needs none.
     const read = !!segs || !siteAsk || !gated || r.site_checked === true || listingMatch;
     const gateOk = !gated || [...gatedWanted].some((s) => sig[s] === true);
-    return { id: r.id as number, sig, score, reachable, cat: String(r.category ?? ""), domain: (r.domain as string | null) ?? null, keep: must && read && gateOk,
+    // A playbook's gap the user never asked for only ranks: rows that show it come first, and a
+    // reachable row without it fills what is left. Gating on it dropped every agency in Yashraj's
+    // Delhi NCR runs — 134 with emails, 0 kept, 4 times (prod 2026-11-06). mustHave stays a filter.
+    const primary = must && read && gateOk;
+    return { id: r.id as number, sig, score, reachable, cat: String(r.category ?? ""), domain: (r.domain as string | null) ?? null, keep: primary || (must && reachable), primary,
       name: String(r.name ?? ""), area: (r.area as string | null) ?? null, reviews: (r.review_count as number | null) ?? null, multi: sig.multi_location === true,
       lat: r.lat == null ? null : Number(r.lat), lng: r.lng == null ? null : Number(r.lng) };
-  }).filter((r) => r.keep).sort((a, b) => b.score - a.score)
+  }).filter((r) => r.keep).sort((a, b) => Number(b.primary) - Number(a.primary) || b.score - a.score)
     // One lead per company: two Maps listings of one business share a domain (KALT replay).
     .filter((r, i, all) => !r.domain || all.findIndex((x) => x.domain === r.domain) === i);
   // Fit: the leads about to be shown are judged for company size (the ones this seller can
@@ -577,18 +582,26 @@ async function rankResults(runId: string, plan: CompiledPlan): Promise<{ kept: n
     // place itself: a city Mantis holds (a city_slug) may span 40 km; anything else is a neighbourhood.
     const head = (plan.areaText ?? "").split(",")[0].trim().toLowerCase().replace(/\s+/g, "-").replace(/^gurugram$/, "gurgaon").replace(/^bengaluru$/, "bangalore");
     const [isCity] = head ? await sql`SELECT 1 FROM leads WHERE city_slug = ${head} LIMIT 1` : [];
-    const limitM = isCity ? 40_000 : Math.max(plan.radiusM * 1.25, 2500);
+    // Anything else is measured by its own size: Delhi NCR, a state or a country is not a 3.75 km
+    // neighbourhood (prod: 20 of 47 such runs kept 0).
+    const extent = local ? await areaExtentM(local).catch(() => null) : null;
+    const limitM = Math.max(isCity ? 40_000 : 0, plan.radiusM * 1.25, 2500, extent ? extent * 1.25 : 0);
     const far = (r: (typeof scored)[number]) => r.lat != null && r.lng != null && !!c && haversineM(c, { lat: r.lat, lng: r.lng }) > limitM;
     // A neighbourhood is measured only (the judge called Koramangala "in" Indiranagar); a city also
     // takes the judge's "elsewhere" (40 km around Noida holds Ghaziabad and Faridabad — round 4).
     const elsewhere = (r: (typeof scored)[number]) => local !== null && (far(r) || ((isCity || r.lat == null || r.lng == null) && fit.get(r.id)?.inArea === false));
     const fits = (r: (typeof scored)[number]) => !band || inBand(fit.get(r.id)?.tier, band);
     const here = scored.filter((r) => !elsewhere(r));
-    fitted = [...here.filter(fits), ...here.filter((r) => !fits(r))];
+    // Gap-matching rows first (in size band, then out), then the reachable fill in the same order.
+    const tiers = [here.filter((r) => r.primary), here.filter((r) => !r.primary)];
+    fitted = tiers.flatMap((t) => [...t.filter(fits), ...t.filter((r) => !fits(r))]);
   }
   // "Different industries": with 3+ trades, take turns across categories so one trade can't fill
   // the list (the KALT replay came back all restaurants).
-  const spread = plan.trades.length >= 3 ? roundRobin(fitted, (r) => r.cat) : fitted;
+  // Taken per tier, so the reachable fill never cuts in ahead of a gap-matching lead.
+  const spread = plan.trades.length >= 3
+    ? [...roundRobin(fitted.filter((r) => r.primary), (r) => r.cat), ...roundRobin(fitted.filter((r) => !r.primary), (r) => r.cat)]
+    : fitted;
   // Segments: each asked signal gets its quota first, then any segment that ran dry is filled from
   // the others' extras, and the list is shown best-first.
   let top = spread.slice(0, plan.target);

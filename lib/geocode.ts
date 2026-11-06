@@ -71,6 +71,36 @@ async function googleGeocode(text: string, india = true): Promise<GeocodeOutcome
   return { value: { lat: location.lat, lng: location.lng }, apiDown: false };
 }
 
+/** How far a named area reaches from its centre, in metres: half the diagonal of Google's viewport
+ * for it. "Delhi NCR", "Florida" or "United States" are not neighbourhoods — rank measured every
+ * area Mantis holds no city row for as one (3.75 km), so 20 of 47 such runs on prod kept 0 leads
+ * (2026-11-06). Cached per process; null when the place can't be resolved. */
+const extentCache = new Map<string, number | null>();
+export async function areaExtentM(text: string): Promise<number | null> {
+  const key = text.trim().toLowerCase();
+  if (!key) return null;
+  if (extentCache.has(key)) return extentCache.get(key)!;
+  let extent: number | null = null;
+  if (hasGoogleKey()) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(text)}${FOREIGN.test(text) ? "" : "&region=in"}`;
+      const res = await googleFetch(url, {}, "query");
+      const d = (await res.json()) as { results?: Array<{ geometry?: { viewport?: { northeast: { lat: number; lng: number }; southwest: { lat: number; lng: number } } } }> };
+      const v = d.results?.[0]?.geometry?.viewport;
+      if (v) {
+        const R = 6_371_000, rad = (x: number) => (x * Math.PI) / 180;
+        const dLat = rad(v.northeast.lat - v.southwest.lat), dLng = rad(v.northeast.lng - v.southwest.lng);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(v.southwest.lat)) * Math.cos(rad(v.northeast.lat)) * Math.sin(dLng / 2) ** 2;
+        extent = R * 2 * Math.asin(Math.sqrt(h)) / 2;
+      }
+    } catch {
+      extent = null;
+    }
+  }
+  extentCache.set(key, extent);
+  return extent;
+}
+
 /** Coordinates -> a human-readable place name, used only for the "reuse my last searched area"
  * clarification option — turns a stored lat/lng from a prior map search into text the normal
  * chat flow (and its history) can read naturally, rather than threading raw coordinates through
