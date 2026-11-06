@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { isAllowedLeadType } from "@/lib/lead-quality";
 import { allowanceFor, chargeCredits } from "@/lib/credits/server";
 import { CREDIT_COST } from "@/lib/credits/pricing";
-import { fetchNearbyBatch, splitIntoQuadrants, MIN_CELL_RADIUS_METERS, type PlacesResult, type Cell } from "@/lib/places/nearby-search";
+import { fetchNearbyBatch, splitIntoQuadrants, wrapLng, MIN_CELL_RADIUS_METERS, type PlacesResult, type Cell } from "@/lib/places/nearby-search";
 
 // Anti-abuse: a real discovery request (one that would actually call Places API) for the same
 // rounded area+category from the same user is throttled to once per this window — a user idling
@@ -219,7 +219,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "lat, lng and radius are required" }, { status: 400 });
   }
   const lat: number = body.lat;
-  const lng: number = body.lng;
+  // Folded here too, so the grid cache and cooldown keys match the place the user is looking at.
+  const lng: number = wrapLng(body.lng);
   const radius = Math.min(body.radius, MAX_SEARCH_RADIUS_METERS);
   const userEmail = session.user.email;
 

@@ -25,6 +25,12 @@ export type PlacesResult = {
 
 export type Cell = { lat: number; lng: number; radius: number };
 
+/** Longitude folded into [-180, 180]. A map panned round the globe reports 78.4 - 720 = -641.6 for
+ *  Hyderabad, and Google answers HTTP 400 (33 open alerts on 2026-11-06). */
+export function wrapLng(lng: number): number {
+  return ((((lng + 180) % 360) + 360) % 360) - 180;
+}
+
 export async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ places: NonNullable<PlacesResult["places"]>; failed: boolean }> {
   const res = await googleFetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
@@ -41,7 +47,7 @@ export async function fetchNearbyBatch(types: string[], cell: Cell): Promise<{ p
       includedTypes: types,
       maxResultCount: 20,
       rankPreference: "DISTANCE",
-      locationRestriction: { circle: { center: { latitude: cell.lat, longitude: cell.lng }, radius: cell.radius } },
+      locationRestriction: { circle: { center: { latitude: cell.lat, longitude: wrapLng(cell.lng) }, radius: cell.radius } },
     }),
   });
   if (!res.ok) {
