@@ -252,9 +252,17 @@ export async function runV2Turn(input: {
         route = { ...route, type: "brief" };
       // Several kinds of business at once is a planned run, not a one-category map search.
       if (route.type === "search" && route.multiTrade) route = { ...route, type: "brief" };
+      // "I want only jewellery businesses and their mail and number" as a chat's first ask is a lead
+      // search that wants contacts, not a question about leads: with no earlier search the assistant
+      // looked up this chat's (zero) leads and said none were found (replay 2026-11-06).
+      if (route.type === "contacts" && !state.placeType && !state.lastBrief) route = { ...route, type: "brief" };
       if (route.forBusiness && !PLAN_TYPES.includes(route.type) && !SEARCH_TYPES.includes(route.type) && route.type !== "contacts") {
         const all = await listProfiles(input.userEmail);
-        const to = matchProfile(all, route.forBusiness) ?? matchProfile(all, input.message);
+        // The whole message is only scanned when it is short: a long brief about a new company
+        // ("…for my company Aarshiv.ai … web development…") matched a saved profile named
+        // "Development" and switched to it instead of reading the brief (replay 2026-11-06).
+        const short = input.message.trim().split(/\s+/).length <= 12;
+        const to = matchProfile(all, route.forBusiness) ?? (short ? matchProfile(all, input.message) : null);
         if (to) {
           state = { ...state, businessProfileId: to.id, pendingProfileBrief: null, offering: null, contextConfirmed: false };
           void touchProfile(to.id);

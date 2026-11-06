@@ -94,6 +94,7 @@ async function postBedrock(body: Record<string, unknown>, agent: string): Promis
   const chain = [String(body.model), ...MODEL_FALLBACKS.filter((m) => m !== String(body.model))];
   let out;
   let lastErr: Error | null = null;
+  const failures: string[] = [];
   outer: for (const modelId of chain) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -102,14 +103,18 @@ async function postBedrock(body: Record<string, unknown>, agent: string): Promis
       } catch (err) {
         lastErr = err as Error;
         const name = lastErr.name ?? "";
-        const transient = /Throttling|TooManyRequests|ServiceUnavailable|ModelNotReady|InternalServer|ModelTimeout/i.test(name);
+        failures.push(`${modelId}: ${name}`);
+        // ModelErrorException ("invalid sequence as part of ToolUse") is Kimi garbling one sample, not a
+        // bad request: the same call succeeds on a re-roll (prod 6 Nov: ~20 of these became "I couldn't
+        // put an answer together"). Throttling-style errors are retried the same way.
+        const transient = /Throttling|TooManyRequests|ServiceUnavailable|ModelNotReady|InternalServer|ModelTimeout|ModelError/i.test(name);
         if (!transient) break; // a bad request won't get better on a retry; try the next model
         if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * 2 ** attempt + Math.random() * 400));
       }
     }
   }
   if (!out) {
-    await recordApiFailure("anthropic", `bedrock ${lastErr?.name}: ${(lastErr?.message ?? "").slice(0, 260)}`, { agent, model: body.model, tried: chain });
+    await recordApiFailure("anthropic", `bedrock ${lastErr?.name}: ${(lastErr?.message ?? "").slice(0, 260)}`, { agent, model: body.model, tried: chain, failures });
     throw new AgentUnavailableError("AI service unreachable");
   }
   const content = (out.output?.message?.content ?? []).map((b): Record<string, unknown> | null => {
