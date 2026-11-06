@@ -1,0 +1,71 @@
+/* Announcement bar, /company hero and the NVIDIA Inception section. Mantis tokens only:
+   ink band, lime/green accents, cream page. */
+
+/* ---------------------------------------------------------------- announcement bar */
+.mk-announce { background: var(--g-ink); color: #f4f6ef; border-bottom: 1px solid rgba(168, 213, 30, 0.22); }
+.mk-announce-in { max-width: 1240px; margin: 0 auto; padding: 9px 56px 9px 24px; display: flex; align-items: center; justify-content: center; gap: 14px; position: relative; flex-wrap: wrap; }
+.mk-announce-new { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; border: 1px solid rgba(168, 213, 30, 0.45); color: var(--g-green); font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 0 0 4px rgba(168, 213, 30, 0.07); }
+.mk-announce-badge { display: inline-flex; border-radius: 6px; overflow: hidden; line-height: 0; }
+.mk-announce-badge img { width: 88px; height: auto; display: block; }
+.mk-announce-text { margin: 0; font-size: 13.5px; line-height: 1.4; display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.mk-announce-text strong { font-weight: 700; color: #fff; }
+.mk-announce-text em { font-style: italic; color: rgba(244, 246, 239, 0.68); }
+.mk-announce-sep { color: rgba(244, 246, 239, 0.35); }
+.mk-announce-cta { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--g-green); color: var(--g-ink); font-size: 12.5px; font-weight: 700; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease; }
+.mk-announce-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 18px -6px rgba(168, 213, 30, 0.7); }
+.mk-announce-close { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(244, 246, 239, 0.22); background: transparent; color: rgba(244, 246, 239, 0.75); display: grid; place-items: center; cursor: pointer; }
+.mk-announce-close:hover { color: #fff; border-color: rgba(244, 246, 239, 0.5); }
+.mk-announce-cta:focus-visible, .mk-announce-close:focus-visible { outline: 2px solid var(--g-green); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .mk-announce-in { gap: 8px 10px; padding: 9px 44px 9px 14px; }
+  .mk-announce-text em, .mk-announce-sep { display: none; }
+  .mk-announce-badge img { width: 72px; }
+  .mk-announce-close { right: 10px; }
+}
+
+/* ---------------------------------------------------------------- /company hero */
+.ab-hero { --unlock: 0; position: relative; height: calc(100svh + 340px); }
+.ab-hero-card { position: sticky; top: 74px; height: calc(100svh - 74px); min-height: 620px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px; background: var(--g-cream); }
+.ab-hero-grid { position: absolute; inset: 0; background-image: linear-gradient(to right, rgba(16, 18, 20, 0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(16, 18, 20, 0.045) 1px, transparent 1px); background-size: 124px 124px; background-position: center top; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 85%); mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 85%); }
+.ab-hero-glow { position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: min(760px, 120vw); height: 360px; background: radial-gradient(ellipse, rgba(168, 213, 30, 0.16) 0%, transparent 70%); pointer-events: none; }
+.ab-hero-copy { position: relative; z-index: 2; text-align: center; max-width: 1180px; }
+.ab-hero-pill { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; border: 1.5px solid rgba(100, 139, 28, 0.28); background: var(--g-green-mint); padding: 6px 16px; margin-bottom: 26px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g-green-text); }
+.ab-hero-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--g-green-dark); animation: ab-pulse 2s infinite; }
+@keyframes ab-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(100, 139, 28, 0.45); } 50% { box-shadow: 0 0 0 5px rgba(100, 139, 28, 0); } }
+.ab-hero-h1 { margin: 0; font-size: clamp(44px, 8.2vw, 118px); line-height: 0.98; font-weight: 800; letter-spacing: -0.05em; color: var(--g-ink); text-wrap: balance; }
+.ab-hero-grad { background: linear-gradient(120deg, var(--g-green-darker) 0%, var(--g-green-dark) 45%, #8cbf1a 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; padding-bottom: 0.08em; }
+.ab-hero-sub { margin: 30px auto 0; max-width: 640px; font-size: clamp(17px, 1.6vw, 21px); line-height: 1.55; color: var(--g-gray-500); text-wrap: balance; }
+
+.ab-lock { position: relative; z-index: 2; margin-top: 44px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center; }
+.ab-lock-svg { width: 190px; overflow: visible; }
+/* The shackle lifts out of the body, then swings open on its left post. */
+.ab-shackle { transform-box: view-box; transform-origin: 44px 74px; transform: translateY(calc(var(--unlock) * -16px)) rotate(calc(var(--unlock) * -32deg)); transition: transform .08s linear; }
+.ab-bolt { transition: fill .3s ease, filter .3s ease; }
+.ab-lock.is-open .ab-bolt { fill: #8cbf1a; filter: drop-shadow(0 0 6px rgba(168, 213, 30, 0.75)); }
+.ab-hero-scroll { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--g-gray-500); opacity: calc(1 - var(--unlock) * 0.6); }
+.ab-hero-scroll span { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+@media (max-width: 720px) {
+  .ab-hero { height: calc(100svh + 220px); }
+  .ab-hero-card { top: 64px; height: calc(100svh - 64px); min-height: 560px; }
+  .ab-lock { margin-top: 32px; width: 150px; height: 150px; }
+  .ab-lock-svg { width: 140px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ab-hero { height: auto; }
+  .ab-hero-card { position: relative; top: 0; height: auto; min-height: 0; padding: 96px 24px 120px; }
+  .ab-hero-dot { animation: none; }
+}
+
+/* ---------------------------------------------------------------- NVIDIA Inception */
+.nv-wrap { padding: 24px 24px 72px; scroll-margin-top: 96px; }
+.nv-card { max-width: 1060px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 40px; align-items: center; border: 1px solid var(--g-border); border-radius: 22px; padding: 36px 40px; background: linear-gradient(135deg, #ffffff 0%, var(--g-green-mint) 100%); position: relative; overflow: hidden; }
+.nv-card::after { content: ""; position: absolute; right: -80px; top: -80px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(118, 185, 0, 0.16), transparent 70%); pointer-events: none; }
+.nv-badge { background: #fff; border-radius: 14px; border: 1px solid var(--g-border); padding: 8px; display: grid; place-items: center; box-shadow: 0 18px 40px -24px rgba(16, 18, 20, 0.35); }
+.nv-badge img { width: 100%; height: auto; display: block; }
+.nv-kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--g-green-text); margin: 0 0 10px; }
+.nv-title { font-size: clamp(24px, 3vw, 34px); line-height: 1.12; letter-spacing: -0.02em; font-weight: 800; color: var(--g-ink); margin: 0 0 12px; text-wrap: balance; }
+.nv-body { font-size: 15.5px; line-height: 1.65; color: var(--g-gray-500); margin: 0; max-width: 560px; }
+@media (max-width: 760px) {
+  .nv-card { grid-template-columns: 1fr; gap: 24px; padding: 26px 22px; }
+  .nv-badge { max-width: 280px; }
+}

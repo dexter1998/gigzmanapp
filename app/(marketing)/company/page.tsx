@@ -3,7 +3,8 @@ import { ogImageMeta } from "@/lib/og";
 import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/company";
-import { EyebrowPill, MarketingCta, OrigamiFloor, SectionHeading } from "@/components/marketing/MarketingPieces";
+import { MarketingCta, SectionHeading } from "@/components/marketing/MarketingPieces";
+import { AboutHero } from "@/components/marketing/AboutHero";
 import { CheckIcon, QuoteIcon, ZapIcon, ShieldCheckIcon, TableIcon, PartnerIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
@@ -94,30 +95,24 @@ export default function CompanyPage() {
         }}
       />
 
-      {/* Hero */}
-      <section style={{ position: "relative", padding: "64px 24px 80px", overflow: "hidden", textAlign: "center" }}>
-        <OrigamiFloor opacity={0.6} height={320} />
-        <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <EyebrowPill>About {COMPANY.brandLong}</EyebrowPill>
-          <h1
-            className="marketing-h1"
-            style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "var(--g-ink)", letterSpacing: "-0.03em", lineHeight: 1.08, margin: "20px 0 16px", textWrap: "balance" }}
-          >
-            We make <span style={{ color: "var(--g-green-dark)" }}>local opportunity</span> visible.
-          </h1>
-          <p style={{ fontSize: 16.5, color: "var(--g-gray-500)", lineHeight: 1.6, margin: "0 auto 40px", maxWidth: 560 }}>
-            Mantis reads the public business data anyone can see on a map, scores it for who actually needs what you
-            sell, and hands you a list worth working.
-          </p>
+      {/* Hero: the headline and a padlock that opens as the page scrolls. */}
+      <AboutHero eyebrow={`About ${COMPANY.brandLong}`} />
 
-          <Image
-            alt="The Mantis workspace showing a live search across Gurugram, with sources being scanned in real time"
-            src="/marketing/about-hero-search.webp"
-            width={1400}
-            height={934}
-            priority
-            style={{ width: "100%", height: "auto", borderRadius: "var(--radius-lg)", maxWidth: 900 }}
-          />
+      {/* NVIDIA Inception — the announcement bar links here. */}
+      <section id="nvidia-inception" className="nv-wrap" aria-labelledby="nv-title">
+        <div className="nv-card">
+          <div className="nv-badge">
+            <Image src="/marketing/nvidia-inception-badge.svg" alt="NVIDIA Inception Program badge" width={500} height={216} />
+          </div>
+          <div>
+            <p className="nv-kicker">Now part of NVIDIA Inception</p>
+            <h2 id="nv-title" className="nv-title">{COMPANY.brandLong} has joined the NVIDIA Inception program.</h2>
+            <p className="nv-body">
+              NVIDIA Inception supports startups building with AI. For Mantis that means the agents that find your
+              buyers, read their websites and run your outreach keep getting faster and sharper — while you stay
+              focused on the product.
+            </p>
+          </div>
         </div>
       </section>
 

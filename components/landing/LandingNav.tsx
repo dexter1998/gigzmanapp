@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDownIcon } from "@/components/icons";
+import { AnnouncementBar } from "@/components/marketing/AnnouncementBar";
 
 // Root-relative rather than bare "#anchor": this same nav now renders on /pricing, /partner,
 // /about and /contact, where a bare fragment would scroll the current page to nothing instead
@@ -35,6 +36,8 @@ export function LandingNav() {
   const loginHref = "/login";
 
   return (
+    <>
+      <AnnouncementBar />
     <header
       style={{
         position: "sticky",
@@ -127,5 +130,6 @@ export function LandingNav() {
         </div>
       </nav>
     </header>
+    </>
   );
 }
