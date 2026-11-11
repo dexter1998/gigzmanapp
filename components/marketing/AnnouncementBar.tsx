@@ -42,7 +42,7 @@ export function AnnouncementBar() {
           <span className="mk-announce-sep" aria-hidden="true">—</span>
           <em>the program for startups building with AI</em>
         </p>
-        <Link href="/company#nvidia-inception" className="mk-announce-cta">
+        <Link href="/resources/mantis-joins-nvidia-inception" className="mk-announce-cta">
           Read more
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </Link>
