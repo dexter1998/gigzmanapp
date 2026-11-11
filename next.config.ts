@@ -64,7 +64,8 @@ const nextConfig: NextConfig = {
               // The checkout itself renders in a gateway-hosted iframe, and the bank/UPI step
               // submits a form to it -- default-src 'self' would reject both.
               // The widget renders its panel in its own iframe.
-              "frame-src 'self' https://*.cashfree.com https://*.razorpay.com",
+              // youtube-nocookie.com: the article `youtube` block (components/blog/Blocks.tsx).
+              "frame-src 'self' https://*.cashfree.com https://*.razorpay.com https://www.youtube-nocookie.com",
               "form-action 'self' https://*.cashfree.com https://*.razorpay.com",
               "img-src 'self' data: https: blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

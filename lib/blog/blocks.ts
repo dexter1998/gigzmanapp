@@ -43,6 +43,9 @@ export type Block =
   | { type: "image"; src: string; alt: string; caption?: string; credit?: string; width?: number; height?: number }
   | { type: "tip"; title: string; text: string }
   | { type: "quote"; text: string; attribution: string; href?: string }
+  /** A YouTube video, embedded from youtube-nocookie.com so no tracking cookie is set until the
+   *  reader presses play. `id` is the 11-character video id; `title` is the iframe's accessible name. */
+  | { type: "youtube"; id: string; title: string }
 
 export const BLOG_CATEGORIES = [
   "Lead Generation",

@@ -252,6 +252,20 @@ export async function Blocks({ blocks }: { blocks: Block[] }) {
           </blockquote>
         );
         break;
+      case "youtube":
+        out.push(
+          <figure className="rc-figure" key={i}>
+            <div style={{ position: "relative", aspectRatio: "16 / 9", borderRadius: 12, overflow: "hidden", background: "#000" }}>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(b.id)}`}
+                title={b.title} loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+              />
+            </div>
+          </figure>
+        );
+        break;
       case "citytable":
         out.push(<CityTable key={i} country={b.country} min={b.min} limit={b.limit} order={b.order} note={b.note ? t(b.note) : undefined} />);
         break;
