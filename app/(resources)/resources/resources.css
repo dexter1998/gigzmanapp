@@ -104,7 +104,7 @@
 .rc-article-hero { text-align: center; padding: 46px 0 34px; position: relative; }
 .rc-article-hero h1 {
   font-size: clamp(28px, 4.4vw, 42px); font-weight: 800; letter-spacing: -.03em; line-height: 1.12;
-  color: var(--g-ink); margin: 0 auto 16px; max-width: 20ch; text-wrap: balance;
+  color: var(--g-ink); margin: 0 auto 16px; max-width: 32ch; text-wrap: balance;
 }
 .rc-article-hero h1 em { font-style: normal; color: var(--g-green-dark); }
 .rc-article-hero .sub { font-size: 15px; color: var(--g-gray-500); max-width: 60ch; margin: 0 auto 22px; line-height: 1.65; }
